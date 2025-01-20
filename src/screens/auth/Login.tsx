@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import {Box,TextField,Button,Typography,Container,CssBaseline,Avatar} from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+// import axios from "axios";
+import { apiRequest } from "../../utils/commonApi";
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState<string>("");
@@ -15,24 +16,26 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-      
+
     try {
       console.log("Username:", username);
       console.log("Password:", password);
-  
+
       const formData = new FormData();
       formData.append("username", username);
       formData.append("password", password);
-  
-      const response = await axios.post(
-        "http://192.168.0.67:8080/executive/token",
-        formData
+
+      const response = await apiRequest<{ access_token: string; message: string }>(
+        "POST",
+        "/executive/token",
+        formData,
+        { "Content-Type": "multipart/form-data" } // Additional headers
       );
-  
+
       console.log("response====>", response);
       console.log("response.headers====>", response.headers);
       console.log("access_token:", response.data.access_token);
-  
+
       if ((response.status === 200 || response.status === 201) && response.data.access_token) {
         localStorage.setItem("access_token", response.data.access_token);
         navigate("/home");
