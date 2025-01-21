@@ -12,7 +12,7 @@ import localStorageHelper from './localStorageHelper';
 
 export const base_URL = 'http://192.168.0.67:8080'; //base URL
 
-//******************************************************Tocken **************************************** */
+//******************************************************Token **************************************** */
 const getAuthTocken = async () => {
  try {
  const token = JSON.parse(
@@ -43,7 +43,7 @@ const getAuthTocken = async () => {
 };
 
 
-//******************************************************prepareHeaders **************************************** */
+//****************************************************** prepare Headers **************************************** */
 const prepareHeaders = async (tokenNeeded: any) => {
  let headers: any = {'Content-Type': 'application/json'};
  if (tokenNeeded) {
@@ -65,7 +65,7 @@ const prepareHeaders = async (tokenNeeded: any) => {
 };
 
 
-//******************************************************response handler **************************************** */
+//****************************************************** response handler **************************************** */
 
 const handleResponse = async (response: any) => {
  const responseData = response?.data?.data;
@@ -87,7 +87,7 @@ const handleResponse = async (response: any) => {
 };
 
 
-//******************************************************errorResponse handler **************************************** */
+//******************************************************  errorResponse handler  **************************************** */
 const handleErrorResponse = (errorResponse: any) => {
   if (!errorResponse) {
     toast.error('Network error. Please try again.');
@@ -113,7 +113,7 @@ const handleErrorResponse = (errorResponse: any) => {
  };
 
 
-
+//******************************************************  apiCall  **************************************** 
 
 const apiCall = async (
  method: any,
