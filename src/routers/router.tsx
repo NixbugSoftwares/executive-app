@@ -11,6 +11,9 @@ import { Fare } from '../screens/farepage';
 import { Bus } from '../screens/buspage';
 
 
+export type AuthRouteProps = {
+  
+}
 
 
 const routes: RouteObject[] = [
