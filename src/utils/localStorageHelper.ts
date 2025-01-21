@@ -34,9 +34,7 @@ async function setEncryptedData(key: string, data: any): Promise<void> {
     }
   }
 
-
-
-//************************************************retrive data from EncryptedStorage****************************************************
+//************************************************retrive Encrypted data from Storage****************************************************
 async function getEncryptedData(key: string): Promise<any | null> {
   try {
     const encryptedData = localStorage.getItem(key); // Retrieve encrypted data from localStorage
