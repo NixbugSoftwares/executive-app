@@ -1,2 +1,1 @@
-
-export { default as Nonet } from './noNetWorkPage';
+export { default as Nonet } from './noNetworkPage';
