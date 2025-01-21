@@ -3,7 +3,8 @@ import {Box,TextField,Button,Typography,Container,CssBaseline,Avatar} from "@mui
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useNavigate } from "react-router-dom";
 // import axios from "axios";
-import { apiRequest } from "../../utils/commonApi";
+// import apiCall from "../../utils/commonApi";
+import commonApi from "../../utils/commonApi";
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState<string>("");
@@ -25,11 +26,12 @@ const LoginPage: React.FC = () => {
       formData.append("username", username);
       formData.append("password", password);
 
-      const response = await apiRequest<{ access_token: string; message: string }>(
+      const response = await commonApi.apiCall(
         "POST",
         "/executive/token",
         formData,
-        { "Content-Type": "multipart/form-data" } // Additional headers
+        false,
+        "multipart/form-data"
       );
 
       console.log("response====>", response);
