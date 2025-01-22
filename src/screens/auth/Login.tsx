@@ -1,30 +1,36 @@
-import React, { useState } from "react";
-import {Box,TextField,Button,Typography,Container,CssBaseline,Avatar} from "@mui/material";
+
+import React from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { loginSchema } from "./authValidation";
+import { Box, TextField, Button, Typography, Container, CssBaseline, Avatar } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useNavigate } from "react-router-dom";
-// import axios from "axios";
-// import apiCall from "../../utils/commonApi";
 import commonApi from "../../utils/commonApi";
 
+interface ILoginFormInputs {
+  username: string;
+  password: string;
+}
+
 const LoginPage: React.FC = () => {
-  const [username, setUsername] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<ILoginFormInputs>({
+    resolver: yupResolver(loginSchema), // Use the imported schema
+  });
 
+  const handleLogin: SubmitHandler<ILoginFormInputs> = async (data) => {
     try {
-      console.log("Username:", username);
-      console.log("Password:", password);
+      console.log("Form Data:", data);
 
       const formData = new FormData();
-      formData.append("username", username);
-      formData.append("password", password);
+      formData.append("username", data.username);
+      formData.append("password", data.password);
 
       const response = await commonApi.apiCall(
         "POST",
@@ -35,23 +41,17 @@ const LoginPage: React.FC = () => {
       );
 
       console.log("response====>", response);
-      console.log("response.headers====>", response.headers);
-      console.log("access_token:", response.data.access_token);
 
-      if ((response.status === 200 || response.status === 201) && response.data.access_token) {
+      if (response.data?.access_token) {
         localStorage.setItem("access_token", response.data.access_token);
         navigate("/home");
       } else {
-        setError(response.data.message || "Login failed. Please try again.");
+        console.error("Login failed");
       }
     } catch (error) {
       console.error("Error:", error);
-      setError("An error occurred. Please try again.");
-    } finally {
-      setLoading(false);
     }
   };
-  
 
   return (
     <Container component="main" maxWidth="xs">
@@ -70,44 +70,44 @@ const LoginPage: React.FC = () => {
         <Typography component="h1" variant="h5">
           Sign In
         </Typography>
-        <Box component="form" noValidate sx={{ mt: 1 }} onSubmit={handleLogin}>
+        <Box
+          component="form"
+          noValidate
+          sx={{ mt: 1 }}
+          onSubmit={handleSubmit(handleLogin)}
+        >
           <TextField
             margin="normal"
             required
             fullWidth
             id="username"
             label="Username"
-            name="username"
+            {...register("username")}
+            error={!!errors.username}
+            helperText={errors.username?.message}
             autoComplete="username"
             autoFocus
-            value={username}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setUsername(e.target.value)
-            }
           />
           <TextField
             margin="normal"
             required
             fullWidth
-            name="password"
+            id="password"
             label="Password"
             type="password"
-            id="password"
+            {...register("password")}
+            error={!!errors.password}
+            helperText={errors.password?.message}
             autoComplete="current-password"
-            value={password}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setPassword(e.target.value)
-            }
           />
-          {error && <Typography color="error">{error}</Typography>}
           <Button
             type="submit"
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2, bgcolor: "darkblue" }}
-            disabled={loading}
+            disabled={isSubmitting}
           >
-            {loading ? "Signing In..." : "Sign In"}
+            {isSubmitting ? "Signing In..." : "Sign In"}
           </Button>
         </Box>
       </Box>
