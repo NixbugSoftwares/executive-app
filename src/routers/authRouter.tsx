@@ -2,6 +2,7 @@ import React, { Suspense, lazy, memo } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 
 // **************************************** Lazy-loaded components for better performance *********************************
+
 const Login = lazy(() => import('../screens/auth/Login'));
 
 

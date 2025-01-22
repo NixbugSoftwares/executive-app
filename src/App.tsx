@@ -1,15 +1,17 @@
 import React from "react";
-import AuthRouter from "./routers/authRouter"; 
-import HomeRouter from "./routers/homeRouter"; 
+import AppRouter from "./routers/AppRouter";
 
 
 
 
 
 const App: React.FC = () => {
-  const isAuthenticated = true; 
-
-  return isAuthenticated ? <HomeRouter /> : <AuthRouter />;
+ 
+  return (
+    <div>
+      <AppRouter />
+    </div>
+  );
 };
 
 export default App;
