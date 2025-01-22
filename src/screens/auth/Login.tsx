@@ -8,22 +8,26 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useNavigate } from "react-router-dom";
 import commonApi from "../../utils/commonApi";
 
+
+// ************************************************************** login form interface ********************************************
 interface ILoginFormInputs {
   username: string;
   password: string;
 }
 
-const LoginPage: React.FC = () => {
-  const navigate = useNavigate();
 
+
+// ************************************************************** login form component ********************************************
+const LoginPage: React.FC = () => {
+
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ILoginFormInputs>({
-    resolver: yupResolver(loginSchema), // Use the imported schema
+    resolver: yupResolver(loginSchema), 
   });
-
   const handleLogin: SubmitHandler<ILoginFormInputs> = async (data) => {
     try {
       console.log("Form Data:", data);
