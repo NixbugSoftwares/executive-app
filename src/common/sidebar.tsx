@@ -24,7 +24,7 @@ const Sidebar = () => {
     {
       title: 'company',
       items: [
-        { label: 'Operator', path: '/opertaor', icon: <EngineeringIcon /> },
+        { label: 'Operator', path: '/operator', icon: <EngineeringIcon /> },
         { label: 'Role', path: '/companyrole', icon: <Diversity3Icon /> },
         { label: 'Route', path: '/busroute', icon: <RouteIcon /> },
         { label: 'fare', path: '/fare',  icon: <CorporateFareIcon /> },

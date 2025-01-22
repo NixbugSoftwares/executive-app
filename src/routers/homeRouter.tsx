@@ -1,4 +1,3 @@
-import App from "../App";
 import React, {Suspense, lazy, memo} from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 
@@ -39,12 +38,11 @@ export type HomeRouteParams = {
       
         <Suspense fallback={<LoadingIndicator />}>
           <Routes>
-            <Route path="/" element={<App />} />
             <Route path="/home" element={<Home />} />
             <Route path="/account" element={<Account />} />
             <Route path="/busstop" element={<BusStop />} />
             <Route path="/exerole" element={<ExeRole />} />
-            <Route path="/opertaor" element={<Operator />} />
+            <Route path="/operator" element={<Operator />} />
             <Route path="/companyrole" element={<CRole />} />
             <Route path="/busroute" element={<BusRoute />} />
             <Route path="/fare" element={<Fare />} />
