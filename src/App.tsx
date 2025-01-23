@@ -1,16 +1,45 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import AppRouter from "./routers/AppRouter";
-
-
-
+import NoNetworkPage from "./common/noNetworkPage";
+import { toast } from "react-toastify";
 
 
 const App: React.FC = () => {
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success("You're online now");
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.error("You're offline now");
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
  
   return (
-    <div>
-      <AppRouter />
-    </div>
+    
+    <Routes>
+    {isOnline ? (
+      <Route path="*" element={<AppRouter />} />
+    ) : (
+      <Route path="*" element={<NoNetworkPage />} />
+    )}
+    
+    <Route path="*" element={<Navigate to={isOnline ? "/" : "/nonetwork"} replace />} />
+  </Routes>
+    
   );
 };
 

@@ -125,13 +125,6 @@ const apiCall = async (
  console.log('====================================');
  console.log(route);
  console.log('====================================');
- const isOnline = navigator.onLine;
- if (!isOnline) {
-  toast.error(
-    'No network connection. Please check your connection and try again.',
-  );
-  return null;
-}
  try {
  const headers = await prepareHeaders(tokenNeeded);
  headers['Content-Type'] = contentType;

@@ -6,10 +6,20 @@ import HomeRouter from "./homeRouter";
 
 
 
-const App: React.FC = () => {
-  const isAuthenticated = false; 
+const AppRouter: React.FC = () => {
+  const isAuthenticated = true; 
 
-  return isAuthenticated ? <HomeRouter /> : <AuthRouter />;
+  if (isAuthenticated) {
+    return (
+      <>
+        <HomeRouter />
+        <AuthRouter />
+      </>
+    );
+  } else {
+    return <AuthRouter />;
+  }
+  
 };
 
-export default App;
+export default AppRouter;
