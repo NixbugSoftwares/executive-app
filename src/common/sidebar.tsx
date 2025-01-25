@@ -82,7 +82,7 @@ const Sidebar = () => {
             color: 'white',
           }}
         >
-          <Typography variant="h5" fontWeight="bold">
+          <Typography variant="h5" fontWeight="bold" fontSize={{ xs: '1rem', sm: '1.5rem'   }}>
             EnteBus
           </Typography>
         </Box>
