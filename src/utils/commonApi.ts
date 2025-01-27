@@ -10,7 +10,7 @@ import localStorageHelper from './localStorageHelper';
 // console.log('Api===>',API_BASE);
 // export const STRIPE_P_KEY= Config.STRIPE_KEY;
 
-export const base_URL = 'http://192.168.0.67:8080'; //base URL
+export const base_URL = ' http://192.168.0.251:8080'; //base URL
 
 //******************************************************Token **************************************** */
 const getAuthTocken = async () => {
