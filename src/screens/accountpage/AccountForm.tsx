@@ -5,11 +5,11 @@ const AccountCreationForm = () => {
   const [formValues, setFormValues] = useState({
     username: "",
     password: "",
-    gender: "",
     fullName: "",
-    designation: "",
     phoneNumber: "",
     email: "",
+    gender: "",
+    designation: "",
   });
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
@@ -65,21 +65,7 @@ const AccountCreationForm = () => {
         variant="outlined"
         required
       />
-
-      <FormControl>
-        <InputLabel>Gender</InputLabel>
-        <Select
-          name="gender"
-          value={formValues.gender}
-        //   onChange={handleChange}
-          required
-        >
-          <MenuItem value="male">Male</MenuItem>
-          <MenuItem value="female">Female</MenuItem>
-          <MenuItem value="other">Other</MenuItem>
-        </Select>
-      </FormControl>
-
+      
       <TextField
         label="Full Name"
         name="fullName"
@@ -88,16 +74,7 @@ const AccountCreationForm = () => {
         variant="outlined"
         required
       />
-
-      <TextField
-        label="Designation"
-        name="designation"
-        value={formValues.designation}
-        onChange={handleChange}
-        variant="outlined"
-        required
-      />
-
+      
       <TextField
         label="Phone Number"
         name="phoneNumber"
@@ -117,6 +94,31 @@ const AccountCreationForm = () => {
         variant="outlined"
         required
       />
+
+      <FormControl>
+        <InputLabel>Gender</InputLabel>
+        <Select
+          name="gender"
+          value={formValues.gender}
+        //   onChange={handleChange}
+          required
+        >
+          <MenuItem value="male">Male</MenuItem>
+          <MenuItem value="female">Female</MenuItem>
+          <MenuItem value="other">Other</MenuItem>
+        </Select>
+      </FormControl>
+
+
+      <TextField
+        label="Designation"
+        name="designation"
+        value={formValues.designation}
+        onChange={handleChange}
+        variant="outlined"
+        required
+      />
+
 
       <Button type="submit" variant="contained" color="success" fullWidth>
         Create Account
