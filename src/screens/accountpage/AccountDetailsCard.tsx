@@ -48,7 +48,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <PersonIcon color="secondary" sx={{ mr: 1 }} />
           <Typography variant="body2" color="textSecondary">
-            Username: {account.username}
+            <b>Username</b>: {account.username}
           </Typography>
         </Box>
 
@@ -56,7 +56,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <EmailIcon color="action" sx={{ mr: 1 }} />
           <Typography variant="body2" color="textSecondary">
-            Email: {account.email}
+            <b>Email</b>: {account.email}
           </Typography>
         </Box>
 
@@ -64,7 +64,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <PhoneIcon color="action" sx={{ mr: 1 }} />
           <Typography variant="body2" color="textSecondary">
-            Phone: {account.phoneNumber}
+           <b>Phone</b>: {account.phoneNumber}
           </Typography>
         </Box>
 
@@ -72,7 +72,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <GenderIcon color="action" sx={{ mr: 1 }} />
           <Typography variant="body2" color="textSecondary">
-            Gender: {account.gender}
+            <b>Gender</b>: {account.gender}
           </Typography>
         </Box>
 
@@ -80,7 +80,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <WorkIcon color="action" sx={{ mr: 1 }} />
           <Typography variant="body2" color="textSecondary">
-            Designation: {account.designation}
+            <b>Designation</b>: {account.designation}
           </Typography>
         </Box>
 
@@ -88,7 +88,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <StatusIcon color={account.status === "Active" ? "success" : "error"} sx={{ mr: 1 }} />
           <Typography variant="body2" color="textSecondary">
-            Status: {account.status}
+            <b>Status</b>: {account.status}
           </Typography>
         </Box>
       </CardContent>
