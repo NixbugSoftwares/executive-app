@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem, Typography } from "@mui/material";
-
+import { useNavigate } from "react-router-dom";
 const AccountCreationForm = () => {
   const [formValues, setFormValues] = useState({
     username: "",
@@ -19,12 +19,18 @@ const AccountCreationForm = () => {
       [name!]: value,
     }));
   };
-
+ 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     console.log("Form submitted:", formValues);
     alert("Account created successfully!");
   };
+
+  const navigate = useNavigate();
+
+  const handleNavigate = () => {
+    navigate("/account");
+  }
 
   return (
     <Box
@@ -33,17 +39,17 @@ const AccountCreationForm = () => {
       sx={{
         display: "flex",
         flexDirection: "column",
-        gap: 2,
-        width: 700,
+        gap: 1.5, // Reduce gap between fields
+        width: 500, // Narrower form
         margin: "auto",
-        mt: 5,
+        mt: 10,
         p: 2,
         border: "1px solid #ccc",
         borderRadius: "8px",
         boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
       }}
     >
-      <Typography variant="h5" align="center">
+      <Typography variant="h6" align="center" gutterBottom>
         Account Creation Form
       </Typography>
 
@@ -53,6 +59,7 @@ const AccountCreationForm = () => {
         value={formValues.username}
         onChange={handleChange}
         variant="outlined"
+        size="small" // Smaller input size
         required
       />
 
@@ -63,18 +70,20 @@ const AccountCreationForm = () => {
         value={formValues.password}
         onChange={handleChange}
         variant="outlined"
+        size="small"
         required
       />
-      
+
       <TextField
         label="Full Name"
         name="fullName"
         value={formValues.fullName}
         onChange={handleChange}
         variant="outlined"
+        size="small"
         required
       />
-      
+
       <TextField
         label="Phone Number"
         name="phoneNumber"
@@ -82,6 +91,7 @@ const AccountCreationForm = () => {
         value={formValues.phoneNumber}
         onChange={handleChange}
         variant="outlined"
+        size="small"
         required
       />
 
@@ -92,16 +102,16 @@ const AccountCreationForm = () => {
         value={formValues.email}
         onChange={handleChange}
         variant="outlined"
+        size="small"
         required
       />
 
-      <FormControl>
+      <FormControl size="small" required>
         <InputLabel>Gender</InputLabel>
         <Select
           name="gender"
           value={formValues.gender}
         //   onChange={handleChange}
-          required
         >
           <MenuItem value="male">Male</MenuItem>
           <MenuItem value="female">Female</MenuItem>
@@ -109,20 +119,25 @@ const AccountCreationForm = () => {
         </Select>
       </FormControl>
 
-
       <TextField
         label="Designation"
         name="designation"
         value={formValues.designation}
         onChange={handleChange}
         variant="outlined"
+        size="small"
         required
       />
+        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2, gap: 1 }}>
+              <Button type="submit" variant="contained" color="secondary" fullWidth onClick={() => {handleNavigate()}}>
+                Account List
+            </Button>
+            <Button type="submit" variant="contained" color="success" fullWidth>
+                Create Account
+            </Button>
 
-
-      <Button type="submit" variant="contained" color="success" fullWidth>
-        Create Account
-      </Button>
+        </Box>
+      
     </Box>
   );
 };
