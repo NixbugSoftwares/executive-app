@@ -68,49 +68,34 @@ const prepareHeaders = async (tokenNeeded: any) => {
 //****************************************************** response handler **************************************** */
 
 const handleResponse = async (response: any) => {
- const responseData = response?.data?.data;
- if (responseData?.token) {
- await localStorageHelper.setEncryptedData('@token', responseData.token);
- await localStorageHelper.setEncryptedData(
- '@token_expiry',
- responseData.token_expiry,
- );
-
-//  if (responseData?.refresh_token) {
-//  await localStorageHelper.setEncryptedData(
-//  '@refresh_token',
-//  responseData.refresh_token,
-//  );
-//  }
- }
- return response?.data;
+  return response?.data; // Fix for response structure
 };
 
 
 //******************************************************  errorResponse handler  **************************************** */
 const handleErrorResponse = (errorResponse: any) => {
   if (!errorResponse) {
-    toast.error('Network error. Please try again.');
-    return {error: 'Network error'};
+    toast.error("Network error. Please try again.");
+    return { error: "Network error" };
   }
 
-  const {status, data} = errorResponse;
-  const errorMessage = data?.message || 'Api Failed';
-  console.log('dataaaaaa===>', status, Array.isArray(data?.message));
+  const { status, data } = errorResponse;
+  const errorMessage = data?.message || "Api Failed";
 
-  if (status == 400 && Array.isArray(data?.message)) {
+  if (status === 400 && Array.isArray(data?.message)) {
     const validationErrors = data.message
-      .map((err: any) => Object.values(err.constraints).join(', '))
-      .join(' | ');
-    console.log('validation====>', validationErrors);
+      .map((err: any) => Object.values(err.constraints).join(", "))
+      .join(" | ");
     toast.error(validationErrors);
+    return { error: validationErrors };
   } else {
-    console.log('errormessagge====>', errorMessage);
-    if(status!=500){
+    if (status !== 500) {
       toast.error(errorMessage);
     }
+    return { error: errorMessage }; // Return error message for better debugging
   }
  };
+
 
 
 //******************************************************  apiCall  **************************************** 

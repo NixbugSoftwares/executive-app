@@ -46,16 +46,21 @@ const LoginPage: React.FC = () => {
 
       console.log("response====>", response);
 
-      if (response.data?.access_token) {
-        localStorage.setItem("access_token", response.data.access_token);
+      if (response?.access_token) {
+        localStorage.setItem("access_token", response.access_token);
         navigate("/home");
       } else {
-        console.error("Login failed");
+        console.error("Login failed: Invalid token");
       }
     } catch (error) {
-      console.error("Error:", error);
+      if (error instanceof Error) {
+        console.error("Error:", error.message); // Safely access the message property
+      } else {
+        console.error("An unexpected error occurred:", error);
+      }
     }
   };
+
 
   return (
     <Container component="main" maxWidth="xs">
