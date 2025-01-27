@@ -94,7 +94,7 @@ const handleErrorResponse = (errorResponse: any) => {
     }
     return { error: errorMessage }; // Return error message for better debugging
   }
- };
+};
 
 
 

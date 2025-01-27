@@ -31,11 +31,11 @@ const LoginPage: React.FC = () => {
   const handleLogin: SubmitHandler<ILoginFormInputs> = async (data) => {
     try {
       console.log("Form Data:", data);
-
+  
       const formData = new FormData();
       formData.append("username", data.username);
       formData.append("password", data.password);
-
+  
       const response = await commonApi.apiCall(
         "POST",
         "/executive/token",
@@ -43,9 +43,9 @@ const LoginPage: React.FC = () => {
         false,
         "multipart/form-data"
       );
-
+  
       console.log("response====>", response);
-
+  
       if (response?.access_token) {
         localStorage.setItem("access_token", response.access_token);
         navigate("/home");
@@ -60,7 +60,7 @@ const LoginPage: React.FC = () => {
       }
     }
   };
-
+  
 
   return (
     <Container component="main" maxWidth="xs">
