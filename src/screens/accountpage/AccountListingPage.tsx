@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography, Box, TextField, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography, Box, TextField, Dialog, DialogActions, DialogContent, DialogTitle, Chip } from "@mui/material";
 import AccountDetailsCard from "./AccountDetailsCard";  
 
 const AccountListingTable = () => {
@@ -10,7 +10,7 @@ const AccountListingTable = () => {
     { id: 2, fullName: "Ashin joseph", username: "Ashin", password: "ashin123", gender: "Female", designation: "Python", email: "ashin@example.com", phoneNumber: "987-654-3210", status: "Active" },
     { id: 3, fullName: "Reshma R", username: "reshma ", password: "reshma123", gender: "Female", designation: "python", email: "rershma@example.com", phoneNumber: "555-555-5555", status: "Active" },
     { id: 4, fullName: "Al mehaboob", username: " mehaboob ", password: "al123", gender: "Male", designation: "React", email: "allu@example.com", phoneNumber: "2345678901", status: "Active" },
-    { id: 5, fullName: "Thinkal VB", username: "tinkal ", password: "thinkal123", gender: "Male", designation: "Python", email: "thinkal@example.com", phoneNumber: "555-555-5555", status: "inactive" },
+    { id: 5, fullName: "Thinkal VB", username: "thinkal ", password: "thinkal123", gender: "Male", designation: "Python", email: "thinkal@example.com", phoneNumber: "555-555-5555", status: "inactive" },
     { id: 6, fullName: "subin Raj", username: "subin ", password: "subin123", gender: "Male", designation: "React-Native", email: "subin@example.com", phoneNumber: "555-555-5555", status: "inactive" },
     { id: 7, fullName: "Ganesh Parthan", username: "ganeshan ", password: "ganeshan123", gender: "Male", designation: "python", email: "ganeshan@example.com", phoneNumber: "555-555-5555", status: "inactive" },
   ];
@@ -109,7 +109,9 @@ const AccountListingTable = () => {
                   <TableCell>{row.username}</TableCell>
                   <TableCell>{row.email}</TableCell>
                   <TableCell>{row.designation}</TableCell>
-                  <TableCell>{row.status}</TableCell>
+                  <TableCell>
+                    <Chip label={row.status} color={row.status === "Active" ? "success" : "error"} variant="outlined" />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
