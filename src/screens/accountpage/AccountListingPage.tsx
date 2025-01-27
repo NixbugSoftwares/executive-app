@@ -11,8 +11,8 @@ const AccountListingTable = () => {
     { id: 3, fullName: "Reshma R", username: "reshma ", password: "reshma123", gender: "Female", designation: "python", email: "rershma@example.com", phoneNumber: "555-555-5555", status: "Active" },
     { id: 4, fullName: "Al mehaboob", username: " mehaboob ", password: "al123", gender: "Male", designation: "React", email: "allu@example.com", phoneNumber: "2345678901", status: "Active" },
     { id: 5, fullName: "Thinkal VB", username: "tinkal ", password: "thinkal123", gender: "Male", designation: "Python", email: "thinkal@example.com", phoneNumber: "555-555-5555", status: "inactive" },
-    { id: 5, fullName: "subin Raj", username: "subin ", password: "subin123", gender: "Male", designation: "React-Native", email: "subin@example.com", phoneNumber: "555-555-5555", status: "inactive" },
-    { id: 5, fullName: "Ganesh Parthan", username: "ganeshan ", password: "ganeshan123", gender: "Male", designation: "python", email: "ganeshan@example.com", phoneNumber: "555-555-5555", status: "inactive" },
+    { id: 6, fullName: "subin Raj", username: "subin ", password: "subin123", gender: "Male", designation: "React-Native", email: "subin@example.com", phoneNumber: "555-555-5555", status: "inactive" },
+    { id: 7, fullName: "Ganesh Parthan", username: "ganeshan ", password: "ganeshan123", gender: "Male", designation: "python", email: "ganeshan@example.com", phoneNumber: "555-555-5555", status: "inactive" },
   ];
 
   const navigate = useNavigate();
