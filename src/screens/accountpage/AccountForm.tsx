@@ -10,7 +10,6 @@ const AccountCreationForm = () => {
     designation: "",
     phoneNumber: "",
     email: "",
-    status: "",
   });
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
@@ -119,20 +118,7 @@ const AccountCreationForm = () => {
         required
       />
 
-      <FormControl>
-        <InputLabel>Status</InputLabel>
-        <Select
-          name="status"
-          value={formValues.status}
-        //   onChange={handleChange}
-          required
-        >
-          <MenuItem value="active">Active</MenuItem>
-          <MenuItem value="inactive">Inactive</MenuItem>
-        </Select>
-      </FormControl>
-
-      <Button type="submit" variant="contained" color="primary" fullWidth>
+      <Button type="submit" variant="contained" color="success" fullWidth>
         Create Account
       </Button>
     </Box>

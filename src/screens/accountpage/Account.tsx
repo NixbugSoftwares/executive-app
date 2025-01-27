@@ -1,18 +1,26 @@
-import React from 'react';
-import Sidebar from '../../common/sidebar';
-import { Box } from '@mui/material';
-import AccountCreationForm from './AccountForm';
-const AccountPage: React.FC = () => {
-  return(
-    <Box>
-      <Sidebar/>
-    <h1>AccountPage</h1>  
-      <AccountCreationForm/>
-    </Box>
+import React from "react";
+import Sidebar from "../../common/sidebar";
+import { Box } from "@mui/material";
+import AccountListingTable from "./AccountListingPage";
 
-  )
-  
+const AccountPage: React.FC = () => {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        height: "100vh",
+        width: "100%",
+        scrollBehavior: "auto",
+      }}
+    >
+      <Sidebar />
+      <Box sx={{ width: "100%", p: 3 }}>
+        <AccountListingTable />
+      </Box>
+
+
+    </Box>
+  );
 };
 
 export default AccountPage;
-
