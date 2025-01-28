@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography, Box, TextField, Dialog, DialogActions, DialogContent, DialogTitle, Chip } from "@mui/material";
 import {  Add as AddIcon } from "@mui/icons-material"
 import { useNavigate } from 'react-router-dom';
+import RoleDetailsCard from './RoleDetailCard';
 function RoleListingPage() {
     const data = [
         { roleid: 1, Rolename: "role name 1", manageexecutive: "YES", managerole: "NO", managelandmark: "NO", managecompany: "YES"  },
@@ -16,7 +17,39 @@ function RoleListingPage() {
       const handleNavigate = () => {
         navigate("/exerole/create");
       }
-    
+
+      const [open, setOpen]= useState(false)
+      const [selecteRole, setSelectedRole]= useState(null)
+
+      const handleRowClick = (role: any) =>{
+        setSelectedRole(role)
+        setOpen(true)
+      }
+      const handleClose = () => {
+        setOpen(false);
+        setSelectedRole(null);
+      };
+      const RoleDetailsModal = () => (
+        <Dialog open={open} onClose={handleClose}>
+          <DialogTitle>Account Details</DialogTitle>
+          <DialogContent>
+            {selecteRole && (
+              <RoleDetailsCard
+                role={selecteRole}
+                onBack={handleClose} // Back function
+                onUpdate={(id: number) => console.log("Update account", id)} // Update logic
+                onDelete={(id: number) => console.log("Delete account", id)} // Delete logic
+              />
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleClose} color="primary">
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+      );
+
     return (
         <Box sx={{ width: "100%", margin: "auto", mt: 5, mb: 5 }}>
           <Typography variant="h5" align="center" gutterBottom>
@@ -88,6 +121,8 @@ function RoleListingPage() {
               </Table>
             </TableContainer>
           </Box>
+
+          <RoleDetailsModal/>
     
         </Box>
   )
