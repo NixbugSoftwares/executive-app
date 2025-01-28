@@ -147,7 +147,7 @@ const RoleCreationForm: React.FC = () => {
 
 
             <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2, gap: 1 }}>
-                <Button type="submit" variant="contained" color="secondary" fullWidth onClick={() => {handleNavigate()}}>
+                <Button type="submit" variant="contained" sx={{bgcolor:"darkblue"}} fullWidth onClick={() => {handleNavigate()}}>
                     Role List
                 </Button>
                 <Button type="submit" variant="contained" color="success" fullWidth>
