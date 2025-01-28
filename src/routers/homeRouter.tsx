@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-d
 const Home = lazy(() => import('../screens/homepage/home'));
 const Account = lazy(() => import('../screens/accountpage/Account'));
 const BusStop = lazy(() => import('../screens/busstoppage/BusStop'));
+const Landmark = lazy(() => import('../screens/landmarkpage/LandMarkPage'));
 const ExeRole = lazy(() => import('../screens/executiveRolepage/RolePage'));
 const Operator = lazy(() => import('../screens/operatorpage/Operatorpage'));
 const CRole = lazy(() => import('../screens/companyRolepage/CRolePage'));
@@ -19,6 +20,7 @@ export type HomeRouteParams = {
     home: undefined;
     account: undefined;
     busstop: undefined;
+    landmark: undefined;
     exerole: undefined;
     operator: undefined;
     companyrole: undefined;
@@ -45,6 +47,7 @@ export type HomeRouteParams = {
             <Route path="/home" element={<Home />} />
             <Route path="/account" element={<Account />} />
             <Route path="/busstop" element={<BusStop />} />
+            <Route path="/landmark" element={<Landmark />} />
             <Route path="/exerole" element={<ExeRole />} />
             <Route path="/operator" element={<Operator />} />
             <Route path="/companyrole" element={<CRole />} />

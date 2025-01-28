@@ -5,6 +5,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import Diversity3Icon from '@mui/icons-material/Diversity3';
 import ModeOfTravelIcon from '@mui/icons-material/ModeOfTravel';
+import RoomIcon from '@mui/icons-material/Room';
 import EngineeringIcon from '@mui/icons-material/Engineering';
 import RouteIcon from '@mui/icons-material/Route';
 import CorporateFareIcon from '@mui/icons-material/CorporateFare';
@@ -24,6 +25,7 @@ const Sidebar = () => {
       items: [
         { label: 'Account', path: '/account', icon: <AccountCircleOutlinedIcon /> },
         { label: 'Role', path: '/exerole', icon: <Diversity3Icon /> },
+        { label: 'Land mark', path: '/landmark', icon: <RoomIcon /> },
         { label: 'Bus Stop', path: '/busstop', icon: <ModeOfTravelIcon /> },
       ],
     },
