@@ -58,7 +58,7 @@ export type HomeRouteParams = {
 
 
 ********************************************************************Account**********************************************
-            <Route path="/AccountCreationForm" element={<AccountCreationForm />} />
+            <Route path="/Account/create" element={<AccountCreationForm />} />
 
 
 

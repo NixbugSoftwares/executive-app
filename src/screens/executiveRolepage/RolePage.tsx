@@ -1,14 +1,25 @@
 import React from 'react';
 import Sidebar from '../../common/sidebar';
 import { Box } from '@mui/material';
+import RoleListingPage from './RoleListingPage';
 const RolePage: React.FC = () => {
-  return(
-    <Box>
-      <Sidebar/>
-      <h1>RolePage/executive</h1>
-    </Box>
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        height: "100vh",
+        width: "100%",
+        scrollBehavior: "auto",
+      }}
+    >
+      <Sidebar />
+      <Box sx={{ width: "100%", p: 3 }}>
+        <RoleListingPage />
+      </Box>
 
-  )
+
+    </Box>
+  );
   
 };
 

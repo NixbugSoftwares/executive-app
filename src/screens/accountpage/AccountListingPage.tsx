@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import  { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography, Box, TextField, Dialog, DialogActions, DialogContent, DialogTitle, Chip } from "@mui/material";
+import {  Add as AddIcon } from "@mui/icons-material";
 import AccountDetailsCard from "./AccountDetailsCard";  
 
 const AccountListingTable = () => {
@@ -17,7 +18,7 @@ const AccountListingTable = () => {
 
   const navigate = useNavigate();
   const handleNavigate = () => {
-    navigate("/AccountCreationForm"); 
+    navigate("/Account/create"); 
   };
 
  
@@ -85,6 +86,7 @@ const AccountListingTable = () => {
           sx={{ ml: 2 }}
           variant="contained"
           color="success"
+          startIcon={<AddIcon />}
           onClick={handleNavigate}
         >
           New Account
