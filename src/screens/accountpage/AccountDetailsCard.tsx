@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardActions, Typography, Button, Box,} from "@mui/material";
 import {
   Edit as EditIcon,
@@ -29,6 +29,8 @@ interface AccountCardProps {
   onBack: () => void;
 }
 
+
+
 const AccountDetailsCard: React.FC<AccountCardProps> = ({
   account,
   onUpdate,
@@ -48,7 +50,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <PersonIcon color="secondary" sx={{ mr: 1 }} />
           <Typography variant="body2" color="textSecondary">
-            <b>Username</b>: {account.username}
+            Username: {account.username}
           </Typography>
         </Box>
 
@@ -56,7 +58,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <EmailIcon color="action" sx={{ mr: 1 }} />
           <Typography variant="body2" color="textSecondary">
-            <b>Email</b>: {account.email}
+            Email: {account.email}
           </Typography>
         </Box>
 
@@ -64,7 +66,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <PhoneIcon color="action" sx={{ mr: 1 }} />
           <Typography variant="body2" color="textSecondary">
-           <b>Phone</b>: {account.phoneNumber}
+            Phone: {account.phoneNumber}
           </Typography>
         </Box>
 
@@ -72,7 +74,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <GenderIcon color="action" sx={{ mr: 1 }} />
           <Typography variant="body2" color="textSecondary">
-            <b>Gender</b>: {account.gender}
+            Gender: {account.gender}
           </Typography>
         </Box>
 
@@ -80,7 +82,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <WorkIcon color="action" sx={{ mr: 1 }} />
           <Typography variant="body2" color="textSecondary">
-            <b>Designation</b>: {account.designation}
+            Designation: {account.designation}
           </Typography>
         </Box>
 
@@ -88,7 +90,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <StatusIcon color={account.status === "Active" ? "success" : "error"} sx={{ mr: 1 }} />
           <Typography variant="body2" color="textSecondary">
-            <b>Status</b>: {account.status}
+            Status: {account.status}
           </Typography>
         </Box>
       </CardContent>
