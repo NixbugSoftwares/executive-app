@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem, Typography } from "@mui/material";
+import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem, Typography, SelectChangeEvent } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 const AccountCreationForm = () => {
   const [formValues, setFormValues] = useState({
@@ -19,12 +19,23 @@ const AccountCreationForm = () => {
       [name!]: value,
     }));
   };
+  
+
+  const handleSelectChange = (event: SelectChangeEvent<string>) => {
+    const { name, value } = event.target;
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      [name!]: value,
+    }));
+  };
  
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     console.log("Form submitted:", formValues);
     alert("Account created successfully!");
   };
+
+
 
   const navigate = useNavigate();
 
@@ -111,7 +122,7 @@ const AccountCreationForm = () => {
         <Select
           name="gender"
           value={formValues.gender}
-        //   onChange={handleChange}
+          onChange={handleSelectChange}
         >
           <MenuItem value="male">Male</MenuItem>
           <MenuItem value="female">Female</MenuItem>
