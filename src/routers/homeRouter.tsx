@@ -12,6 +12,7 @@ const BusRoute = lazy(() => import('../screens/busroutepage/RoutePage'));
 const Fare = lazy(() => import('../screens/farepage/FarePage'));
 const Bus = lazy(() => import('../screens/buspage/BusPage'));
 const AccountCreationForm = lazy(() => import('../screens/accountpage/AccountForm'));
+const ExeRoleCreation = lazy(() => import('../screens/executiveRolepage/RoleCreatingForm'));
 
 //***************************************define route parameters******************************** 
 export type HomeRouteParams = {
@@ -25,6 +26,7 @@ export type HomeRouteParams = {
     fare: undefined;
     bus: undefined;
     AccountCreationForm: undefined;
+    exerolecreate: undefined;
   };
 
 
@@ -52,8 +54,16 @@ export type HomeRouteParams = {
             <Route path="*" element={<Navigate to="/" />} />
 
 
-{/* ********************************************************************Accout********************************************** */}
+********************************************************************Account**********************************************
             <Route path="/AccountCreationForm" element={<AccountCreationForm />} />
+
+
+
+
+
+***************************************************************** executive Role ****************************************
+            <Route path="/exerole/create" element={<ExeRoleCreation />} />
+
 
 
 
