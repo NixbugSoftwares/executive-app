@@ -2,8 +2,19 @@ import React, { useState } from "react";
 import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem, Typography, SelectChangeEvent } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../common/sidebar";
+
+
+type AccountFormValues = {
+  username: string;
+  password: string;
+  fullName: string;
+  phoneNumber: string;
+  email: string;
+  gender: string;
+  designation: string;
+}
 const AccountCreationForm = () => {
-  const [formValues, setFormValues] = useState({
+  const [formValues, setFormValues] = useState<AccountFormValues>({
     username: "",
     password: "",
     fullName: "",
