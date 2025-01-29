@@ -97,9 +97,7 @@ const LandmarkAddForm = () => {
         variant="outlined"
         size="small"
         required
-        InputProps={{
-          readOnly: true, 
-        }}
+        slotProps={{ input: { readOnly: true } }}
       />
 
       <FormControl size="small" required fullWidth>
