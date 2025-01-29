@@ -125,6 +125,7 @@ const AccountCreationForm = () => {
           name="gender"
           value={formValues.gender}
           onChange={handleSelectChange}
+          label="Gender"
         >
           <MenuItem value="male">Male</MenuItem>
           <MenuItem value="female">Female</MenuItem>
