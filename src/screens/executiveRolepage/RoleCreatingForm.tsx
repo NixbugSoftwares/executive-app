@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { TextField, Button, Box, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-
+import Sidebar from "../../common/sidebar";
 
 const RoleCreationForm: React.FC = () => {
 
@@ -63,6 +63,7 @@ const RoleCreationForm: React.FC = () => {
         }}
 
         >
+          <Sidebar />
             <Typography variant="h6" align="center" gutterBottom >
                 Create Role
             </Typography>

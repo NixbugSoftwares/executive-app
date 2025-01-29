@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem, Typography, SelectChangeEvent } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import Sidebar from "../../common/sidebar";
 const AccountCreationForm = () => {
   const [formValues, setFormValues] = useState({
     username: "",
@@ -60,6 +61,7 @@ const AccountCreationForm = () => {
         boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
       }}
     >
+      <Sidebar/>
       <Typography variant="h6" align="center" gutterBottom>
         Account Creation Form
       </Typography>
