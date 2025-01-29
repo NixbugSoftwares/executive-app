@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem, Typography, SelectChangeEvent } from "@mui/material";
+import { TextField, Button, Box, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-
 
 
 const RoleCreationForm: React.FC = () => {
@@ -9,10 +8,10 @@ const RoleCreationForm: React.FC = () => {
 
     const [formValues, setFormValues] = useState({
         roleName: "",
-        manageExecutive: "",
-        manageRole: "",
-        managelandmark: "",
-        managecompany: "",
+        manageExecutive: false,
+        manageRole: false,
+        managelandmark: false,
+        managecompany: false,
     })
 
     const handleTextFieldChange = (
@@ -25,11 +24,10 @@ const RoleCreationForm: React.FC = () => {
         }));
       };
 
-      const handleSelectChange = (event: SelectChangeEvent<string>) => {
-        const { name, value } = event.target;
+      const handleToggle = (field: string) => {
         setFormValues((prevValues) => ({
           ...prevValues,
-          [name!]: value,
+          [field]: !prevValues[field as keyof typeof formValues],
         }));
       };
 
@@ -80,70 +78,22 @@ const RoleCreationForm: React.FC = () => {
             >
             </TextField>
 
-            <FormControl>
-                <InputLabel>Manage Executive</InputLabel>
-                <Select
-                label="Manage Executive"
-                name="manageExecutive"
-                value={formValues.manageExecutive}
-                onChange={handleSelectChange}
-                variant="outlined"
-                size="small"
-                required
-                >
-                    <MenuItem value="Yes">Yes</MenuItem>
-                    <MenuItem value="No">No</MenuItem>
-                </Select>
-            </FormControl>
-
-            <FormControl>
-                <InputLabel>Manage Role</InputLabel>
-                <Select
-                label="Manage Role"
-                name="manageRole"
-                value={formValues.manageRole}
-                onChange={handleSelectChange}
-                variant="outlined"
-                size="small"
-                required
-                >
-                    <MenuItem value="Yes">Yes</MenuItem>
-                    <MenuItem value="No">No</MenuItem>
-                </Select>
-            </FormControl>
-
-            <FormControl>
-                <InputLabel>Manage Landmark</InputLabel>
-                <Select
-                label="Manage Landmark"
-                name="manageLandmark"
-                value={formValues.managelandmark}
-                onChange={handleSelectChange}
-                variant="outlined"
-                size="small"
-                required
-                >
-                    <MenuItem value="Yes">Yes</MenuItem>
-                    <MenuItem value="No">No</MenuItem>
-                </Select>
-            </FormControl>
-
-
-            <FormControl>
-                <InputLabel>Manage Company</InputLabel>
-                <Select
-                label="Manage Company"
-                name="manageCompany"
-                value={formValues.managecompany}
-                onChange={handleSelectChange}
-                variant="outlined"
-                size="small"
-                required
-                >
-                    <MenuItem value="Yes">Yes</MenuItem>
-                    <MenuItem value="No">No</MenuItem>
-                </Select>
-            </FormControl>
+            {["manageExecutive", "manageRole", "manageLandmark", "manageCompany"].map((field) => (
+        <Box key={field} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Typography>{field.replace("manage", "Manage")}</Typography>
+          <Button
+            variant="contained"
+            onClick={() => handleToggle(field)}
+            sx={{
+              bgcolor: formValues[field as keyof typeof formValues] ? "green" : "gray",
+              color: "white",
+              minWidth: 80,
+            }}
+          >
+            {formValues[field as keyof typeof formValues] ? "Yes" : "No"}
+          </Button>
+        </Box>
+      ))}
 
 
             <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2, gap: 1 }}>
