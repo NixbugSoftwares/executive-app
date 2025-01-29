@@ -14,6 +14,7 @@ const Fare = lazy(() => import('../screens/farepage/FarePage'));
 const Bus = lazy(() => import('../screens/buspage/BusPage'));
 const AccountCreationForm = lazy(() => import('../screens/accountpage/AccountForm'));
 const ExeRoleCreation = lazy(() => import('../screens/executiveRolepage/RoleCreatingForm'));
+const LandmarkAddForm = lazy(() => import('../screens/landmarkpage/LandmarkAddForm'));
 
 //***************************************define route parameters******************************** 
 export type HomeRouteParams = {
@@ -57,18 +58,20 @@ export type HomeRouteParams = {
             <Route path="*" element={<Navigate to="/" />} />
 
 
-********************************************************************Account**********************************************
+{/* ********************************************************************Account********************************************** */}
             <Route path="/Account/create" element={<AccountCreationForm />} />
 
 
 
 
 
-***************************************************************** executive Role ****************************************
+{/* ***************************************************************** executive Role **************************************** */}
             <Route path="/exerole/create" element={<ExeRoleCreation />} />
 
 
+{/* ******************************************************************Landmark********************************************** */}
 
+            <Route path="/landmark/create" element={<LandmarkAddForm />} />
 
 
           </Routes>

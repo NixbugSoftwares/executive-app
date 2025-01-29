@@ -7,6 +7,7 @@ function LandMarkPage() {
     <Box>
       <Sidebar/>
       <h1>Land mark</h1>
+      <a href="/landmark/create">addform</a>
     </Box>
   )
 }
