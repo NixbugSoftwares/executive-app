@@ -3,8 +3,16 @@ import React, { useState } from "react";
 import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem, Typography, SelectChangeEvent } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../common/sidebar";
+
+
+type LandmarkFormValues = {
+  name: string;
+  boundary: string;
+  status: string;
+  importance: string;
+};
 const LandmarkAddForm = () => {
-  const [formValues, setFormValues] = useState({
+  const [formValues, setFormValues] = useState<LandmarkFormValues>({
     name: "",
     boundary: "",
     status: "Verifying",
