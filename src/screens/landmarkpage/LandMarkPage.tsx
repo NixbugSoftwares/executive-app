@@ -1,13 +1,14 @@
 import React from 'react'
 import Sidebar from '../../common/sidebar';
 import { Box } from '@mui/material';
+import LandmarkListing from './LandmarkListingPage';
 
 function LandMarkPage() {
   return (
     <Box>
       <Sidebar/>
-      <h1>Land mark</h1>
-      <a href="/landmark/create">addform</a>
+      <LandmarkListing />
+
     </Box>
   )
 }
