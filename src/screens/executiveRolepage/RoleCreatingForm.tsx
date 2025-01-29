@@ -3,10 +3,17 @@ import { TextField, Button, Box, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../common/sidebar";
 
+
+
+type RoleFormValues = {
+  roleName: string;
+  manageExecutive: boolean;
+  manageRole: boolean;
+  managelandmark: boolean;
+  managecompany: boolean;
+}
 const RoleCreationForm: React.FC = () => {
-
-
-    const [formValues, setFormValues] = useState({
+    const [formValues, setFormValues] = useState<RoleFormValues>({
         roleName: "",
         manageExecutive: false,
         manageRole: false,
