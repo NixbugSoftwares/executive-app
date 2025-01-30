@@ -10,13 +10,14 @@ import { Add as AddIcon } from "@mui/icons-material";
 interface Landmark {
   id: number;
   name: string;
+  location: string;
   status: "verified" | "unverified";
   importance: "low" | "medium" | "high";
 }
 
 const LandmarkListing: React.FC = () => {
   const [data] = useState<Landmark[]>([
-    { id: 1, name: "Landmark1", status: "verified", importance: "low" },
+    { id: 1, name: "Landmark1", location: "location1", status: "verified", importance: "low" },
   ]);
 
   const navigate = useNavigate();
@@ -25,12 +26,12 @@ const LandmarkListing: React.FC = () => {
   };
 
   return (
-    <Box sx={{ width: "80%", margin: "auto", mt: 5, mb: 5 }}>
+    <Box sx={{ width: "100%", margin: "auto", mt: 5, mb: 5 }}>
       <Typography variant="h5" align="center" gutterBottom>
-        Accounts
+        Land Marks
       </Typography>
 
-      {/* Search Bar & Account Creation Button */}
+      {/* Search Bar & land mark Creation Button */}
       <Box
         sx={{
           display: "flex",
@@ -46,7 +47,6 @@ const LandmarkListing: React.FC = () => {
           sx={{ width: "40%" }}
         />
 
-        {/* New Account Button */}
         <Button
           sx={{ ml: 2 }}
           variant="contained"
@@ -58,21 +58,26 @@ const LandmarkListing: React.FC = () => {
         </Button>
       </Box>
 
-      {/* Account Listing Table */}
+      {/* landmark Listing Table */}
       <Box>
         <TableContainer component={Paper} sx={{ minWidth: 600 }}>
           <Table sx={{ width: "100%" }}>
             <TableHead>
               <TableRow>
+                <TableCell><b>Landmark ID</b></TableCell>
                 <TableCell><b>Name</b></TableCell>
+                <TableCell><b>Location</b></TableCell>
                 <TableCell><b>Status</b></TableCell>
                 <TableCell><b>Importance</b></TableCell>
+                <TableCell><b>Action</b></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {data.map((row) => (
                 <TableRow key={row.id} sx={{ cursor: "pointer" }} hover>
+                  <TableCell>{row.id}</TableCell>
                   <TableCell>{row.name}</TableCell>
+                  <TableCell>{row.location}</TableCell>
                   <TableCell>
                     <Chip 
                       label={row.status} 
@@ -81,6 +86,18 @@ const LandmarkListing: React.FC = () => {
                     />
                   </TableCell>
                   <TableCell>{row.importance}</TableCell>
+                  <TableCell>
+                    <Button variant="contained" color="primary" size="small">
+                      Edit
+                    </Button>
+                    <Button variant="contained" color="error" size="small" sx={{ ml: 2 }}>
+                      Delete  
+                    </Button>
+                    <Button variant="contained" color="secondary" size="small" sx={{ ml: 2 }}>
+                      View
+                    </Button>
+                  </TableCell>  
+
                 </TableRow>
               ))}
             </TableBody>
