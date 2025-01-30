@@ -28,33 +28,32 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
     return(
         <Card sx={{maxWidth: 400, margin: 2, boxShadow: 3}}>
                   <CardContent>
-                    {/* Full Name */}
+               
                     <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                       <Typography variant="h6">{role.rolename}</Typography>
                     </Box>
             
-                    {/* Username */}
+               
                     <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                       <Typography variant="body2" color="textSecondary">
                        <b>Manage Executive</b>: {role.manageexecutive}
                       </Typography>
                     </Box>
             
-                    {/* Email */}
                     <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                       <Typography variant="body2" color="textSecondary">
                         <b>Manage Role:</b> {role.managerole}
                       </Typography>
                     </Box>
             
-                    {/* Phone Number */}
+    
                     <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                       <Typography variant="body2" color="textSecondary">
                         <b>Manage Landmark:</b>{role.managelandmark}
                       </Typography>
                     </Box>
             
-                    {/* Gender */}
+                 
                     <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                       <Typography variant="body2" color="textSecondary">
                         <b>Manage Company:</b> {role.managecompany}
@@ -75,7 +74,6 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
                         Back
                     </Button>
 
-                    {/* Update Button */}
                     <Button
                         variant="contained"
                         color="success"
@@ -84,7 +82,7 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
                         Update
                     </Button>
 
-                    {/* Delete Button */}
+
                     <Button
                         variant="contained"
                         color="error"
