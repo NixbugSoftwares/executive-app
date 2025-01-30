@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TextField, Button, Box, Typography } from "@mui/material";
+import { TextField, Button, Box, Typography, Switch } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../common/sidebar";
 
@@ -11,6 +11,7 @@ type RoleFormValues = {
   manageRole: boolean;
   managelandmark: boolean;
   managecompany: boolean;
+  
 }
 const RoleCreationForm: React.FC = () => {
     const [formValues, setFormValues] = useState<RoleFormValues>({
@@ -87,20 +88,15 @@ const RoleCreationForm: React.FC = () => {
             </TextField>
 
             {["manageExecutive", "manageRole", "manageLandmark", "manageCompany"].map((field) => (
-        <Box key={field} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography>{field.replace("manage", "Manage")}</Typography>
-          <Button
-            variant="contained"
-            onClick={() => handleToggle(field)}
-            sx={{
-              bgcolor: formValues[field as keyof typeof formValues] ? "green" : "gray",
-              color: "white",
-              minWidth: 80,
-            }}
-          >
-            {formValues[field as keyof typeof formValues] ? "Yes" : "No"}
-          </Button>
-        </Box>
+              <Box key={field} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <Typography>{field.replace("manage", "Manage")}</Typography>
+                <Switch
+                  checked={Boolean(formValues[field as keyof typeof formValues])}
+                  onChange={() => handleToggle(field)}
+                  color="success"
+                />
+              </Box>
+
       ))}
 
 
