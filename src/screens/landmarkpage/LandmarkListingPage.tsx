@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, 
-  Button, Typography, Box, TextField, Chip 
-} from "@mui/material";
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography, Box, TextField, Chip, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";  
+import LandmarkDetailsCard from './LandmarkDetailCard';
+
 
 // Define the Type for Landmarks
 interface Landmark {
@@ -25,11 +24,47 @@ const LandmarkListing: React.FC = () => {
     navigate("/landmark/create"); 
   };
 
+        const [open, setOpen]= useState(false)
+        const [selecteRole, setSelectedLandmark]= useState(null)
+
+  const handleRowClick = (landmark: any) =>{
+    setSelectedLandmark(landmark)
+    setOpen(true)
+  }
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedLandmark(null);
+  };
+
+  const LandmarkDetailsModal = () => (
+    <Dialog open={open} onClose={handleClose}>
+      <DialogTitle>Account Details</DialogTitle>
+      <DialogContent>
+        {selecteRole && (
+          <LandmarkDetailsCard
+            landmark={selecteRole}
+            onBack={handleClose} // Back function
+            onUpdate={(id: number) => console.log("Update account", id)} // Update logic
+            onDelete={(id: number) => console.log("Delete account", id)} // Delete logic
+          />
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleClose} color="primary">
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+
+
   return (
     <Box sx={{ width: "100%", margin: "auto", mt: 5, mb: 5 }}>
       <Typography variant="h5" align="center" gutterBottom>
         Land Marks
       </Typography>
+      <LandmarkDetailsModal />
 
       {/* Search Bar & land mark Creation Button */}
       <Box
@@ -41,7 +76,7 @@ const LandmarkListing: React.FC = () => {
         }}
       >
         <TextField
-          placeholder="Search by name..."
+          placeholder="Search by ID or name..."
           variant="outlined"
           size="small"
           sx={{ width: "40%" }}
@@ -60,8 +95,8 @@ const LandmarkListing: React.FC = () => {
 
       {/* landmark Listing Table */}
       <Box>
-        <TableContainer component={Paper} sx={{ minWidth: 600 }}>
-          <Table sx={{ width: "100%" }}>
+        <TableContainer component={Paper} >
+          <Table >
             <TableHead>
               <TableRow>
                 <TableCell><b>Landmark ID</b></TableCell>
@@ -74,7 +109,7 @@ const LandmarkListing: React.FC = () => {
             </TableHead>
             <TableBody>
               {data.map((row) => (
-                <TableRow key={row.id} sx={{ cursor: "pointer" }} hover>
+                <TableRow key={row.id} sx={{ cursor: "pointer" }} hover onClick={() => handleRowClick(row)}>
                   <TableCell>{row.id}</TableCell>
                   <TableCell>{row.name}</TableCell>
                   <TableCell>{row.location}</TableCell>
@@ -104,6 +139,8 @@ const LandmarkListing: React.FC = () => {
           </Table>
         </TableContainer>
       </Box>
+
+      
     </Box>
   );
 };
