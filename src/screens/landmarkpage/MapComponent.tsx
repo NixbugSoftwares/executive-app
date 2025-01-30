@@ -45,8 +45,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
 
       draw.on("drawend", (event) => {
         const polygon = event.feature.getGeometry() as Polygon;
-        const coordinates = polygon.getCoordinates()[0].map((coord) => coord.join(", "));
-        onDrawEnd(coordinates.join(" | "));
+        const coordinates = polygon.getCoordinates()[0].map((coord) => coord.join(" "));
+        onDrawEnd(coordinates.join(" , "));
       });
 
       mapInstance.current.addInteraction(draw);
