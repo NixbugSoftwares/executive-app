@@ -53,7 +53,7 @@ function RoleListingPage() {
     return (
         <Box sx={{ width: "100%", margin: "auto", mt: 5, mb: 5 }}>
           <Typography variant="h5" align="center" gutterBottom>
-            Accounts
+            Roles
           </Typography>
     
           {/* Search Bar & Account Creation Button */}
