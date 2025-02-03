@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem, Typography, SelectChangeEvent } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+
 import Sidebar from "../../common/sidebar";
 
 
@@ -48,12 +48,6 @@ const AccountCreationForm = () => {
   };
 
 
-
-  const navigate = useNavigate();
-
-  const handleNavigate = () => {
-    navigate("/account");
-  }
 
   return (
     <Box
@@ -154,9 +148,7 @@ const AccountCreationForm = () => {
         required
       />
         <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2, gap: 1 }}>
-              <Button type="submit" variant="contained" sx={{bgcolor:"darkblue"}} fullWidth onClick={() => {handleNavigate()}}>
-                Account List
-            </Button>
+ 
             <Button type="submit" variant="contained" color="success" fullWidth>
                 Create Account
             </Button>
