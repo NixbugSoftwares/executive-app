@@ -1,28 +1,7 @@
 import React from "react";
-import {
-  Card,
-  CardContent,
-  CardActions,
-  Typography,
-  Button,
-  Box,
-  Avatar,
-  Divider,
-  IconButton,
-} from "@mui/material";
-import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  ArrowBack as BackIcon,
-  Email as EmailIcon,
-  Phone as PhoneIcon,
-  AccountCircle as UserIcon,
-  Work as WorkIcon,
-  Group as GroupIcon,
-  Person as PersonIcon,
-  CheckCircle as CheckIcon,
-  Cancel as CancelIcon,
-} from "@mui/icons-material";
+import { Card, CardActions, Typography, Button, Box, Avatar, Divider } from "@mui/material";
+import { Edit as EditIcon, Delete as DeleteIcon, ArrowBack as BackIcon, Email as EmailIcon, Phone as PhoneIcon,
+ AccountCircle as UserIcon, Work as WorkIcon, Group as GroupIcon, Person as PersonIcon, CheckCircle as CheckIcon, Cancel as CancelIcon,} from "@mui/icons-material";
 
 interface AccountCardProps {
   account: {
@@ -37,7 +16,7 @@ interface AccountCardProps {
     status: string;
     role?: {
       roleName: string;
-      permissions: string[]; // Ensure permissions is an array
+      permissions: string[]; 
     };
   };
   onUpdate: (id: number) => void;
