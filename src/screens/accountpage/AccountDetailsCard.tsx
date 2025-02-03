@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Card, CardActions, Typography, Button, Box, Avatar, Divider, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { Edit as EditIcon, Delete as DeleteIcon, ArrowBack as BackIcon, Email as EmailIcon, Phone as PhoneIcon, AccountCircle as UserIcon, Work as WorkIcon, Group as GroupIcon, Person as PersonIcon, CheckCircle as CheckIcon, Cancel as CancelIcon } from "@mui/icons-material";
+import { Edit as EditIcon, Delete as DeleteIcon, ArrowBack as BackIcon, Email as EmailIcon, Phone as PhoneIcon, AccountCircle as UserIcon,
+   Work as WorkIcon,  Person as PersonIcon, CheckCircle as CheckIcon, Cancel as CancelIcon, Diversity3 as Diversity3con } from "@mui/icons-material";
 
 interface AccountCardProps {
   account: {
@@ -76,7 +77,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({ account, onUpdate, onD
         {account.role && (
           <Card sx={{ p: 2, bgcolor: "grey.100", mb: 2 }}>
             <Typography variant="h6">
-              <GroupIcon sx={{ verticalAlign: "middle", mr: 1 }} /> Role
+              <Diversity3con sx={{ verticalAlign: "middle", mr: 1 }} /> Role
             </Typography>
             <Typography variant="body1">
               <b>Name:</b> {account.role.roleName}
