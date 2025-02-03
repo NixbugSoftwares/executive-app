@@ -94,6 +94,7 @@ const AccountListingTable = () => {
         <Button
           sx={{
             ml: 'auto', 
+            mr: 2,
             mb: 2,  
             display: 'block',  
           }}
