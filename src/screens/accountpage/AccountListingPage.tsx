@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Box, Button, TablePagination } from "@mui/material";
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Box, Button, TablePagination, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import AccountDetailsCard from "./AccountDetailsCard";
+import AccountCreationForm from "./AccountForm";
 
 
 interface Account {
@@ -68,6 +69,9 @@ const AccountListingTable = () => {
     setPage(newPage);
   };
 
+  const [openCreateModal, setOpenCreateModal] = useState(false);
+
+
   return (
     <Box 
       sx={{ 
@@ -98,19 +102,18 @@ const AccountListingTable = () => {
           }}
           variant="contained"
           color="primary"
-
-          onClick={() => navigate("/account/create")}
+          onClick={() => setOpenCreateModal(true)}
         >
           Create Account
         </Button>
 
 
-        <TableContainer component={Paper} sx={{ border: "1px solid gray",  overflowX: "auto" }}>
+        <TableContainer component={Paper} sx={{  overflowX: "auto" }}>
           <Table sx={{ borderCollapse: "collapse", width: "100%" }}>
             <TableHead>
               <TableRow>
                 {/* Table Headers */}
-                <TableCell sx={{ border: "1px solid gray" }}>
+                <TableCell sx={{  }}>
                   <b>ID</b>
                   <TextField
                     variant="outlined"
@@ -123,7 +126,7 @@ const AccountListingTable = () => {
                   />
                 </TableCell>
 
-                <TableCell sx={{ border: "1px solid gray" }}>
+                <TableCell sx={{  }}>
                   <b>Full Name</b>
                   <TextField
                     variant="outlined"
@@ -136,7 +139,7 @@ const AccountListingTable = () => {
                   />
                 </TableCell>
 
-                <TableCell sx={{ border: "1px solid gray" }}>
+                <TableCell sx={{  }}>
                   <b>Designation</b>
                   <TextField
                     variant="outlined"
@@ -149,7 +152,7 @@ const AccountListingTable = () => {
                   />
                 </TableCell>
 
-                <TableCell sx={{ border: "1px solid gray" }}>
+                <TableCell sx={{  }}>
                   <b>Gender</b>
                   <TextField
                     variant="outlined"
@@ -162,7 +165,7 @@ const AccountListingTable = () => {
                   />
                 </TableCell>
 
-                <TableCell sx={{ border: "1px solid gray", width: "200px" }}>
+                <TableCell sx={{  width: "200px" }}>
                   <b>Phone</b>
                   <TextField
                     variant="outlined"
@@ -175,7 +178,7 @@ const AccountListingTable = () => {
                   />
                 </TableCell>
 
-                <TableCell sx={{ border: "1px solid gray" }}>
+                <TableCell sx={{  }}>
                   <b>Email</b>
                   <TextField
                     variant="outlined"
@@ -193,17 +196,17 @@ const AccountListingTable = () => {
             <TableBody>
               {filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
                 <TableRow key={row.id} hover>
-                  <TableCell sx={{ border: "1px solid gray" }}><AccountCircleOutlinedIcon /> {row.id}</TableCell>
+                  <TableCell sx={{  }}><AccountCircleOutlinedIcon /> {row.id}</TableCell>
                   <TableCell
-                    sx={{ border: "1px solid gray", cursor: "pointer", color: "blue" }}
+                    sx={{  cursor: "pointer", color: "blue" }}
                     onClick={() => handleRowClick(row)}
                   >
                     {row.fullName}
                   </TableCell>
-                  <TableCell sx={{ border: "1px solid gray" }}>{row.designation}</TableCell>
-                  <TableCell sx={{ border: "1px solid gray" }}>{row.gender}</TableCell>
-                  <TableCell sx={{ border: "1px solid gray" }}>{row.phoneNumber}</TableCell>
-                  <TableCell sx={{ border: "1px solid gray" }}>{row.email}</TableCell>   
+                  <TableCell sx={{  }}>{row.designation}</TableCell>
+                  <TableCell sx={{  }}>{row.gender}</TableCell>
+                  <TableCell sx={{  }}>{row.phoneNumber}</TableCell>
+                  <TableCell sx={{  }}>{row.email}</TableCell>   
                 </TableRow>
               ))}
             </TableBody>
@@ -264,6 +267,15 @@ const AccountListingTable = () => {
           <AccountDetailsCard account={selectedAccount} onUpdate={() => {}} onDelete={() => {}} onBack={() => setSelectedAccount(null)} />
         </Box>
       )}
+       <Dialog open={openCreateModal} onClose={() => setOpenCreateModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create New Account</DialogTitle>
+        <DialogContent>
+          <AccountCreationForm />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenCreateModal(false)} color="error">Cancel</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
