@@ -7,47 +7,46 @@ import RoleCreatingForm from './RoleCreatingForm';
 interface Role {
   id: number;
   Rolename: string;
-  manageexecutive: string;
-  managerole: string;
-  managelandmark: string;
-  managecompany: string;
+  manageexecutive: boolean;
+  managerole: boolean;
+  managelandmark: boolean;
+  managecompany: boolean;
 }
 function RoleListingPage() {
     const data : Role[] = [
-        { id: 1, Rolename: "role name 1", manageexecutive: "YES", managerole: "NO", managelandmark: "NO", managecompany: "YES"  },
-        { id: 2, Rolename: "role name 2", manageexecutive: "NO", managerole: "YES", managelandmark: "YES", managecompany: "NO"  },
-        { id: 3, Rolename: "role name 3", manageexecutive: "YES", managerole: "NO", managelandmark: "YES", managecompany: "YES"  },
-        { id: 4, Rolename: "role name 4", manageexecutive: "NO", managerole: "NO", managelandmark: "NO", managecompany: "NO"  },
-        { id: 5, Rolename: "role name 5", manageexecutive: "YES", managerole: "YES", managelandmark: "YES", managecompany: "NO"  },
-        { id: 6, Rolename: "role name 6", manageexecutive: "YES", managerole: "NO", managelandmark: "YES", managecompany: "YES"  },
-        { id: 11, Rolename: "role name 1", manageexecutive: "YES", managerole: "NO", managelandmark: "NO", managecompany: "YES"  },
-        { id: 21, Rolename: "role name 2", manageexecutive: "NO", managerole: "YES", managelandmark: "YES", managecompany: "NO"  },
-        { id: 31, Rolename: "role name 3", manageexecutive: "YES", managerole: "NO", managelandmark: "YES", managecompany: "YES"  },
-        { id: 41, Rolename: "role name 4", manageexecutive: "NO", managerole: "NO", managelandmark: "NO", managecompany: "NO"  },
-        { id: 51, Rolename: "role name 5", manageexecutive: "YES", managerole: "YES", managelandmark: "YES", managecompany: "NO"  },
+        { id: 1, Rolename: "Chief Technology Officer", manageexecutive: true, managerole: false, managelandmark: true, managecompany: true  },
+        { id: 2, Rolename: "Chief Information Officer (CIO)", manageexecutive: false, managerole: false, managelandmark: false, managecompany: false  },
+        { id: 3, Rolename: "Project Manager", manageexecutive: false, managerole: true, managelandmark: true, managecompany: true  },
+        { id: 4, Rolename: "Product Manager", manageexecutive: true, managerole: false, managelandmark: false, managecompany: true  },
+        { id: 5, Rolename: "Software Engineer", manageexecutive: false, managerole: false, managelandmark: true, managecompany: true  },
+        { id: 6, Rolename: "Backend Developer", manageexecutive: true, managerole: true, managelandmark: false, managecompany: true  },
+        { id: 11, Rolename: "QA Engineer / Test Engineer", manageexecutive: false, managerole: false, managelandmark: false, managecompany: true },
+        { id: 21, Rolename: "Data Analyst", manageexecutive: false, managerole: false, managelandmark: false, managecompany: false  },
+        { id: 31, Rolename: "Technical Support Engineer", manageexecutive: true, managerole: false, managelandmark: true, managecompany: false  },
+        { id: 41, Rolename: "Mobile App Developer", manageexecutive: false, managerole: true, managelandmark: false, managecompany: false  },
+        { id: 51, Rolename: "Engineering Manager", manageexecutive: false, managerole: true, managelandmark: true, managecompany: true },
     
     ];
 
 
-    const [selecteRole, setSelectedRole]= useState(null)
+    const [selectRole, setSelectedRole]= useState(null)
     const [openCreateModal, setOpenCreateModal] = useState(false);
       const handleRowClick = (role: any) =>{
         setSelectedRole(role)
      }
   
-    const [search, setSearch] = useState({ id: "", Rolename: "", manageexecutive: "", managerole: "", managelandmark: "",  managecompany: "" });
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, column: keyof typeof search) => {
-        setSearch((prev) => ({ ...prev, [column]: (e.target as HTMLInputElement).value }));
-      };
+    const [search, setSearch] = useState({ id: "", Rolename: ""});
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, column: keyof typeof search) => {
+    setSearch((prev) => ({ ...prev, [column]: (e.target as HTMLInputElement).value }));
+  };
 
-      const filteredData = data.filter((row) =>
-        row.id.toString().toLowerCase().includes(search.id.toLowerCase()) &&
-        row.Rolename.toLowerCase().includes(search.Rolename.toLowerCase()) &&
-        row.manageexecutive.toLowerCase().includes(search.manageexecutive.toLowerCase()) &&
-        row.managerole.toLowerCase().includes(search.managerole.toLowerCase()) &&
-        row.managelandmark.toLowerCase().includes(search.managelandmark.toLowerCase()) &&
-        row.managecompany.toLowerCase().includes(search.managecompany.toLowerCase())
-      );
+      const filteredData = data.filter((row) => {
+        return (
+          row.id.toString().toLowerCase().includes(search.id.toLowerCase()) &&
+          row.Rolename.toLowerCase().includes(search.Rolename.toLowerCase()) 
+        );
+      });
+      
     
 
       const [page, setPage] = useState(0);
@@ -74,11 +73,11 @@ function RoleListingPage() {
 
         <Box  
           sx={{
-            flex: selecteRole ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
-            maxWidth: selecteRole ? { xs: "100%", md: "65%" } : "100%",
+            flex: selectRole ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
+            maxWidth: selectRole ? { xs: "100%", md: "65%" } : "100%",
             transition: "all 0.3s ease",
             overflow: "hidden", // Disable scrolling when no account is selected
-            overflowY: selecteRole ? "auto" : "hidden", // Enable scrolling when details card is shown
+            overflowY: selectRole ? "auto" : "hidden", // Enable scrolling when details card is shown
           }}>
 
             <Button
@@ -126,56 +125,21 @@ function RoleListingPage() {
                               />
                             </TableCell>
             
-                            <TableCell sx={{  }}>
+                            <TableCell sx={{  whiteSpace: selectRole ? "wrap" : "nowrap" }}>
                               <b>Manage Executive</b>
-                              <TextField
-                                variant="outlined"
-                                size="small"
-                                placeholder="Search"
-                                value={search.manageexecutive}
-                                onChange={(e) => handleSearchChange(e, "manageexecutive")}
-                                fullWidth
-                                sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }}
-                              />
+
                             </TableCell>
             
-                            <TableCell sx={{  }}>
+                            <TableCell sx={{ whiteSpace: selectRole ? "wrap" : "nowrap" }}>
                               <b>Manage Role</b>
-                              <TextField
-                                variant="outlined"
-                                size="small"
-                                placeholder="Search"
-                                value={search.managerole}
-                                onChange={(e) => handleSearchChange(e, "managerole")}
-                                fullWidth
-                                sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }}
-                              />
                             </TableCell>
             
-                            <TableCell sx={{   }}>
+                            <TableCell sx={{  whiteSpace: selectRole ? "wrap" : "nowrap" }}>
                               <b>Manage Landmark</b>
-                              <TextField
-                                variant="outlined"
-                                size="small"
-                                placeholder="Search"
-                                value={search.managelandmark}
-                                onChange={(e) => handleSearchChange(e, "managelandmark")}
-                                fullWidth
-                                sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }}
-                              />
                             </TableCell>
             
-                            <TableCell sx={{  }}>
+                            <TableCell sx={{  whiteSpace: selectRole ? "wrap" : "nowrap" }}>
                               <b>Manage Company</b>
-                              <TextField
-                                variant="outlined"
-                                size="small"
-                                placeholder="Search"
-                                value={search.managecompany}
-                                onChange={(e) => handleSearchChange(e, "managecompany")}
-                                fullWidth
-                                sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }}
-                              />
                             </TableCell>
                           </TableRow>
                         </TableHead>
@@ -191,16 +155,16 @@ function RoleListingPage() {
                               {row.Rolename}
                             </TableCell> 
                             <TableCell sx={{  }}>
-                            <Chip label={row.manageexecutive} color={row.manageexecutive === "YES" ? "success" : "error"} variant="outlined" />
+                            <Chip label={row.manageexecutive=== true?"Yes":"No"} color={row.manageexecutive === true ? "success" : "error"} variant="outlined" />
                             </TableCell>
                             <TableCell sx={{  }}>
-                            <Chip label={row.managerole} color={row.managerole === "YES" ? "success" : "error"} variant="outlined" />
+                            <Chip label={row.managerole=== true?"Yes":"No"} color={row.managerole === true ? "success" : "error"} variant="outlined" />
                             </TableCell>
                             <TableCell sx={{  }}>
-                            <Chip label={row.managelandmark} color={row.managelandmark === "YES" ? "success" : "error"} variant="outlined" />
+                            <Chip label={row.managelandmark=== true?"Yes":"No"} color={row.managelandmark === true ? "success" : "error"} variant="outlined" />
                             </TableCell>
                             <TableCell sx={{  }}>
-                            <Chip label={row.managecompany} color={row.managecompany === "YES" ? "success" : "error"} variant="outlined" />
+                            <Chip label={row.managecompany=== true?"Yes":"No"} color={row.managecompany === true ? "success" : "error"} variant="outlined" />
                             </TableCell>   
                           </TableRow>
                         ))}
@@ -244,30 +208,30 @@ function RoleListingPage() {
                           }}
                       />
          </Box>
-         {selecteRole && (
-        <Box
-          sx={{
-            flex: { xs: "0 0 100%", md: "0 0 35%" },
-            maxWidth: { xs: "100%", md: "35%" },
-            transition: "all 0.3s ease",
-            bgcolor: "grey.100",
-            p: 2,
-            mt: { xs: 2, md: 0 },
-            overflowY: "auto", // Enable scrolling for the details card
-            height: "100%",      // Ensure the card is tall enough to allow scrolling
-          }}
-        >
-          <RoleDetailsCard role={selecteRole} onUpdate={() => {}} onDelete={() => {}} onBack={() => setSelectedRole(null)} />
-        </Box>
-      )}
-       <Dialog open={openCreateModal} onClose={() => setOpenCreateModal(false)} maxWidth="sm" fullWidth>
-        <DialogContent>
-          <RoleCreatingForm />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenCreateModal(false)} color="error">Cancel</Button>
-        </DialogActions>
-      </Dialog>
+              {selectRole && (
+              <Box
+                sx={{
+                  flex: { xs: "0 0 100%", md: "0 0 35%" },
+                  maxWidth: { xs: "100%", md: "35%" },
+                  transition: "all 0.3s ease",
+                  bgcolor: "grey.100",
+                  p: 2,
+                  mt: { xs: 2, md: 0 },
+                  overflowY: "auto", // Enable scrolling for the details card
+                  height: "100%",      // Ensure the card is tall enough to allow scrolling
+                }}
+              >
+                <RoleDetailsCard role={selectRole} onUpdate={() => {}} onDelete={() => {}} onBack={() => setSelectedRole(null)} />
+              </Box>
+            )}
+            <Dialog open={openCreateModal} onClose={() => setOpenCreateModal(false)} maxWidth="sm" fullWidth>
+              <DialogContent>
+                <RoleCreatingForm />
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setOpenCreateModal(false)} color="error">Cancel</Button>
+              </DialogActions>
+            </Dialog>
 
     </Box>
     )
