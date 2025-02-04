@@ -99,7 +99,7 @@ function RoleListingPage() {
                         <TableHead>
                           <TableRow>
                             {/* Table Headers */}
-                            <TableCell sx={{  }}>
+                            <TableCell sx={{ width: "10%" }}>
                               <b>ID</b>
                               <TextField
                                 variant="outlined"
@@ -112,7 +112,7 @@ function RoleListingPage() {
                               />
                             </TableCell>
             
-                            <TableCell sx={{  }}>
+                            <TableCell sx={{ width: "20%" }}>
                               <b>Role Name</b>
                               <TextField
                                 variant="outlined"
@@ -143,7 +143,7 @@ function RoleListingPage() {
                             </TableCell>
                           </TableRow>
                         </TableHead>
-
+                        
                       <TableBody>
                       {filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row)  => (
                           <TableRow key={row.id} hover>

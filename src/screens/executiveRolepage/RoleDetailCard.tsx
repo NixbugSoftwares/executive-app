@@ -21,7 +21,7 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({ role, onBack, onDelete, onUp
 
   return (
     <>
-      <Card sx={{ maxWidth: 400, margin: "auto", boxShadow: 3, padding: 2, textAlign: "center" }}>
+      <Card sx={{ maxWidth: 450, width: "100%", margin: "auto", boxShadow: 3, p: 2 }}>
         {/* Avatar Section */}
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
           <Avatar sx={{ bgcolor: "primary.main", width: 56, height: 56 }}>
@@ -31,7 +31,6 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({ role, onBack, onDelete, onUp
             {role.Rolename}
           </Typography>
         </Box>
-
         {/* Permissions Section */}
         <CardContent>
           <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: "bold" }}>
@@ -46,18 +45,20 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({ role, onBack, onDelete, onUp
         </CardContent>
 
         {/* Action Buttons */}
-        <CardActions sx={{ justifyContent: "center", gap: 1 }}>
-          <Button variant="outlined" color="primary" onClick={onBack}>
+        <CardActions sx={{ justifyContent: "space-between", gap: 1 }}>
+          <Button size="small" variant="contained" color="primary" onClick={onBack}>
             Back
           </Button>
-          <Button variant="contained" color="success" onClick={() => onUpdate(role.id)}>
+          <Button size="small" variant="contained" color="success" onClick={() => onUpdate(role.id)}>
             Update
           </Button>
-          <Button variant="contained" color="error" onClick={() => setDeleteConfirmOpen(true)}>
+          <Button size="small" variant="contained" color="error" onClick={() => setDeleteConfirmOpen(true)}>
             Delete
           </Button>
         </CardActions>
+          
       </Card>
+      
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
