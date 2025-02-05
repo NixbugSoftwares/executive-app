@@ -35,7 +35,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({ account, onUpdate, onD
       <Card sx={{ maxWidth: 450, width: "100%", margin: "auto", boxShadow: 3, p: 2 }}>
         {/* User Avatar & Info */}
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
-          <Avatar sx={{ width: 80, height: 80, bgcolor: "primary.main" }}>
+          <Avatar sx={{ width: 80, height: 80, bgcolor: "darkblue" }}>
             <UserIcon fontSize="large" />
           </Avatar>
           <Typography variant="h6" sx={{ mt: 1 }}>
