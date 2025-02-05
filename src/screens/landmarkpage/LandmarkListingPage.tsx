@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Box, TextField, Chip, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { Table, TablePagination, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Box, TextField, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import LandmarkDetailsCard from './LandmarkDetailCard';
 import LandmarkAddForm from "./LandmarkAddForm";
 
@@ -33,12 +33,28 @@ const LandmarkListing = () => {
 
   const [selectedLandmark, setSelectedLandmark]= useState(null)
   const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [search, setSearch] = useState({ id: "", name: "", location: ""});
+  const [page, setPage] = useState(0);
+  const rowsPerPage = 7;
+
 
   const handleRowClick = (landmark: any) =>{
     setSelectedLandmark(landmark)
   }
 
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, column: keyof typeof search) => {
+      setSearch((prev) => ({ ...prev, [column]: (e.target as HTMLInputElement).value }));
+    };
 
+  const filteredData = data.filter((row) =>
+    row.id.toString().toLowerCase().includes(search.id.toLowerCase()) &&
+    row.name.toLowerCase().includes(search.name.toLowerCase()) &&
+    row.location.toLowerCase().includes(search.location.toLowerCase()) 
+  );
+
+    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+      setPage(newPage);
+    };
 
 
 
@@ -93,8 +109,8 @@ const LandmarkListing = () => {
                     variant="outlined"
                     size="small"
                     placeholder="Search"
-                    // value={search.id}
-                    // onChange={(e) => handleSearchChange(e, "id")}
+                    value={search.id}
+                    onChange={(e) => handleSearchChange(e, "id")}
                     fullWidth
                     sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }}
                   />
@@ -106,8 +122,8 @@ const LandmarkListing = () => {
                     variant="outlined"
                     size="small"
                     placeholder="Search"
-                    // value={search.fullName}
-                    // onChange={(e) => handleSearchChange(e, "fullName")}
+                    value={search.name}
+                    onChange={(e) => handleSearchChange(e, "name")}
                     fullWidth
                     sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }}
                   />
@@ -119,8 +135,8 @@ const LandmarkListing = () => {
                     variant="outlined"
                     size="small"
                     placeholder="Search"
-                    // value={search.designation}
-                    // onChange={(e) => handleSearchChange(e, "designation")}
+                    value={search.location}
+                    onChange={(e) => handleSearchChange(e, "location")}
                     fullWidth
                     sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }}
                   />
@@ -138,7 +154,7 @@ const LandmarkListing = () => {
             </TableHead>
 
             <TableBody>
-              {data.map((row) => (
+              {filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
                 <TableRow key={row.id} hover>
                   <TableCell sx={{  }}>{row.id}</TableCell>
                   <TableCell
@@ -156,6 +172,39 @@ const LandmarkListing = () => {
             </TableBody>
           </Table>
         </TableContainer>
+        <TablePagination
+            component="div"
+            count={filteredData.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[]}
+            labelDisplayedRows={() => ''}  // Remove default label text
+            ActionsComponent={({ count, page, onPageChange }) => (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <Button
+                  onClick={(event) => onPageChange(event, page - 1)}
+                  disabled={page === 0}
+                  sx={{ padding: '5px 10px' }}
+                >
+                  &lt; {/* Left Arrow */}
+                </Button>
+                <Button
+                  onClick={(event) => onPageChange(event, page + 1)}
+                  disabled={page >= Math.ceil(count / rowsPerPage) - 1}
+                  sx={{ padding: '5px 10px' }}
+                >
+                  &gt; {/* Right Arrow */}
+                </Button>
+              </Box>
+            )}
+            sx={{
+              display: "flex",
+              justifyContent: "center", // Center the pagination
+              alignItems: "center",
+              padding: "10px 0",
+            }}
+         />
         </Box>
 
       {selectedLandmark && (
