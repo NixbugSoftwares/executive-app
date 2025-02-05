@@ -9,3 +9,11 @@ export const loginSchema = yup.object().shape({
   password: yup.string().required("Password is required")
 });
 
+
+//******************************************** Account creating validation schema ************************************************
+export const accountRegisterSchema = yup.object().shape({
+  username: yup.string().required("Username is required"),
+  password: yup.string().required("Password is required"),
+
+});
+
