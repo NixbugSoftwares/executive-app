@@ -21,7 +21,7 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({ role, onBack, onDelete, onUp
 
   return (
     <>
-      <Card sx={{ maxWidth: 450, width: "100%", margin: "auto", boxShadow: 3, p: 2 }}>
+      <Card sx={{ maxWidth: 420, margin: 2, boxShadow: 4, borderRadius: 3, p: 1  }}>
         {/* Avatar Section */}
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
           <Avatar sx={{ bgcolor: "primary.main", width: 56, height: 56 }}>
