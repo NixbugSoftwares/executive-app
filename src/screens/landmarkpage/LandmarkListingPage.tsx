@@ -1,146 +1,188 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Typography, Box, TextField, Chip, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";  
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Box, TextField, Chip, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import LandmarkDetailsCard from './LandmarkDetailCard';
-
+import LandmarkAddForm from "./LandmarkAddForm";
 
 // Define the Type for Landmarks
 interface Landmark {
   id: number;
   name: string;
   location: string;
-  status: "verified" | "unverified";
+  status: "Verified" | "Verifying";
   importance: "low" | "medium" | "high";
 }
 
-const LandmarkListing: React.FC = () => {
-  const [data] = useState<Landmark[]>([
-    { id: 1, name: "Landmark1", location: "location1", status: "verified", importance: "low" },
-  ]);
 
-  const navigate = useNavigate();
-  const handleNavigate = () => {
-    navigate("/landmark/create"); 
-  };
+const LandmarkListing = () => {
+  const data : Landmark[] = [
+    { id: 1, name: "Landmark1", location: "location1", status: "Verified", importance: "low" },
+    { id: 2, name: "Landmark2", location: "location2", status: "Verifying", importance: "medium" },
+    { id: 3, name: "Landmark3", location: "location3", status: "Verified", importance: "high" },
+    { id: 4, name: "Landmark4", location: "location4", status: "Verifying", importance: "low" },
+    { id: 5, name: "Landmark5", location: "location5", status: "Verified", importance: "medium" },
+    { id: 6, name: "Landmark6", location: "location6", status: "Verifying", importance: "high" },
+    { id: 7, name: "Landmark7", location: "location7", status: "Verified", importance: "low" },
+    { id: 8, name: "Landmark8", location: "location8", status: "Verifying", importance: "medium" },
+    { id: 9, name: "Landmark9", location: "location9", status: "Verified", importance: "high" },
+    { id: 10, name: "Landmark10", location: "location10", status: "Verifying", importance: "low" },
+    { id: 11, name: "Landmark11", location: "location11", status: "Verified", importance: "medium" },
+    { id: 12, name: "Landmark12", location: "location12", status: "Verifying", importance: "high" },
+  ]
+  
+  ;
 
-        const [open, setOpen]= useState(false)
-        const [selecteRole, setSelectedLandmark]= useState(null)
+  const [selectedLandmark, setSelectedLandmark]= useState(null)
+  const [openCreateModal, setOpenCreateModal] = useState(false);
 
   const handleRowClick = (landmark: any) =>{
     setSelectedLandmark(landmark)
-    setOpen(true)
   }
-  const handleClose = () => {
-    setOpen(false);
-    setSelectedLandmark(null);
-  };
 
-  const LandmarkDetailsModal = () => (
-    <Dialog open={open} onClose={handleClose}>
-      <DialogTitle>Account Details</DialogTitle>
-      <DialogContent>
-        {selecteRole && (
-          <LandmarkDetailsCard
-            landmark={selecteRole}
-            onBack={handleClose} // Back function
-            onUpdate={(id: number) => console.log("Update account", id)} // Update logic
-            onDelete={(id: number) => console.log("Delete account", id)} // Delete logic
-          />
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose} color="primary">
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
+
+
 
 
 
   return (
-    <Box sx={{ width: "100%", margin: "auto", mt: 5, mb: 5 }}>
-      <Typography variant="h5" align="center" gutterBottom>
-        Land Marks
-      </Typography>
-      <LandmarkDetailsModal />
+    <Box 
+      sx={{ 
+        display: "flex", 
+        flexDirection: { xs: "column", md: "row" }, 
+        width: "100%", 
+        height: "100vh", 
+        overflow: "hidden",
+        gap: 2
+      }}
+    >
 
-      {/* Search Bar & land mark Creation Button */}
       <Box
         sx={{
-          display: "flex",
-          justifyContent: "left",
-          alignItems: "center",
-          mb: 3,
+          flex: selectedLandmark ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
+          maxWidth: selectedLandmark ? { xs: "100%", md: "65%" } : "100%",
+          transition: "all 0.3s ease",
+          overflow: "hidden", // Disable scrolling when no account is selected
+          overflowY: selectedLandmark ? "auto" : "hidden", // Enable scrolling when details card is shown
         }}
       >
-        <TextField
-          placeholder="Search by ID or name..."
-          variant="outlined"
-          size="small"
-          sx={{ width: "40%" }}
-        />
 
         <Button
-          sx={{ ml: 2 }}
+          sx={{
+            ml: 'auto', 
+            mr: 2,
+            mb: 2,  
+            display: 'block',  
+          }}
           variant="contained"
-          color="success"
-          startIcon={<AddIcon />}
-          onClick={handleNavigate}
+          color="primary"
+          onClick={() => setOpenCreateModal(true)}
         >
           Add Landmark
         </Button>
-      </Box>
+      
 
       {/* landmark Listing Table */}
-      <Box>
-        <TableContainer component={Paper} >
-          <Table >
+      
+      <TableContainer component={Paper} sx={{  overflowX: "auto" }}>
+          <Table sx={{ borderCollapse: "collapse", width: "100%" }}>
             <TableHead>
               <TableRow>
-                <TableCell><b>Landmark ID</b></TableCell>
-                <TableCell><b>Name</b></TableCell>
-                <TableCell><b>Location</b></TableCell>
-                <TableCell><b>Status</b></TableCell>
-                <TableCell><b>Importance</b></TableCell>
-                <TableCell><b>Action</b></TableCell>
+                {/* Table Headers */}
+                <TableCell sx={{ width: "15%" }}>
+                  <b>ID</b>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    // value={search.id}
+                    // onChange={(e) => handleSearchChange(e, "id")}
+                    fullWidth
+                    sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }}
+                  />
+                </TableCell>
+
+                <TableCell sx={{ width: "15%" }}>
+                  <b>Name</b>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    // value={search.fullName}
+                    // onChange={(e) => handleSearchChange(e, "fullName")}
+                    fullWidth
+                    sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }}
+                  />
+                </TableCell>
+
+                <TableCell sx={{ width: "30%" }}>
+                  <b>Location</b>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    // value={search.designation}
+                    // onChange={(e) => handleSearchChange(e, "designation")}
+                    fullWidth
+                    sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }}
+                  />
+                </TableCell>
+
+                <TableCell sx={{  }}>
+                  <b>Status</b>
+                </TableCell>
+
+                <TableCell sx={{  width: "200px" }}>
+                  <b>Importance</b>
+                </TableCell>
+
               </TableRow>
             </TableHead>
+
             <TableBody>
               {data.map((row) => (
-                <TableRow key={row.id} sx={{ cursor: "pointer" }} hover onClick={() => handleRowClick(row)}>
-                  <TableCell>{row.id}</TableCell>
-                  <TableCell>{row.name}</TableCell>
-                  <TableCell>{row.location}</TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={row.status} 
-                      color={row.status === "verified" ? "success" : "error"} 
-                      variant="outlined" 
-                    />
+                <TableRow key={row.id} hover>
+                  <TableCell sx={{  }}>{row.id}</TableCell>
+                  <TableCell
+                    sx={{  cursor: "pointer", color: "blue" }}
+                   onClick={() => handleRowClick(row)}
+                  >
+                    {row.name}
                   </TableCell>
-                  <TableCell>{row.importance}</TableCell>
-                  <TableCell>
-                    <Button variant="contained" color="primary" size="small">
-                      Edit
-                    </Button>
-                    <Button variant="contained" color="error" size="small" sx={{ ml: 2 }}>
-                      Delete  
-                    </Button>
-                    <Button variant="contained" color="secondary" size="small" sx={{ ml: 2 }}>
-                      View
-                    </Button>
-                  </TableCell>  
-
+                  <TableCell sx={{  }}>{row.location}</TableCell>
+                  <TableCell sx={{ color: row.status === "Verified" ? "green" : "red" }}>{row.status}</TableCell>
+                  <TableCell sx={{  }}>{row.importance}</TableCell>
+                  
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </TableContainer>
-      </Box>
+        </Box>
 
-      
+      {selectedLandmark && (
+        <Box
+          sx={{
+            flex: { xs: "0 0 100%", md: "0 0 35%" },
+            maxWidth: { xs: "100%", md: "35%" },
+            transition: "all 0.3s ease",
+            bgcolor: "grey.100",
+            p: 2,
+            mt: { xs: 2, md: 0 },
+            overflowY: "auto", // Enable scrolling for the details card
+            height: "100%",      // Ensure the card is tall enough to allow scrolling
+          }}
+        >
+          <LandmarkDetailsCard landmark={selectedLandmark} onUpdate={() => {}} onDelete={() => {}} onBack={() => setSelectedLandmark(null)} />
+        </Box>
+      )}
+       <Dialog open={openCreateModal} onClose={() => setOpenCreateModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create New Account</DialogTitle>
+        <DialogContent>
+          <LandmarkAddForm />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenCreateModal(false)} color="error">Cancel</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
