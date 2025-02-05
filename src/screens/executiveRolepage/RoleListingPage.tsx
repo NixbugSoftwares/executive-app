@@ -16,9 +16,9 @@ function RoleListingPage() {
     const data : Role[] = [
         { id: 1, Rolename: "Chief Technology Officer", manageexecutive: true, managerole: false, managelandmark: true, managecompany: true  },
         { id: 2, Rolename: "Chief Information Officer (CIO)", manageexecutive: false, managerole: false, managelandmark: false, managecompany: false  },
-        { id: 3, Rolename: "Project Manager", manageexecutive: false, managerole: true, managelandmark: true, managecompany: true  },
+        { id: 3, Rolename: "Project Manager", manageexecutive: false, managerole: true, managelandmark: true, managecompany: false  },
         { id: 4, Rolename: "Product Manager", manageexecutive: true, managerole: false, managelandmark: false, managecompany: true  },
-        { id: 5, Rolename: "Software Engineer", manageexecutive: false, managerole: false, managelandmark: true, managecompany: true  },
+        { id: 5, Rolename: "Software Engineer", manageexecutive: false, managerole: false, managelandmark: true, managecompany: false  },
         { id: 6, Rolename: "Backend Developer", manageexecutive: true, managerole: true, managelandmark: false, managecompany: true  },
         { id: 11, Rolename: "QA Engineer / Test Engineer", manageexecutive: false, managerole: false, managelandmark: false, managecompany: true },
         { id: 21, Rolename: "Data Analyst", manageexecutive: false, managerole: false, managelandmark: false, managecompany: false  },
@@ -155,16 +155,16 @@ function RoleListingPage() {
                               {row.Rolename}
                             </TableCell> 
                             <TableCell sx={{  }}>
-                            <Chip label={row.manageexecutive=== true?"Yes":"No"} color={row.manageexecutive === true ? "success" : "error"} variant="outlined" />
+                            <Chip label={row.manageexecutive=== true?"Yes":"No"} color={row.manageexecutive === true ? "success" : "error"} variant="filled" size='small' />
                             </TableCell>
                             <TableCell sx={{  }}>
-                            <Chip label={row.managerole=== true?"Yes":"No"} color={row.managerole === true ? "success" : "error"} variant="outlined" />
+                            <Chip label={row.managerole=== true?"Yes":"No"} color={row.managerole === true ? "success" : "error"} variant="filled" size='small' />
                             </TableCell>
                             <TableCell sx={{  }}>
-                            <Chip label={row.managelandmark=== true?"Yes":"No"} color={row.managelandmark === true ? "success" : "error"} variant="outlined" />
+                            <Chip label={row.managelandmark=== true?"Yes":"No"} color={row.managelandmark === true ? "success" : "error"} variant="filled" size='small' />
                             </TableCell>
                             <TableCell sx={{  }}>
-                            <Chip label={row.managecompany=== true?"Yes":"No"} color={row.managecompany === true ? "success" : "error"} variant="outlined" />
+                            <Chip label={row.managecompany=== true?"Yes":"No"} color={row.managecompany === true ? "success" : "error"} variant="filled" size='small' />
                             </TableCell>   
                           </TableRow>
                         ))}
