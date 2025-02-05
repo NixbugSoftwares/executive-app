@@ -48,19 +48,31 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({ account, onUpdate, onD
 
         {/* User Contact Info */}
         <Card sx={{ p: 2, bgcolor: "grey.100", mb: 2 }}>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-            <PhoneIcon color="action" sx={{ mr: 1 }} />
-            <Typography variant="body2" color="primary">
-              {account.phoneNumber}
-            </Typography>
-          </Box>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+          <PhoneIcon color="action" sx={{ mr: 1 }} />
+          <Typography
+            variant="body2"
+            color="primary"
+            component="a"
+            href={`tel:${account.phoneNumber}`}
+            sx={{ textDecoration: "none", cursor: "pointer" }}
+          >
+            {account.phoneNumber}
+          </Typography>
+        </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-            <EmailIcon color="action" sx={{ mr: 1 }} />
-            <Typography variant="body2" color="primary">
-              {account.email}
-            </Typography>
-          </Box>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+          <EmailIcon color="action" sx={{ mr: 1 }} />
+          <Typography
+            variant="body2"
+            color="primary"
+            component="a"
+            href={`mailto:${account.email}`}
+            sx={{ textDecoration: "none", cursor: "pointer" }}
+          >
+            {account.email}
+          </Typography>
+        </Box>
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <PersonIcon color="action" sx={{ mr: 1 }} />
