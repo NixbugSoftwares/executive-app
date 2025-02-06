@@ -155,7 +155,11 @@ function RoleListingPage() {
                               {row.Rolename}
                             </TableCell> 
                             <TableCell sx={{  }}>
-                            <Chip label={row.manageexecutive=== true?"Yes":"No"} color={row.manageexecutive === true ? "success" : "error"} variant="filled" size='small' />
+                            <Chip label={row.manageexecutive=== true?"Yes":"No"} color={row.manageexecutive === true ? "success" : "error"} variant="filled" size='small' 
+                            // sx={{
+                            //   backgroundColor: row.manageexecutive === true ? "rgba(76, 175, 80, 0.9)" : "rgba(244, 67, 54, 0.9)"
+                            // }}
+                            />
                             </TableCell>
                             <TableCell sx={{  }}>
                             <Chip label={row.managerole=== true?"Yes":"No"} color={row.managerole === true ? "success" : "error"} variant="filled" size='small' />
