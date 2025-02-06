@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem, Typography, SelectChangeEvent, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { useNavigate } from "react-router-dom";
 import Sidebar from "../../common/sidebar";
 import MapComponent from "./MapComponent"; 
 
@@ -55,7 +54,7 @@ const LandmarkAddForm = () => {
     alert("Landmark added successfully!");
   };
 
-  const navigate = useNavigate();
+  
 
   return (
     <Box
@@ -118,9 +117,6 @@ const LandmarkAddForm = () => {
       </FormControl>
 
       <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2, gap: 1 }}>
-        <Button type="submit" variant="contained" sx={{ bgcolor: "darkblue" }} fullWidth onClick={() => navigate("/landmark")}>
-          Landmark List
-        </Button>
         <Button type="submit" variant="contained" color="success" fullWidth>
           Add Landmark
         </Button>
