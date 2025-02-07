@@ -21,10 +21,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const vectorSource = useRef(new VectorSource());
   const mapInstance = useRef<Map | null>(null);
+  const drawInteraction = useRef<Draw | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
   const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">("osm");
   const [mousePosition, setMousePosition] = useState<string>("");
   const navigate = useNavigate();
-  
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -45,26 +46,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
         }),
       });
 
-      // Listen for mouse move events
       map.on("pointermove", (event) => {
         const coords = toLonLat(event.coordinate);
         setMousePosition(`${coords[0].toFixed(7)}, ${coords[1].toFixed(7)}`);
       });
 
-      // Drawing interaction
-      const draw = new Draw({
-        source: vectorSource.current,
-        type: "Polygon",
-      });
-
-      draw.on("drawend", (event) => {
-        const polygon = event.feature.getGeometry() as Polygon;
-        const coordinates = polygon.getCoordinates()[0].map((coord) => coord.join(" "));
-
-        onDrawEnd(coordinates.join(" , ")); // Open form modal with boundary
-      });
-
-      map.addInteraction(draw);
       mapInstance.current = map;
     }
 
@@ -74,6 +60,35 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
       }, 500);
     }
   }, [isOpen, onDrawEnd, navigate]);
+
+  // Toggle drawing mode
+  const toggleDrawing = () => {
+    if (!mapInstance.current) return;
+
+    if (isDrawing) {
+      // Disable drawing
+      if (drawInteraction.current) {
+        mapInstance.current.removeInteraction(drawInteraction.current);
+      }
+    } else {
+      // Enable drawing
+      const draw = new Draw({
+        source: vectorSource.current,
+        type: "Polygon",
+      });
+
+      draw.on("drawend", (event) => {
+        const polygon = event.feature.getGeometry() as Polygon;
+        const coordinates = polygon.getCoordinates()[0].map((coord) => coord.join(" "));
+        onDrawEnd(coordinates.join(" , ")); // Open form modal with boundary
+      });
+
+      drawInteraction.current = draw;
+      mapInstance.current.addInteraction(draw);
+    }
+
+    setIsDrawing(!isDrawing);
+  };
 
   const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
     if (!mapInstance.current) return;
@@ -114,40 +129,62 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
   };
 
   return (
-    <Box  height="100%">
-      <Box  sx={{ justifyContent: "space-between" }}>
-        <Button
-          onClick={() => changeMapType("osm")}
-          disabled={mapType === "osm"}
-          variant="contained"
-          sx={{ mr: 1 }}
-          size="small"
-        >
-          OSM Map
-        </Button>
-        <Button
-          onClick={() => changeMapType("satellite")}
-          disabled={mapType === "satellite"}
-          variant="contained"
-          sx={{ mr: 1 }}
-          size="small"
-        >
-          Satellite Map
-        </Button>
-        <Button
-          onClick={() => changeMapType("hybrid")}
-          disabled={mapType === "hybrid"}
-          variant="contained"
-        >
-          Hybrid Map
-        </Button>
-        <Typography variant="body1">
-           <strong>{mousePosition}</strong>
-        </Typography>
-      </Box>
-
-      <Box ref={mapRef} width="100%" height="600px" flex={1} />
+    <Box height="100%">
+  {/* Toolbar Section */}
+  <Box
+    sx={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: 1,
+      backgroundColor: "#f5f5f5",
+      borderRadius: 1,
+    }}
+  >
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <Button
+        onClick={() => changeMapType("osm")}
+        disabled={mapType === "osm"}
+        variant="contained"
+        size="small"
+      >
+        OSM Map
+      </Button>
+      <Button
+        onClick={() => changeMapType("satellite")}
+        disabled={mapType === "satellite"}
+        variant="contained"
+        size="small"
+      >
+        Satellite Map
+      </Button>
+      <Button
+        onClick={() => changeMapType("hybrid")}
+        disabled={mapType === "hybrid"}
+        variant="contained"
+        size="small"
+      >
+        Hybrid Map
+      </Button>
+      <Button
+        variant="contained"
+        color={isDrawing ? "secondary" : "primary"}
+        size="small"
+        onClick={toggleDrawing}
+      >
+        {isDrawing ? "Disable Drawing" : "Add Landmark"}
+      </Button>
     </Box>
+
+    <Typography variant="body2">
+      <strong>{mousePosition}</strong>
+    </Typography>
+  </Box>
+
+  {/* Map Section */}
+  <Box ref={mapRef} width="100%" height="600px" flex={1} />
+</Box>
+
   );
 };
 
