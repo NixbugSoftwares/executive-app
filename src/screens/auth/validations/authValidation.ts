@@ -17,3 +17,16 @@ export const accountRegisterSchema = yup.object().shape({
 
 });
 
+//*********************************************************Role creating validation schema********************************************** 
+export const RoleCreationSchema = yup.object().shape({
+  name: yup.string().required("Role name is required")
+});
+
+
+
+//*********************************************************landmark creating validation schema********************************************** 
+
+export const landMarkAddSchema = yup.object().shape({
+  name: yup.string().required("landmark name  is required"),
+  boundary: yup.string().required("Boundary is required")
+})
