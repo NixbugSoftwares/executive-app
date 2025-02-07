@@ -148,7 +148,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
         variant="contained"
         size="small"
       >
-        OSM Map
+        OSM 
       </Button>
       <Button
         onClick={() => changeMapType("satellite")}
@@ -156,7 +156,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
         variant="contained"
         size="small"
       >
-        Satellite Map
+        Satellite 
       </Button>
       <Button
         onClick={() => changeMapType("hybrid")}
@@ -164,7 +164,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
         variant="contained"
         size="small"
       >
-        Hybrid Map
+        Hybrid
       </Button>
       <Button
         variant="contained"
@@ -172,7 +172,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
         size="small"
         onClick={toggleDrawing}
       >
-        {isDrawing ? "Disable Drawing" : "Add Landmark"}
+        {isDrawing ? "Disable " : "Draw"}
       </Button>
     </Box>
 
