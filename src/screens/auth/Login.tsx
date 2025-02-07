@@ -2,7 +2,7 @@
 import React from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { loginSchema } from "./authValidation";
+import { loginSchema } from "./validations/authValidation";
 import { Box, TextField, Button, Typography, Container, CssBaseline, Avatar } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useNavigate } from "react-router-dom";
