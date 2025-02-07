@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Table, TablePagination, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Box, TextField, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import LandmarkAddForm from "./LandmarkAddForm";
 import MapComponent from "./MapComponent";
+import LandmarkDetailsCard from "./LandmarkDetailCard";
 
 // Define the Type for Landmarks
 interface Landmark {
@@ -29,10 +30,9 @@ const LandmarkListing = () => {
     setSelectedLandmark(landmark);
   };
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>, column: keyof typeof search) => {
-    setSearch((prev) => ({ ...prev, [column]: e.target.value }));
-  };
-
+ const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, column: keyof typeof search) => {
+   setSearch((prev) => ({ ...prev, [column]: (e.target as HTMLInputElement).value }));
+ };
   const filteredData = data.filter(
     (row) =>
       row.id.toString().toLowerCase().includes(search.id.toLowerCase()) &&
@@ -56,14 +56,7 @@ const LandmarkListing = () => {
           overflowY: selectedLandmark ? "auto" : "hidden",
         }}
       >
-        <Button
-          sx={{ ml: "auto", mr: 2, mb: 2, display: "block" }}
-          variant="contained"
-          color="primary"
-          onClick={() => setOpenCreateModal(true)}
-        >
-          Add Landmark
-        </Button>
+       
         <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
           <Table sx={{ borderCollapse: "collapse", width: "100%" }}>
             <TableHead>
@@ -117,24 +110,28 @@ const LandmarkListing = () => {
         }}
       >
         {/* Map Section */}
-        <Box sx={{ height: "50%", borderRadius: 2, overflow: "hidden", boxShadow: 2 }}>
+        <Box sx={{ height: "100%", borderRadius: 2, overflow: "hidden", boxShadow: 2 }}>
           <MapComponent onDrawEnd={(coordinates) => console.log("Drawn:", coordinates)} isOpen={true} />
         </Box>
+        <Button
+          sx={{ ml: "auto", mr: 2, mb: 2, display: "block" }}
+          variant="contained"
+          color="primary"
+          onClick={() => setOpenCreateModal(true)}
+        >
+          Add Landmark
+        </Button>
 
         {/* Additional Details or Selected Landmark Info */}
         {selectedLandmark && (
           <Paper sx={{ padding: 2, height: "50%", overflowY: "auto" }}>
-            <h3>{selectedLandmark.name}</h3>
-            <p><strong>Location:</strong> {selectedLandmark.location}</p>
-            <p><strong>Status:</strong> {selectedLandmark.status}</p>
-            <p><strong>Importance:</strong> {selectedLandmark.importance}</p>
+            <LandmarkDetailsCard landmark={selectedLandmark} onBack={() => setSelectedLandmark(null)} onDelete={() => setSelectedLandmark(null)} onUpdate={() => setSelectedLandmark(null) } />
           </Paper>
         )}
       </Box>
 
       {/* Dialog for Adding a Landmark */}
       <Dialog open={openCreateModal} onClose={() => setOpenCreateModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Create New Landmark</DialogTitle>
         <DialogContent>
           <LandmarkAddForm />
         </DialogContent>
