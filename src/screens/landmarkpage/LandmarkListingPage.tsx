@@ -137,7 +137,6 @@ const LandmarkListing = () => {
 
       {/* Dialog for Adding a Landmark */}
       <Dialog open={openCreateModal} onClose={() => setOpenCreateModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add Landmark</DialogTitle>
         <DialogContent>
           <LandmarkAddForm boundary={boundary} onClose={() => setOpenCreateModal(false)} name={""} status={""} importance={""} />
         </DialogContent>
