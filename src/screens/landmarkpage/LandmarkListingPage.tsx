@@ -117,17 +117,9 @@ const LandmarkListing = () => {
         }}
       >
         {/* Map Section */}
-        <Box sx={{ height: "100%", borderRadius: 2, overflow: "hidden", boxShadow: 2 }}>
+        <Box sx={{ height: "70%", borderRadius: 2, overflow: "hidden", boxShadow: 2 }}>
           <MapComponent onDrawEnd={handlePolygonSelect}  isOpen={true} />
         </Box>
-        <Button
-          sx={{ ml: "auto", mr: 2, mb: 2, display: "block" }}
-          variant="contained"
-          color="primary"
-          onClick={() => setOpenCreateModal(true)}
-        >
-          Add Landmark
-        </Button>
 
         {/* Additional Details or Selected Landmark Info */}
         {selectedLandmark && (
