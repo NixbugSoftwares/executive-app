@@ -7,7 +7,7 @@ interface LandmarkCardProps {
     id: number;
     name: string;
     location: string;
-    status: "Verified" | "unverified";
+    status: "Verified" | "Verifying";
     importance: "low" | "medium" | "high";
   };
   onUpdate: (id: number) => void;
