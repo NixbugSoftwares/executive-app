@@ -13,7 +13,7 @@ import localStorageHelper from './localStorageHelper';
 export const base_URL = ' http://192.168.0.251:8080'; //base URL
 
 //******************************************************Token **************************************** */
-const getAuthTocken = async () => {
+const getAuthToken = async () => {
  try {
  const token = JSON.parse(
  await localStorageHelper.getEncryptedData('@token'),
@@ -37,7 +37,7 @@ const getAuthTocken = async () => {
 
  return newToken;
  } catch (err) {
- console.error('Error in getAuthTocken', err);
+ console.error('Error in getAuthToken', err);
  throw err;
  }
 };
@@ -56,7 +56,7 @@ const prepareHeaders = async (tokenNeeded: any) => {
  const hourDifference = moment(tokenExpiry).diff(moment(), 'hours');
 
  if (!hourDifference || hourDifference <= 1) {
- AuthToken = await getAuthTocken();
+ AuthToken = await getAuthToken();
  }
 
  headers['Authorization'] = `Bearer ${AuthToken}`;
