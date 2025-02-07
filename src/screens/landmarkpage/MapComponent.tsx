@@ -74,7 +74,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
       // Enable drawing
       const draw = new Draw({
         source: vectorSource.current,
-        type: "Polygon", maxPoints: 5
+        type: "Polygon", //maxPoints: 4
       });
 
       draw.on("drawend", (event) => {
