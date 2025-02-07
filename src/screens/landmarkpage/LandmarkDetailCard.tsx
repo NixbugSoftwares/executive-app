@@ -20,7 +20,7 @@ const LandmarkDetailsCard: React.FC<LandmarkCardProps> = ({ landmark, onBack, on
 
   return (
     <>
-      <Card sx={{ maxWidth: 420, margin: 2, boxShadow: 4, borderRadius: 3, p: 1 }}>
+      <Card sx={{ maxWidth: 520, margin: 0, boxShadow: 4, borderRadius: 3, p: 1 }}>
       <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
           <Avatar sx={{ bgcolor: "primary.main", width: 56, height: 56 }}>
             <LocationOn fontSize="large" />

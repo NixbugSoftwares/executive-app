@@ -31,7 +31,7 @@ const LandmarkListing = () => {
   const [search, setSearch] = useState({ id: "", name: "", location: "" });
   const [page, setPage] = useState(0);
   const rowsPerPage = 8;
-  const [boundary, setBoundary] = useState<string>(''); // Add this line
+  const [boundary, setBoundary] = useState<string>(''); 
    
 
   const handleRowClick = (landmark: Landmark) => {
@@ -40,7 +40,7 @@ const LandmarkListing = () => {
 
   const handlePolygonSelect = (coordinates: string) => {
     setBoundary(coordinates);
-    setTimeout(() => setOpenCreateModal(true), 0); // Open modal when a polygon is drawn
+    setTimeout(() => setOpenCreateModal(true), 0); 
   };
 
  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, column: keyof typeof search) => {
@@ -129,7 +129,7 @@ const LandmarkListing = () => {
 
         {/* Additional Details or Selected Landmark Info */}
         {selectedLandmark && (
-          <Paper sx={{ padding: 2, height: "50%", overflowY: "auto" }}>
+          <Paper sx={{ padding: 1, height: "100%", overflowY: "auto" }}>
             <LandmarkDetailsCard landmark={selectedLandmark} onBack={() => setSelectedLandmark(null)} onDelete={() => setSelectedLandmark(null)} onUpdate={() => setSelectedLandmark(null) } />
           </Paper>
         )}
