@@ -158,7 +158,7 @@ function RoleListingPage() {
                             <Chip label={row.manageexecutive=== true?"Yes":"No"} variant="filled" size='small' 
                             sx={{
                               backgroundColor: row.manageexecutive === true ? "rgba(92, 184, 92, 0.4)" : "rgba(239, 1, 7, 0.4)",
-                              color: row.manageexecutive === true ? "rgb(6,64,43)" : "rgb(102,0,0)",
+                              color: row.manageexecutive === true ? "rgb(6,64,43)" : "rgb(102,0,0)",  width:"50px"
                             }}
                             />
                             </TableCell>
@@ -166,7 +166,7 @@ function RoleListingPage() {
                             <Chip label={row.managerole=== true?"Yes":"No"} variant="filled" size='small'
                             sx={{
                               backgroundColor: row.managerole === true ? "rgba(92, 184, 92, 0.4)" : "rgba(239, 1, 7, 0.4)",
-                              color: row.managerole === true ? "rgb(6,64,43)" : "rgb(102,0,0)",
+                              color: row.managerole === true ? "rgb(6,64,43)" : "rgb(102,0,0)", width:"50px"
                             }}
                             />
                             </TableCell>
@@ -174,7 +174,7 @@ function RoleListingPage() {
                             <Chip label={row.managelandmark=== true?"Yes":"No"} variant="filled" size='small'
                              sx={{
                               backgroundColor: row.managelandmark === true ? "rgba(92, 184, 92, 0.4)" : "rgba(239, 1, 7, 0.4)",
-                              color: row.managelandmark === true ? "rgb(6,64,43)" : "rgb(102,0,0)",
+                              color: row.managelandmark === true ? "rgb(6,64,43)" : "rgb(102,0,0)",  width:"50px"
                             }}
                             />
                             </TableCell>
@@ -182,7 +182,7 @@ function RoleListingPage() {
                             <Chip label={row.managecompany=== true?"Yes":"No"} variant="filled" size='small'
                              sx={{
                               backgroundColor: row.managecompany === true ? "rgba(92, 184, 92, 0.4)" : "rgba(239, 1, 7, 0.4)",
-                              color: row.managecompany === true ? "rgb(6,64,43)" : "rgb(102,0,0)",
+                              color: row.managecompany === true ? "rgb(6,64,43)" : "rgb(102,0,0)",  width:"50px"
                             }}
                             />
                             </TableCell>   
