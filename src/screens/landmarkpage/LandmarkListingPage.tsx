@@ -15,16 +15,22 @@ interface Landmark {
 
 const LandmarkListing = () => {
   const data: Landmark[] = [
-    { id: 1, name: "Landmark1", location: "location1", status: "Verified", importance: "low" },
-    { id: 2, name: "Landmark2", location: "location2", status: "Verifying", importance: "medium" },
-    { id: 3, name: "Landmark12", location: "location12", status: "Verifying", importance: "high" },
+    { id: 123, name: "Landmark1", location: "location1", status: "Verified", importance: "low" },
+    { id: 26546, name: "Landmark2", location: "location2", status: "Verifying", importance: "medium" },
+    { id: 3354, name: "Landmark3", location: "location3", status: "Verifying", importance: "high" },
+    { id: 187, name: "Landmark4", location: "location4", status: "Verified", importance: "low" },
+    { id: 2534, name: "Landmark5", location: "location5", status: "Verifying", importance: "medium" },
+    { id: 15346, name: "Landmark6", location: "location6", status: "Verified", importance: "low" },
+    { id: 9782, name: "Landmark7", location: "location7", status: "Verifying", importance: "medium" },
+    { id: 3897, name: "Landmark8", location: "location8", status: "Verifying", importance: "high" },
+    { id: 3255, name: "Landmark9", location: "location9", status: "Verifying", importance: "high" }
   ];
 
   const [selectedLandmark, setSelectedLandmark] = useState<Landmark | null>(null);
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [search, setSearch] = useState({ id: "", name: "", location: "" });
   const [page, setPage] = useState(0);
-  const rowsPerPage = 7;
+  const rowsPerPage = 8;
   const [boundary, setBoundary] = useState<string>(''); // Add this line
    
 
