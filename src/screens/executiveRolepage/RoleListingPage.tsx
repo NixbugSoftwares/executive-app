@@ -50,7 +50,7 @@ function RoleListingPage() {
     
 
       const [page, setPage] = useState(0);
-      const rowsPerPage = 7;const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+      const rowsPerPage = 7;const handleChangePage = (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
         if (newPage >= 0 && newPage < Math.ceil(filteredData.length / rowsPerPage)) {
           setPage(newPage);
         }
