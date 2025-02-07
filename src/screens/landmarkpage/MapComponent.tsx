@@ -9,7 +9,8 @@ import { Polygon } from "ol/geom";
 import { fromLonLat, toLonLat } from "ol/proj";
 import { Vector as VectorSource } from "ol/source";
 import { defaults as defaultControls, Zoom } from "ol/control";
-import { Box, Button, Typography, Paper } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 interface MapComponentProps {
   onDrawEnd: (coordinates: string) => void;
@@ -22,6 +23,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
   const mapInstance = useRef<Map | null>(null);
   const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">("osm");
   const [mousePosition, setMousePosition] = useState<string>("");
+  const navigate = useNavigate();
+  
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -59,7 +62,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
         const coordinates = polygon
           .getCoordinates()[0]
           .map((coord) => coord.join(" "));
+
         onDrawEnd(coordinates.join(" , "));
+
+        // Navigate to landmark/create with coordinates as state
+        navigate("/landmark/create", { state: { boundary: coordinates.join(" , ") } });
       });
 
       map.addInteraction(draw);
@@ -69,9 +76,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
     if (isOpen) {
       setTimeout(() => {
         mapInstance.current?.updateSize();
-      }, 590);
+      }, 500);
     }
-  }, [isOpen, onDrawEnd]);
+  }, [isOpen, onDrawEnd, navigate]);
 
   const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
     if (!mapInstance.current) return;
@@ -112,27 +119,14 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
   };
 
   return (
-    <Box display="flex" flexDirection="column" height="100%">
-      {/* Coordinate display above the map */}
-      <Paper
-        elevation={3}
-        sx={{
-          padding: 1,
-          textAlign: "center",
-          backgroundColor: "#f5f5f5",
-        }}
-      >
-        <Typography variant="body1">
-          Mouse Position: <strong>{mousePosition}</strong>
-        </Typography>
-      </Paper>
-
-      <Box mb={2} textAlign="center">
+    <Box  height="100%">
+      <Box  sx={{ justifyContent: "space-between" }}>
         <Button
           onClick={() => changeMapType("osm")}
           disabled={mapType === "osm"}
           variant="contained"
           sx={{ mr: 1 }}
+          size="small"
         >
           OSM Map
         </Button>
@@ -141,6 +135,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
           disabled={mapType === "satellite"}
           variant="contained"
           sx={{ mr: 1 }}
+          size="small"
         >
           Satellite Map
         </Button>
@@ -151,6 +146,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
         >
           Hybrid Map
         </Button>
+        <Typography variant="body1">
+           <strong>{mousePosition}</strong>
+        </Typography>
       </Box>
 
       <Box ref={mapRef} width="100%" height="600px" flex={1} />
