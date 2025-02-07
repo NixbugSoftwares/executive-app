@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem, Typography, SelectChangeEvent } from "@mui/material";
 import { useLocation } from "react-router-dom"; // Import useLocation
 
@@ -7,18 +7,24 @@ type LandmarkFormValues = {
   boundary: string;
   status: string;
   importance: string;
+  onClose: () => void;
 };
 
-const LandmarkAddForm = () => {
-  const location = useLocation();
-  const boundaryFromMap = location.state?.boundary || ""; // Retrieve boundary from navigation state
 
-  const [formValues, setFormValues] = useState<LandmarkFormValues>({
+const LandmarkAddForm: React.FC<LandmarkFormValues> = ({ boundary, onClose }) =>  {
+  const location = useLocation();
+  const Mapboundary = location.state?.boundary || ""; 
+
+  const [formValues, setFormValues] = useState({
     name: "",
-    boundary: boundaryFromMap, // Pre-fill boundary
+    boundary: Mapboundary, 
     status: "Verifying",
     importance: "low",
   });
+  
+  useEffect(() => {
+    setFormValues((prev) => ({ ...prev, boundary }));
+  }, [boundary]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
     const { name, value } = event.target;
@@ -40,6 +46,7 @@ const LandmarkAddForm = () => {
     event.preventDefault();
     console.log("Form submitted:", formValues);
     alert("Landmark added successfully!");
+    onClose();
   };
 
   return (

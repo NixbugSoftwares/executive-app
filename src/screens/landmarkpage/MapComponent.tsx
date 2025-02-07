@@ -59,14 +59,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
 
       draw.on("drawend", (event) => {
         const polygon = event.feature.getGeometry() as Polygon;
-        const coordinates = polygon
-          .getCoordinates()[0]
-          .map((coord) => coord.join(" "));
+        const coordinates = polygon.getCoordinates()[0].map((coord) => coord.join(" "));
 
-        onDrawEnd(coordinates.join(" , "));
-
-        // Navigate to landmark/create with coordinates as state
-        navigate("/landmark/create", { state: { boundary: coordinates.join(" , ") } });
+        onDrawEnd(coordinates.join(" , ")); // Open form modal with boundary
       });
 
       map.addInteraction(draw);

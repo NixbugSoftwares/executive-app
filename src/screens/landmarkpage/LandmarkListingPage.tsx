@@ -25,9 +25,16 @@ const LandmarkListing = () => {
   const [search, setSearch] = useState({ id: "", name: "", location: "" });
   const [page, setPage] = useState(0);
   const rowsPerPage = 7;
+  const [boundary, setBoundary] = useState<string>(''); // Add this line
+   
 
   const handleRowClick = (landmark: Landmark) => {
     setSelectedLandmark(landmark);
+  };
+
+  const handlePolygonSelect = (coordinates: string) => {
+    setBoundary(coordinates);
+    setTimeout(() => setOpenCreateModal(true), 0); // Open modal when a polygon is drawn
   };
 
  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, column: keyof typeof search) => {
@@ -40,7 +47,7 @@ const LandmarkListing = () => {
       row.location.toLowerCase().includes(search.location.toLowerCase())
   );
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
@@ -111,7 +118,7 @@ const LandmarkListing = () => {
       >
         {/* Map Section */}
         <Box sx={{ height: "100%", borderRadius: 2, overflow: "hidden", boxShadow: 2 }}>
-          <MapComponent onDrawEnd={(coordinates) => console.log("Drawn:", coordinates)} isOpen={true} />
+          <MapComponent onDrawEnd={handlePolygonSelect}  isOpen={true} />
         </Box>
         <Button
           sx={{ ml: "auto", mr: 2, mb: 2, display: "block" }}
@@ -132,13 +139,12 @@ const LandmarkListing = () => {
 
       {/* Dialog for Adding a Landmark */}
       <Dialog open={openCreateModal} onClose={() => setOpenCreateModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add Landmark</DialogTitle>
         <DialogContent>
-          <LandmarkAddForm />
+          <LandmarkAddForm boundary={boundary} onClose={() => setOpenCreateModal(false)} name={""} status={""} importance={""} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenCreateModal(false)} color="error">
-            Cancel
-          </Button>
+          <Button onClick={() => setOpenCreateModal(false)} color="error">Cancel</Button>
         </DialogActions>
       </Dialog>
     </Box>
@@ -146,3 +152,4 @@ const LandmarkListing = () => {
 };
 
 export default LandmarkListing;
+
