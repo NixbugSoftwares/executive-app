@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem, Typography, SelectChangeEvent, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+
 import Sidebar from "../../common/sidebar";
 import MapComponent from "./MapComponent"; 
 
@@ -94,7 +95,7 @@ const LandmarkAddForm = () => {
         value={formValues.boundary}
         onClick={handleBoundaryClick} 
         variant="outlined"
-        size="small"
+        
         required
         slotProps={{ input: { readOnly: true } }}
       />
@@ -122,7 +123,7 @@ const LandmarkAddForm = () => {
         </Button>
       </Box>
 
-      <Dialog open={openMapModal} onClose={() => setOpenMapModal(false)} fullWidth maxWidth="md">
+      <Dialog open={openMapModal} onClose={() => setOpenMapModal(false)} fullWidth fullScreen >
         <DialogTitle>Select Boundary</DialogTitle>
         <DialogContent>
           <MapComponent onDrawEnd={handleDrawEnd} isOpen={openMapModal} /> 
