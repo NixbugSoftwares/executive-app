@@ -17,6 +17,7 @@
     "@mui/lab": "^6.0.0-beta.24",
     "@mui/material": "^6.4.1",
     "@reduxjs/toolkit": "^2.5.0",
+    "@types/redux-logger": "^3.0.13",
     "axios": "^1.7.9",
     "crypto-js": "^4.2.0",
     "moment": "^2.30.1",
@@ -28,6 +29,7 @@
     "react-router-dom": "^7.1.3",
     "react-toastify": "^11.0.3",
     "redux": "^5.0.1",
+    "redux-logger": "^3.0.6",
     "yup": "^1.6.1"
   },
   "devDependencies": {
