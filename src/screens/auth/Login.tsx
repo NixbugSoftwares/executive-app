@@ -7,6 +7,8 @@ import { Box, TextField, Button, Typography, Container, CssBaseline, Avatar } fr
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useNavigate } from "react-router-dom";
 import commonApi from "../../utils/commonApi";
+import { useAppDispatch } from "../../store/Hooks";
+import { Loginapi } from "../../slices/authSlice";
 
 
 // ************************************************************** login form interface ********************************************
@@ -20,6 +22,7 @@ interface ILoginFormInputs {
 // ************************************************************** login form component ********************************************
 const LoginPage: React.FC = () => {
 
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const {
     register,
@@ -36,13 +39,10 @@ const LoginPage: React.FC = () => {
       formData.append("username", data.username);
       formData.append("password", data.password);
   
-      const response = await commonApi.apiCall(
-        "POST",
-        "/executive/token",
-        formData,
-        false,
-        "multipart/form-data"
-      );
+      const response = await dispatch(Loginapi({
+        
+       
+      }))
   
       console.log("response====>", response);
   
@@ -50,7 +50,7 @@ const LoginPage: React.FC = () => {
         localStorage.setItem("access_token", response.access_token);
         navigate("/home");
       } else {
-        console.error("Login failed: Invalid token");
+        console.error(response.payload);
       }
     } catch (error) {
       if (error instanceof Error) {
