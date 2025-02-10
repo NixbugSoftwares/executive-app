@@ -1,66 +1,58 @@
-
 import React from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { loginSchema } from "./validations/authValidation";
-import { Box, TextField, Button, Typography, Container, CssBaseline, Avatar } from "@mui/material";
+import { Box, TextField, Button, Typography, Container, CssBaseline, Avatar, CircularProgress } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useNavigate } from "react-router-dom";
-import commonApi from "../../utils/commonApi";
-import { useAppDispatch } from "../../store/Hooks";
-import { Loginapi } from "../../slices/authSlice";
+import { useAppDispatch, useAppSelector } from "../../store/Hooks";
+import { LoginApi, selectAuth } from "../../slices/authSlice";
 
-
-// ************************************************************** login form interface ********************************************
+// Login form interface
 interface ILoginFormInputs {
   username: string;
   password: string;
 }
 
-
-
-// ************************************************************** login form component ********************************************
+// Login component
 const LoginPage: React.FC = () => {
-
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { loading, error } = useAppSelector(selectAuth);
+
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<ILoginFormInputs>({
-    resolver: yupResolver(loginSchema), 
+    resolver: yupResolver(loginSchema),
   });
+
   const handleLogin: SubmitHandler<ILoginFormInputs> = async (data) => {
     try {
       console.log("Form Data:", data);
-  
+
+      // FormData for multipart request
       const formData = new FormData();
       formData.append("username", data.username);
       formData.append("password", data.password);
-  
-      const response = await dispatch(Loginapi({
-        
-       
-      }))
-  
-      console.log("response====>", response);
-  
+
+      // Dispatch API call
+      const response = await dispatch(LoginApi(formData)).unwrap();
+
+      console.log("Login Response:", response);
+
       if (response?.access_token) {
         localStorage.setItem("access_token", response.access_token);
+        localStorage.setItem("token_expires_in", response.token_expires_in);
         navigate("/home");
       } else {
-        console.error(response.payload);
+        console.error("Login failed", response);
       }
     } catch (error) {
-      if (error instanceof Error) {
-        console.error("Error:", error.message); // Safely access the message property
-      } else {
-        console.error("An unexpected error occurred:", error);
-      }
+      console.error("Login Error:", error);
     }
   };
-  
 
   return (
     <Container component="main" maxWidth="xs">
@@ -79,12 +71,7 @@ const LoginPage: React.FC = () => {
         <Typography component="h1" variant="h5">
           Sign In
         </Typography>
-        <Box
-          component="form"
-          noValidate
-          sx={{ mt: 1 }}
-          onSubmit={handleSubmit(handleLogin)}
-        >
+        <Box component="form" noValidate sx={{ mt: 1 }} onSubmit={handleSubmit(handleLogin)}>
           <TextField
             margin="normal"
             required
@@ -109,14 +96,19 @@ const LoginPage: React.FC = () => {
             helperText={errors.password?.message}
             autoComplete="current-password"
           />
+          {error && (
+            <Typography color="error" variant="body2">
+              {error}
+            </Typography>
+          )}
           <Button
             type="submit"
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2, bgcolor: "darkblue" }}
-            disabled={isSubmitting}
+            disabled={loading}
           >
-            {isSubmitting ? "Signing In..." : "Sign In"}
+            {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Sign In"}
           </Button>
         </Box>
       </Box>

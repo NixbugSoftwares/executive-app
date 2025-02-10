@@ -5,10 +5,6 @@ import localStorageHelper from './localStorageHelper';
 
 
 
-// export const API_BASE = DotEnvHelper.getApiUrl();
-// export const STRIPE_KEY = DotEnvHelper.getStripePublishKey();
-// console.log('Api===>',API_BASE);
-// export const STRIPE_P_KEY= Config.STRIPE_KEY;
 
 export const base_URL = 'http://192.168.0.134:8080'; //base URL
 
@@ -18,13 +14,11 @@ const getAuthToken = async () => {
  const token = JSON.parse(
  await localStorageHelper.getEncryptedData('@token'),
  );
-//  const refreshToken = JSON.parse(
-//  await localStorageHelper.getEncryptedData('@refresh_token'),
-//  );
+
 
  const response = await axios.post(
  `${base_URL}auth/token`,
- {token}, //refresh_token: refreshToken
+ {token},
  {
  headers: {'Content-Type': 'application/json'},
  },
@@ -101,13 +95,13 @@ const handleErrorResponse = (errorResponse: any) => {
 //******************************************************  apiCall  **************************************** 
 
 const apiCall = async (
- method: any,
- route: any,
- params = {},
- tokenNeeded = true,
- contentType = 'application/json',
+  method: "get" | "post" | "put" | "delete",
+  route: string,
+  params: any = {},
+  tokenNeeded: boolean = true,
+  contentType: string = "application/json"
 ) => {
- console.log('====================================');
+ 
  console.log(route);
  console.log('====================================');
  try {
