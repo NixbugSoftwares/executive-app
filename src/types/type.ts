@@ -1,8 +1,8 @@
 export interface User {
-    id: number,
-    name: string,
-    email: string,
-    password: string,
-    createdAt: string,
-    updatedAt: string
+    executive_id: number,
+    access_token: string,
+    token_type: string,
+    created_on: string,
+    expires_in: number,
+    client_id: string
 }

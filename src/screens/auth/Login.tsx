@@ -7,6 +7,7 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../store/Hooks";
 import { LoginApi, selectAuth } from "../../slices/authSlice";
+import { User } from "../../types/type";
 
 // Login form interface
 interface ILoginFormInputs {
@@ -31,20 +32,34 @@ const LoginPage: React.FC = () => {
   const handleLogin: SubmitHandler<ILoginFormInputs> = async (data) => {
     try {
       console.log("Form Data:", data);
-
+  
       // FormData for multipart request
       const formData = new FormData();
       formData.append("username", data.username);
       formData.append("password", data.password);
-
+  
       // Dispatch API call
       const response = await dispatch(LoginApi(formData)).unwrap();
-
+  
       console.log("Login Response:", response);
-
+  
       if (response?.access_token) {
-        localStorage.setItem("access_token", response.access_token);
-        localStorage.setItem("token_expires_in", response.token_expires_in);
+        const expiresAt = Date.now() + response.expires_in * 1000; 
+  
+        localStorage.setItem("@token", response.access_token);
+        localStorage.setItem("@token_expires", expiresAt.toString());
+
+        const user: User = {
+          executive_id: response.executive_id,
+          access_token: response.access_token,
+          token_type: response.token_type,
+          created_on: response.created_on,
+          expires_in: response.expires_in,
+          client_id: response.client_id
+        };
+
+        localStorage.setItem("@user", JSON.stringify(user));
+        
         navigate("/home");
       } else {
         console.error("Login failed", response);
@@ -52,8 +67,9 @@ const LoginPage: React.FC = () => {
     } catch (error) {
       console.error("Login Error:", error);
     }
-  };
+};
 
+  
   return (
     <Container component="main" maxWidth="xs">
       <CssBaseline />
