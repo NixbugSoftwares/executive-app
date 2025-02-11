@@ -1,5 +1,5 @@
 import React, {Suspense, lazy, memo} from "react";
-import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter as _Router, Route, Routes, Navigate } from "react-router-dom";
 
 //******************lazy-loaded component for better performance***************************
 const Home = lazy(() => import('../screens/homepage/home'));
@@ -71,7 +71,9 @@ export type HomeRouteParams = {
 
 {/* ******************************************************************Landmark********************************************** */}
 
-            <Route path="/landmark/create" element={<LandmarkAddForm />} />
+            <Route path="/landmark/create" element={<LandmarkAddForm name={""} boundary={""} status={""} importance={""} onClose={function (): void {
+            throw new Error("Function not implemented.");
+          } } />} />
 
 
           </Routes>
