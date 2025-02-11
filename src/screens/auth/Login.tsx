@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../store/Hooks";
 import { LoginApi, selectAuth } from "../../slices/authSlice";
 import { User } from "../../types/type";
+import { userLoggedIn } from "../../slices/appSlice";
 
 // Login form interface
 interface ILoginFormInputs {
@@ -59,6 +60,7 @@ const LoginPage: React.FC = () => {
         };
 
         localStorage.setItem("@user", JSON.stringify(user));
+        dispatch(userLoggedIn(user));
         
         navigate("/home");
       } else {

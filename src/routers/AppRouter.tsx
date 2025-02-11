@@ -5,6 +5,7 @@ import { getLoggedIn, userLoggedIn } from "../slices/appSlice";
 import AuthRouter from "./authRouter";
 import HomeRouter from "./homeRouter";
 
+
 const AppRouter: React.FC = () => {
   const dispatch = useAppDispatch();
   const loggedIn = useAppSelector(getLoggedIn);
@@ -20,7 +21,7 @@ const AppRouter: React.FC = () => {
     checkUserLoggedIn();
   }, [dispatch]);
 
-  // 🔹 Ensure login page is the ONLY visible page when logged out
+  // Redirect to login if not logged in, otherwise show the appropriate router
   return loggedIn ? <HomeRouter /> : <AuthRouter />;
 };
 
