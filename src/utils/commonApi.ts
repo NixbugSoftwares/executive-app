@@ -12,7 +12,7 @@ export const base_URL = 'http://192.168.0.134:8080'; //base URL
 const getAuthToken = async () => {
  try {
  const token = JSON.parse(
- await localStorageHelper.getEncryptedData('@token'),
+ await localStorageHelper.getItem('@token'),
  );
 
 
@@ -26,8 +26,8 @@ const getAuthToken = async () => {
 
  const {token: newToken, token_expiry: newTokenExpiry} =
  response?.data?.data;
- await localStorageHelper.setEncryptedData('@token', newToken);
- await localStorageHelper.setEncryptedData('@token_expiry', newTokenExpiry);
+ await localStorageHelper.storeItem('@token', newToken);
+ await localStorageHelper.storeItem('@token_expiry', newTokenExpiry);
 
  return newToken;
  } catch (err) {
@@ -42,10 +42,10 @@ const prepareHeaders = async (tokenNeeded: any) => {
  let headers: any = {'Content-Type': 'application/json'};
  if (tokenNeeded) {
  let AuthToken = JSON.parse(
- await localStorageHelper.getEncryptedData('@token'),
+ await localStorageHelper.getItem('@token'),
  );
  const tokenExpiry = JSON.parse(
- await localStorageHelper.getEncryptedData('@token_expiry'),
+ await localStorageHelper.getItem('@token_expiry'),
  );
  const hourDifference = moment(tokenExpiry).diff(moment(), 'hours');
 
