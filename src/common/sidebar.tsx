@@ -12,7 +12,7 @@ import CorporateFareIcon from '@mui/icons-material/CorporateFare';
 import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
 import { useTheme, useMediaQuery } from '@mui/material';
 
-const Sidebar = () => {
+const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false); 

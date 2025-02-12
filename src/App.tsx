@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as _Router, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter as _Router, Route, Routes } from "react-router-dom";
 import AppRouter from "./routers/AppRouter";
-import NoNetworkPage from "./common/noNetworkPage";
+import { Nonet } from "./common";
 import { toast } from "react-toastify";
 import store from "./store/Store";
 import { Provider as ReduxProvider } from "react-redux";
@@ -37,10 +37,11 @@ const App: React.FC = () => {
     {isOnline ? (
       <Route path="*" element={<AppRouter />} />
     ) : (
-      <Route path="*" element={<NoNetworkPage />} />
+      <Route path="*" element={<Nonet />} />
     )}
     
-    <Route path="*" element={<Navigate to={isOnline ? "/" : "/nonetwork"} replace />} />
+    <Route path="*" element={<AppRouter />} />
+
   </Routes>
   </ReduxProvider>  
   );

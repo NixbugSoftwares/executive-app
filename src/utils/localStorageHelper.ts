@@ -1,14 +1,14 @@
-async function getItem(key: string): Promise<any | null> {
+function getItem(key: string): any | null {
   try {
     const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : null; 
+    return item ? JSON.parse(item) : null;
   } catch (error) {
     console.error("Error fetching data from localStorage:", error);
     return null;
   }
 }
 
-async function storeItem(key: string, item: any): Promise<void> {
+function storeItem(key: string, item: any): void {
   try {
     const itemString = JSON.stringify(item);
     localStorage.setItem(key, itemString);
@@ -17,7 +17,7 @@ async function storeItem(key: string, item: any): Promise<void> {
   }
 }
 
-async function removeStoredItem(key: string): Promise<void> {
+function removeStoredItem(key: string): void {
   try {
     localStorage.removeItem(key);
   } catch (error) {
@@ -25,9 +25,7 @@ async function removeStoredItem(key: string): Promise<void> {
   }
 }
 
-
-
-async function clearStorage(): Promise<void> {
+function clearStorage(): void {
   try {
     localStorage.clear();
   } catch (error) {
