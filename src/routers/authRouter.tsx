@@ -1,7 +1,5 @@
 import React, { Suspense, lazy, memo } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useAppSelector } from "../store/Hooks";
-import { getLoggedIn } from "../slices/appSlice";
 
 // **************************************** Lazy-loaded components for better performance *********************************
 
@@ -20,13 +18,6 @@ const LoadingIndicator = memo(() => (
 ));
 
 const AuthRouter: React.FC = () => {
-  const loggedIn = useAppSelector(getLoggedIn);
-
-  // If user is already logged in, redirect to home
-  if (loggedIn) {
-    return <Navigate to="/home" replace />;
-  }
-
   return (
     <Suspense fallback={<LoadingIndicator />}>
       <Routes>

@@ -55,7 +55,8 @@ export type HomeRouteParams = {
             <Route path="/busroute" element={<BusRoute />} />
             <Route path="/fare" element={<Fare />} />
             <Route path="/bus" element={<Bus />} />
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="*" element={<Navigate to="/home" replace />} />
+
 
 
 {/* ********************************************************************Account********************************************** */}

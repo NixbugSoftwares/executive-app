@@ -5,6 +5,7 @@ const HomePage: React.FC = () => {
   console.log("Token stored:", localStorage.getItem("@token"))
   console.log("Token expires at:", localStorage.getItem("@token_expires"))
   console.log("User stored:", localStorage.getItem("@user"))
+  console.log("Rendering Home component");
 
   return(
     <Box>

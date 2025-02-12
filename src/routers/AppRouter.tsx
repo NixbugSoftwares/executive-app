@@ -1,27 +1,30 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../store/Hooks";
 import localStorageHelper from "../utils/localStorageHelper";
 import { getLoggedIn, userLoggedIn } from "../slices/appSlice";
 import AuthRouter from "./authRouter";
 import HomeRouter from "./homeRouter";
 
-
 const AppRouter: React.FC = () => {
   const dispatch = useAppDispatch();
   const loggedIn = useAppSelector(getLoggedIn);
+  const [loading, setLoading] = useState(true);
 
+  const checkUserLoggedIn = () => {
+    const userData = localStorageHelper.getItem("@user"); 
+
+    if (userData) {
+      dispatch(userLoggedIn(userData)); 
+    }
+
+    setLoading(false);
+  };
   useEffect(() => {
-    const checkUserLoggedIn = async () => {
-      const userData = await localStorageHelper.getItem("@user");
-      if (userData) {
-        dispatch(userLoggedIn(userData));
-      }
-    };
-
     checkUserLoggedIn();
-  }, [dispatch]);
+  }, []);
 
-  // Redirect to login if not logged in, otherwise show the appropriate router
+  if (loading) return <div>Loading...</div>;
+
   return loggedIn ? <HomeRouter /> : <AuthRouter />;
 };
 
