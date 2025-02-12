@@ -1,20 +1,20 @@
 import React, {Suspense, lazy, memo} from "react";
-import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter as _Router, Route, Routes, Navigate } from "react-router-dom";
 
 //******************lazy-loaded component for better performance***************************
-const Home = lazy(() => import('../screens/homepage/home'));
-const Account = lazy(() => import('../screens/accountpage/Account'));
-const BusStop = lazy(() => import('../screens/busstoppage/BusStop'));
-const Landmark = lazy(() => import('../screens/landmarkpage/LandMarkPage'));
-const ExeRole = lazy(() => import('../screens/executiveRolepage/RolePage'));
-const Operator = lazy(() => import('../screens/operatorpage/Operatorpage'));
-const CRole = lazy(() => import('../screens/companyRolepage/CRolePage'));
-const BusRoute = lazy(() => import('../screens/busroutepage/RoutePage'));
-const Fare = lazy(() => import('../screens/farepage/FarePage'));
-const Bus = lazy(() => import('../screens/buspage/BusPage'));
-const AccountCreationForm = lazy(() => import('../screens/accountpage/AccountForm'));
-const ExeRoleCreation = lazy(() => import('../screens/executiveRolepage/RoleCreatingForm'));
-const LandmarkAddForm = lazy(() => import('../screens/landmarkpage/LandmarkAddForm'));
+const Home = lazy(() => import('../screens/home/home'));
+const Account = lazy(() => import('../screens/account/Account'));
+const BusStop = lazy(() => import('../screens/busstop/BusStop'));
+const Landmark = lazy(() => import('../screens/landmark/LandMark'));
+const ExeRole = lazy(() => import('../screens/executiveRole/Role'));
+const Operator = lazy(() => import('../screens/operator/Operator'));
+const CRole = lazy(() => import('../screens/companyRole/CompanyRole'));
+const BusRoute = lazy(() => import('../screens/busroute/BusRoute'));
+const Fare = lazy(() => import('../screens/fare/Fare'));
+const Bus = lazy(() => import('../screens/bus/Bus'));
+const AccountCreationForm = lazy(() => import('../screens/account/AccountForm'));
+const ExeRoleCreation = lazy(() => import('../screens/executiveRole/RoleCreatingForm'));
+const LandmarkAddForm = lazy(() => import('../screens/landmark/LandmarkAddForm'));
 
 //***************************************define route parameters******************************** 
 export type HomeRouteParams = {
@@ -71,7 +71,9 @@ export type HomeRouteParams = {
 
 {/* ******************************************************************Landmark********************************************** */}
 
-            <Route path="/landmark/create" element={<LandmarkAddForm />} />
+            <Route path="/landmark/create" element={<LandmarkAddForm name={""} boundary={""} status={""} importance={""} onClose={function (): void {
+            throw new Error("Function not implemented.");
+          } } />} />
 
 
           </Routes>

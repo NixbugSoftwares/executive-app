@@ -1,5 +1,5 @@
 import React from 'react';
-import Sidebar from '../../common/sidebar';
+import { Sidebar } from "../../common";
 import { Box } from '@mui/material';
 const FarePage: React.FC = () => {
   return(

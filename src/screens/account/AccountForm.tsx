@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem, Typography, SelectChangeEvent } from "@mui/material";
 
-import Sidebar from "../../common/sidebar";
 
 
 type AccountFormValues = {
@@ -66,7 +65,6 @@ const AccountCreationForm = () => {
         boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
       }}
     >
-      <Sidebar/>
       <Typography variant="h6" align="center" gutterBottom>
         Account Creation Form
       </Typography>

@@ -1,5 +1,5 @@
 import React from 'react'
-import Sidebar from '../../common/sidebar';
+import { Sidebar } from "../../common";
 import { Box } from '@mui/material';
 import LandmarkListing from './LandmarkListingPage';
 
