@@ -1,7 +1,7 @@
 import React from "react";
-import Sidebar from "../../common/sidebar";
+import { Sidebar } from "../../common";
 import { Box } from "@mui/material";
-import AccountListingTable from "./AccountListingPage";
+import AccountListingTable from "./AccountList";
 
 const AccountPage: React.FC = () => {
   return (
