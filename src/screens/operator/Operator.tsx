@@ -1,0 +1,15 @@
+import React from 'react';
+import { Sidebar } from "../../common";
+import { Box } from '@mui/material';
+const OperatorPage: React.FC = () => {
+  return(
+    <Box>
+      <Sidebar/>
+      <h1>operatorPage</h1>
+    </Box>
+
+  )
+  
+};
+
+export default OperatorPage;

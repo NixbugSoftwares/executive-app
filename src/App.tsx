@@ -1,35 +1,48 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState, useEffect } from "react";
+import { BrowserRouter as _Router, Route, Routes, Navigate } from "react-router-dom";
+import AppRouter from "./routers/AppRouter";
+import { Nonet } from "./common";
+import { toast } from "react-toastify";
+import store from "./store/Store";
+import { Provider as ReduxProvider } from "react-redux";
 
-function App() {
-  const [count, setCount] = useState(0)
 
+const App: React.FC = () => {
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success("You're online now");
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.error("You're offline now");
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+ 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <ReduxProvider store={store}>
+    <Routes>
+    {isOnline ? (
+      <Route path="*" element={<AppRouter />} />
+    ) : (
+      <Route path="*" element={<Nonet />} />
+    )}
+    
+    <Route path="*" element={<Navigate to={isOnline ? "/" : "/nonetwork"} replace />} />
+  </Routes>
+  </ReduxProvider>  
+  );
+};
 
-export default App
+export default App;
