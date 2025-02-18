@@ -11,10 +11,10 @@ const AppRouter: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const checkUserLoggedIn = () => {
-    const userData = localStorageHelper.getItem("@user"); 
+    const userData = localStorageHelper.getItem("@user");
 
     if (userData) {
-      dispatch(userLoggedIn(userData)); 
+      dispatch(userLoggedIn(userData));
     }
 
     setLoading(false);

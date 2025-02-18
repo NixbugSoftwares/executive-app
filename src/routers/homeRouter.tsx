@@ -2,7 +2,7 @@ import React, {Suspense, lazy, memo} from "react";
 import { BrowserRouter as _Router, Route, Routes, Navigate } from "react-router-dom";
 
 //******************lazy-loaded component for better performance***************************
-const Home = lazy(() => import('../screens/home/home'));
+
 const Account = lazy(() => import('../screens/account/Account'));
 const BusStop = lazy(() => import('../screens/busstop/BusStop'));
 const Landmark = lazy(() => import('../screens/landmark/LandMark'));
@@ -45,7 +45,6 @@ export type HomeRouteParams = {
       
         <Suspense fallback={<LoadingIndicator />}>
           <Routes>
-            <Route path="/home" element={<Home />} />
             <Route path="/account" element={<Account />} />
             <Route path="/busstop" element={<BusStop />} />
             <Route path="/landmark" element={<Landmark />} />
@@ -55,7 +54,7 @@ export type HomeRouteParams = {
             <Route path="/busroute" element={<BusRoute />} />
             <Route path="/fare" element={<Fare />} />
             <Route path="/bus" element={<Bus />} />
-            <Route path="*" element={<Navigate to="/home" replace />} />
+            <Route path="*" element={<Navigate to="/account" replace />} />
 
 
 

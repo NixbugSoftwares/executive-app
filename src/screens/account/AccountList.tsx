@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Box, Button, TablePagination, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, Select, MenuItem } from "@mui/material";
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import AccountDetailsCard from "./AccountDetailsCard";
 import AccountCreationForm from "./AccountForm";
+import { SelectChangeEvent } from "@mui/material";
 
 
 interface Account {
@@ -43,7 +44,7 @@ const AccountListingTable = () => {
   const [search, setSearch] = useState({ id: "", fullName: "", designation: "", gender: "", email: "", phoneNumber: "" });
 
   const [page, setPage] = useState(0);
-  const rowsPerPage = 7;
+  const rowsPerPage = selectedAccount ? 9 :8 ;
 
   const handleRowClick = (account: Account) => {
     setSelectedAccount(account);
@@ -52,12 +53,17 @@ const AccountListingTable = () => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, column: keyof typeof search) => {
     setSearch((prev) => ({ ...prev, [column]: (e.target as HTMLInputElement).value }));
   };
+    
+  const handleSelectChange = (e: SelectChangeEvent<string>, _p0?: string) => {
+    setSearch({ ...search, gender: e.target.value });
+  };
+
 
   const filteredData = data.filter((row) =>
     row.id.toString().toLowerCase().includes(search.id.toLowerCase()) &&
     row.fullName.toLowerCase().includes(search.fullName.toLowerCase()) &&
     row.designation.toLowerCase().includes(search.designation.toLowerCase()) &&
-    row.gender.toLowerCase().includes(search.gender.toLowerCase()) &&
+    (!search.gender || row.gender.toLowerCase() === search.gender.toLowerCase()) &&
     row.email.toLowerCase().includes(search.email.toLowerCase()) &&
     row.phoneNumber.toLowerCase().includes(search.phoneNumber.toLowerCase())
   );
@@ -67,28 +73,29 @@ const AccountListingTable = () => {
   };
 
   const [openCreateModal, setOpenCreateModal] = useState(false);
-
+  const handleCloseModal = () => {
+    setOpenCreateModal(false);
+  };
 
   return (
     <Box 
-      sx={{ 
-        display: "flex", 
-        flexDirection: { xs: "column", md: "row" }, 
-        width: "100%", 
-        height: "100vh", 
-        overflow: "hidden",
-        gap: 2
-      }}
+    sx={{ 
+      display: "flex", 
+      flexDirection: { xs: "column", md: "row" }, 
+      width: "100%", 
+      height: "100vh", 
+      gap: 2
+    }}
     >
       
       <Box
-        sx={{
-          flex: selectedAccount ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
-          maxWidth: selectedAccount ? { xs: "100%", md: "65%" } : "100%",
-          transition: "all 0.3s ease",
-          overflow: "hidden", // Disable scrolling when no account is selected
-          overflowY: selectedAccount ? "auto" : "hidden", // Enable scrolling when details card is shown
-        }}
+       sx={{
+        flex: selectedAccount ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
+        maxWidth: selectedAccount ? { xs: "100%", md: "65%" } : "100%",
+        transition: "all 0.3s ease",
+        overflowY: selectedAccount ? "auto" : "hidden",
+        
+      }}
       >
 
         <Button
@@ -106,174 +113,294 @@ const AccountListingTable = () => {
         </Button>
 
 
-        <TableContainer component={Paper} sx={{  overflowX: "auto" }}>
-          <Table sx={{ borderCollapse: "collapse", width: "100%" }}>
-            <TableHead>
-              <TableRow>
-                {/* Table Headers */}
-                <TableCell sx={{  }}>
-                  <b>ID</b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.id}
-                    onChange={(e) => handleSearchChange(e, "id")}
-                    fullWidth
-                    sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }}
-                  />
-                </TableCell>
+        <TableContainer component={Paper}>
+      <Table>
+        <TableHead>
+          <TableRow>
+            {/* ID Column */}
+            <TableCell><b>ID</b>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Search"
+                value={search.id}
+                onChange={(e) => handleSearchChange(e, "id")}
+                fullWidth
+                sx={{
+                  "& .MuiInputBase-root": {
+                    height: 30,
+                    padding: "4px",
+                    fontSize: selectedAccount ? '0.8rem' : '1rem', 
+                  },
+                  "& .MuiInputBase-input": {
+                    fontSize: selectedAccount ? '0.8rem' : '1rem', 
+                  }
+                }}
+              />
+            </TableCell>
 
-                <TableCell sx={{  }}>
-                  <b>Full Name</b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.fullName}
-                    onChange={(e) => handleSearchChange(e, "fullName")}
-                    fullWidth
-                    sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }}
-                  />
-                </TableCell>
+            {/* Full Name Column */}
+            <TableCell><b>Full Name</b>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Search"
+                value={search.fullName}
+                onChange={(e) => handleSearchChange(e, "fullName")}
+                fullWidth
+                sx={{
+                  "& .MuiInputBase-root": {
+                    height: 30,
+                    padding: "4px",
+                    fontSize: selectedAccount ? '0.8rem' : '1rem',
+                  },
+                  "& .MuiInputBase-input": {
+                    fontSize: selectedAccount ? '0.8rem' : '1rem',
+                  }
+                }}
+              />
+            </TableCell>
 
-                <TableCell sx={{  }}>
-                  <b>Designation</b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.designation}
-                    onChange={(e) => handleSearchChange(e, "designation")}
-                    fullWidth
-                    sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }}
-                  />
-                </TableCell>
+            {/* Designation Column */}
+            <TableCell><b>Designation</b>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Search"
+                value={search.designation}
+                onChange={(e) => handleSearchChange(e, "designation")}
+                fullWidth
+                sx={{
+                  "& .MuiInputBase-root": {
+                    height: 30,
+                    padding: "4px",
+                    fontSize: selectedAccount ? '0.8rem' : '1rem',
+                  },
+                  "& .MuiInputBase-input": {
+                    fontSize: selectedAccount ? '0.8rem' : '1rem',
+                  }
+                }}
+              />
+            </TableCell>
 
-                <TableCell sx={{  }}>
-                  <b>Gender</b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.gender}
-                    onChange={(e) => handleSearchChange(e, "gender")}
-                    fullWidth
-                    sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }}
-                  />
-                </TableCell>
 
-                <TableCell sx={{  width: "200px" }}>
-                  <b>Phone</b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.phoneNumber}
-                    onChange={(e) => handleSearchChange(e, "phoneNumber")}
-                    fullWidth
-                    sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }}
-                  />
-                </TableCell>
+            {/* Phone Column */}
+            <TableCell><b>Phone</b>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Search"
+                value={search.phoneNumber}
+                onChange={(e) => handleSearchChange(e, "phoneNumber")}
+                fullWidth
+                sx={{
+                  "& .MuiInputBase-root": {
+                    height: 30,
+                    padding: "4px",
+                    fontSize: selectedAccount ? '0.8rem' : '1rem',
+                  },
+                  "& .MuiInputBase-input": {
+                    fontSize: selectedAccount ? '0.8rem' : '1rem',
+                  }
+                }}
+              />
+            </TableCell>
 
-                <TableCell sx={{  }}>
-                  <b>Email</b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.email}
-                    onChange={(e) => handleSearchChange(e, "email")}
-                    fullWidth
-                    sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }}
-                  />
-                </TableCell>
-              </TableRow>
-            </TableHead>
+            {/* Email Column */}
+            <TableCell><b>Email</b>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Search"
+                value={search.email}
+                onChange={(e) => handleSearchChange(e, "email")}
+                fullWidth
+                sx={{
+                  "& .MuiInputBase-root": {
+                    height: 30,
+                    padding: "4px",
+                    fontSize: selectedAccount ? '0.8rem' : '1rem',
+                  },
+                  "& .MuiInputBase-input": {
+                    fontSize: selectedAccount ? '0.8rem' : '1rem',
+                  }
+                }}
+              />
+            </TableCell>
 
-            <TableBody>
-              {filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
-                <TableRow key={row.id} hover>
-                  <TableCell sx={{  }}><AccountCircleOutlinedIcon /> {row.id}</TableCell>
-                  <TableCell
-                    sx={{  cursor: "pointer", color: "blue" }}
-                    onClick={() => handleRowClick(row)}
-                  >
-                    {row.fullName}
-                  </TableCell>
-                  <TableCell sx={{  }}>{row.designation}</TableCell>
-                  <TableCell sx={{  }}>{row.gender}</TableCell>
-                  <TableCell sx={{  }}>{row.phoneNumber}</TableCell>
-                  <TableCell sx={{  }}>{row.email}</TableCell>   
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        {/* Pagination */}
-        <TablePagination
-            component="div"
-            count={filteredData.length}
-            page={page}
-            onPageChange={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            rowsPerPageOptions={[]}
-            labelDisplayedRows={() => ''}  // Remove default label text
-            ActionsComponent={({ count, page, onPageChange }) => (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <Button
-                  onClick={(event) => onPageChange(event, page - 1)}
-                  disabled={page === 0}
-                  sx={{ padding: '5px 10px' }}
+            {/* Gender Column */}
+            <TableCell size="small">
+              <b>Gender</b>
+              <FormControl fullWidth size="small">
+                <Select
+                  value={search.gender}
+                  onChange={(e) => handleSelectChange(e, "gender")}
+                  displayEmpty
+                  size="small"
+                  sx={{
+                    fontSize: selectedAccount ? '0.8rem' : '1rem', // Adjust font size based on account selection
+                    "& .MuiInputBase-root": {
+                      height: 30,  // Maintain height consistency
+                      padding: "4px",  // Adjust padding to match the TextField
+                    },
+                    "& .MuiSelect-icon": {
+                      fontSize: selectedAccount ? '1rem' : '1.25rem', // Adjust dropdown icon size as needed
+                    },
+                  }}
                 >
-                  &lt; {/* Left Arrow */}
-                </Button>
-                <Button
-                  onClick={(event) => onPageChange(event, page + 1)}
-                  disabled={page >= Math.ceil(count / rowsPerPage) - 1}
-                  sx={{ padding: '5px 10px' }}
-                >
-                  &gt; {/* Right Arrow */}
-                </Button>
-              </Box>
-            )}
-            sx={{
-              display: "flex",
-              justifyContent: "center", // Center the pagination
-              alignItems: "center",
-              padding: "10px 0",
-            }}
-         />
+                  <MenuItem value="">All</MenuItem>
+                  <MenuItem value="Male">Male</MenuItem>
+                  <MenuItem value="Female">Female</MenuItem>
+                  <MenuItem value="Transgender">Transgender</MenuItem>
+                  <MenuItem value="Other">Other</MenuItem>
+                </Select>
+              </FormControl>
+            </TableCell>
+
+          </TableRow>
+
+        </TableHead>
+        
+        <TableBody sx={{ fontSize: selectedAccount ? '0.8rem' : '1rem', whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
+            const isSelected = selectedAccount?.id === row.id;
+
+    return (
+      <TableRow
+      key={row.id}
+      hover
+      onClick={() => handleRowClick(row)}
+      sx={{
+        cursor: "pointer",
+        backgroundColor: isSelected ? "#1565C0 !important" : "inherit",
+        color: isSelected ? "white !important" : "inherit",
+        "&:hover": {
+          backgroundColor: isSelected ? "#1565C0 !important" : "#E3F2FD",
+        },
+        "& td": {
+          color: isSelected ? "white !important" : "inherit",
+        },
+      }}
+    >
+
+      <TableCell sx={{ maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <AccountCircleOutlinedIcon sx={{ marginRight: 1 }} />
+          {row.id}
+        </Box>
+      </TableCell>
+
+
+      <TableCell sx={{ maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {row.fullName}
+      </TableCell>
+
+
+      <TableCell sx={{ maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {row.designation}
+      </TableCell>
+
+
+      <TableCell sx={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {row.phoneNumber}
+      </TableCell>
+
+
+      <TableCell sx={{ maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {row.email}
+      </TableCell>
+
+
+      <TableCell sx={{ maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {row.gender}
+      </TableCell>
+    </TableRow>
+    );
+  })}
+</TableBody>
+
+      </Table>
+    </TableContainer>
+
+{/* Pagination */}
+<Box sx={{ display: 'flex', justifyContent: 'right', alignItems: 'right', gap: 1, mt: 1, mr: 20 }}>
+  
+  <Button
+    onClick={() => handleChangePage(null, page - 1)}
+    disabled={page === 0}
+    sx={{ padding: '5px 10px', minWidth: 40 }}
+  >
+    &lt;
+  </Button>
+
+
+  {Array.from({ length: Math.ceil(filteredData.length / rowsPerPage) }, (_, index) => index)
+    .slice(Math.max(0, page - 1), Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage)))
+    .map((pageNumber) => (
+      <Button
+        key={pageNumber}
+        onClick={() => handleChangePage(null, pageNumber)}
+        sx={{
+          padding: '5px 10px',
+          minWidth: 40,
+          bgcolor: page === pageNumber ? "rgba(21, 101, 192, 0.2)" : "transparent",
+          fontWeight: page === pageNumber ? "bold" : "normal",
+          borderRadius: "5px",
+          transition: "all 0.3s",
+          "&:hover": {
+            bgcolor: "rgba(21, 101, 192, 0.3)",
+          },
+        }}
+      >
+        {pageNumber + 1}
+      </Button>
+    ))}
+
+  <Button
+    onClick={() => handleChangePage(null, page + 1)}
+    disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
+    sx={{ padding: '5px 10px', minWidth: 40 }}
+  >
+    &gt;
+  </Button>
+</Box>
+
 
       </Box>
 
       {/* Right Side - Account Details Card */}
       {selectedAccount && (
         <Box
-          sx={{
-            flex: { xs: "0 0 100%", md: "0 0 35%" },
-            maxWidth: { xs: "100%", md: "35%" },
-            transition: "all 0.3s ease",
-            bgcolor: "grey.100",
-            p: 2,
-            mt: { xs: 2, md: 0 },
-            overflowY: "auto", // Enable scrolling for the details card
-            height: "100%",      // Ensure the card is tall enough to allow scrolling
-          }}
-        >
-          <AccountDetailsCard account={selectedAccount} onUpdate={() => {}} onDelete={() => {}} onBack={() => setSelectedAccount(null)} />
-        </Box>
+        sx={{
+          flex: { xs: "0 0 100%", md: "0 0 35%" },
+          maxWidth: { xs: "100%", md: "35%" },
+          transition: "all 0.3s ease",
+          bgcolor: "grey.100",
+          p: 2,
+          mt: { xs: 2, md: 0 },
+          overflowY: "auto", 
+          overflowX: "hidden", 
+          height: "100%", 
+        }}
+      >
+        <AccountDetailsCard 
+          account={selectedAccount} 
+          onUpdate={() => {}} 
+          onDelete={() => {}} 
+          onBack={() => setSelectedAccount(null)} 
+        />
+      </Box>
       )}
-       <Dialog open={openCreateModal} onClose={() => setOpenCreateModal(false)} maxWidth="sm" fullWidth>
+       <Dialog open={openCreateModal} onClose={handleCloseModal} maxWidth="sm" fullWidth>
         <DialogTitle>Create New Account</DialogTitle>
         <DialogContent>
-          <AccountCreationForm />
+          <AccountCreationForm onSuccess={handleCloseModal} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenCreateModal(false)} color="error">Cancel</Button>
+          <Button onClick={handleCloseModal} color="error">Cancel</Button>
         </DialogActions>
       </Dialog>
+
     </Box>
   );
 };

@@ -1,7 +1,16 @@
 function getItem(key: string): any | null {
   try {
     const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : null;
+    console.log("Item from localStorage:", item);
+
+    if (!item) return null;
+
+    // Check if the value is valid JSON
+    try {
+      return JSON.parse(item);
+    } catch {
+      return item; // Return raw string if JSON.parse fails
+    }
   } catch (error) {
     console.error("Error fetching data from localStorage:", error);
     return null;
@@ -10,7 +19,7 @@ function getItem(key: string): any | null {
 
 function storeItem(key: string, item: any): void {
   try {
-    const itemString = JSON.stringify(item);
+    const itemString = typeof item === "string" ? item : JSON.stringify(item);
     localStorage.setItem(key, itemString);
   } catch (error) {
     console.error("Error storing data in localStorage:", error);
@@ -37,5 +46,5 @@ export default {
   getItem,
   storeItem,
   removeStoredItem,
-  clearStorage
+  clearStorage,
 };

@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { RootState } from "../store/Store";
 import commonApi from "../utils/commonApi";
 
@@ -18,7 +18,7 @@ const initialState: AuthState = {
 
 // Async thunk for login
 export const LoginApi = createAsyncThunk(
-  "auth/login",
+  "/executive/token",
   async (data: FormData, { rejectWithValue }) => {
     try {
       const response = await commonApi.apiCall(
@@ -39,31 +39,8 @@ export const LoginApi = createAsyncThunk(
 export const authSlice = createSlice({
   name: "auth",
   initialState,
-  reducers: {
-    logout: (state) => {
-      state.user = null;
-      localStorage.removeItem("access_token");
-    },
-  },
-  extraReducers: (builder) => {
-    builder
-      .addCase(LoginApi.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(LoginApi.fulfilled, (state, action: PayloadAction<any>) => {
-        state.loading = false;
-        state.user = action.payload;
-      })
-      .addCase(LoginApi.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      });
-  },
+  reducers: {},
 });
-
-// Export actions
-export const { logout } = authSlice.actions;
 
 // Export selector
 export const selectAuth = (state: RootState) => state.auth;

@@ -1,70 +1,60 @@
-import axios from 'axios';
+import axios from "axios";
 import { toast } from "react-toastify";
-import moment from 'moment';
-import localStorageHelper from './localStorageHelper';
+import moment from "moment";
+import localStorageHelper from "./localStorageHelper";
 
-
-
-
-export const base_URL = 'http://192.168.0.134:8080'; //base URL
+export const base_URL = "http://192.168.0.134:8080"; //base URL
 
 //******************************************************Token **************************************** */
 const getAuthToken = async () => {
- try {
- const token = JSON.parse(
- await localStorageHelper.getItem('@token'),
- );
+  try {
+    const token = await localStorageHelper.getItem("@token");
 
+    const response = await axios.patch(
+      `${base_URL}/executive/token`,
+      { token },
+      { headers: { Authorization: `bearer ${token}` } }
+      // {
+      //   headers: { "Content-Type": "application/json" },
+      // }
+    );
 
- const response = await axios.post(
- `${base_URL}auth/token`,
- {token},
- {
- headers: {'Content-Type': 'application/json'},
- },
- );
+    console.log("getAuthtokenresponse=====>", response);
 
- const {token: newToken, token_expiry: newTokenExpiry} =
- response?.data?.data;
- await localStorageHelper.storeItem('@token', newToken);
- await localStorageHelper.storeItem('@token_expiry', newTokenExpiry);
+    await localStorageHelper.storeItem("@token", response?.data?.access_token);
+    await localStorageHelper.storeItem(
+      "@token_expires",
+      response?.data?.expires_in
+    );
 
- return newToken;
- } catch (err) {
- console.error('Error in getAuthToken', err);
- throw err;
- }
+    return response?.data?.access_token;
+  } catch (err) {
+    console.error("Error in getAuthToken", err);
+    throw err;
+  }
 };
-
 
 //****************************************************** prepare Headers **************************************** */
 const prepareHeaders = async (tokenNeeded: any) => {
- let headers: any = {'Content-Type': 'application/json'};
- if (tokenNeeded) {
- let AuthToken = JSON.parse(
- await localStorageHelper.getItem('@token'),
- );
- const tokenExpiry = JSON.parse(
- await localStorageHelper.getItem('@token_expiry'),
- );
- const hourDifference = moment(tokenExpiry).diff(moment(), 'hours');
+  let headers: any = { "Content-Type": "application/json" };
+  if (tokenNeeded) {
+    let AuthToken = await localStorageHelper.getItem("@token");
+    const tokenExpiry = await localStorageHelper.getItem("@token_expiry");
+    const hourDifference = moment(tokenExpiry).diff(moment(), "hours");
+    if (!hourDifference || hourDifference <= 1) {
+      AuthToken = await getAuthToken();
+    }
+    headers["Authorization"] = `bearer ${AuthToken}`;
+  }
 
- if (!hourDifference || hourDifference <= 1) {
- AuthToken = await getAuthToken();
- }
-
- headers['Authorization'] = `Bearer ${AuthToken}`;
- }
- return headers;
+  return headers;
 };
-
 
 //****************************************************** response handler **************************************** */
 
 const handleResponse = async (response: any) => {
   return response?.data; // Fix for response structure
 };
-
 
 //******************************************************  errorResponse handler  **************************************** */
 const handleErrorResponse = (errorResponse: any) => {
@@ -90,43 +80,40 @@ const handleErrorResponse = (errorResponse: any) => {
   }
 };
 
-
-
-//******************************************************  apiCall  **************************************** 
+//******************************************************  apiCall  ****************************************
 
 const apiCall = async (
-  method: "get" | "post" | "put" | "delete",
+  method: "get" | "post" | "patch" | "delete",
   route: string,
   params: any = {},
   tokenNeeded: boolean = true,
   contentType: string = "application/json"
 ) => {
- 
- console.log(route);
- console.log('====================================');
- try {
- const headers = await prepareHeaders(tokenNeeded);
- headers['Content-Type'] = contentType;
+  console.log(route);
+  console.log("method===========>", method);
+  try {
+    const headers = await prepareHeaders(tokenNeeded);
 
- const config = {
- method,
- url: `${base_URL}${route}`,
- headers,
- data: method !== 'get' && method !== 'delete' ? params : undefined,
- params: method === 'get' || method === 'delete' ? params : undefined,
- };
+    headers["Content-Type"] = contentType;
 
- console.log("CONFIG ===> ", config);
- 
+    const config = {
+      method,
+      url: `${base_URL}${route}`,
+      headers,
+      data: method !== "get" && method !== "delete" ? params : undefined,
+      params: method === "get" || method === "delete" ? params : undefined,
+    };
 
- const response = await axios(config);
- return await handleResponse(response);
- } catch (err: any) {
- return handleErrorResponse(err?.response);
- }
+    console.log("CONFIG ===> ", config);
+
+    const response = await axios(config);
+    return await handleResponse(response);
+  } catch (err: any) {
+    console.log("errorrr======>", err);
+    return handleErrorResponse(err?.response);
+  }
 };
 
-
 export default {
- apiCall,
+  apiCall,
 };

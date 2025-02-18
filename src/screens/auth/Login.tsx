@@ -2,9 +2,17 @@ import React from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { loginSchema } from "./validations/authValidation";
-import { Box, TextField, Button, Typography, Container, CssBaseline, Avatar, CircularProgress } from "@mui/material";
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Container,
+  CssBaseline,
+  Avatar,
+  CircularProgress,
+} from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../store/Hooks";
 import { LoginApi, selectAuth } from "../../slices/authSlice";
 import { User } from "../../types/type";
@@ -19,7 +27,7 @@ interface ILoginFormInputs {
 // Login component
 const LoginPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
+
   const { loading, error } = useAppSelector(selectAuth);
 
   const {
@@ -32,21 +40,19 @@ const LoginPage: React.FC = () => {
 
   const handleLogin: SubmitHandler<ILoginFormInputs> = async (data) => {
     try {
-      console.log("Form Data:", data);
-  
+      // console.log("Form Data:", data);
+
       // FormData for multipart request
       const formData = new FormData();
       formData.append("username", data.username);
       formData.append("password", data.password);
-  
+
       // Dispatch API call
       const response = await dispatch(LoginApi(formData)).unwrap();
-  
-      console.log("Login Response:", response);
-  
+
       if (response?.access_token) {
-        const expiresAt = Date.now() + response.expires_in * 1000; 
-  
+        const expiresAt = Date.now() + response.expires_in * 1000;
+
         localStorage.setItem("@token", response.access_token);
         localStorage.setItem("@token_expires", expiresAt.toString());
 
@@ -56,21 +62,18 @@ const LoginPage: React.FC = () => {
           token_type: response.token_type,
           created_on: response.created_on,
           expires_in: response.expires_in,
-          client_id: response.client_id
+          client_id: response.client_id,
         };
 
         localStorage.setItem("@user", JSON.stringify(user));
         dispatch(userLoggedIn(user));
-        
-        navigate("/home");
       } else {
         console.error("Login failed", response);
       }
     } catch (error) {
       console.error("Login Error:", error);
     }
-};
-
+  };
 
   return (
     <Container component="main" maxWidth="xs">
@@ -89,7 +92,12 @@ const LoginPage: React.FC = () => {
         <Typography component="h1" variant="h5">
           Sign In
         </Typography>
-        <Box component="form" noValidate sx={{ mt: 1 }} onSubmit={handleSubmit(handleLogin)}>
+        <Box
+          component="form"
+          noValidate
+          sx={{ mt: 1 }}
+          onSubmit={handleSubmit(handleLogin)}
+        >
           <TextField
             margin="normal"
             required
@@ -126,7 +134,11 @@ const LoginPage: React.FC = () => {
             sx={{ mt: 3, mb: 2, bgcolor: "darkblue" }}
             disabled={loading}
           >
-            {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Sign In"}
+            {loading ? (
+              <CircularProgress size={24} sx={{ color: "white" }} />
+            ) : (
+              "Sign In"
+            )}
           </Button>
         </Box>
       </Box>
