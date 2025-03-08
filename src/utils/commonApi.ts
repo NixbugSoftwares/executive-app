@@ -9,23 +9,18 @@ export const base_URL = "http://192.168.0.134:8080"; //base URL
 const getAuthToken = async () => {
   try {
     const token = await localStorageHelper.getItem("@token");
+    console.log("token=====================>", token);
 
-    const response = await axios.patch(
+    const response = await axios.post( 
       `${base_URL}/executive/token`,
-      { token },
-      { headers: { Authorization: `bearer ${token}` } }
-      // {
-      //   headers: { "Content-Type": "application/json" },
-      // }
+      { refreshToken: token }, 
+      { headers: { Authorization: `Bearer ${token}` } }
     );
 
     console.log("getAuthtokenresponse=====>", response);
 
-    await localStorageHelper.storeItem("@token", response?.data?.access_token);
-    await localStorageHelper.storeItem(
-      "@token_expires",
-      response?.data?.expires_in
-    );
+    localStorageHelper.storeItem("@token", response?.data?.access_token);
+    localStorageHelper.storeItem("@token_expires", response?.data?.expires_in);
 
     return response?.data?.access_token;
   } catch (err) {
@@ -40,11 +35,22 @@ const prepareHeaders = async (tokenNeeded: any) => {
   if (tokenNeeded) {
     let AuthToken = await localStorageHelper.getItem("@token");
     const tokenExpiry = await localStorageHelper.getItem("@token_expiry");
-    const hourDifference = moment(tokenExpiry).diff(moment(), "hours");
-    if (!hourDifference || hourDifference <= 1) {
-      AuthToken = await getAuthToken();
+
+    if (tokenExpiry && moment(tokenExpiry).isValid()) {
+      const hourDifference = moment(tokenExpiry).diff(moment(), "hours");
+      if (hourDifference <= 1) {
+        try {
+          AuthToken = await getAuthToken();
+        } catch (err) {
+          console.error("Token refresh failed. Logging out...", err);
+          localStorageHelper.removeStoredItem("@token");
+          localStorageHelper.removeStoredItem("@token_expiry");
+          window.location.href = "/login"; 
+        }
+      }
     }
-    headers["Authorization"] = `bearer ${AuthToken}`;
+
+    headers["Authorization"] = `Bearer ${AuthToken}`;
   }
 
   return headers;
@@ -53,6 +59,8 @@ const prepareHeaders = async (tokenNeeded: any) => {
 //****************************************************** response handler **************************************** */
 
 const handleResponse = async (response: any) => {
+  console.log("response====================>", response);
+  
   return response?.data; // Fix for response structure
 };
 
@@ -76,7 +84,7 @@ const handleErrorResponse = (errorResponse: any) => {
     if (status !== 500) {
       toast.error(errorMessage);
     }
-    return { error: errorMessage }; // Return error message for better debugging
+    return { error: errorMessage }; 
   }
 };
 
@@ -100,8 +108,8 @@ const apiCall = async (
       method,
       url: `${base_URL}${route}`,
       headers,
-      data: method !== "get" && method !== "delete" ? params : undefined,
-      params: method === "get" || method === "delete" ? params : undefined,
+      data: method !== "get" ? params : undefined,
+      params: method === "get" ? params : undefined, 
     };
 
     console.log("CONFIG ===> ", config);

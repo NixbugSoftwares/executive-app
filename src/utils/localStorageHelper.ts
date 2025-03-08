@@ -1,15 +1,12 @@
 function getItem(key: string): any | null {
   try {
     const item = localStorage.getItem(key);
-    console.log("Item from localStorage:", item);
-
+    // console.log("Item from localStorage>>>>>>>>>>:", item);
     if (!item) return null;
-
-    // Check if the value is valid JSON
     try {
       return JSON.parse(item);
     } catch {
-      return item; // Return raw string if JSON.parse fails
+      return item; 
     }
   } catch (error) {
     console.error("Error fetching data from localStorage:", error);

@@ -12,7 +12,6 @@ const AppRouter: React.FC = () => {
 
   const checkUserLoggedIn = () => {
     const userData = localStorageHelper.getItem("@user");
-
     if (userData) {
       dispatch(userLoggedIn(userData));
     }
