@@ -2,7 +2,7 @@ import React, {Suspense, lazy, memo} from "react";
 import { BrowserRouter as _Router, Route, Routes, Navigate } from "react-router-dom";
 
 //******************lazy-loaded component for better performance***************************
-const Home = lazy(() => import('../screens/home/home'));
+
 const Account = lazy(() => import('../screens/account/Account'));
 const BusStop = lazy(() => import('../screens/busstop/BusStop'));
 const Landmark = lazy(() => import('../screens/landmark/LandMark'));
@@ -16,7 +16,7 @@ const AccountCreationForm = lazy(() => import('../screens/account/AccountForm'))
 const ExeRoleCreation = lazy(() => import('../screens/executiveRole/RoleCreatingForm'));
 const LandmarkAddForm = lazy(() => import('../screens/landmark/LandmarkAddForm'));
 
-//***************************************define route parameters******************************** 
+//***************************************define route parameters********************************
 export type HomeRouteParams = {
     home: undefined;
     account: undefined;
@@ -45,7 +45,6 @@ export type HomeRouteParams = {
       
         <Suspense fallback={<LoadingIndicator />}>
           <Routes>
-            <Route path="/home" element={<Home />} />
             <Route path="/account" element={<Account />} />
             <Route path="/busstop" element={<BusStop />} />
             <Route path="/landmark" element={<Landmark />} />
@@ -55,7 +54,8 @@ export type HomeRouteParams = {
             <Route path="/busroute" element={<BusRoute />} />
             <Route path="/fare" element={<Fare />} />
             <Route path="/bus" element={<Bus />} />
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="*" element={<Navigate to="/account" replace />} />
+
 
 
 {/* ********************************************************************Account********************************************** */}
@@ -82,14 +82,14 @@ export type HomeRouteParams = {
 };
 
 
-    const styles = {
-        loadingContainer: {
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-          fontSize: '1.5rem',
-        },
-      }
-  
-  export default HomeRouter;
+const styles = {
+  loadingContainer: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100vh",
+    fontSize: "1.5rem",
+  },
+};
+
+export default HomeRouter;

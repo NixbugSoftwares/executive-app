@@ -1,67 +1,101 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { loginSchema } from "./validations/authValidation";
-import { Box, TextField, Button, Typography, Container, CssBaseline, Avatar } from "@mui/material";
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Container,
+  CssBaseline,
+  Avatar,
+  CircularProgress,
+  InputAdornment,
+  IconButton,
+} from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import { useNavigate } from "react-router-dom";
-import commonApi from "../../utils/commonApi";
-import { useAppDispatch } from "../../store/Hooks";
-import { Loginapi } from "../../slices/authSlice";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import { useAppDispatch, useAppSelector } from "../../store/Hooks";
+import { LoginApi, selectAuth } from "../../slices/authSlice";
+import { User } from "../../types/type";
+import { userLoggedIn, fetchRoleMappingApi, roleListApi } from "../../slices/appSlice";
 
-
-// ************************************************************** login form interface ********************************************
+// Login form interface
 interface ILoginFormInputs {
   username: string;
   password: string;
 }
 
-
-
-// ************************************************************** login form component ********************************************
+// Login component
 const LoginPage: React.FC = () => {
-
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
+
+  const { loading, error } = useAppSelector(selectAuth);
+
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<ILoginFormInputs>({
-    resolver: yupResolver(loginSchema), 
+    resolver: yupResolver(loginSchema),
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const handleTogglePassword = () => {
+    setShowPassword((prev) => !prev);
+  };
   const handleLogin: SubmitHandler<ILoginFormInputs> = async (data) => {
     try {
-      console.log("Form Data:", data);
-  
+      // FormData for multipart request
       const formData = new FormData();
       formData.append("username", data.username);
       formData.append("password", data.password);
-  
-      const response = await dispatch(Loginapi({
-        
-       
-      }))
-  
-      console.log("response====>", response);
-  
+      //API call
+      const response = await dispatch(LoginApi(formData)).unwrap();
       if (response?.access_token) {
-        localStorage.setItem("access_token", response.access_token);
-        navigate("/home");
+        const expiresAt = Date.now() + response.expires_in * 1000;
+        // Store token in localStorage
+        localStorage.setItem("@token", response.access_token);
+        localStorage.setItem("@token_expires", expiresAt.toString());
+        // Store user details in localStorage
+        const user: User = {
+          executive_id: response.executive_id,
+          access_token: response.access_token,
+          token_type: response.token_type,
+          created_on: response.created_on,
+          expires_in: response.expires_in,
+          client_id: response.client_id,
+        };
+        localStorage.setItem("@user", JSON.stringify(user));
+        // Dispatch user login action
+        dispatch(userLoggedIn(user));
+        // Fetch Role Mapping API
+        const roleResponse = await dispatch(fetchRoleMappingApi(response.executive_id)).unwrap();
+        const assignedRole: any = {
+          id: roleResponse?.id,
+          userId: roleResponse?.executive_id,
+          roleId: roleResponse?.role_id,
+        };
+        // Store role_id in localStorage
+        localStorage.setItem("@assignedRole", JSON.stringify(assignedRole));
+        console.log("Stored User Role>>>>>>>>>>>>>>>>>:", localStorage.getItem("@assignedRole"));
+        // Fetch Role Listing API using the roleId from the role mapping response
+        const roleListingResponse = await dispatch(roleListApi()).unwrap();
+        const userRoleDetails = roleListingResponse.find((role: { id: any; }) => role.id === assignedRole.roleId);
+        if (userRoleDetails) {
+          localStorage.setItem("@roleDetails", JSON.stringify(userRoleDetails));
+          console.log("Role Details>>>>>>>>>>>>>>>>>:", userRoleDetails);
+        } else {
+          console.error("Role not found for the given roleId");
+        }
       } else {
-        console.error(response.payload);
+        console.error("Login failed", response);
       }
     } catch (error) {
-      if (error instanceof Error) {
-        console.error("Error:", error.message); // Safely access the message property
-      } else {
-        console.error("An unexpected error occurred:", error);
-      }
+      console.error("Login Error:", error);
     }
   };
-  
-
   return (
     <Container component="main" maxWidth="xs">
       <CssBaseline />
@@ -103,20 +137,38 @@ const LoginPage: React.FC = () => {
             fullWidth
             id="password"
             label="Password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             {...register("password")}
             error={!!errors.password}
             helperText={errors.password?.message}
             autoComplete="current-password"
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={handleTogglePassword} edge="end">
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
+          {error && (
+            <Typography color="error" variant="body2">
+              {error}
+            </Typography>
+          )}
           <Button
             type="submit"
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2, bgcolor: "darkblue" }}
-            disabled={isSubmitting}
+            disabled={loading}
           >
-            {isSubmitting ? "Signing In..." : "Sign In"}
+            {loading ? (
+              <CircularProgress size={24} sx={{ color: "white" }} />
+            ) : (
+              "Sign In"
+            )}
           </Button>
         </Box>
       </Box>

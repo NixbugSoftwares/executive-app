@@ -1,76 +1,68 @@
-import axios from 'axios';
+import axios from "axios";
 import { toast } from "react-toastify";
-import moment from 'moment';
-import localStorageHelper from './localStorageHelper';
+import moment from "moment";
+import localStorageHelper from "./localStorageHelper";
 
-
-
-// export const API_BASE = DotEnvHelper.getApiUrl();
-// export const STRIPE_KEY = DotEnvHelper.getStripePublishKey();
-// console.log('Api===>',API_BASE);
-// export const STRIPE_P_KEY= Config.STRIPE_KEY;
-
-export const base_URL = 'http://192.168.0.134:8080'; //base URL
+export const base_URL = "http://192.168.0.134:8080"; //base URL
 
 //******************************************************Token **************************************** */
 const getAuthToken = async () => {
- try {
- const token = JSON.parse(
- await localStorageHelper.getEncryptedData('@token'),
- );
-//  const refreshToken = JSON.parse(
-//  await localStorageHelper.getEncryptedData('@refresh_token'),
-//  );
+  try {
+    const token = await localStorageHelper.getItem("@token");
+    console.log("token=====================>", token);
 
- const response = await axios.post(
- `${base_URL}auth/token`,
- {token}, //refresh_token: refreshToken
- {
- headers: {'Content-Type': 'application/json'},
- },
- );
+    const response = await axios.post( 
+      `${base_URL}/executive/token`,
+      { refreshToken: token }, 
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
- const {token: newToken, token_expiry: newTokenExpiry} =
- response?.data?.data;
- await localStorageHelper.setEncryptedData('@token', newToken);
- await localStorageHelper.setEncryptedData('@token_expiry', newTokenExpiry);
+    console.log("getAuthtokenresponse=====>", response);
 
- return newToken;
- } catch (err) {
- console.error('Error in getAuthToken', err);
- throw err;
- }
+    localStorageHelper.storeItem("@token", response?.data?.access_token);
+    localStorageHelper.storeItem("@token_expires", response?.data?.expires_in);
+
+    return response?.data?.access_token;
+  } catch (err) {
+    console.error("Error in getAuthToken", err);
+    throw err;
+  }
 };
-
 
 //****************************************************** prepare Headers **************************************** */
 const prepareHeaders = async (tokenNeeded: any) => {
- let headers: any = {'Content-Type': 'application/json'};
- if (tokenNeeded) {
- let AuthToken = JSON.parse(
- await localStorageHelper.getEncryptedData('@token'),
- );
- const tokenExpiry = JSON.parse(
- await localStorageHelper.getEncryptedData('@token_expiry'),
- );
- const hourDifference = moment(tokenExpiry).diff(moment(), 'hours');
+  let headers: any = { "Content-Type": "application/json" };
+  if (tokenNeeded) {
+    let AuthToken = await localStorageHelper.getItem("@token");
+    const tokenExpiry = await localStorageHelper.getItem("@token_expiry");
 
- if (!hourDifference || hourDifference <= 1) {
- AuthToken = await getAuthToken();
- }
+    if (tokenExpiry && moment(tokenExpiry).isValid()) {
+      const hourDifference = moment(tokenExpiry).diff(moment(), "hours");
+      if (hourDifference <= 1) {
+        try {
+          AuthToken = await getAuthToken();
+        } catch (err) {
+          console.error("Token refresh failed. Logging out...", err);
+          localStorageHelper.removeStoredItem("@token");
+          localStorageHelper.removeStoredItem("@token_expiry");
+          window.location.href = "/login"; 
+        }
+      }
+    }
 
- headers['Authorization'] = `Bearer ${AuthToken}`;
- }
- return headers;
+    headers["Authorization"] = `Bearer ${AuthToken}`;
+  }
+
+  return headers;
 };
-
 
 //****************************************************** response handler **************************************** */
 
 const handleResponse = async (response: any) => {
+  console.log("response====================>", response);
+  
   return response?.data; // Fix for response structure
 };
-
 
 //******************************************************  errorResponse handler  **************************************** */
 const handleErrorResponse = (errorResponse: any) => {
@@ -92,47 +84,44 @@ const handleErrorResponse = (errorResponse: any) => {
     if (status !== 500) {
       toast.error(errorMessage);
     }
-    return { error: errorMessage }; // Return error message for better debugging
+    return { error: errorMessage }; 
   }
 };
 
-
-
-//******************************************************  apiCall  **************************************** 
+//******************************************************  apiCall  ****************************************
 
 const apiCall = async (
- method: any,
- route: any,
- params = {},
- tokenNeeded = true,
- contentType = 'application/json',
+  method: "get" | "post" | "patch" | "delete",
+  route: string,
+  params: any = {},
+  tokenNeeded: boolean = true,
+  contentType: string = "application/json"
 ) => {
- console.log('====================================');
- console.log(route);
- console.log('====================================');
- try {
- const headers = await prepareHeaders(tokenNeeded);
- headers['Content-Type'] = contentType;
+  console.log(route);
+  console.log("method===========>", method);
+  try {
+    const headers = await prepareHeaders(tokenNeeded);
 
- const config = {
- method,
- url: `${base_URL}${route}`,
- headers,
- data: method !== 'get' && method !== 'delete' ? params : undefined,
- params: method === 'get' || method === 'delete' ? params : undefined,
- };
+    headers["Content-Type"] = contentType;
 
- console.log("CONFIG ===> ", config);
- 
+    const config = {
+      method,
+      url: `${base_URL}${route}`,
+      headers,
+      data: method !== "get" ? params : undefined,
+      params: method === "get" ? params : undefined, 
+    };
 
- const response = await axios(config);
- return await handleResponse(response);
- } catch (err: any) {
- return handleErrorResponse(err?.response);
- }
+    console.log("CONFIG ===> ", config);
+
+    const response = await axios(config);
+    return await handleResponse(response);
+  } catch (err: any) {
+    console.log("errorrr======>", err);
+    return handleErrorResponse(err?.response);
+  }
 };
 
-
 export default {
- apiCall,
+  apiCall,
 };

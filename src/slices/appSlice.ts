@@ -1,56 +1,344 @@
-import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {  User } from '../types/type';
-import { RootState } from '../store/Store';
-import commonApi from '../utils/commonApi';
-
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { User } from "../types/type";
+import { RootState } from "../store/Store";
+import commonApi from "../utils/commonApi";
 
 // Define a type for the slice state
-type status = 'idle' | 'loading';
+type status = "idle" | "loading";
 
 interface AppState {
   splash: boolean;
-  status: status;
+  status: status| "idle" | "loading";
   loggedIn: boolean;
   loggedUser?: User;
+  user: User | null;
   logincreds: {
     email: string;
     password: string;
   };
+  accounts: any[];
+  list: [],
+  error: null,
+  roles: any[]
 }
 
 // Define the initial state
 const initialState: AppState = {
   splash: true,
-  status: 'idle',
+  status: "idle",
   loggedIn: false,
+  user: null,
   logincreds: {
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   },
+  accounts: [],
+  list: [],
+  error: null,
+  roles: []
 };
 
-  /**
- * Get Logged user details.
- */
-// export const getUserMeDetails: any = createAsyncThunk(
-//   'user/me',
-//   async (data: {}) => {
-//     const response = await ApiHelper.apiCall('get', 'user/me', data, true);
-//     return response;
-//   },
-// );
-// /**
+//Logout API
+export const logoutApi = createAsyncThunk(
+  "/executive/token",
+  async (data: any, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "delete",
+        "/executive/token",
+        data,
+        true,
+        "application/json"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || "Logout failed");
+    }
+  }
+);
 
 
-// //Logout API
-// export const logoutApi: any = createAsyncThunk('/logoutApin', async (data: {}) => {
-//   const response = await ApiHelper.apiCall('post', 'auth/logout', data, true);
-//   return response;
-// });
+//Account creation API
+export const accountCreationApi = createAsyncThunk(
+  "/executive/account",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "post",
+        "/executive/account",
+        data,
+        true,
+        "multipart/form-data"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || "Account creation failed");
+    }
+  }
+);
+
+
+//Account list API
+export const accountListApi = createAsyncThunk(
+  "/executive/account",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "/executive/account",
+        {},
+        true,
+        "application/json"
+      );
+      console.log("Full API Response==================>", response);
+
+      // Check if response is directly an array
+      if (Array.isArray(response)) {
+        return response;
+      }
+
+      // Check if response.data exists
+      if (!response || !response.data) {
+        throw new Error("Invalid response format");
+      }
+
+      return response.data; // Ensure correct return
+    } catch (error: any) {
+      console.log("Error fetching accounts=====================>", error);
+      return rejectWithValue(error?.response?.data?.message || "Failed to fetch accounts");
+    }
+  }
+);
+
+
+
+
+// Account Update API
+export const accountupdationApi = createAsyncThunk(
+  "/executive/account",
+  async ({  formData }: { accountId: number; formData: URLSearchParams }, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "patch",
+        `/executive/account/`,
+        formData,
+        true,
+        "application/x-www-form-urlencoded" // Use the correct content type
+      );
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data); // Log the full error response
+      return rejectWithValue(error?.response?.data?.message || "Account update failed");
+    }
+  }
+);
+
+export const accountDeleteApi = createAsyncThunk(
+  "account/delete",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "delete",
+        "/executive/account/",
+        data,
+        true,
+        "multipart/form-data"
+      );
+
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || "Account deletion failed");
+    }
+  }
+);
+
+
+
+  //Account creation API
+export const roleCreationApi = createAsyncThunk(
+  "/executive/role",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "post",
+        "/executive/role",
+        data,
+        true,
+        "application/www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || "Account creation failed");
+    }
+  }
+);
+
+  //Role list Api
+  export const roleListApi = createAsyncThunk(
+    "/executive/role",
+    async (_, { rejectWithValue }) => {
+      try {
+        const response = await commonApi.apiCall(
+          "get",
+          "/executive/role",
+          {},
+          true,
+          "application/json"
+        );
+        console.log("Full API Response==================>", response);
+  
+        // Check if response is directly an array
+        if (Array.isArray(response)) {
+          return response;
+        }
+  
+        // Check if response.data exists
+        if (!response || !response.data) {
+          throw new Error("Invalid response format");
+        }
+  
+        return response.data; // Ensure correct return
+      } catch (error: any) {
+        console.log("Error fetching role=====================>", error);
+        return rejectWithValue(error?.response?.data?.message || "Failed to fetch accounts");
+      }
+    }
+  );
+
+
+  // role Update API
+export const roleUpdationApi = createAsyncThunk(
+  "/executive/role",
+  async ({ formData }: { roleId: number; formData: URLSearchParams }, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "patch",
+        `/executive/role/`,
+        formData,
+        true,
+        "application/x-www-form-urlencoded" // Use the correct content type
+      );
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data); // Log the full error response
+      return rejectWithValue(error?.response?.data?.message || "Account update failed");
+    }
+  }
+);
+
+//role delete API
+export const roleDeleteApi = createAsyncThunk(
+  "role/delete",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "delete",
+        "/executive/role/",
+        data,
+        true,
+        "multipart/form-data"
+      );
+
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || "Account deletion failed");
+    }
+  }
+);
+
+
+
+
+
+  //role assign API
+  export const roleAssignApi = createAsyncThunk(
+    "/executive/account/role",
+    async ({ executive_id, role_id }: { executive_id: number; role_id: number }, { rejectWithValue }) => {
+      try {
+        const response = await commonApi.apiCall(
+          "post",
+          "/executive/account/role",
+          { executive_id, role_id }, // Corrected keys
+          true,
+          "multipart/form-data"
+        );
+        console.log("slice Responseyyyyyy==================>", response);
+        
+        return response;
+      } catch (error: any) {
+        return rejectWithValue(error?.response?.data?.message || "Role assign failed");
+      }
+    }
+  );
+
+
+//  fetchRoleMappingApi to accept accountId
+export const fetchRoleMappingApi = createAsyncThunk(
+  "/executive/account/role",
+  async (accountId: number, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        `/executive/account/role`, // Endpoint to fetch all role mappings
+        {},
+        true,
+        "application/json"
+      );
+
+      // Ensure the response is an array
+      if (!Array.isArray(response)) {
+        throw new Error("Invalid response format: Expected an array");
+      }
+
+      // Find the role mapping for the specific executive (accountId)
+      const roleMapping = response.find((mapping: any) => mapping.executive_id === accountId);
+
+      if (!roleMapping) {
+        throw new Error("No role mapping found for this executive");
+      }
+
+      return roleMapping; // Return the specific role mapping object
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || "Failed to fetch role mapping");
+    }
+  }
+);
+  
+
+
+//role assign update API
+export const roleAssignUpdateApi = createAsyncThunk(
+  "/executive/account/role",
+  async ({ id, role_id }: { id: number; role_id: number }, { rejectWithValue }) => {
+    try {
+      const formData = new URLSearchParams();
+      formData.append("id", id.toString()); // Include the role assignment ID
+      formData.append("role_id", role_id.toString()); // Include the new role ID
+
+      const response = await commonApi.apiCall(
+        "patch",
+        "/executive/account/role",
+        formData,
+        true,
+        "application/x-www-form-urlencoded" // Use the correct content type
+      );
+      console.log("Role Assignment Update Response:", response);
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data); // Log the full error response
+      return rejectWithValue(error?.response?.data?.message || "Role assign failed");
+    }
+  }
+);
+  
+  
+
+
+
 
 // Slice
 export const appSlice = createSlice({
-  name: 'app',
+  name: "app",
   initialState,
   reducers: {
     // Use the PayloadAction type to declare the contents of action.payload
@@ -64,16 +352,21 @@ export const appSlice = createSlice({
       state.loggedIn = true;
       state.loggedUser = action.payload;
     },
-    userLoggedOut: state => {
+    userLoggedOut: (state) => {
       state.loggedIn = false;
       state.loggedUser = undefined;
     },
     setLoggedUser: (state, action) => {
       state.loggedUser = action.payload;
     },
+
     setLoginCreds: (state, action) => {
       state.logincreds = action.payload;
     },
+    // setRole: (state, action) => {
+    //   state.accounts = action.payload; 
+    // },
+    
   },
 });
 
@@ -86,6 +379,7 @@ export const {
   splashCompleted,
   setLoginCreds,
 } = appSlice.actions;
+// Export actions
 
 export default appSlice.reducer;
 

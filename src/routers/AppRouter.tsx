@@ -1,25 +1,30 @@
-import React from "react";
-import AuthRouter from "./authRouter"; 
-import HomeRouter from "./homeRouter"; 
-
-
-
-
+import React, { useEffect, useState } from "react";
+import { useAppDispatch, useAppSelector } from "../store/Hooks";
+import localStorageHelper from "../utils/localStorageHelper";
+import { getLoggedIn, userLoggedIn } from "../slices/appSlice";
+import AuthRouter from "./authRouter";
+import HomeRouter from "./homeRouter";
 
 const AppRouter: React.FC = () => {
-  const isAuthenticated = true; 
+  const dispatch = useAppDispatch();
+  const loggedIn = useAppSelector(getLoggedIn);
+  const [loading, setLoading] = useState(true);
 
-  if (isAuthenticated) {
-    return (
-      <>
-        <HomeRouter />
-        <AuthRouter />
-      </>
-    );
-  } else {
-    return <AuthRouter />;
-  }
-  
+  const checkUserLoggedIn = () => {
+    const userData = localStorageHelper.getItem("@user");
+    if (userData) {
+      dispatch(userLoggedIn(userData));
+    }
+
+    setLoading(false);
+  };
+  useEffect(() => {
+    checkUserLoggedIn();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+
+  return loggedIn ? <HomeRouter /> : <AuthRouter />;
 };
 
 export default AppRouter;

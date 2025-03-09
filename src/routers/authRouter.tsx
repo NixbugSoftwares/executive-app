@@ -1,11 +1,9 @@
-import React, { Suspense, lazy, memo } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy, memo } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 // **************************************** Lazy-loaded components for better performance *********************************
 
-const Login = lazy(() => import('../screens/auth/Login'));
-
-
+const Login = lazy(() => import("../screens/auth/Login"));
 
 // *****************************************Define route parameters *******************************************************
 export type AuthRouteParams = {
@@ -21,25 +19,23 @@ const LoadingIndicator = memo(() => (
 
 const AuthRouter: React.FC = () => {
   return (
-    
-      <Suspense fallback={<LoadingIndicator />}>
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-        </Routes>
-      </Suspense>
-    
+    <Suspense fallback={<LoadingIndicator />}>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </Suspense>
   );
 };
 
-// **************************************** Styles for the loading indicator ***********************************************
+// **************************************************Styles for the loading indicator ************************************
 const styles = {
   loadingContainer: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100vh',
-    fontSize: '1.5rem',
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100vh",
+    fontSize: "1.5rem",
   },
 };
 

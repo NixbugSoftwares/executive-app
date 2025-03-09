@@ -1,159 +1,294 @@
-import React, { useState } from "react";
-import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem, Typography, SelectChangeEvent } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import { useForm, SubmitHandler, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { accountFormSchema } from "../auth/validations/authValidation";
+import { Box, TextField, InputAdornment, IconButton, Button, Typography, Container, CssBaseline, CircularProgress, MenuItem } from "@mui/material";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import { useAppDispatch } from "../../store/Hooks";
+import { accountCreationApi, roleListApi, roleAssignApi } from "../../slices/appSlice";
 
-
-
-type AccountFormValues = {
+// Account creation form interface
+interface IAccountFormInputs {
   username: string;
   password: string;
-  fullName: string;
-  phoneNumber: string;
-  email: string;
-  gender: string;
-  designation: string;
+  fullName?: string;
+  phoneNumber?: string;
+  email?: string;
+  gender?: number;
+  designation?: string;
+  role: number; 
+  roleAssignmentId?: number; 
 }
-const AccountCreationForm = () => {
-  const [formValues, setFormValues] = useState<AccountFormValues>({
-    username: "",
-    password: "",
-    fullName: "",
-    phoneNumber: "",
-    email: "",
-    gender: "",
-    designation: "",
+
+interface IAccountCreationFormProps {
+  onClose: () => void;
+  refreshList: (value:any)=>void
+}
+
+// Gender options mapping
+const genderOptions = [
+  { label: "Female", value: 1 },
+  { label: "Male", value: 2 },
+  { label: "Transgender", value: 3 },
+  { label: "Other", value: 4 },
+];
+
+
+
+const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({ onClose, refreshList}) => {
+  const dispatch = useAppDispatch();
+  const [loading, setLoading] = useState(false);
+  const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<IAccountFormInputs>({
+    resolver: yupResolver(accountFormSchema),
+    defaultValues: {
+      gender: 4, 
+    },
   });
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
-    const { name, value } = event.target;
-    setFormValues((prevValues) => ({
-      ...prevValues,
-      [name!]: value,
-    }));
-  };
-  
+  // Fetch roles on mount
+  useEffect(() => {
+    dispatch(roleListApi())
+      .unwrap()
+      .then((res: any[]) => {
+        setRoles(res.map((role) => ({ id: role.id, name: role.name })));
+        console.log("Roles>>>>>>>>>>>>>>>>>>>:", res);
+      })
+      
+      
+      .catch((err: any) => {
+        console.error("Error fetching roles:", err);
+      });
+  }, [dispatch]);
 
-  const handleSelectChange = (event: SelectChangeEvent<string>) => {
-    const { name, value } = event.target;
-    setFormValues((prevValues) => ({
-      ...prevValues,
-      [name!]: value,
-    }));
-  };
- 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    console.log("Form submitted:", formValues);
-    alert("Account created successfully!");
+  const [showPassword, setShowPassword] = useState(false);
+  const handleTogglePassword = () => {
+    setShowPassword((prev) => !prev);
   };
 
+  // Handle Account Creation & Role Assignment 
+  const handleAccountCreation: SubmitHandler<IAccountFormInputs> = async (data) => {
+    try {
+      setLoading(true);
 
+      // Prepare form data for account creation
+      const formData = new FormData();
+      formData.append("username", data.username);
+      formData.append("password", data.password);
+      formData.append("gender", data.gender?.toString() || "");
+
+      if (data.fullName) {
+        formData.append("full_name", data.fullName);
+      }
+      if (data.phoneNumber) {
+        formData.append("phone_number", `+91${data.phoneNumber}`);
+      }
+      if (data.email) {
+        formData.append("email_id", data.email);
+      }
+      if (data.designation) {
+        formData.append("designation", data.designation);
+      }
+
+      // Step 1: Create account
+      const accountResponse = await dispatch(accountCreationApi(formData)).unwrap();
+
+      if (accountResponse?.id) {
+        // Step 2: Assign role
+        const roleResponse = await dispatch(
+          roleAssignApi({ executive_id: accountResponse.id, role_id: data.role })
+        ).unwrap();
+
+        if (roleResponse?.id && roleResponse?.role_id) {
+          // Store the role assignment ID in the account object or state
+          const updatedAccount = {
+            ...accountResponse,
+            roleAssignmentId: roleResponse.id, // Store the role assignment ID
+          };
+
+          console.log("Role Assignment ID>>>>>>>>>>>>>>>>>>>:", updatedAccount);
+
+          alert("Account and role assigned successfully!");
+          refreshList('refresh');
+          onClose();
+        } else {
+          console.error("Role assignment failed:", roleResponse);
+          alert("Account created, but role assignment failed!");
+        }
+      } else {
+        console.error("Unexpected account creation response:", accountResponse);
+        alert("Account creation failed!");
+      }
+    } catch (error) {
+      console.error("Error during account creation:", error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <Box
-      component="form"
-      onSubmit={handleSubmit}
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 1.5, // Reduce gap between fields
-        width: 500, // Narrower form
-        margin: "auto",
-        mt: 10,
-        p: 2,
-        border: "1px solid #ccc",
-        borderRadius: "8px",
-        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-      }}
-    >
-      <Typography variant="h6" align="center" gutterBottom>
-        Account Creation Form
-      </Typography>
+    <Container component="main" maxWidth="xs">
+      <CssBaseline />
+      <Box sx={{ marginTop: 8, display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <Typography component="h1" variant="h5">
+          Account Creation
+        </Typography>
+        <Box component="form" noValidate sx={{ mt: 1 }} onSubmit={handleSubmit(handleAccountCreation)}>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            label="Username"
+            {...register("username")}
+            error={!!errors.username}
+            helperText={errors.username?.message}
+            autoFocus
+            size="small"
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            {...register("password")}
+            error={!!errors.password}
+            helperText={errors.password?.message}
+            size="small"
+            autoComplete="current-password"
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={handleTogglePassword} edge="end">
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+          <TextField
+            margin="normal"
+            fullWidth
+            label="Full Name"
+            {...register("fullName")}
+            error={!!errors.fullName}
+            helperText={errors.fullName?.message}
+            size="small"
+          />
+          <Controller
+            name="phoneNumber"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                margin="normal"
+                fullWidth
+                label="Phone Number"
+                placeholder="+911234567890"
+                size="small"
+                error={!!errors.phoneNumber}
+                helperText={errors.phoneNumber?.message}
+                value={field.value ? `+91${field.value}` : ""}
+                onChange={(e) => {
+                  let value = e.target.value.replace(/^\+91/, ""); // Remove +91 if manually entered
+                  value = value.replace(/\D/g, ""); // Ensure only digits
+                  if (value.length > 10) value = value.slice(0, 10); // Limit to 10 digits
+                  field.onChange(value || undefined); // Remove if empty
+                }}
+                onFocus={() => {
+                  if (!field.value) field.onChange(""); // Ensure empty field is editable
+                }}
+                onBlur={() => {
+                  if (field.value === "") field.onChange(undefined); // Remove field if empty
+                }}
+              />
+            )}
+          />
 
-      <TextField
-        label="Username"
-        name="username"
-        value={formValues.username}
-        onChange={handleChange}
-        variant="outlined"
-        size="small" // Smaller input size
-        required
-      />
 
-      <TextField
-        label="Password"
-        name="password"
-        type="password"
-        value={formValues.password}
-        onChange={handleChange}
-        variant="outlined"
-        size="small"
-        required
-      />
+          <TextField
+            margin="normal"
+            fullWidth
+            label="Email"
+            placeholder="example@gmail.com"
+            {...register("email")}
+            error={!!errors.email}
+            helperText={errors.email?.message}
+            size="small"
+          />
 
-      <TextField
-        label="Full Name"
-        name="fullName"
-        value={formValues.fullName}
-        onChange={handleChange}
-        variant="outlined"
-        size="small"
-        required
-      />
+          {/* Gender Selection */}
+          <Controller
+            name="gender"
+            control={control}
+            render={({ field }) => (
+              <TextField margin="normal" fullWidth select label="Gender" {...field} error={!!errors.gender} size="small">
+                {genderOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
 
-      <TextField
-        label="Phone Number"
-        name="phoneNumber"
-        type="tel"
-        value={formValues.phoneNumber}
-        onChange={handleChange}
-        variant="outlined"
-        size="small"
-        required
-      />
+          <TextField
+            margin="normal"
+            fullWidth
+            label="Designation"
+            {...register("designation")}
+            error={!!errors.designation}
+            helperText={errors.designation?.message}
+            size="small"
+          />
 
-      <TextField
-        label="Email"
-        name="email"
-        type="email"
-        value={formValues.email}
-        onChange={handleChange}
-        variant="outlined"
-        size="small"
-        required
-      />
+          {/* Role Selection (Required) */}
+          <Controller
+            name="role"
+            control={control}
+            rules={{ required: "Role is required" }}
+            render={({ field }) => (
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                select
+                label="Role"
+                {...field}
+                error={!!errors.role}
+                helperText={errors.role?.message}
+                size="small"
+              >
+                {roles.map((role) => (
+                  <MenuItem key={role.id} value={role.id}>
+                    {role.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
 
-      <FormControl size="small" required>
-        <InputLabel>Gender</InputLabel>
-        <Select
-          name="gender"
-          value={formValues.gender}
-          onChange={handleSelectChange}
-          label="Gender"
-        >
-          <MenuItem value="male">Male</MenuItem>
-          <MenuItem value="female">Female</MenuItem>
-          <MenuItem value="other">Other</MenuItem>
-        </Select>
-      </FormControl>
-
-      <TextField
-        label="Designation"
-        name="designation"
-        value={formValues.designation}
-        onChange={handleChange}
-        variant="outlined"
-        size="small"
-        required
-      />
-        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2, gap: 1 }}>
- 
-            <Button type="submit" variant="contained" color="success" fullWidth>
-                Create Account
-            </Button>
-
+        
+          <Button
+            type="submit"
+            fullWidth
+            color="primary"
+            variant="contained"
+            sx={{ mt: 3, mb: 2, bgcolor: "darkblue" }}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Create Account"}
+          </Button>
         </Box>
-      
-    </Box>
+      </Box>
+    </Container>
   );
 };
 
