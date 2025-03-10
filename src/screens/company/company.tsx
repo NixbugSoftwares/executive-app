@@ -1,7 +1,7 @@
 import React from "react";
 import { Sidebar } from "../../common";
 import { Box } from "@mui/material";
-import OperatorList from "./OperatorList";
+import CompanyList from "./CompanyList";
 
 
 const CompanyPage: React.FC = () => {
@@ -16,7 +16,7 @@ const CompanyPage: React.FC = () => {
     >
       <Sidebar />
       <Box sx={{ width: "100%", p: 3 }}>
-        <OperatorList/>
+        <CompanyList/>
       </Box>
 
 

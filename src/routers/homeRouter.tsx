@@ -4,17 +4,17 @@ import { BrowserRouter as _Router, Route, Routes, Navigate } from "react-router-
 //******************lazy-loaded component for better performance***************************
 
 const Account = lazy(() => import('../screens/account/Account'));
-const BusStop = lazy(() => import('../screens/busstop/BusStop'));
-const Landmark = lazy(() => import('../screens/landmark/LandMark'));
 const ExeRole = lazy(() => import('../screens/executiveRole/Role'));
+const Landmark = lazy(() => import('../screens/landmark/LandMark'));
+const BusStop = lazy(() => import('../screens/busstop/BusStop'));
+
+const Company = lazy(() => import('../screens/company/company'));
 const Operator = lazy(() => import('../screens/operator/Operator'));
 const CRole = lazy(() => import('../screens/companyRole/CompanyRole'));
 const BusRoute = lazy(() => import('../screens/busroute/BusRoute'));
 const Fare = lazy(() => import('../screens/fare/Fare'));
 const Bus = lazy(() => import('../screens/bus/Bus'));
-const AccountCreationForm = lazy(() => import('../screens/account/AccountForm'));
-const ExeRoleCreation = lazy(() => import('../screens/executiveRole/RoleCreatingForm'));
-const LandmarkAddForm = lazy(() => import('../screens/landmark/LandmarkAddForm'));
+
 
 //***************************************define route parameters********************************
 export type HomeRouteParams = {
@@ -46,36 +46,16 @@ export type HomeRouteParams = {
         <Suspense fallback={<LoadingIndicator />}>
           <Routes>
             <Route path="/account" element={<Account />} />
-            <Route path="/busstop" element={<BusStop />} />
-            <Route path="/landmark" element={<Landmark />} />
             <Route path="/exerole" element={<ExeRole />} />
+            <Route path="/landmark" element={<Landmark />} />
+            <Route path="/busstop" element={<BusStop />} />
+            <Route path="/company" element={<Company />} />
             <Route path="/operator" element={<Operator />} />
             <Route path="/companyrole" element={<CRole />} />
             <Route path="/busroute" element={<BusRoute />} />
             <Route path="/fare" element={<Fare />} />
             <Route path="/bus" element={<Bus />} />
             <Route path="*" element={<Navigate to="/account" replace />} />
-
-
-
-{/* ********************************************************************Account********************************************** */}
-            <Route path="/Account/create" element={<AccountCreationForm />} />
-
-
-
-
-
-{/* ***************************************************************** executive Role **************************************** */}
-            <Route path="/exerole/create" element={<ExeRoleCreation />} />
-
-
-{/* ******************************************************************Landmark********************************************** */}
-
-            <Route path="/landmark/create" element={<LandmarkAddForm name={""} boundary={""} status={""} importance={""} onClose={function (): void {
-            throw new Error("Function not implemented.");
-          } } />} />
-
-
           </Routes>
         </Suspense>
     );

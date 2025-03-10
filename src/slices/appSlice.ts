@@ -228,7 +228,7 @@ export const roleUpdationApi = createAsyncThunk(
 
 //role delete API
 export const roleDeleteApi = createAsyncThunk(
-  "role/delete",
+  "/executive/role/",
   async (data: FormData, { rejectWithValue }) => {
     try {
       const response = await commonApi.apiCall(
@@ -245,10 +245,6 @@ export const roleDeleteApi = createAsyncThunk(
     }
   }
 );
-
-
-
-
 
   //role assign API
   export const roleAssignApi = createAsyncThunk(
@@ -332,6 +328,130 @@ export const roleAssignUpdateApi = createAsyncThunk(
 );
   
   
+
+//company list API
+export const companyListApi = createAsyncThunk(
+  "/executive/company",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "/executive/company",
+        {},
+        true,
+        "application/json"
+      );
+      console.log("Full API Response==================>", response);
+
+      // Check if response is directly an array
+      if (Array.isArray(response)) {
+        return response;
+      }
+
+      // Check if response.data exists
+      if (!response || !response.data) {
+        throw new Error("Invalid response format");
+      }
+
+      return response.data; // Ensure correct return
+    } catch (error: any) {
+      console.log("Error fetching role=====================>", error);
+      return rejectWithValue(error?.response?.data?.message || "Failed to fetch accounts");
+    }
+  }
+);
+
+//Operatoer list API
+
+export const operatorListApi = createAsyncThunk(
+  "/executive/company/operator",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "/executive/company/operator",
+        {},
+        true,
+        "application/json"
+      );
+      console.log("Full API Response==================>", response);
+
+      // Check if response is directly an array
+      if (Array.isArray(response)) {
+        return response;
+      }
+
+      // Check if response.data exists
+      if (!response || !response.data) {
+        throw new Error("Invalid response format");
+      }
+
+      return response.data; // Ensure correct return
+    } catch (error: any) {
+      console.log("Error fetching operator=====================>", error);
+      return rejectWithValue(error?.response?.data?.message || "Failed to fetch accounts");
+    }
+  }
+);
+
+//operator creation API
+export const operatorCreationApi = createAsyncThunk(
+  "/executive/company/operator",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "post",
+        "/executive/company/operator",
+        data,
+        true,
+        "multipart/form-data"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || "Account creation failed");
+    }
+  }
+);
+
+//operator updation API
+export const operatorupdationApi = createAsyncThunk(
+  "/executive/company/operator",
+  async ({  formData }: { operatorId: number; formData: URLSearchParams }, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "patch",
+        `/executive/company/operator`,
+        formData,
+        true,
+        "application/x-www-form-urlencoded" 
+      );
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data); // Log the full error response
+      return rejectWithValue(error?.response?.data?.message || "Account update failed");
+    }
+  }
+);
+
+//operator delete API
+export const operatorDeleteApi = createAsyncThunk(
+  "/executive/company/operator",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "delete",
+        "/executive/company/operator",
+        data,
+        true,
+        "multipart/form-data"
+      );
+
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || "Account deletion failed");
+    }
+  }
+);
 
 
 

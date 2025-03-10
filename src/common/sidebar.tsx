@@ -21,6 +21,7 @@ import EngineeringIcon from "@mui/icons-material/Engineering";
 import RouteIcon from "@mui/icons-material/Route";
 import CorporateFareIcon from "@mui/icons-material/CorporateFare";
 import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
+import BusinessIcon from '@mui/icons-material/Business';
 import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew";
 import { useTheme, useMediaQuery } from "@mui/material";
 import LogoutConfirmationModal from "./logoutModal";
@@ -50,6 +51,7 @@ const Sidebar: React.FC = () => {
     {
       title: "Company",
       items: [
+        { label: "company", path: "/company", icon: <BusinessIcon /> },
         { label: "Operator", path: "/operator", icon: <EngineeringIcon /> },
         { label: "Role", path: "/companyrole", icon: <Diversity3Icon /> },
         { label: "Route", path: "/busroute", icon: <RouteIcon /> },
