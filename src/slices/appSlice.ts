@@ -453,8 +453,59 @@ export const operatorDeleteApi = createAsyncThunk(
   }
 );
 
+//operatort role list api
+ export const operatorRoleListApi = createAsyncThunk(
+  "/executive/company/role",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "/executive/company/role",
+        {},
+        true,
+        "application/json"
+      );
+      console.log("Full API Response==================>", response);
+
+      // Check if response is directly an array
+      if (Array.isArray(response)) {
+        return response;
+      }
+
+      // Check if response.data exists
+      if (!response || !response.data) {
+        throw new Error("Invalid response format");
+      }
+
+      return response.data; // Ensure correct return
+    } catch (error: any) {
+      console.log("Error fetching role=====================>", error);
+      return rejectWithValue(error?.response?.data?.message || "Failed to fetch accounts");
+    }
+  }
+);
 
 
+//operatort role Assign api
+export const operatorRoleAssignApi = createAsyncThunk(
+  "/executive/operator/role",
+  async ({ operator_id , role_id }: { operator_id : number; role_id: number }, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "post",
+        "/executive/operator/role",
+        { operator_id , role_id }, 
+        true,
+        "multipart/form-data"
+      );
+      console.log("slice Responseyyyyyy==================>", response);
+      
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || "Role assign failed");
+    }
+  }
+);
 
 // Slice
 export const appSlice = createSlice({

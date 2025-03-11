@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { TextField, Button, Box, Typography, CircularProgress, Container, MenuItem, CssBaseline, IconButton, InputAdornment } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
-import { operatorupdationApi, operatorListApi, companyListApi } from "../../slices/appSlice";
+import { operatorupdationApi, operatorListApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 type operatorFormValues = {
   id: number;
-  companyId: number;
   username: string;
   password: string;
   fullName?: string;
@@ -43,7 +42,6 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [operatorData, setOperatorData] = useState<operatorFormValues | null>(null);
-  const [companies, setCompanies] = useState<{ id: number; name: string }[]>([]);
   const {
     register,
     handleSubmit,
@@ -56,18 +54,7 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
     setShowPassword((prev) => !prev);
   };
 
-  // Fetch companies on mount
-  useEffect(() => {
-    dispatch(companyListApi())
-      .unwrap()
-      .then((res: any[]) => {
-        setCompanies(res.map((company) => ({ id: company.id, name: company.name })));
-        console.log("company list:", res);
-      })
-      .catch((err: any) => {
-        console.error("Error fetching company:", err);
-      });
-  }, [dispatch]);
+;
 
   // Fetch operator data on mount
   useEffect(() => {
@@ -80,7 +67,6 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
         if (operator) {
           setOperatorData({
             id: operator.id,
-            companyId: operator.company_id,
             username: operator.username, 
             password: operator.password,
             fullName: operator.full_name, 
@@ -94,7 +80,6 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
   
           reset({
             id: operator.id,
-            companyId: operator.company_id,
             username: operator.username,
             password: operator.password,
             fullName: operator.full_name,
@@ -124,7 +109,6 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
 
       const formData = new URLSearchParams();
       formData.append("id", operatorId.toString());
-      formData.append("company_id", data.companyId.toString());
       formData.append("username", data.username);
       if (data.password) {
         formData.append("password", data.password);
@@ -175,30 +159,6 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
           Update Operator
         </Typography>
         <Box component="form" noValidate sx={{ mt: 1 }} onSubmit={handleSubmit(handleOperatorUpdate)}>
-          <Controller
-            name="companyId"
-            control={control}
-            rules={{ required: "Company is required" }}
-            render={({ field }) => (
-              <TextField
-                margin="normal"
-                fullWidth
-                select
-                label="Company Name"
-                {...field}
-                error={!!errors.companyId}
-                helperText={errors.companyId?.message}
-                size="small"
-              >
-                {companies.map((company) => (
-                  <MenuItem key={company.id} value={company.id}>
-                    {company.name}
-                  </MenuItem>
-                ))}
-              </TextField>
-            )}
-          />
-          
           
           <TextField
             margin="normal"

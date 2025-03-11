@@ -4,6 +4,7 @@ import { useDispatch } from "react-redux";
 import { companyListApi } from "../../slices/appSlice";
 import type { AppDispatch } from "../../store/Store";
 import localStorageHelper from "../../utils/localStorageHelper";
+import CompanyDetailsCard from "./CompanyDetailsCard";
 
 interface Company {
   id: number;
@@ -42,7 +43,7 @@ const CompanyListingTable = () => {
   const canManageCompany = roleDetails?.manage_company || false;
 
   // Function to fetch accounts
-  const fetchAccounts = () => {
+  const fetchCompany = () => {
     dispatch(companyListApi())
       .unwrap()
       .then((res: any[]) => {
@@ -72,13 +73,13 @@ const CompanyListingTable = () => {
   };
 
   useEffect(() => {
-    fetchAccounts();
+    fetchCompany();
     refreshList;
   }, []);
 
-//   const handleRowClick = (account: Account) => {
-//     setSelectedAccount(account);
-//   };
+  const handleRowClick = (company: Company) => {
+    setSelectedCompany(company);
+  };
 
   const handleSearchChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -128,7 +129,7 @@ const CompanyListingTable = () => {
   const refreshList = (value: string) => {
     if (value === "refresh") {
       console.log("Account list refreshed...");
-      fetchAccounts();
+      fetchCompany();
     }
   };
   return (
@@ -385,7 +386,7 @@ const CompanyListingTable = () => {
                       <TableRow
                         key={row.id}
                         hover
-                        // onClick={() => handleRowClick(row)}
+                        onClick={() => handleRowClick(row)}
                         sx={{
                           cursor: "pointer",
                           backgroundColor: isSelected
@@ -484,7 +485,7 @@ const CompanyListingTable = () => {
       </Box>
 
       {/* Right Side - Account Details Card */}
-      {/* {selectedAccount && (
+      {selectedCompany && (
         <Box
           sx={{
             flex: { xs: "0 0 100%", md: "0 0 35%" },
@@ -498,16 +499,16 @@ const CompanyListingTable = () => {
             height: "100%",
           }}
         >
-          <AccountDetailsCard
-            account={selectedAccount}
+          <CompanyDetailsCard
+            company={selectedCompany}
             onUpdate={() => {}}
             onDelete={() => {}}
-            onBack={() => setSelectedAccount(null)}
+            onBack={() => setSelectedCompany(null)}
             refreshList={(value: any) => refreshList(value)}
-            canManageExecutive={canManageExecutive}
+            canManageCompany={canManageCompany}
           />
         </Box>
-      )} */}
+      )}
 
       {/* Create Account Modal */}
       {/* <Dialog

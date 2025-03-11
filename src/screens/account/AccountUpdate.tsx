@@ -22,10 +22,12 @@ import {
   accountListApi,
   fetchRoleMappingApi,
 } from "../../slices/appSlice";
+// import { yupResolver } from "@hookform/resolvers/yup";
+// import { accountUpdationFormSchema } from "../auth/validations/authValidation";
 
 // Account update form interface
 interface IAccountFormInputs {
-  username: string;
+  username?: string;
   password?: string;
   fullName?: string;
   phoneNumber?: string;
@@ -75,7 +77,10 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
     control,
     reset,
     formState: { errors },
-  } = useForm<IAccountFormInputs>();
+  } = useForm<IAccountFormInputs>({
+    // resolver: yupResolver(accountUpdationFormSchema),
+  });
+
   const [showPassword, setShowPassword] = useState(false);
   const handleTogglePassword = () => {
     setShowPassword((prev) => !prev);
@@ -154,7 +159,9 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
 
       const formData = new URLSearchParams();
       formData.append("id", accountId.toString());
-      formData.append("username", data.username);
+      if (data.username) {
+        formData.append("username", data.username);
+      }
       if (data.password) {
         formData.append("password", data.password);
       }

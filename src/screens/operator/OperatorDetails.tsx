@@ -1,14 +1,12 @@
 import React, { useState } from "react";
 import { Card, CardActions, Typography, Button, Box, Avatar, Dialog, DialogActions, DialogContent, DialogTitle, DialogContentText, Tooltip } from "@mui/material";
 import {
-  Edit as EditIcon,
   Delete as DeleteIcon,
-  ArrowBack as BackIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
-  AccountCircle as UserIcon,
-  Person as PersonIcon,
+  Person as PersonIcon
 } from "@mui/icons-material";
+import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import { useAppDispatch } from "../../store/Hooks";
 import { operatorDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
@@ -18,6 +16,7 @@ interface OperatorCardProps {
   operator: {
         id: number;
         companyId: number;
+        companyName:string
         username: string;
         fullName: string;
         password: string;
@@ -70,17 +69,17 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
 
   return (
     <>
-      <Card sx={{ maxWidth: 450, width: "100%", margin: "auto", boxShadow: 3, p: 2 }}>
+      <Card sx={{ maxWidth: 300, width: "100%", margin: "auto", boxShadow: 3, p: 2 }}>
         {/* User Avatar & Info */}
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
-          <Avatar sx={{ width: 80, height: 80, bgcolor: "darkblue" }}>
-            <UserIcon fontSize="large" />
+          <Avatar sx={{ width: 80, height: 80, bgcolor: "#187b48" }}>
+            <AssignmentIndIcon fontSize="large" />
           </Avatar>
           <Typography variant="h6" sx={{ mt: 1 }}>
-            {operator.fullName}
+            <b>{operator.fullName}</b>
           </Typography>
           <Typography variant="body2" color="textSecondary">
-            ID: {operator.id} | @{operator.username}
+           <b>ID:</b>  {operator.id} | <b>username:</b> {operator.username}
           </Typography>
         </Box>
 
@@ -89,10 +88,14 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
 
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <Typography variant="body2" color="textSecondary">
-            Company ID: {operator.companyId}
+            <b>Company Name:</b> {operator.companyName}
           </Typography>
-
-          </Box>
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+          <Typography variant="body2" color="textSecondary">
+            <b>Company ID: </b> {operator.companyId}
+          </Typography>
+        </Box>
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <PhoneIcon color="action" sx={{ mr: 1 }} />
             {operator.phoneNumber ? (
@@ -132,14 +135,14 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
         </Card>
 
         {/* Action Buttons */}
-        <CardActions sx={{ justifyContent: "space-between" }}>
-          <Box sx={{ display: "flex", gap: 1 }}>
+        <CardActions >
+          <Box sx={{ display: "flex", gap: 1, justifyContent: "space-between" }}>
             <Button
               variant="outlined"
               color="primary"
               size="small"
               onClick={onBack}
-              startIcon={<BackIcon />}
+              // startIcon={<BackIcon />}
             >
               Back
             </Button>
@@ -159,7 +162,7 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
                   console.log("Update button clicked"); // Debugging
                   setUpdateFormOpen(true);
                 }}
-                startIcon={<EditIcon />}
+                // startIcon={<EditIcon />}
                 disabled={!canManageCompany}
                 sx={{
                   "&.Mui-disabled": { 

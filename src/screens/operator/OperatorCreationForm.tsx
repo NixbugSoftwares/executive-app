@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { Box, TextField, InputAdornment, IconButton, Button, Typography, Container, CssBaseline, CircularProgress, MenuItem } from "@mui/material";
+import { operatorCreationSchema } from "../auth/validations/authValidation";
+import { Box, TextField, InputAdornment, IconButton, Button, Typography, Container, CssBaseline, CircularProgress, MenuItem, Autocomplete } from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { useAppDispatch } from "../../store/Hooks";
-import { operatorCreationApi, companyListApi } from "../../slices/appSlice";
+import { operatorCreationApi, companyListApi, operatorRoleListApi, operatorRoleAssignApi } from "../../slices/appSlice";
 
 // Account creation form interface
 interface IAccountFormInputs {
@@ -16,11 +17,13 @@ interface IAccountFormInputs {
   email?: string;
   gender?: number;
   companyId: number; 
+  role: number; 
+  roleAssignmentId?: number;
 }
 
 interface IOperatorCreationFormProps {
   onClose: () => void;
-  refreshList: (value:any)=>void
+  refreshList: (value: any) => void;
 }
 
 // Gender options mapping
@@ -31,12 +34,12 @@ const genderOptions = [
   { label: "Other", value: 4 },
 ];
 
-
-
-const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, refreshList}) => {
+const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, refreshList }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [companies, setCompanies] = useState<{ id: number; name: string }[]>([]);
+  const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
+  const [filteredCompanies, setFilteredCompanies] = useState<{ id: number; name: string }[]>([]);
 
   const {
     register,
@@ -44,21 +47,36 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, r
     control,
     formState: { errors },
   } = useForm<IAccountFormInputs>({
+    resolver: yupResolver(operatorCreationSchema),
     defaultValues: {
       gender: 4, 
     },
   });
+
+  useEffect(() => {
+      dispatch(operatorRoleListApi())
+        .unwrap()
+        .then((res: any[]) => {
+          setRoles(res.map((role) => ({ id: role.id, name: role.name })));
+          console.log("Roles>>>>>>>>>>>>>>>>>>>:", res);
+        })
+        
+        
+        .catch((err: any) => {
+          console.error("Error fetching roles:", err);
+        });
+    }, [dispatch]);
 
   // Fetch companies on mount
   useEffect(() => {
     dispatch(companyListApi())
       .unwrap()
       .then((res: any[]) => {
-        setCompanies(res.map((company) => ({ id: company.id, name: company.name })));
+        const companyList = res.map((company) => ({ id: company.id, name: company.name }));
+        setCompanies(companyList);
+        setFilteredCompanies(companyList); 
         console.log("company list>>>>>>>>>>>>>>>>>>>:", res);
       })
-      
-      
       .catch((err: any) => {
         console.error("Error fetching company:", err);
       });
@@ -71,11 +89,13 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, r
 
   // Handle Account Creation & Role Assignment 
   const handleAccountCreation: SubmitHandler<IAccountFormInputs> = async (data) => {
-    console.log("Form data:", data); // Debugging line
+    console.log("Form data:", data); 
     try {
       setLoading(true);
       const formData = new FormData();
-      formData.append("company_id", data.companyId.toString());
+      if (data.companyId) {
+        formData.append("company_id", data.companyId.toString());
+      }
       formData.append("username", data.username);
       formData.append("password", data.password);
       formData.append("gender", data.gender?.toString() || "");
@@ -85,18 +105,47 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, r
       if (data.email) formData.append("email_id", data.email);
       console.log("Dispatching operatorCreationApi with form data:", formData);
       const response = await dispatch(operatorCreationApi(formData)).unwrap();
-      console.log("operator created>>>>>>>>>>>>>>>>>>>>:", response);
-      alert("operator created successfully!");
-      refreshList('refresh');
-      onClose();
-    } catch (error) {
-      console.error("Error creating operator:", error);
-      alert("Failed to create operator. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+     if (response?.id) {
+             // Step 2: Assign role
+             const roleResponse = await dispatch(
+               operatorRoleAssignApi({ operator_id: response.id, role_id: data.role })
+             ).unwrap();
+     
+             if (roleResponse?.id && roleResponse?.role_id) {
+               // Store the role assignment ID in the account object or state
+               const updatedAccount = {
+                 ...response,
+                 roleAssignmentId: roleResponse.id, // Store the role assignment ID
+               };
+     
+               console.log("Role Assignment ID>>>>>>>>>>>>>>>>>>>:", updatedAccount);
+     
+               alert("Account and role assigned successfully!");
+               refreshList('refresh');
+               onClose();
+             } else {
+               console.error("Role assignment failed:", roleResponse);
+               alert("Account created, but role assignment failed!");
+             }
+           } else {
+             console.error("Unexpected account creation response:", response);
+             alert("Account creation failed!");
+           }
+         } catch (error) {
+           console.error("Error during account creation:", error);
+           alert("Something went wrong. Please try again.");
+         } finally {
+           setLoading(false);
+         }
   };
-  
+
+  // Handle company search input change
+  const handleCompanySearch = (_event: React.ChangeEvent<{}>, value: string) => {
+    const filtered = companies.filter((company) =>
+      company.name.toLowerCase().includes(value.toLowerCase())
+    );
+    setFilteredCompanies(filtered);
+  };
 
   return (
     <Container component="main" maxWidth="xs">
@@ -107,31 +156,34 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, r
         </Typography>
         <Box component="form" noValidate sx={{ mt: 1 }} onSubmit={handleSubmit(handleAccountCreation)}>
 
+          {/* Company Name Field with Searchable Dropdown */}
           <Controller
             name="companyId"
             control={control}
-            rules={{ required: "Role is required" }}
+            rules={{ required: "Company is required" }}
             render={({ field }) => (
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                select
-                label="company name"
-                {...field}
-                error={!!errors.companyId}
-                helperText={errors.companyId?.message}
-                size="small"
-              >
-                {companies.map((company) => (
-                  <MenuItem key={company.id} value={company.id}>
-                    {company.name}
-                  </MenuItem>
-                ))}
-              </TextField>
+              <Autocomplete
+                options={filteredCompanies}
+                getOptionLabel={(option) => option.name}
+                onChange={(_event, value) => field.onChange(value ? value.id : null)} 
+                onInputChange={handleCompanySearch} 
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    margin="normal"
+                    required
+                    fullWidth
+                    label="Company Name"
+                    error={!!errors.companyId}
+                    helperText={errors.companyId?.message}
+                    size="small"
+                  />
+                )}
+              />
             )}
           />
-          
+
+          {/* Rest of the form fields */}
           <TextField
             margin="normal"
             required
@@ -201,8 +253,6 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, r
               />
             )}
           />
-
-
           <TextField
             margin="normal"
             fullWidth
@@ -213,8 +263,6 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, r
             helperText={errors.email?.message}
             size="small"
           />
-
-          {/* Gender Selection */}
           <Controller
             name="gender"
             control={control}
@@ -228,9 +276,30 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, r
               </TextField>
             )}
           />
-
-
-        
+          <Controller
+            name="role"
+            control={control}
+            rules={{ required: "Role is required" }}
+            render={({ field }) => (
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                select
+                label="Role"
+                {...field}
+                error={!!errors.role}
+                helperText={errors.role?.message}
+                size="small"
+              >
+                {roles.map((role) => (
+                  <MenuItem key={role.id} value={role.id}>
+                    {role.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
           <Button
             type="submit"
             fullWidth

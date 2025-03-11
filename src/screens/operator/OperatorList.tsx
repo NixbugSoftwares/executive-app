@@ -20,7 +20,7 @@ import {
 } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material";
 import { useDispatch } from "react-redux";
-import { operatorListApi } from "../../slices/appSlice";
+import { operatorListApi, companyListApi } from "../../slices/appSlice";
 import type { AppDispatch } from "../../store/Store";
 import localStorageHelper from "../../utils/localStorageHelper";
 import OperatorDetailsCard from "./OperatorDetails";
@@ -29,6 +29,7 @@ import OperatorCreationForm from "./OperatorCreationForm";
 interface Operator {
   id: number;
   companyId: number;
+  companyName: string;
   username: string;
   fullName: string;
   password: string;
@@ -38,15 +39,22 @@ interface Operator {
   status: string;
 }
 
+interface Company {
+  id: number;
+  name: string;
+}
+
 const OperatorListingTable = () => {
   const dispatch = useDispatch<AppDispatch>();
 
-  const [operatorList, setOPeratorList] = useState<Operator[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState<Operator | null>(null);
+  const [operatorList, setOperatorList] = useState<Operator[]>([]);
+  const [companyList, setCompanyList] = useState<Company[]>([]);
+  const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
 
   const [search, setSearch] = useState({
     id: "",
     company_id: "",
+    company_name:"",
     fullName: "",
     gender: "",
     email: "",
@@ -54,11 +62,13 @@ const OperatorListingTable = () => {
   });
 
   const [page, setPage] = useState(0);
-  const rowsPerPage = selectedAccount ? 8 : 8;
+  const rowsPerPage = selectedOperator ? 8 : 8;
 
   const [openCreateModal, setOpenCreateModal] = useState(false);
 
   const roleDetails = localStorageHelper.getItem("@roleDetails");
+  console.log("rolesdetails>>>>>>>>>>>>>", roleDetails);
+  
   const canManageCompany = roleDetails?.manage_company || false;
 
   // Function to fetch accounts
@@ -72,11 +82,12 @@ const OperatorListingTable = () => {
         const formattedAccounts = res.map((operator: any) => ({
           id: operator.id,
           companyId: operator.company_id,
+          companyName: operator.company_name,
           fullName: operator.full_name ?? "-",
           username: operator.username,
           password: "",
           gender:
-          operator.gender === 1
+            operator.gender === 1
               ? "Female"
               : operator.gender === 2
               ? "Male"
@@ -88,25 +99,35 @@ const OperatorListingTable = () => {
           status: operator.status === 1 ? "Active" : "Suspended",
         }));
 
-        console.log(
-          "Formatted Accounts>>>>>>>>>>>>>>>>>>>>:",
-          formattedAccounts
-        );
-        setOPeratorList(formattedAccounts);
+        console.log("Formatted Accounts:", formattedAccounts);
+        setOperatorList(formattedAccounts);
       })
       .catch((err: any) => {
         console.error("Error fetching accounts", err);
       });
   };
 
+  const fetchCompany = () => {
+    dispatch(companyListApi())
+      .unwrap()
+      .then((res: any[]) => {
+        console.log("Company API Response:", res);
+        setCompanyList(res);
+      })
+      .catch((err: any) => {
+        console.error("Error fetching companies", err);
+      });
+  };
+
   useEffect(() => {
     fetchAccounts();
-    refreshList;
+    fetchCompany();
   }, []);
-
-  const handleRowClick = (account: Operator) => {
-    setSelectedAccount(account);
+  const getCompanyName = (companyId: number) => {
+    const company = companyList.find((company) => company.id === companyId);
+    return company ? company.name : "Unknown Company";
   };
+
 
   const handleSearchChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -119,10 +140,13 @@ const OperatorListingTable = () => {
     setSearch({ ...search, gender: e.target.value });
   };
 
+
   const filteredData = operatorList.filter(
     (row: Operator) =>
       (row.id?.toString()?.toLowerCase() || "").includes(
         search.id.toLowerCase()
+      ) &&(getCompanyName(row.companyId)?.toLowerCase() || "").includes(
+        search.company_name.toLowerCase()
       ) &&
       (row.fullName?.toLowerCase() || "").includes(
         search.fullName.toLowerCase()
@@ -152,6 +176,15 @@ const OperatorListingTable = () => {
       fetchAccounts();
     }
   };
+
+
+  
+  const handleRowClick = (account: Operator) => {
+    const companyName = getCompanyName(account.companyId);
+    setSelectedOperator({ ...account, companyName: companyName });
+  };
+
+
   return (
     <Box
       sx={{
@@ -160,17 +193,18 @@ const OperatorListingTable = () => {
         width: "100%",
         height: "100vh",
         gap: 2,
+        overflow: "hidden",
       }}
     >
       <Box
-        sx={{
-          flex: selectedAccount
-            ? { xs: "0 0 100%", md: "0 0 65%" }
-            : "0 0 100%",
-          maxWidth: selectedAccount ? { xs: "100%", md: "65%" } : "100%",
-          transition: "all 0.3s ease",
-          overflowY: selectedAccount ? "auto" : "hidden",
-        }}
+       sx={{
+        flex: selectedOperator
+          ? { xs: "0 0 100%", md: "0 0 65%" }
+          : "0 0 100%",
+        maxWidth: selectedOperator ? { xs: "100%", md: "65%" } : "100%",
+        transition: "all 0.3s ease",
+        overflowY: selectedOperator ? "auto" : "hidden",
+      }}
       >
         <Tooltip
           title={
@@ -207,53 +241,53 @@ const OperatorListingTable = () => {
           </span>
         </Tooltip>
 
-        <TableContainer component={Paper}>
-          <Table>
+        <TableContainer component={Paper} >
+          <Table sx={{ minWidth: 600 }} >
             <TableHead>
               <TableRow>
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>ID</b>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedOperator ? "0.8rem" : "1rem" }}>ID</b>
                   <TextField
                     variant="outlined"
                     size="small"
                     placeholder="Search"
                     value={search.id}
                     onChange={(e) => handleSearchChange(e, "id")}
-                    fullWidth
                     sx={{
+                      width: 80,
                       "& .MuiInputBase-root": {
                         height: 30,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedOperator ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedOperator ? "0.8rem" : "1rem",
                       },
                     }}
                   />
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>Company ID</b>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedOperator ? "0.8rem" : "0.8rem" }}>Company Name</b>
                   <TextField
                     variant="outlined"
                     size="small"
                     placeholder="Search"
-                    value={search.company_id}
-                    onChange={(e) => handleSearchChange(e, "company_id")}
-                    fullWidth
+                    value={search.company_name}
+                    onChange={(e) => handleSearchChange(e, "company_name")}
                     sx={{
+                      width: 120,
                       "& .MuiInputBase-root": {
                         height: 30,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedOperator ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedOperator ? "0.8rem" : "1rem",
                       },
                     }}
                   />
@@ -275,16 +309,15 @@ const OperatorListingTable = () => {
                         height: 30,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedOperator ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedOperator ? "0.8rem" : "1rem",
                       },
                     }}
                   />
                 </TableCell>
-
 
                 <TableCell>
                   <b style={{ display: "block", textAlign: "center" }}>Phone</b>
@@ -300,11 +333,11 @@ const OperatorListingTable = () => {
                         height: 30,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedOperator ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedOperator ? "0.8rem" : "1rem",
                       },
                     }}
                   />
@@ -324,11 +357,11 @@ const OperatorListingTable = () => {
                         height: 30,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedOperator ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedOperator ? "0.8rem" : "1rem",
                       },
                     }}
                   />
@@ -346,14 +379,14 @@ const OperatorListingTable = () => {
                       size="small"
                       sx={{
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedOperator ? "0.8rem" : "1rem",
                         "& .MuiInputBase-root": {
                           height: 30,
                           padding: "4px",
                           textAlign: "center",
                         },
                         "& .MuiSelect-icon": {
-                          fontSize: selectedAccount ? "1rem" : "1.25rem",
+                          fontSize: selectedOperator ? "1rem" : "1.25rem",
                         },
                       }}
                     >
@@ -370,7 +403,7 @@ const OperatorListingTable = () => {
 
             <TableBody
               sx={{
-                fontSize: selectedAccount ? "0.8rem" : "1rem",
+                fontSize: selectedOperator ? "0.8rem" : "1rem",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -380,7 +413,7 @@ const OperatorListingTable = () => {
                 filteredData
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((row) => {
-                    const isSelected = selectedAccount?.id === row.id;
+                    const isSelected = selectedOperator?.id === row.id;
                     return (
                       <TableRow
                         key={row.id}
@@ -403,7 +436,7 @@ const OperatorListingTable = () => {
                         }}
                       >
                         <TableCell>{row.id}</TableCell>
-                        <TableCell>{row.companyId}</TableCell>
+                        <TableCell>{getCompanyName(row.companyId)}</TableCell>
                         <TableCell>{row.fullName}</TableCell>
                         <TableCell>
                           {row.phoneNumber.replace("tel:", "")}
@@ -483,7 +516,7 @@ const OperatorListingTable = () => {
       </Box>
 
       {/* Right Side - Account Details Card */}
-      {selectedAccount && (
+      {selectedOperator && (
         <Box
           sx={{
             flex: { xs: "0 0 100%", md: "0 0 35%" },
@@ -497,18 +530,17 @@ const OperatorListingTable = () => {
             height: "100%",
           }}
         >
-          <OperatorDetailsCard
-            operator={selectedAccount}
+         <OperatorDetailsCard
+            operator={selectedOperator}
             onUpdate={() => {}}
             onDelete={() => {}}
-            onBack={() => setSelectedAccount(null)}
+            onBack={() => setSelectedOperator(null)}
             refreshList={(value: any) => refreshList(value)}
             canManageCompany={canManageCompany}
           />
         </Box>
       )}
- 
-      
+
       <Dialog
         open={openCreateModal}
         onClose={handleCloseModal}
