@@ -33,15 +33,15 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({ role, onBack, onDelete, refr
   const dispatch = useAppDispatch();
 
   const handleRoleDelete = async () => {
-      console.log("Deleting account...id----------------", role.id);
+      console.log("Deleting role...id----------------", role.id);
   
       if (!role.id) {
-        console.error("Error: Account ID is missing");
+        console.error("Error: role ID is missing");
         return;
       }
   
       try {
-        console.log("Deleting account with ID================>:", role.id);
+        console.log("Deleting role with ID================>:", role.id);
         const formData = new FormData();
         formData.append("id", String(role.id)); 
 
@@ -49,7 +49,7 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({ role, onBack, onDelete, refr
         const response = await dispatch(roleDeleteApi(formData)).unwrap();
         console.log("Account deleted:", response);
         setDeleteConfirmOpen(false);
-        localStorageHelper.removeStoredItem(`account_${role.id}`);
+        localStorageHelper.removeStoredItem(`role_${role.id}`);
         onDelete(role.id);
         refreshList('refresh');
       } catch (error) {

@@ -10,7 +10,7 @@ import {
   Person as PersonIcon,
 } from "@mui/icons-material";
 import { useAppDispatch } from "../../store/Hooks";
-import { operatorDeleteApi } from "../../slices/appSlice";
+import { companyDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 // import OperatorUpdateForm from "./UpdationForm";
 
@@ -35,37 +35,36 @@ interface companyCardProps {
 
 const companyDetailsCard: React.FC<companyCardProps> = ({
     company,
-//   refreshList,
-//   onDelete,
+  refreshList,
+  onDelete,
   onBack,
   canManageCompany,
 }) => {
-//   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-//   const [updateFormOpen, setUpdateFormOpen] = useState(false);
-//   const dispatch = useAppDispatch();
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  // const [updateFormOpen, setUpdateFormOpen] = useState(false);
+  const dispatch = useAppDispatch();
  
-//   const handleAccountDelete = async () => {
-//     if (!company.id) {
-//       console.error("Error: Account ID is missing");
-//       return;
-//     }
-
-//     try {
-//       const formData = new FormData();
-//       formData.append("id", String(company.id));
-
-//       const response = await dispatch(operatorDeleteApi(formData)).unwrap();
-//       console.log("Account deleted:", response);
-
-//       setDeleteConfirmOpen(false);
-//       localStorageHelper.removeStoredItem(`account_${company.id}`);
-//       onDelete(company.id);
-//       refreshList("refresh");
-//     } catch (error) {
-//       console.error("Delete error:", error);
-      
-//     }
-//   };
+  const handleCompanyDelete = async () => {
+    if (!company.id) {
+      console.error("Error: Account ID is missing");
+      return;
+    }
+  
+    try {
+      const formData = new FormData();
+      formData.append("id", String(company.id));
+  
+      const response = await dispatch(companyDeleteApi(formData)).unwrap();
+      console.log("Account deleted:", response);
+  
+      setDeleteConfirmOpen(false);
+      localStorageHelper.removeStoredItem(`company_${company.id}`);
+      onDelete(company.id);
+      refreshList("refresh");
+    } catch (error) {
+      console.error("Delete error:", error);
+    }
+  };
 
   return (
     <>
@@ -184,7 +183,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
                   variant="contained"
                   color="error"
                   size="small"
-                //   onClick={() => setDeleteConfirmOpen(true)}
+                  onClick={() => setDeleteConfirmOpen(true)}
                   startIcon={<DeleteIcon />}
                   disabled={!canManageCompany}
                   sx={{
@@ -203,27 +202,26 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
       </Card>
 
       {/* Delete Confirmation Modal */}
-      {/* <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <DialogContentText>Are you sure you want to delete this account?</DialogContentText>
           <Typography>
-            <b>ID:</b> {operator.id}, <b>Username:</b> {operator.username}, <b>Full Name:</b>{" "}
-            {operator.fullName}
+            <b>ID:</b> {company.id}, <b>Comapany name:</b> {company.name}, 
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteConfirmOpen(false)} color="primary">
             Cancel
           </Button>
-          <Button onClick={handleAccountDelete} color="error">
+          <Button onClick={handleCompanyDelete} color="error">
             Confirm Delete
           </Button>
         </DialogActions>
-      </Dialog> */}
+      </Dialog> 
 
-      {/* Update Form Modal */}
-      {/* <Dialog open={updateFormOpen} onClose={() => setUpdateFormOpen(false)} maxWidth="xs" fullWidth>
+  
+   {/* <Dialog open={updateFormOpen} onClose={() => setUpdateFormOpen(false)} maxWidth="xs" fullWidth>
         <DialogContent>
           <OperatorUpdateForm
             refreshList={(value: any) => refreshList(value)}

@@ -38,13 +38,15 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, r
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [companies, setCompanies] = useState<{ id: number; name: string }[]>([]);
-  const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
+  const [roles, setRoles] = useState<{ id: number; name: string; company_id: number }[]>([]);
   const [filteredCompanies, setFilteredCompanies] = useState<{ id: number; name: string }[]>([]);
+  const [filteredRoles, setFilteredRoles] = useState<{ id: number; name: string; company_id: number }[]>([]);
 
   const {
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors },
   } = useForm<IAccountFormInputs>({
     resolver: yupResolver(operatorCreationSchema),
@@ -53,19 +55,20 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, r
     },
   });
 
+  const selectedCompanyId = watch("companyId");
+
   useEffect(() => {
-      dispatch(operatorRoleListApi())
-        .unwrap()
-        .then((res: any[]) => {
-          setRoles(res.map((role) => ({ id: role.id, name: role.name })));
-          console.log("Roles>>>>>>>>>>>>>>>>>>>:", res);
-        })
-        
-        
-        .catch((err: any) => {
-          console.error("Error fetching roles:", err);
-        });
-    }, [dispatch]);
+    dispatch(operatorRoleListApi())
+      .unwrap()
+      .then((res: any[]) => {
+        const rolesWithCompany = res.map((role) => ({ id: role.id, name: role.name, company_id: role.company_id }));
+        setRoles(rolesWithCompany);
+        console.log("Roles>>>>>>>>>>>>>>>>>>>:", rolesWithCompany);
+      })
+      .catch((err: any) => {
+        console.error("Error fetching roles:", err);
+      });
+  }, [dispatch]);
 
   // Fetch companies on mount
   useEffect(() => {
@@ -81,6 +84,16 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, r
         console.error("Error fetching company:", err);
       });
   }, [dispatch]);
+
+  // Filter roles based on selected company
+  useEffect(() => {
+    if (selectedCompanyId) {
+      const filtered = roles.filter((role) => role.company_id === selectedCompanyId);
+      setFilteredRoles(filtered);
+    } else {
+      setFilteredRoles([]);
+    }
+  }, [selectedCompanyId, roles]);
 
   const [showPassword, setShowPassword] = useState(false);
   const handleTogglePassword = () => {
@@ -108,7 +121,7 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, r
      if (response?.id) {
              // Step 2: Assign role
              const roleResponse = await dispatch(
-               operatorRoleAssignApi({ operator_id: response.id, role_id: data.role })
+               operatorRoleAssignApi({ operator_id: response.id, role_id: data.role})
              ).unwrap();
      
              if (roleResponse?.id && roleResponse?.role_id) {
@@ -138,7 +151,7 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, r
            setLoading(false);
          }
   };
-
+  
   // Handle company search input change
   const handleCompanySearch = (_event: React.ChangeEvent<{}>, value: string) => {
     const filtered = companies.filter((company) =>
@@ -292,11 +305,17 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, r
                 helperText={errors.role?.message}
                 size="small"
               >
-                {roles.map((role) => (
-                  <MenuItem key={role.id} value={role.id}>
-                    {role.name}
+                {filteredRoles.length > 0 ? (
+                  filteredRoles.map((role) => (
+                    <MenuItem key={role.id} value={role.id}>
+                      {role.name}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled value="">
+                    No roles added yet
                   </MenuItem>
-                ))}
+                )}
               </TextField>
             )}
           />

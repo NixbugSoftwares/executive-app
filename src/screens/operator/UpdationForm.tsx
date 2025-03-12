@@ -1,7 +1,24 @@
 import React, { useState, useEffect } from "react";
-import { TextField, Button, Box, Typography, CircularProgress, Container, MenuItem, CssBaseline, IconButton, InputAdornment } from "@mui/material";
+import {
+  TextField,
+  Button,
+  Box,
+  Typography,
+  CircularProgress,
+  Container,
+  MenuItem,
+  CssBaseline,
+  IconButton,
+  InputAdornment,
+} from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
-import { operatorupdationApi, operatorListApi } from "../../slices/appSlice";
+import {
+  operatorupdationApi,
+  operatorListApi,
+  operatorRoleListApi,
+  operatorRoleUpdateApi,
+  fetchOperatorRoleMappingApi,
+} from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 
@@ -14,12 +31,15 @@ type operatorFormValues = {
   email?: string;
   gender?: number;
   status?: number;
+  role: number;
+  roleAssignmentId?: number;
 };
 
 interface IOperatorUpdateFormProps {
   onClose: () => void;
   refreshList: (value: any) => void;
   operatorId: number;
+  roleAssignmentId?: number;
 }
 
 const genderOptions = [
@@ -41,7 +61,10 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  const [operatorData, setOperatorData] = useState<operatorFormValues | null>(null);
+  const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
+  const [operatorData, setOperatorData] = useState<operatorFormValues | null>(
+    null
+  );
   const {
     register,
     handleSubmit,
@@ -54,30 +77,43 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
     setShowPassword((prev) => !prev);
   };
 
-;
-
   // Fetch operator data on mount
   useEffect(() => {
+    dispatch(operatorRoleListApi())
+      .unwrap()
+      .then((res: any[]) => {
+        setRoles(res.map((role) => ({ id: role.id, name: role.name })));
+      })
+      .catch((err: any) => {
+        console.error("Error fetching roles:", err);
+      });
     const fetchOperatorData = async () => {
       try {
         setLoading(true);
         const operators = await dispatch(operatorListApi()).unwrap();
         const operator = operators.find((r: any) => r.id === operatorId);
-  
+
         if (operator) {
+          const roleMapping = await dispatch(
+            fetchOperatorRoleMappingApi(operatorId)
+          ).unwrap();
+          console.log("account===============>", operator);
+          console.log("Fetched Role Mapping:", roleMapping);
           setOperatorData({
             id: operator.id,
-            username: operator.username, 
+            username: operator.username,
             password: operator.password,
-            fullName: operator.full_name, 
+            fullName: operator.full_name,
             phoneNumber: operator.phone_number
               ? operator.phone_number.replace(/\D/g, "").replace(/^91/, "")
-              : "", 
-            email: operator.email_id, 
+              : "",
+            email: operator.email_id,
             gender: operator.gender,
             status: operator.status,
+            role: roleMapping.role_id,
+            roleAssignmentId: roleMapping.id,
           });
-  
+
           reset({
             id: operator.id,
             username: operator.username,
@@ -89,6 +125,8 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             email: operator.email_id,
             gender: operator.gender,
             status: operator.status,
+            role: roleMapping.role_id,
+            roleAssignmentId: roleMapping.id,
           });
         }
       } catch (error) {
@@ -98,12 +136,14 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
         setLoading(false);
       }
     };
-  
+
     fetchOperatorData();
   }, [operatorId, dispatch, reset]);
 
   // Handle operator update
-  const handleOperatorUpdate: SubmitHandler<operatorFormValues> = async (data) => {
+  const handleOperatorUpdate: SubmitHandler<operatorFormValues> = async (
+    data
+  ) => {
     try {
       setLoading(true);
 
@@ -130,11 +170,49 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
         "Form Data for Account Update:",
         Object.fromEntries(formData.entries())
       );
-      
-      const response = await dispatch(operatorupdationApi({ operatorId, formData }))
-      .unwrap();
-      console.log("operator updated:", response);
-      alert("Operator updated successfully!");
+
+      const operatorResponse = await dispatch(
+        operatorupdationApi({ operatorId, formData })
+      ).unwrap();
+      console.log("operator updated:", operatorResponse);
+      if (!operatorResponse || !operatorResponse.id) {
+        alert("Account update failed! Please try again.");
+        onClose();
+        return;
+      }
+      refreshList("refresh");
+
+      if (data.roleAssignmentId && data.role) {
+        console.log("Calling roleAssignUpdateApi with:", {
+          roleAssignmentId: data.roleAssignmentId,
+          role: data.role,
+        });
+
+        try {
+          const roleUpdateResponse = await dispatch(
+            operatorRoleUpdateApi({
+              id: data.roleAssignmentId,
+              role_id: data.role,
+            })
+          ).unwrap();
+          console.log("Role Assignment Update Response:", roleUpdateResponse);
+
+          if (!roleUpdateResponse || !roleUpdateResponse.id) {
+            alert("Account updated, but role assignment update failed!");
+            onClose();
+            return;
+          }
+        } catch (roleError) {
+          console.error("Error during role assignment update:", roleError);
+          alert("Account updated, but role assignment update failed!");
+        }
+      } else {
+        console.warn(
+          "Role Assignment ID or Role ID is missing. Skipping role assignment update."
+        );
+      }
+
+      alert("Account updated successfully!");
       refreshList("refresh");
       onClose();
     } catch (error) {
@@ -149,17 +227,26 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
     return <CircularProgress />;
   }
 
-  
-
   return (
     <Container component="main" maxWidth="xs">
       <CssBaseline />
-      <Box sx={{ marginTop: 8, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <Box
+        sx={{
+          marginTop: 8,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
         <Typography component="h1" variant="h5">
           Update Operator
         </Typography>
-        <Box component="form" noValidate sx={{ mt: 1 }} onSubmit={handleSubmit(handleOperatorUpdate)}>
-          
+        <Box
+          component="form"
+          noValidate
+          sx={{ mt: 1 }}
+          onSubmit={handleSubmit(handleOperatorUpdate)}
+        >
           <TextField
             margin="normal"
             fullWidth
@@ -173,7 +260,7 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             name="phoneNumber"
             control={control}
             render={({ field }) => (
-            <TextField
+              <TextField
                 margin="normal"
                 fullWidth
                 label="Phone Number"
@@ -183,74 +270,100 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
                 helperText={errors.phoneNumber?.message}
                 value={field.value ? `+91${field.value}` : ""}
                 onChange={(e) => {
-                let value = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters
-                if (value.startsWith("91")) value = value.slice(2); // Prevent extra +91
-                if (value.length > 10) value = value.slice(0, 10); // Limit to 10 digits
-                field.onChange(value || ""); // Allow empty value
+                  let value = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters
+                  if (value.startsWith("91")) value = value.slice(2); // Prevent extra +91
+                  if (value.length > 10) value = value.slice(0, 10); // Limit to 10 digits
+                  field.onChange(value || ""); // Allow empty value
                 }}
                 onFocus={() => {
-                if (!field.value) field.onChange(""); // Ensure user can start fresh
+                  if (!field.value) field.onChange(""); // Ensure user can start fresh
                 }}
                 onBlur={() => {
-                if (!field.value) field.onChange(""); // Keep field empty if cleared
+                  if (!field.value) field.onChange(""); // Keep field empty if cleared
                 }}
-            />
+              />
             )}
-        />
+          />
           <TextField
-                margin="normal"
-                placeholder="example@gmail.com"
-                fullWidth
-                label="Email"
-                {...register("email")}
-                error={!!errors.email}
-                helperText={errors.email?.message}
-                size="small"
-            />
-
-           <Controller
-                name="gender"
-                control={control}
-                render={({ field }) => (
-                <TextField
-                    margin="normal"
-                    fullWidth
-                    select
-                    label="Gender"
-                    {...field}
-                    error={!!errors.gender}
-                    size="small"
-                >
-                    {genderOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                    </MenuItem>
-                    ))}
-                </TextField>
-                )}
-            />
+            margin="normal"
+            placeholder="example@gmail.com"
+            fullWidth
+            label="Email"
+            {...register("email")}
+            error={!!errors.email}
+            helperText={errors.email?.message}
+            size="small"
+          />
 
           <Controller
-                name="status"
-                control={control}
-                render={({ field }) => (
-                <TextField
-                    margin="normal"
-                    fullWidth
-                    select
-                    label="status"
-                    {...field}
-                    error={!!errors.status}
-                    size="small"
-                >
-                    {statusOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                    </MenuItem>
-                    ))}
-                </TextField>
-                )}
-           />
+            name="gender"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                margin="normal"
+                fullWidth
+                select
+                label="Gender"
+                {...field}
+                error={!!errors.gender}
+                size="small"
+              >
+                {genderOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+
+          <Controller
+            name="status"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                margin="normal"
+                fullWidth
+                select
+                label="status"
+                {...field}
+                error={!!errors.status}
+                size="small"
+              >
+                {statusOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+
+          <Controller
+            name="role"
+            control={control}
+            rules={{ required: "Role is required" }}
+            render={({ field }) => (
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                select
+                label="Role"
+                {...field}
+                error={!!errors.role}
+                helperText={errors.role?.message}
+                size="small"
+              >
+                {roles.map((role) => (
+                  <MenuItem key={role.id} value={role.id}>
+                    {role.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+
           <TextField
             margin="normal"
             fullWidth
@@ -278,7 +391,11 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             sx={{ mt: 3, mb: 2, bgcolor: "darkblue" }}
             disabled={loading}
           >
-            {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Update Operator"}
+            {loading ? (
+              <CircularProgress size={24} sx={{ color: "white" }} />
+            ) : (
+              "Update Operator"
+            )}
           </Button>
         </Box>
       </Box>

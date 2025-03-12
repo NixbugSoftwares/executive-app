@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Table, TableBody, TableCell, Tooltip,TableContainer, TableHead, TableRow, Paper, TextField, Box, Button, Dialog, DialogActions, DialogContent, FormControl, Select, MenuItem } from "@mui/material";
+import { Table, TableBody, TableCell, Tooltip,TableContainer, TableHead, TableRow, Paper, TextField, Box, Button, Dialog, DialogActions, DialogContent } from "@mui/material";
 import { useDispatch } from "react-redux";
 import { companyListApi } from "../../slices/appSlice";
 import type { AppDispatch } from "../../store/Store";
 import localStorageHelper from "../../utils/localStorageHelper";
 import CompanyDetailsCard from "./CompanyDetailsCard";
+import CompanyCreationForm from "./CompanyCreationForm"
 
 interface Company {
   id: number;
@@ -36,7 +37,7 @@ const CompanyListingTable = () => {
   const [page, setPage] = useState(0);
   const rowsPerPage = selectedCompany ? 8 : 8;
 
-//   const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [openCreateModal, setOpenCreateModal] = useState(false);
 
   const roleDetails = localStorageHelper.getItem("@roleDetails");
   console.log("Role Details>>>>>>>>>>>>>>>>>>>:", roleDetails);
@@ -88,9 +89,7 @@ const CompanyListingTable = () => {
     setSearch((prev) => ({ ...prev, [column]: e.target.value }));
   };
 
-//   const handleSelectChange = (e: SelectChangeEvent<string>) => {
-//     setSearch({ ...search, gender: e.target.value });
-//   };
+
 
   const filteredData = companyList.filter(
     (row: Company) =>
@@ -122,16 +121,17 @@ const CompanyListingTable = () => {
     setPage(newPage);
   };
 
-//   const handleCloseModal = () => {
-//     setOpenCreateModal(false);
-//   };
+  const handleCloseModal = () => {
+    setOpenCreateModal(false);
+  };
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      console.log("Account list refreshed...");
+      console.log("Company list refreshed...");
       fetchCompany();
     }
   };
+
   return (
     <Box
       sx={{
@@ -179,7 +179,7 @@ const CompanyListingTable = () => {
                 },
               }}
               variant="contained"
-            //   onClick={() => setOpenCreateModal(true)}
+              onClick={() => setOpenCreateModal(true)}
               disabled={!canManageCompany}
             >
               Create Company
@@ -511,14 +511,14 @@ const CompanyListingTable = () => {
       )}
 
       {/* Create Account Modal */}
-      {/* <Dialog
+      <Dialog
         open={openCreateModal}
         onClose={handleCloseModal}
         maxWidth="sm"
         fullWidth
       >
         <DialogContent>
-          <AccountCreationForm
+          <CompanyCreationForm
             refreshList={(value: any) => refreshList(value)}
             onClose={handleCloseModal}
           />
@@ -528,7 +528,7 @@ const CompanyListingTable = () => {
             Cancel
           </Button>
         </DialogActions>
-      </Dialog> */}
+      </Dialog>
     </Box>
   );
 };
