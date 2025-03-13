@@ -138,6 +138,48 @@ export const landMarkAddSchema = yup.object().shape({
 })
 
 
+//*********************************************************company  creating validation schema**********************************************
+
+export const companyCreationSchema = yup.object().shape({
+  name: yup
+  .string()
+  .required("name name  is required")
+  .min(4, "Owner name must be at least 4 characters")
+  .max(32, "Owner name cannot exceed 32 characters"),
+
+  address: yup
+  .string()
+  .min(4, "Owner name must be at least 4 characters")
+  .max(512, "Owner name cannot exceed 32 characters")
+  .required("address is required"),
+
+  location: yup
+  .string()
+  .required("location is required"),
+
+  owner_name: yup
+  .string()
+  .required("Owner name is required")
+  .min(4, "Owner name must be at least 4 characters")
+  .max(64, "Owner name cannot exceed 32 characters"),
+
+
+  phone_number: yup
+  .string()
+  .required("phone number is required")
+  .matches(/^[1-9][0-9]{9}$/, "Invalid phone number format"),
+  
+  email: yup
+    .string()
+    .trim()
+    .max(254, "Email cannot exceed 254 characters")
+    .matches(/^(?!.*\.\.)[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+)*@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}|^$/, "Invalid email format")
+    .optional(),
+
+})
+
+
+
 //*********************************************************operator creating validation schema**********************************************
 
 

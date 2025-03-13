@@ -6,13 +6,14 @@ import {
   ArrowBack as BackIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
-  AccountCircle as UserIcon,
-  Person as PersonIcon,
 } from "@mui/icons-material";
+import ToggleOnIcon from '@mui/icons-material/ToggleOn';
+import ToggleOffIcon from '@mui/icons-material/ToggleOff';
+import BusinessIcon from '@mui/icons-material/Business';
 import { useAppDispatch } from "../../store/Hooks";
 import { companyDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
-// import OperatorUpdateForm from "./UpdationForm";
+import  CompanyUpdateForm from "./UpdationForm";
 
 interface companyCardProps {
     company: {
@@ -41,7 +42,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
   canManageCompany,
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  // const [updateFormOpen, setUpdateFormOpen] = useState(false);
+  const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const dispatch = useAppDispatch();
  
   const handleCompanyDelete = async () => {
@@ -71,26 +72,38 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
       <Card sx={{ maxWidth: 450, width: "100%", margin: "auto", boxShadow: 3, p: 2 }}>
         {/* User Avatar & Info */}
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
-          <Avatar sx={{ width: 80, height: 80, bgcolor: "darkblue" }}>
-            <UserIcon fontSize="large" />
+          <Avatar sx={{ width: 80, height: 80,  bgcolor: "#187b48" }}>
+            <BusinessIcon fontSize="large" />
           </Avatar>
           <Typography variant="h6" sx={{ mt: 1 }}>
-            {company.name}
+            <b>{company.name}</b>
           </Typography>
           <Typography variant="body2" color="textSecondary">
-            ID: {company.id} | @{company.ownerName}
+           <b>Company  ID:</b> {company.id} 
           </Typography>
         </Box>
 
         {/* User Contact Info */}
         <Card sx={{ p: 2, bgcolor: "grey.100", mb: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+          <Typography variant="body2" color="textSecondary">
+            <b>Owner Name:</b> {company.ownerName} 
+          </Typography>
+        </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <Typography variant="body2" color="textSecondary">
-            Address: {company.location} 
+            <b>Address:</b>{company.address} 
           </Typography>
+        </Box>
 
-          </Box>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+          <Typography variant="body2" color="textSecondary">
+            <b>Location:</b> {company.location} 
+          </Typography>
+        </Box>
+
+ 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <PhoneIcon color="action" sx={{ mr: 1 }} />
             {company.phoneNumber ? (
@@ -121,11 +134,18 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
             )}
           </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-            <PersonIcon color="action" sx={{ mr: 1 }} />
-            <Typography variant="body2">
-              {company.status }
-            </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1, gap: 1 }}>
+            {company.status === "Active" ? (
+              <>
+                <ToggleOnIcon sx={{ color: "green", fontSize: 30 }} />
+                <Typography sx={{ color: "green", fontWeight: "bold" }}>Active</Typography>
+              </>
+            ) : (
+              <>
+                <ToggleOffIcon sx={{ color: "#d93550", fontSize: 30 }} />
+                <Typography sx={{ color: "#d93550", fontWeight: "bold" }}>Suspended</Typography>
+              </>
+            )}
           </Box>
         </Card>
 
@@ -153,10 +173,10 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
                 variant="contained"
                 color="success"
                 size="small"
-                // onClick={() => {
-                //   console.log("Update button clicked"); // Debugging
-                //   setUpdateFormOpen(true);
-                // }}
+                onClick={() => {
+                  console.log("Update button clicked"); // Debugging
+                  setUpdateFormOpen(true);
+                }}
                 startIcon={<EditIcon />}
                 disabled={!canManageCompany}
                 sx={{
@@ -220,16 +240,15 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
         </DialogActions>
       </Dialog> 
 
-  
-   {/* <Dialog open={updateFormOpen} onClose={() => setUpdateFormOpen(false)} maxWidth="xs" fullWidth>
+  <Dialog open={updateFormOpen} onClose={() => setUpdateFormOpen(false)} maxWidth="xs" fullWidth>
         <DialogContent>
-          <OperatorUpdateForm
+          <CompanyUpdateForm
+            companyId={company.id}
             refreshList={(value: any) => refreshList(value)}
-            operatorId={operator.id}
             onClose={() => setUpdateFormOpen(false)}
           />
         </DialogContent>
-      </Dialog> */}
+      </Dialog> 
     </>
   );
 };

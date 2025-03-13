@@ -17,6 +17,7 @@ import {
   FormControl,
   Select,
   MenuItem,
+  Autocomplete,
 } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material";
 import { useDispatch } from "react-redux";
@@ -49,17 +50,24 @@ const OperatorListingTable = () => {
 
   const [operatorList, setOperatorList] = useState<Operator[]>([]);
   const [companyList, setCompanyList] = useState<Company[]>([]);
-  const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
+  const [selectedOperator, setSelectedOperator] = useState<Operator | null>(
+    null
+  );
 
   const [search, setSearch] = useState({
     id: "",
     company_id: "",
-    company_name:"",
+    company_name: "",
     fullName: "",
     gender: "",
     email: "",
     phoneNumber: "",
   });
+
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(
+    null
+  );
+  const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
 
   const [page, setPage] = useState(0);
   const rowsPerPage = selectedOperator ? 8 : 8;
@@ -68,7 +76,7 @@ const OperatorListingTable = () => {
 
   const roleDetails = localStorageHelper.getItem("@roleDetails");
   console.log("rolesdetails>>>>>>>>>>>>>", roleDetails);
-  
+
   const canManageCompany = roleDetails?.manage_company || false;
 
   // Function to fetch accounts
@@ -128,7 +136,6 @@ const OperatorListingTable = () => {
     return company ? company.name : "Unknown Company";
   };
 
-
   const handleSearchChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
     column: keyof typeof search
@@ -140,12 +147,12 @@ const OperatorListingTable = () => {
     setSearch({ ...search, gender: e.target.value });
   };
 
-
   const filteredData = operatorList.filter(
     (row: Operator) =>
       (row.id?.toString()?.toLowerCase() || "").includes(
         search.id.toLowerCase()
-      ) &&(getCompanyName(row.companyId)?.toLowerCase() || "").includes(
+      ) &&
+      (getCompanyName(row.companyId)?.toLowerCase() || "").includes(
         search.company_name.toLowerCase()
       ) &&
       (row.fullName?.toLowerCase() || "").includes(
@@ -156,7 +163,10 @@ const OperatorListingTable = () => {
       (row.email?.toLowerCase() || "").includes(search.email.toLowerCase()) &&
       (row.phoneNumber?.toLowerCase() || "").includes(
         search.phoneNumber.toLowerCase()
-      )
+      ) &&
+      (!selectedCompanyName ||
+        getCompanyName(row.companyId) === selectedCompanyName) &&
+      (!selectedCompanyId || row.companyId === selectedCompanyId)
   );
 
   const handleChangePage = (
@@ -177,13 +187,10 @@ const OperatorListingTable = () => {
     }
   };
 
-
-  
   const handleRowClick = (account: Operator) => {
     const companyName = getCompanyName(account.companyId);
     setSelectedOperator({ ...account, companyName: companyName });
   };
-
 
   return (
     <Box
@@ -197,56 +204,119 @@ const OperatorListingTable = () => {
       }}
     >
       <Box
-       sx={{
-        flex: selectedOperator
-          ? { xs: "0 0 100%", md: "0 0 65%" }
-          : "0 0 100%",
-        maxWidth: selectedOperator ? { xs: "100%", md: "65%" } : "100%",
-        transition: "all 0.3s ease",
-        overflowY: selectedOperator ? "auto" : "hidden",
-      }}
+        sx={{
+          flex: selectedOperator
+            ? { xs: "0 0 100%", md: "0 0 65%" }
+            : "0 0 100%",
+          maxWidth: selectedOperator ? { xs: "100%", md: "65%" } : "100%",
+          transition: "all 0.3s ease",
+          overflowY: selectedOperator ? "auto" : "hidden",
+        }}
       >
-        <Tooltip
-          title={
-            !canManageCompany
-              ? "You don't have permission, contact the admin"
-              : ""
-          }
-          placement="top-end"
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            mb: 2,
+            mt: 1,
+            justifyContent: "space-between",
+          }}
         >
-          <span
-            style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}
-          >
-            <Button
-              sx={{
-                ml: "auto",
-                mr: 2,
-                mb: 2,
-                display: "block",
-                backgroundColor: !canManageCompany
-                  ? "#6c87b7 !important"
-                  : "#3f51b5",
-                color: "white",
-                "&.Mui-disabled": {
-                  backgroundColor: "#6c87b7 !important",
-                  color: "#ffffff99",
-                },
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Autocomplete
+              sx={{ width: 200 }}
+              options={companyList}
+              getOptionLabel={(option) => option.name}
+              value={
+                companyList.find((c) => c.name === selectedCompanyName) || null
+              }
+              onChange={(_, newValue) => {
+                setSelectedCompanyName(newValue ? newValue.name : "");
               }}
-              variant="contained"
-              onClick={() => setOpenCreateModal(true)}
-              disabled={!canManageCompany}
-            >
-              Add Operator
-            </Button>
-          </span>
-        </Tooltip>
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Select Company"
+                  variant="outlined"
+                  size="small"
+                />
+              )}
+            />
 
-        <TableContainer component={Paper} >
-          <Table sx={{ minWidth: 600 }} >
+            {/* Company ID Input */}
+            <TextField
+              label="Company ID"
+              variant="outlined"
+              size="small"
+              value={selectedCompanyId || ""}
+              onChange={(e) =>
+                setSelectedCompanyId(
+                  e.target.value ? parseInt(e.target.value, 10) : null
+                )
+              }
+              placeholder="Enter Company ID"
+              sx={{ width: 120 }}
+            />
+
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setSelectedCompanyId(null);
+                setSelectedCompanyName("");
+              }}
+            >
+              Clear Filters
+            </Button>
+          </Box>
+
+          <Tooltip
+            title={
+              !canManageCompany
+                ? "You don't have permission, contact the admin"
+                : "click to open the operator creation form"
+            }
+            placement="top-end"
+          >
+            <span
+              style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}
+            >
+              <Button
+              
+                sx={{
+                  backgroundColor: !canManageCompany
+                    ? "#6c87b7 !important"
+                    : "#187b48",
+                  color: "white",
+                  "&.Mui-disabled": {
+                    backgroundColor: "#6c87b7 !important",
+                    color: "#ffffff99",
+                  },
+                }}
+                variant="contained"
+                onClick={() => setOpenCreateModal(true)}
+                disabled={!canManageCompany}
+              >
+                Add Operator
+              </Button>
+            </span>
+          </Tooltip>
+        </Box>
+
+        <TableContainer component={Paper}>
+          <Table sx={{ minWidth: 600 }}>
             <TableHead>
               <TableRow>
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedOperator ? "0.8rem" : "1rem" }}>ID</b>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedOperator ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    ID
+                  </b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -270,7 +340,15 @@ const OperatorListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedOperator ? "0.8rem" : "0.8rem" }}>Company Name</b>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedOperator ? "0.8rem" : "0.8rem",
+                    }}
+                  >
+                    Company Name
+                  </b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -530,7 +608,7 @@ const OperatorListingTable = () => {
             height: "100%",
           }}
         >
-         <OperatorDetailsCard
+          <OperatorDetailsCard
             operator={selectedOperator}
             onUpdate={() => {}}
             onDelete={() => {}}

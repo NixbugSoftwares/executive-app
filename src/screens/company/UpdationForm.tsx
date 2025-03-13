@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import {
   Box,
@@ -8,12 +8,12 @@ import {
   Container,
   CssBaseline,
   CircularProgress,
+  MenuItem
 } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
-import { companyCreationApi } from "../../slices/appSlice";
+import { companyUpdationApi, companyListApi } from "../../slices/appSlice";
 import MapModal from "./MapModal";
-import { yupResolver } from "@hookform/resolvers/yup";
-import { companyCreationSchema } from "../auth/validations/authValidation";
+
 interface ICompanyFormInputs {
   name: string;
   address: string;
@@ -21,70 +21,118 @@ interface ICompanyFormInputs {
   owner_name: string;
   phone_number: string;
   email?: string;
+  status?: number;
   latitude?: number;
   longitude?: number;
 }
 
-interface ICompanyCreationFormProps {
+interface ICompanyUpdateFormProps {
+  companyId: number;
   onClose: () => void;
   refreshList: (value: any) => void;
 }
 
-const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
+const statusOptions = [
+    { label: "Active", value: 1 },
+    { label: "suspended", value: 2 },
+  ];
+
+const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
+  companyId,
   onClose,
   refreshList,
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
+  const [companyData, setCompanyData] = useState<ICompanyFormInputs | null>(null);
   const [mapModalOpen, setMapModalOpen] = useState(false);
 
   const {
     register,
     handleSubmit,
     control,
+    reset,
     setValue,
     formState: { errors },
-  } = useForm<ICompanyFormInputs>({
-    resolver: yupResolver(companyCreationSchema),
-  });
+  } = useForm<ICompanyFormInputs>();
 
+  // Fetch company data
+  useEffect(() => {
+    dispatch(companyListApi())
+      .unwrap()
+      .then(async (res: any[]) => {
+        const company = res.find((company) => company.id === companyId);
+        if (company) {
+          setCompanyData({
+            name: company.name,
+            address: company.address,
+            location: company.location,
+            owner_name: company.owner_name,
+            phone_number: company.phone_number
+              ? company.phone_number.replace(/\D/g, "").replace(/^91/, "")
+              : "",
+            email: company.email_id,
+            status: company.status,
+          });
+
+          reset({
+            name: company.name,
+            address: company.address,
+            location: company.location,
+            owner_name: company.owner_name,
+            phone_number: company.phone_number
+              ? company.phone_number.replace(/\D/g, "").replace(/^91/, "")
+              : "",
+            email: company.email_id,
+            status: company.status,
+          });
+        }
+      })
+      .catch((err: any) => {
+        console.error("Error fetching company data:", err);
+      });
+  }, [companyId, dispatch, reset]);
+
+  // Handle location selection from MapModal
   const handleLocationSelect = (location: { name: string; lat: number; lng: number }) => {
     setValue("location", location.name);
     setValue("latitude", location.lat);
     setValue("longitude", location.lng);
   };
 
-  const handleAccountCreation: SubmitHandler<ICompanyFormInputs> = async (data) => {
+  // Handle Account Update
+  const handleAccountUpdate: SubmitHandler<ICompanyFormInputs> = async (data) => {
     try {
       setLoading(true);
-  
-      const formData = new FormData();
-      formData.append("name", data.name);
-      formData.append("address", data.address);
-      formData.append("location", `POINT (${data.longitude} ${data.latitude})`);
-      formData.append("owner_name", data.owner_name);
-      formData.append("phone_number", `+91${data.phone_number}`);
-      
-      if (data.email) {
-        formData.append("email_id", data.email);
-      }
-      const response = await dispatch(companyCreationApi(formData)).unwrap();
-      console.log("Company creation response:", response);
-      if (response?.id) {
-        alert("Company created successfully!");
-        refreshList("refresh");
-        onClose();
-      } else {
-        alert("Company creation failed. Please try again.");
-      }
+
+      const formData = new URLSearchParams();
+      formData.append("id", companyId.toString());
+      if (data.name) formData.append("name", data.name);
+      if (data.address) formData.append("address", data.address);
+      if (data.location) formData.append("location", `POINT (${data.longitude} ${data.latitude})`);
+      if (data.owner_name) formData.append("owner_name", data.owner_name);
+      if (data.phone_number) formData.append("phone_number", `+91${data.phone_number}`);
+      if (data.email) formData.append("email_id", data.email);
+      if (data.status) formData.append("status", data.status.toString());
+
+      console.log("Form Data:", formData);
+
+      const updateResponse = await dispatch(companyUpdationApi({ companyId, formData })).unwrap();
+      console.log("Company updated:", updateResponse);
+      alert("Company updated successfully!");
+      refreshList("refresh");
+      onClose();
     } catch (error) {
-      console.error("Error during company creation:", error);
-      alert("Something went wrong. Please try again.");
+      console.error("Error updating company:", error);
+      alert("Failed to update company. Please try again.");
     } finally {
       setLoading(false);
     }
   };
-  
+
+  if (!companyData) {
+    return <CircularProgress />;
+  }
 
   return (
     <Container component="main" maxWidth="xs">
@@ -98,13 +146,13 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
         }}
       >
         <Typography component="h1" variant="h5">
-          Company Creation
+          Update Company
         </Typography>
         <Box
           component="form"
           noValidate
           sx={{ mt: 1 }}
-          onSubmit={handleSubmit(handleAccountCreation)}
+          onSubmit={handleSubmit(handleAccountUpdate)}
         >
           <TextField
             margin="normal"
@@ -114,7 +162,6 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
             {...register("name")}
             error={!!errors.name}
             helperText={errors.name?.message}
-            autoFocus
             size="small"
           />
           <TextField
@@ -187,6 +234,28 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
             helperText={errors.email?.message}
             size="small"
           />
+          <Controller
+                name="status"
+                control={control}
+                render={({ field }) => (
+                <TextField
+                    margin="normal"
+                    fullWidth
+                    select
+                    label="status"
+                    {...field}
+                    error={!!errors.status}
+                    size="small"
+                >
+                    {statusOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                    </MenuItem>
+                    ))}
+                </TextField>
+                )}
+            />
+         
           <Button
             type="submit"
             fullWidth
@@ -198,7 +267,7 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
             {loading ? (
               <CircularProgress size={24} sx={{ color: "white" }} />
             ) : (
-              "Create Account"
+              "Update Company"
             )}
           </Button>
         </Box>
@@ -212,4 +281,4 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
   );
 };
 
-export default CompanyCreationForm;
+export default CompanyUpdateForm;

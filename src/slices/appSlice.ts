@@ -380,6 +380,26 @@ export const companyCreationApi = createAsyncThunk(
   }
 );
 
+//company update api
+export const companyUpdationApi = createAsyncThunk(
+  "/executive/company",
+  async ({ formData }: { companyId: number; formData: URLSearchParams }, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "patch",
+        "/executive/company",
+        formData,
+        true,
+        "application/x-www-form-urlencoded" 
+      );
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data); 
+      return rejectWithValue(error?.response?.data?.message || "Role update failed");
+    }
+  }
+);
+
 //company delete api
 export const companyDeleteApi = createAsyncThunk(
   "/executive/company",

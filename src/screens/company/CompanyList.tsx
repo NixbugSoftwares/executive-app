@@ -156,7 +156,7 @@ const CompanyListingTable = () => {
           title={
             !canManageCompany
               ? "You don't have permission, contact the admin"
-              : ""
+              :"click to open the operator creation form"
           }
           placement="top-end"
         >
@@ -171,7 +171,7 @@ const CompanyListingTable = () => {
                 display: "block",
                 backgroundColor: !canManageCompany
                   ? "#6c87b7 !important"
-                  : "#3f51b5",
+                  : "#187b48",
                 color: "white",
                 "&.Mui-disabled": {
                   backgroundColor: "#6c87b7 !important",
@@ -267,31 +267,6 @@ const CompanyListingTable = () => {
                   />
                 </TableCell>
 
-                <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>
-                    Location
-                  </b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.location}
-                    onChange={(e) => handleSearchChange(e, "location")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 30,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
 
                 <TableCell>
                   <b style={{ display: "block", textAlign: "center" }}>
@@ -406,7 +381,6 @@ const CompanyListingTable = () => {
                         <TableCell>{row.id}</TableCell>
                         <TableCell>{row.name}</TableCell>
                         <TableCell>{row.address}</TableCell>
-                        <TableCell>{row.location}</TableCell>
                         <TableCell>{row.ownerName}</TableCell>
                         <TableCell>
                           {row.phoneNumber.replace("tel:", "")}

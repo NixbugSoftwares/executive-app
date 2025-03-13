@@ -10,6 +10,8 @@ import {
   Work as WorkIcon,
   Person as PersonIcon,
 } from "@mui/icons-material";
+import ToggleOnIcon from '@mui/icons-material/ToggleOn';
+import ToggleOffIcon from '@mui/icons-material/ToggleOff';
 import { useAppDispatch } from "../../store/Hooks";
 import { accountDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
@@ -141,6 +143,20 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
               {account.designation ? account.designation : "Not added yet"}
             </Typography>
           </Box>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1, gap: 1 }}>
+            {account.status === "Active" ? (
+              <>
+                <ToggleOnIcon sx={{ color: "green", fontSize: 30 }} />
+                <Typography sx={{ color: "green", fontWeight: "bold" }}>Active</Typography>
+              </>
+            ) : (
+              <>
+                <ToggleOffIcon sx={{ color: "#d93550", fontSize: 30 }} />
+                <Typography sx={{ color: "#d93550", fontWeight: "bold" }}>Suspended</Typography>
+              </>
+            )}
+          </Box>
+
         </Card>
 
         {/* Action Buttons */}

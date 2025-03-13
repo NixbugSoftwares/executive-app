@@ -112,8 +112,8 @@ const RoleListingTable = () => {
       {/* Table Section */}
       <Box
         sx={{
-          flex: selectRole ? { xs: "0 0 100%", md: "0 0 50%" } : "0 0 100%",
-          maxWidth: selectRole ? { xs: "100%", md: "50%" } : "100%",
+          flex: selectRole ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
+          maxWidth: selectRole ? { xs: "100%", md: "65%" } : "100%",
           transition: "all 0.3s ease",
           overflowX: "auto", 
           overflowY: "auto", 

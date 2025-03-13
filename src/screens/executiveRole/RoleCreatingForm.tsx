@@ -66,9 +66,13 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({ onClose, refreshLi
 
       const response = await dispatch(roleCreationApi(formData)).unwrap();
       console.log("Role created>>>>>>>>>>>>>>>>>>>>:", response);
-      alert("Role created successfully!");
-      refreshList('refresh')
-      onClose();
+      if (response?.id) {
+        alert("Role created successfully!");
+        refreshList("refresh");
+        onClose();
+      } else {
+        alert("Role creation failed. Please try again.");
+      }
     } catch (error) {
       console.error("Error creating role:", error);
       alert("Failed to create role. Please try again.");

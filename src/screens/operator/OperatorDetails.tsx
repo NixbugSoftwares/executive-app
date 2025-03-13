@@ -6,7 +6,9 @@ import {
   Phone as PhoneIcon,
   Person as PersonIcon
 } from "@mui/icons-material";
-import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
+import BadgeIcon from '@mui/icons-material/Badge';
+import ToggleOnIcon from '@mui/icons-material/ToggleOn';
+import ToggleOffIcon from '@mui/icons-material/ToggleOff';
 import { useAppDispatch } from "../../store/Hooks";
 import { operatorDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
@@ -73,7 +75,7 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
         {/* User Avatar & Info */}
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
           <Avatar sx={{ width: 80, height: 80, bgcolor: "#187b48" }}>
-            <AssignmentIndIcon fontSize="large" />
+            <BadgeIcon fontSize="large" />
           </Avatar>
           <Typography variant="h6" sx={{ mt: 1 }}>
             <b>{operator.fullName}</b>
@@ -132,6 +134,22 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
               {operator.gender ? operator.gender : "Not added yet"}
             </Typography>
           </Box>
+
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1, gap: 1 }}>
+            {operator.status === "Active" ? (
+              <>
+                <ToggleOnIcon sx={{ color: "green", fontSize: 30 }} />
+                <Typography sx={{ color: "green", fontWeight: "bold" }}>Active</Typography>
+              </>
+            ) : (
+              <>
+                <ToggleOffIcon sx={{ color: "#d93550", fontSize: 30 }} />
+                <Typography sx={{ color: "#d93550", fontWeight: "bold" }}>Suspended</Typography>
+              </>
+            )}
+          </Box>
+
+
         </Card>
 
         {/* Action Buttons */}

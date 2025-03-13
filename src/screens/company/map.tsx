@@ -3,16 +3,25 @@ import Map from "ol/Map";
 import View from "ol/View";
 import TileLayer from "ol/layer/Tile";
 import VectorLayer from "ol/layer/Vector";
-import { OSM, XYZ } from "ol/source";
-import { Vector as VectorSource } from "ol/source";
-import { defaults as defaultControls, Zoom } from "ol/control";
+import { OSM, XYZ, Vector as VectorSource } from "ol/source";
 import { fromLonLat, toLonLat } from "ol/proj";
-import { Box, Button, Typography } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import {
+  Box,
+  Button,
+  Typography,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  TextField,
+} from "@mui/material";
+import Feature from "ol/Feature";
+import Point from "ol/geom/Point";
+import { Style, Icon } from "ol/style";
 
 interface MapComponentProps {
-  onSelectLocation: (coordinates: { lat: number; lng: number }) => void; // Callback for selected location
-  isOpen: boolean; // Whether the map is open
+  onSelectLocation: (coordinates: { lat: number; lng: number; name: string }) => void;
+  isOpen: boolean;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen }) => {
@@ -20,50 +29,135 @@ const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen })
   const mapInstance = useRef<Map | null>(null);
   const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">("osm");
   const [mousePosition, setMousePosition] = useState<string>("");
-  const navigate = useNavigate();
+  const [isMarkingEnabled, setIsMarkingEnabled] = useState<boolean>(false);
+  const [markerLayer, setMarkerLayer] = useState<VectorLayer<VectorSource<Feature<Point>>> | null>(
+    null
+  );
+  const [locationName, setLocationName] = useState<string>("");
 
   useEffect(() => {
     if (!mapRef.current) return;
 
     if (!mapInstance.current) {
       const map = new Map({
-        controls: defaultControls().extend([new Zoom()]),
-        layers: [
-          new TileLayer({ source: new OSM() }), 
-        ],
+        controls: [],
+        layers: [new TileLayer({ source: new OSM() })],
         target: mapRef.current,
         view: new View({
-          center: fromLonLat([76.9366, 8.5241]), 
+          center: fromLonLat([76.9366, 8.5241]),
           zoom: 10,
           minZoom: 3,
           maxZoom: 18,
         }),
       });
 
-      // Track mouse position
       map.on("pointermove", (event) => {
         const coords = toLonLat(event.coordinate);
         setMousePosition(`${coords[0].toFixed(7)}, ${coords[1].toFixed(7)}`);
       });
 
-      // Handle click to select a location
-      map.on("click", (event) => {
-        const coords = toLonLat(event.coordinate);
-        onSelectLocation({ lat: coords[1], lng: coords[0] }); // Pass selected coordinates to parent
-      });
-
       mapInstance.current = map;
     }
 
-    // Update map size when opened
     if (isOpen) {
       setTimeout(() => {
         mapInstance.current?.updateSize();
       }, 500);
     }
-  }, [isOpen, onSelectLocation, navigate]);
+  }, [isOpen]);
 
-  // Change map type (OSM, Satellite, Hybrid)
+  useEffect(() => {
+    if (!mapInstance.current) return;
+
+    const map = mapInstance.current;
+
+    const handleMapClick = async (event: any) => {
+      if (!isMarkingEnabled) return;
+
+      const coords = toLonLat(event.coordinate);
+      const name = await fetchLocationName(coords[1], coords[0]);
+      setLocationName(name);
+      onSelectLocation({ lat: coords[1], lng: coords[0], name });
+
+      const marker = new Feature({
+        geometry: new Point(event.coordinate),
+      });
+
+      const markerSource = new VectorSource({
+        features: [marker],
+      });
+
+      const newMarkerLayer = new VectorLayer({
+        source: markerSource,
+        style: new Style({
+          image: new Icon({
+            src: "https://openlayers.org/en/latest/examples/data/icon.png",
+            scale: 0.5,
+          }),
+        }),
+      });
+
+      if (markerLayer) {
+        map.removeLayer(markerLayer);
+      }
+
+      map.addLayer(newMarkerLayer);
+      setMarkerLayer(newMarkerLayer);
+    };
+
+    map.on("click", handleMapClick);
+
+    return () => {
+      map.un("click", handleMapClick);
+    };
+  }, [isMarkingEnabled]);
+
+  const fetchLocationName = async (lat: number, lng: number) => {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+    );
+    const data = await response.json();
+    return data.display_name || "Unknown Location";
+  };
+
+  const handleSearch = async () => {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}`
+    );
+    const data = await response.json();
+    if (data.length > 0) {
+      const { lat, lon } = data[0];
+      const coords = fromLonLat([parseFloat(lon), parseFloat(lat)]);
+      mapInstance.current?.getView().setCenter(coords);
+      mapInstance.current?.getView().setZoom(15);
+
+      const marker = new Feature({
+        geometry: new Point(coords),
+      });
+
+      const markerSource = new VectorSource({
+        features: [marker],
+      });
+
+      const newMarkerLayer = new VectorLayer({
+        source: markerSource,
+        style: new Style({
+          image: new Icon({
+            src: "https://openlayers.org/en/latest/examples/data/icon.png",
+            scale: 0.5,
+          }),
+        }),
+      });
+
+      if (markerLayer) {
+        mapInstance.current?.removeLayer(markerLayer);
+      }
+
+      mapInstance.current?.addLayer(newMarkerLayer);
+      setMarkerLayer(newMarkerLayer);
+    }
+  };
+
   const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
     if (!mapInstance.current) return;
 
@@ -104,7 +198,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen })
 
   return (
     <Box height="100%">
-      {/* Toolbar Section */}
       <Box
         sx={{
           display: "flex",
@@ -116,40 +209,40 @@ const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen })
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <FormControl variant="outlined" size="small">
+            <InputLabel>Map Type</InputLabel>
+            <Select
+              value={mapType}
+              onChange={(e) => changeMapType(e.target.value as "osm" | "satellite" | "hybrid")}
+              label="Map Type"
+            >
+              <MenuItem value="osm">OSM</MenuItem>
+              <MenuItem value="satellite">Satellite</MenuItem>
+              <MenuItem value="hybrid">Hybrid</MenuItem>
+            </Select>
+          </FormControl>
+
           <Button
-            onClick={() => changeMapType("osm")}
-            disabled={mapType === "osm"}
+            onClick={() => setIsMarkingEnabled(!isMarkingEnabled)}
             variant="contained"
             size="small"
+            color={isMarkingEnabled ? "secondary" : "primary"}
           >
-            OSM
-          </Button>
-          <Button
-            onClick={() => changeMapType("satellite")}
-            disabled={mapType === "satellite"}
-            variant="contained"
-            size="small"
-          >
-            Satellite
-          </Button>
-          <Button
-            onClick={() => changeMapType("hybrid")}
-            disabled={mapType === "hybrid"}
-            variant="contained"
-            size="small"
-          >
-            Hybrid
+            {isMarkingEnabled ? "Disable Marking" : "Enable Marking"}
           </Button>
         </Box>
 
-        {/* Display mouse position */}
         <Typography variant="body2">
           <strong>{mousePosition}</strong>
         </Typography>
       </Box>
 
-      {/* Map Section */}
-      <Box ref={mapRef} width="100%" height="600px" flex={1} />
+      <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
+        <TextField fullWidth label="Search Location" value={locationName} onChange={(e) => setLocationName(e.target.value)} />
+        <Button variant="contained" onClick={handleSearch}>Search</Button>
+      </Box>
+
+      <Box ref={mapRef} width="100%" height="500px" flex={1} />
     </Box>
   );
 };
