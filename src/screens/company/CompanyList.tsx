@@ -156,7 +156,7 @@ const CompanyListingTable = () => {
           title={
             !canManageCompany
               ? "You don't have permission, contact the admin"
-              :"click to open the operator creation form"
+              :"click to open the company creation form"
           }
           placement="top-end"
         >
@@ -192,7 +192,7 @@ const CompanyListingTable = () => {
             <TableHead>
               <TableRow>
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>ID</b>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedCompany ? "0.8rem" : "1rem"  }}>ID</b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -216,7 +216,7 @@ const CompanyListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedCompany ? "0.8rem" : "1rem", textWrap: "nowrap"   }}>
                     Company Name
                   </b>
                   <TextField
@@ -242,7 +242,7 @@ const CompanyListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedCompany ? "0.8rem" : "1rem"  }}>
                     Address
                   </b>
                   <TextField
@@ -269,7 +269,7 @@ const CompanyListingTable = () => {
 
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedCompany ? "0.8rem" : "1rem", textWrap: "nowrap"  }}>
                     Owner Name
                   </b>
                   <TextField
@@ -295,7 +295,7 @@ const CompanyListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>Phone Number</b>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedCompany ? "0.8rem" : "1rem"  }}>Phone Number</b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -319,7 +319,7 @@ const CompanyListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>Email</b>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedCompany ? "0.8rem" : "1rem"  }}>Email</b>
                   <TextField
                     variant="outlined"
                     size="small"

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal, Box, Typography, Button } from "@mui/material";
 import MapComponent from "./map";
 
@@ -6,10 +6,30 @@ interface MapModalProps {
   open: boolean;
   onClose: () => void;
   onSelectLocation: (location: { name: string; lat: number; lng: number }) => void;
+  initialCoordinates?: { lat: number; lng: number }; // Add initialCoordinates prop
 }
 
-const MapModal: React.FC<MapModalProps> = ({ open, onClose, onSelectLocation }) => {
+const MapModal: React.FC<MapModalProps> = ({ open, onClose, onSelectLocation, initialCoordinates }) => {
   const [selectedLocation, setSelectedLocation] = useState<{ name: string; lat: number; lng: number } | null>(null);
+
+  // Fetch location name when initialCoordinates changes
+  useEffect(() => {
+    if (open && initialCoordinates) {
+      const fetchLocationName = async (lat: number, lng: number) => {
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+          );
+          const data = await response.json();
+          setSelectedLocation({ name: data.display_name, lat, lng });
+        } catch (error) {
+          console.error("Error fetching location name:", error);
+        }
+      };
+
+      fetchLocationName(initialCoordinates.lat, initialCoordinates.lng);
+    }
+  }, [open, initialCoordinates]);
 
   const handleLocationSelect = (coordinates: { lat: number; lng: number; name: string }) => {
     setSelectedLocation({ name: coordinates.name, lat: coordinates.lat, lng: coordinates.lng });
@@ -31,7 +51,7 @@ const MapModal: React.FC<MapModalProps> = ({ open, onClose, onSelectLocation }) 
           left: "50%",
           transform: "translate(-50%, -50%)",
           width: 800,
-          height: 600, 
+          height: 600,
           bgcolor: "background.paper",
           boxShadow: 24,
           p: 3,
@@ -42,7 +62,11 @@ const MapModal: React.FC<MapModalProps> = ({ open, onClose, onSelectLocation }) 
           Select Location
         </Typography>
         <Box sx={{ height: 450, overflow: "hidden" }}>
-          <MapComponent onSelectLocation={handleLocationSelect} isOpen={open} />
+          <MapComponent
+            onSelectLocation={handleLocationSelect}
+            isOpen={open}
+            initialCoordinates={initialCoordinates} 
+          />
         </Box>
         <Button
           onClick={handleConfirm}

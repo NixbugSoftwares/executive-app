@@ -311,8 +311,8 @@ const OperatorListingTable = () => {
                   <b
                     style={{
                       display: "block",
-                      textAlign: "center",
-                      fontSize: selectedOperator ? "0.8rem" : "1rem",
+                      textAlign: "center", 
+                      fontSize: selectedOperator ? "0.8rem" : "1rem"
                     }}
                   >
                     ID
@@ -344,7 +344,7 @@ const OperatorListingTable = () => {
                     style={{
                       display: "block",
                       textAlign: "center",
-                      fontSize: selectedOperator ? "0.8rem" : "0.8rem",
+                      fontSize: selectedOperator ? "0.8rem" : "1rem",
                     }}
                   >
                     Company Name
@@ -372,7 +372,7 @@ const OperatorListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedOperator ? "0.8rem" : "1rem" }}>
                     Full Name
                   </b>
                   <TextField
@@ -398,7 +398,7 @@ const OperatorListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>Phone</b>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedOperator ? "0.8rem" : "1rem" }}>Phone</b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -422,7 +422,7 @@ const OperatorListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>Email</b>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedOperator ? "0.8rem" : "1rem" }}>Email</b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -446,7 +446,7 @@ const OperatorListingTable = () => {
                 </TableCell>
 
                 <TableCell size="small">
-                  <b style={{ display: "block", textAlign: "center" }}>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedOperator ? "0.8rem" : "1rem" }}>
                     Gender
                   </b>
                   <FormControl fullWidth size="small">

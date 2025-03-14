@@ -20,21 +20,35 @@ import Point from "ol/geom/Point";
 import { Style, Icon } from "ol/style";
 
 interface MapComponentProps {
-  onSelectLocation: (coordinates: { lat: number; lng: number; name: string }) => void;
+  onSelectLocation?: (coordinates: { lat: number; lng: number; name: string }) => void;
   isOpen: boolean;
+  initialCoordinates?: { lat: number; lng: number };
 }
 
-const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen, initialCoordinates }) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<Map | null>(null);
   const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">("osm");
   const [mousePosition, setMousePosition] = useState<string>("");
   const [isMarkingEnabled, setIsMarkingEnabled] = useState<boolean>(false);
-  const [markerLayer, setMarkerLayer] = useState<VectorLayer<VectorSource<Feature<Point>>> | null>(
-    null
-  );
+  const [markerLayer, setMarkerLayer] = useState<VectorLayer<VectorSource<Feature<Point>>> | null>(null);
   const [locationName, setLocationName] = useState<string>("");
 
+  // Fetch location name from coordinates
+  const fetchLocationName = async (lat: number, lng: number) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+      );
+      const data = await response.json();
+      return data.display_name || "Unknown Location";
+    } catch (error) {
+      console.error("Error fetching location name:", error);
+      return "Unknown Location";
+    }
+  };
+
+  // Initialize the map and add a marker for initialCoordinates
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -44,7 +58,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen })
         layers: [new TileLayer({ source: new OSM() })],
         target: mapRef.current,
         view: new View({
-          center: fromLonLat([76.9366, 8.5241]),
+          center: initialCoordinates
+            ? fromLonLat([initialCoordinates.lng, initialCoordinates.lat])
+            : fromLonLat([76.9366, 8.5241]),
           zoom: 10,
           minZoom: 3,
           maxZoom: 18,
@@ -59,15 +75,50 @@ const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen })
       mapInstance.current = map;
     }
 
+    // Add a marker for initialCoordinates and fetch location name
+    if (initialCoordinates && mapInstance.current) {
+      const marker = new Feature({
+        geometry: new Point(fromLonLat([initialCoordinates.lng, initialCoordinates.lat])),
+      });
+
+      const markerSource = new VectorSource({
+        features: [marker],
+      });
+
+      const newMarkerLayer = new VectorLayer({
+        source: markerSource,
+        style: new Style({
+          image: new Icon({
+            src: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+            scale: 1,
+          }),
+        }),
+      });
+
+      if (markerLayer) {
+        mapInstance.current.removeLayer(markerLayer);
+      }
+
+      mapInstance.current.addLayer(newMarkerLayer);
+      setMarkerLayer(newMarkerLayer);
+
+      // Fetch and set the location name
+      fetchLocationName(initialCoordinates.lat, initialCoordinates.lng).then((name) => {
+        setLocationName(name);
+      });
+    }
+
+    // Update map size when modal is opened
     if (isOpen) {
       setTimeout(() => {
         mapInstance.current?.updateSize();
       }, 500);
     }
-  }, [isOpen]);
+  }, [isOpen, initialCoordinates]);
 
+  // Handle map clicks when marking is enabled
   useEffect(() => {
-    if (!mapInstance.current) return;
+    if (!mapInstance.current || !onSelectLocation) return;
 
     const map = mapInstance.current;
 
@@ -91,8 +142,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen })
         source: markerSource,
         style: new Style({
           image: new Icon({
-            src: "https://openlayers.org/en/latest/examples/data/icon.png",
-            scale: 0.5,
+            src: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+            scale: 1,
           }),
         }),
       });
@@ -110,16 +161,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen })
     return () => {
       map.un("click", handleMapClick);
     };
-  }, [isMarkingEnabled]);
+  }, [isMarkingEnabled, markerLayer, onSelectLocation]);
 
-  const fetchLocationName = async (lat: number, lng: number) => {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-    );
-    const data = await response.json();
-    return data.display_name || "Unknown Location";
-  };
-
+  // Handle location search
   const handleSearch = async () => {
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}`
@@ -143,8 +187,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen })
         source: markerSource,
         style: new Style({
           image: new Icon({
-            src: "https://openlayers.org/en/latest/examples/data/icon.png",
-            scale: 0.5,
+            src: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+            scale: 1,
           }),
         }),
       });
@@ -158,6 +202,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen })
     }
   };
 
+  // Change map type
   const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
     if (!mapInstance.current) return;
 
@@ -238,8 +283,15 @@ const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen })
       </Box>
 
       <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
-        <TextField fullWidth label="Search Location" value={locationName} onChange={(e) => setLocationName(e.target.value)} />
-        <Button variant="contained" onClick={handleSearch}>Search</Button>
+        <TextField
+          fullWidth
+          label="Search Location"
+          value={locationName}
+          onChange={(e) => setLocationName(e.target.value)}
+        />
+        <Button variant="contained" onClick={handleSearch}>
+          Search
+        </Button>
       </Box>
 
       <Box ref={mapRef} width="100%" height="500px" flex={1} />

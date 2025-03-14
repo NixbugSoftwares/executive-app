@@ -9,12 +9,13 @@ import {
 } from "@mui/icons-material";
 import ToggleOnIcon from '@mui/icons-material/ToggleOn';
 import ToggleOffIcon from '@mui/icons-material/ToggleOff';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 import BusinessIcon from '@mui/icons-material/Business';
 import { useAppDispatch } from "../../store/Hooks";
 import { companyDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import  CompanyUpdateForm from "./UpdationForm";
-
+import MapComponent from "./map";
 interface companyCardProps {
     company: {
     id: number;
@@ -43,8 +44,21 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
+  const [mapModalOpen, setMapModalOpen] = useState(false);
   const dispatch = useAppDispatch();
  
+  const extractCoordinates = (location: string) => {
+    const regex = /POINT \(([\d.]+) ([\d.]+)\)/;
+    const match = location.match(regex);
+    if (match) {
+      return {
+        longitude: parseFloat(match[1]),
+        latitude: parseFloat(match[2]),
+      };
+    }
+    return null;
+  };
+  const coordinates = extractCoordinates(company.location);
   const handleCompanyDelete = async () => {
     if (!company.id) {
       console.error("Error: Account ID is missing");
@@ -98,9 +112,17 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
         </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-          <Typography variant="body2" color="textSecondary">
-            <b>Location:</b> {company.location} 
-          </Typography>
+          <LocationOnIcon color="action" sx={{ mr: 1 }} />
+          {coordinates && (
+           <Typography
+           variant="body2"
+           color="primary"
+           onClick={() => setMapModalOpen(true)} 
+           style={{ cursor: "pointer" }}
+         >
+           <b><u> Location </u></b>
+         </Typography>
+          )}
         </Box>
 
  
@@ -239,6 +261,24 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
           </Button>
         </DialogActions>
       </Dialog> 
+
+      <Dialog open={mapModalOpen} onClose={() => setMapModalOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>View Location</DialogTitle>
+        <DialogContent>
+          {coordinates && (
+            <MapComponent
+              initialCoordinates={{ lat: coordinates.latitude, lng: coordinates.longitude }}
+              isOpen={mapModalOpen}
+              onSelectLocation={() => {}} // No need for selection in this case
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setMapModalOpen(false)} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 
   <Dialog open={updateFormOpen} onClose={() => setUpdateFormOpen(false)} maxWidth="xs" fullWidth>
         <DialogContent>

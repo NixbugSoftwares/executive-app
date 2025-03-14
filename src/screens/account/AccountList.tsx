@@ -179,7 +179,7 @@ const AccountListingTable = () => {
           title={
             !canManageExecutive
               ? "You don't have permission, contact the admin"
-              : ""
+              : "click to open the account creation form"
           }
           placement="top-end"
         >
@@ -215,7 +215,7 @@ const AccountListingTable = () => {
             <TableHead>
               <TableRow>
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>ID</b>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>ID</b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -239,7 +239,7 @@ const AccountListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>
                     Full Name
                   </b>
                   <TextField
@@ -265,7 +265,7 @@ const AccountListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>
                     Designation
                   </b>
                   <TextField
@@ -291,7 +291,7 @@ const AccountListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>Phone</b>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>Phone</b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -315,7 +315,7 @@ const AccountListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>Email</b>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>Email</b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -339,7 +339,7 @@ const AccountListingTable = () => {
                 </TableCell>
 
                 <TableCell size="small">
-                  <b style={{ display: "block", textAlign: "center" }}>
+                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>
                     Gender
                   </b>
                   <FormControl fullWidth size="small">

@@ -69,7 +69,7 @@ export const accountCreationApi = createAsyncThunk(
         "/executive/account",
         data,
         true,
-        "multipart/form-data"
+        "application/x-www-form-urlencoded"
       );
       return response;
     } catch (error: any) {
@@ -118,7 +118,7 @@ export const accountupdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        `/executive/account/`,
+        `/executive/account`,
         formData,
         true,
         "application/x-www-form-urlencoded" // Use the correct content type
@@ -137,10 +137,10 @@ export const accountDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/account/",
+        "/executive/account",
         data,
         true,
-        "multipart/form-data"
+        "application/x-www-form-urlencoded"
       );
 
       return response;
@@ -211,7 +211,7 @@ export const roleUpdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        `/executive/role/`,
+        `/executive/role`,
         formData,
         true,
         "application/x-www-form-urlencoded" 
@@ -231,10 +231,10 @@ export const roleDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/role/",
+        "/executive/role",
         data,
         true,
-        "multipart/form-data"
+        "application/x-www-form-urlencoded"
       );
 
       return response;
@@ -255,7 +255,7 @@ export const roleAssignApi = createAsyncThunk(
         "/executive/account/role",
         { executive_id, role_id }, 
         true,
-        "multipart/form-data"
+        "application/x-www-form-urlencoded"
       );
       console.log("slice Responseyyyyyy==================>", response);
       
@@ -410,7 +410,7 @@ export const companyDeleteApi = createAsyncThunk(
         "/executive/company",
         data,
         true,
-        "multipart/form-data"
+        "application/x-www-form-urlencoded"
       );
 
       return response;
@@ -467,7 +467,7 @@ export const operatorCreationApi = createAsyncThunk(
         "/executive/company/operator",
         data,
         true,
-        "multipart/form-data"
+        "application/x-www-form-urlencoded" // Use the correct content type for form data"
       );
       return response;
     } catch (error: any) {
