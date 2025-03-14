@@ -1,13 +1,89 @@
-# executive-app
+# Executive App - Setup and Run Guide
+
+Welcome to the Executive App setup guide! This document will walk you through the steps required to get the application up and running on your local machine. Follow the instructions carefully to ensure a smooth setup process.
  
-Procedure for run the application
+**Prerequisites**
 
-1.Must install nodejs and npm (here im using node version v22.12.0)
+-- Before you begin, ensure you have the following installed on your system:
 
-2.Clone the repository
+1) Node.js (version v22.12.0 or higher recommended)
 
-3.Run npm install (for install all the dependencies)
+2) npm (Node Package Manager, usually installed with Node.js)
 
-4.run -> npm run dev (iam using React + Vite)
+-- Installing Node.js and npm: 
 
-5.Open http://localhost:5173/ or the link in the terminal that you have run 'npm run dev'
+If you don't have Node.js and npm installed, follow these steps:
+
+-- Open your terminal or command prompt.
+-- Run the following command to install Node.js and npm: 
+```sudo apt-get install nodejs npm```
+-- Verify that Node.js and npm are installed by running the following commands:
+```node --version```
+```npm --version```
+--You should see the installed versions of Node.js and npm displayed in the terminal.
+
+
+**Cloning the Repository**
+1. Open your terminal or command prompt.
+2. Navigate to the desired directory where you want to clone the repository.
+3. clone the repository.
+```git clone https://github.com/your-username/executive-app.git``` 
+4. Navigate to the cloned repository directory.
+```cd executive-app```
+
+
+**Installing Dependencies**
+1. Open your terminal or command prompt.
+2. Navigate to the cloned repository directory.
+3. Run the following command to install the project dependencies:
+```npm install```
+
+
+**Running the Application**
+--After installing the dependencies, you can start the development server. This application is built using React + Vite.
+1. Open your terminal or command prompt.
+2. Navigate to the cloned repository directory.
+3. Run the following command to start the application:
+```npm run dev```
+4.Open your browser and navigate to [http://localhost:5173/] or the link provided in the terminal.
+
+
+**Running the Server on a Global Network Interface**
+-- If you want to access the application from another device on the same network, you can run the server on a global network interface. Use the following command:
+```npm run dev -- --host```
+This will make the application accessible via your local IP address.
+
+
+**Summary of Commands**
+Here’s a quick summary of the commands you’ll need:
+
+1. Install Node.js and npm: `sudo apt-get install nodejs npm`
+2. Install dependencies: `npm install`
+3. Clone the repository: `git clone https://github.com/your-username/executive-app.git`
+4. Start the application: `npm run dev`
+5. Run the server on a global network interface: `npm run dev -- --host`
+
+
+
+**Troubleshooting**
+- Port already in use: If the default port 5173 is already in use, Vite will automatically try the next available port. Check the terminal for the correct URL.
+- Dependency issues: If you encounter issues during npm install, try deleting the node_modules folder and the package-lock.json file, then run npm install again.
+
+
+**Additional Resources**
+- [Vite Documentation](https://vitejs.dev/)
+- [React Documentation](https://reactjs.org/)
+
+
+**Notes**
+- This setup guide assumes you have a basic understanding of Node.js and npm.
+- Make sure to check out the [Executive App GitHub repository](https://github.com/your-username/executive-app) for updates and additional information.
+- Replace your-username in the repository URL with the actual username or organization name where the repository is hosted.
+
+
+**Conclusion**
+You should now have the Executive App up and running on your local machine. If you encounter any issues, feel free to reach out for support.
+ `Happy coding! `
+
+
+**Thank you for using the Executive App setup guide!**
