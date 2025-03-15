@@ -68,10 +68,8 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
     try {
       const formData = new FormData();
       formData.append("id", String(company.id));
-  
       const response = await dispatch(companyDeleteApi(formData)).unwrap();
       console.log("Account deleted:", response);
-  
       setDeleteConfirmOpen(false);
       localStorageHelper.removeStoredItem(`company_${company.id}`);
       onDelete(company.id);
@@ -269,7 +267,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
             <MapComponent
               initialCoordinates={{ lat: coordinates.latitude, lng: coordinates.longitude }}
               isOpen={mapModalOpen}
-              onSelectLocation={() => {}} // No need for selection in this case
+              onSelectLocation={() => {}} 
             />
           )}
         </DialogContent>

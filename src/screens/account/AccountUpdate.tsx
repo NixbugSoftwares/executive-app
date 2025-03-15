@@ -22,8 +22,6 @@ import {
   accountListApi,
   fetchRoleMappingApi,
 } from "../../slices/appSlice";
-// import { yupResolver } from "@hookform/resolvers/yup";
-// import { accountUpdationFormSchema } from "../auth/validations/authValidation";
 
 // Account update form interface
 interface IAccountFormInputs {
@@ -77,9 +75,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
     control,
     reset,
     formState: { errors },
-  } = useForm<IAccountFormInputs>({
-    // resolver: yupResolver(accountUpdationFormSchema),
-  });
+  } = useForm<IAccountFormInputs>({});
 
   const [showPassword, setShowPassword] = useState(false);
   const handleTogglePassword = () => {
@@ -100,17 +96,11 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       .unwrap()
       .then(async (res: any[]) => {
         const account = res.find((acc) => acc.id === accountId);
-        const accountpasssword = account?.password;
-        console.log("accountId===============>", accountId);
-        console.log("accountpasssword===============>", accountpasssword);
-
         if (account) {
           // Fetch role mapping for the account
           const roleMapping = await dispatch(
             fetchRoleMappingApi(accountId)
           ).unwrap();
-          console.log("account===============>", account);
-          console.log("Fetched Role Mapping:", roleMapping);
 
           setAccountData({
             username: account.username,
@@ -191,7 +181,6 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       const accountResponse = await dispatch(
         accountupdationApi({ accountId, formData })
       ).unwrap();
-      console.log("Account Update Response:", accountResponse);
 
       if (!accountResponse || !accountResponse.id) {
         alert("Account update failed! Please try again.");
@@ -202,11 +191,6 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
 
       // Step 2: Update role assignment if roleAssignmentId exists
       if (data.roleAssignmentId && data.role) {
-        console.log("Calling roleAssignUpdateApi with:", {
-          roleAssignmentId: data.roleAssignmentId,
-          role: data.role,
-        });
-
         try {
           const roleUpdateResponse = await dispatch(
             roleAssignUpdateApi({
@@ -214,7 +198,6 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
               role_id: data.role,
             })
           ).unwrap();
-          console.log("Role Assignment Update Response:", roleUpdateResponse);
 
           if (!roleUpdateResponse || !roleUpdateResponse.id) {
             alert("Account updated, but role assignment update failed!");
@@ -235,7 +218,6 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       refreshList("refresh");
       onClose();
     } catch (error) {
-      console.error("Error during account update:", error);
       alert("Something went wrong. Please try again.");
     } finally {
       setLoading(false);

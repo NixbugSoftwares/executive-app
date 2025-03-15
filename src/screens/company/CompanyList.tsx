@@ -1,11 +1,26 @@
 import React, { useEffect, useState } from "react";
-import { Table, TableBody, TableCell, Tooltip,TableContainer, TableHead, TableRow, Paper, TextField, Box, Button, Dialog, DialogActions, DialogContent } from "@mui/material";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  Tooltip,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TextField,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+} from "@mui/material";
 import { useDispatch } from "react-redux";
 import { companyListApi } from "../../slices/appSlice";
 import type { AppDispatch } from "../../store/Store";
 import localStorageHelper from "../../utils/localStorageHelper";
 import CompanyDetailsCard from "./CompanyDetailsCard";
-import CompanyCreationForm from "./CompanyCreationForm"
+import CompanyCreationForm from "./CompanyCreationForm";
 
 interface Company {
   id: number;
@@ -20,10 +35,8 @@ interface Company {
 
 const CompanyListingTable = () => {
   const dispatch = useDispatch<AppDispatch>();
-
   const [companyList, setCompanyList] = useState<Company[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
-
   const [search, setSearch] = useState({
     id: "",
     name: "",
@@ -36,11 +49,8 @@ const CompanyListingTable = () => {
 
   const [page, setPage] = useState(0);
   const rowsPerPage = selectedCompany ? 8 : 8;
-
   const [openCreateModal, setOpenCreateModal] = useState(false);
-
   const roleDetails = localStorageHelper.getItem("@roleDetails");
-  console.log("Role Details>>>>>>>>>>>>>>>>>>>:", roleDetails);
   const canManageCompany = roleDetails?.manage_company || false;
 
   // Function to fetch accounts
@@ -48,8 +58,6 @@ const CompanyListingTable = () => {
     dispatch(companyListApi())
       .unwrap()
       .then((res: any[]) => {
-        console.log("API Response:", res);
-
         // Transform API data to match expected structure
         const formattedAccounts = res.map((company: any) => ({
           id: company.id,
@@ -58,18 +66,13 @@ const CompanyListingTable = () => {
           location: company.location ?? "-",
           ownerName: company.owner_name,
           phoneNumber: company.phone_number ?? "-",
-          email: company.email_id ?? "-",         
+          email: company.email_id ?? "-",
           status: company.status === 1 ? "Active" : "Suspended",
         }));
-
-        console.log(
-          "Formatted Accounts>>>>>>>>>>>>>>>>>>>>:",
-          formattedAccounts
-        );
         setCompanyList(formattedAccounts);
       })
       .catch((err: any) => {
-        console.error("Error fetching accounts", err);
+        console.error("Error fetching companies", err);
       });
   };
 
@@ -89,16 +92,12 @@ const CompanyListingTable = () => {
     setSearch((prev) => ({ ...prev, [column]: e.target.value }));
   };
 
-
-
   const filteredData = companyList.filter(
     (row: Company) =>
       (row.id?.toString()?.toLowerCase() || "").includes(
         search.id.toLowerCase()
       ) &&
-      (row.name?.toLowerCase() || "").includes(
-        search.name.toLowerCase()
-      ) &&
+      (row.name?.toLowerCase() || "").includes(search.name.toLowerCase()) &&
       (row.ownerName?.toLowerCase() || "").includes(
         search.ownerName.toLowerCase()
       ) &&
@@ -107,7 +106,7 @@ const CompanyListingTable = () => {
       ) &&
       (row.address?.toLowerCase() || "").includes(
         search.address.toLowerCase()
-      )&&
+      ) &&
       (row.email?.toLowerCase() || "").includes(search.email.toLowerCase()) &&
       (row.phoneNumber?.toLowerCase() || "").includes(
         search.phoneNumber.toLowerCase()
@@ -127,7 +126,6 @@ const CompanyListingTable = () => {
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      console.log("Company list refreshed...");
       fetchCompany();
     }
   };
@@ -156,7 +154,7 @@ const CompanyListingTable = () => {
           title={
             !canManageCompany
               ? "You don't have permission, contact the admin"
-              :"click to open the company creation form"
+              : "click to open the company creation form"
           }
           placement="top-end"
         >
@@ -192,7 +190,15 @@ const CompanyListingTable = () => {
             <TableHead>
               <TableRow>
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedCompany ? "0.8rem" : "1rem"  }}>ID</b>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    ID
+                  </b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -216,7 +222,14 @@ const CompanyListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedCompany ? "0.8rem" : "1rem", textWrap: "nowrap"   }}>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                      textWrap: "nowrap",
+                    }}
+                  >
                     Company Name
                   </b>
                   <TextField
@@ -242,7 +255,13 @@ const CompanyListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedCompany ? "0.8rem" : "1rem"  }}>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                    }}
+                  >
                     Address
                   </b>
                   <TextField
@@ -267,9 +286,15 @@ const CompanyListingTable = () => {
                   />
                 </TableCell>
 
-
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedCompany ? "0.8rem" : "1rem", textWrap: "nowrap"  }}>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                      textWrap: "nowrap",
+                    }}
+                  >
                     Owner Name
                   </b>
                   <TextField
@@ -295,7 +320,15 @@ const CompanyListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedCompany ? "0.8rem" : "1rem"  }}>Phone Number</b>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    Phone Number
+                  </b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -319,7 +352,15 @@ const CompanyListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedCompany ? "0.8rem" : "1rem"  }}>Email</b>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    Email
+                  </b>
                   <TextField
                     variant="outlined"
                     size="small"
