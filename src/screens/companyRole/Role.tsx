@@ -1,10 +1,8 @@
-import React from "react";
+import React from 'react';
 import { Sidebar } from "../../common";
-import { Box } from "@mui/material";
-import BusListingTable from "./BusList";
-
-
-const BusPage: React.FC = () => {
+import { Box } from '@mui/material';
+import RoleListingPage from './RoleListingPage';
+const RolePage: React.FC = () => {
   return (
     <Box
       sx={{
@@ -16,12 +14,13 @@ const BusPage: React.FC = () => {
     >
       <Sidebar />
       <Box sx={{ width: "100%", p: 3 }}>
-        <BusListingTable/>
+        <RoleListingPage />
       </Box>
 
 
     </Box>
   );
+  
 };
 
-export default BusPage;
+export default RolePage;

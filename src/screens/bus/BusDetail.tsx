@@ -1,0 +1,225 @@
+import React, { useState } from "react";
+import {
+  Card,
+  CardActions,
+  Typography,
+  Button,
+  Box,
+  Avatar,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  DialogContentText,
+  Tooltip,
+} from "@mui/material";
+import { Delete as DeleteIcon } from "@mui/icons-material";
+import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
+import { useAppDispatch } from "../../store/Hooks";
+import { busDeleteApi } from "../../slices/appSlice";
+import localStorageHelper from "../../utils/localStorageHelper";
+import BusUpdateForm from "./BusUpdation";
+
+interface BusCardProps {
+  bus: {
+    id: number;
+    companyId: number;
+    companyName: string;
+    registrationNumber: string;
+    name: string;
+    capacity: number;
+    model: string;
+    manufactured_on: string;
+    insurance_upto: string;
+    pollution_upto: string;
+    fitness_upto: string;
+  };
+  refreshList: (value: any) => void;
+  onUpdate: () => void;
+  onDelete: (id: number) => void;
+  onBack: () => void;
+  canManageCompany: boolean;
+}
+
+const BusDetailsCard: React.FC<BusCardProps> = ({
+  bus,
+  refreshList,
+  onDelete,
+  onBack,
+  canManageCompany,
+}) => {
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [updateFormOpen, setUpdateFormOpen] = useState(false);
+  const dispatch = useAppDispatch();
+
+  // Helper function to convert UTC date to local date string (YYYY-MM-DD)
+  const formatUTCDateToLocal = (dateString: string): string => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString(); // Convert to local date format
+  };
+
+  const handleAccountDelete = async () => {
+    if (!bus.id) {
+      console.error("Error: Bus ID is missing");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("id", String(bus.id));
+
+      const response = await dispatch(busDeleteApi(formData)).unwrap();
+      console.log("Bus deleted:", response);
+
+      setDeleteConfirmOpen(false);
+      localStorageHelper.removeStoredItem(`bus_${bus.id}`);
+      onDelete(bus.id);
+      refreshList("refresh");
+    } catch (error) {
+      console.error("Delete error:", error);
+    }
+  };
+
+  return (
+    <>
+      <Card sx={{ maxWidth: 300, width: "100%", margin: "auto", boxShadow: 3, p: 2 }}>
+        {/* Bus Avatar & Info */}
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
+            <Avatar sx={{ width: 80, height: 80, bgcolor: "darkblue" }}>
+            <DirectionsBusIcon fontSize="large" />
+            </Avatar>
+            <Typography variant="h6" sx={{ mt: 1 }}>
+            <b>{bus.name}</b>
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+            <b>Bus ID:</b> {bus.id}
+            </Typography>
+        </Box>
+
+        {/* Bus Details (Aligned Left) */}
+        <Card sx={{ p: 2, bgcolor: "grey.100", mb: 2 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1, alignItems: "flex-start" }}>
+            <Typography variant="body2" color="textSecondary">
+                <b>Company Name:</b> {bus.companyName}
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+                <b>Registration Number:</b> {bus.registrationNumber}
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+                <b>Capacity:</b> {bus.capacity}
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+                <b>Model:</b> {bus.model}
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+                <b>Manufactured:</b> {formatUTCDateToLocal(bus.manufactured_on)}
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+                <b>Insurance Upto:</b> {formatUTCDateToLocal(bus.insurance_upto)}
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+                <b>Pollution Upto:</b> {formatUTCDateToLocal(bus.pollution_upto)}
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+                <b>Fitness Upto:</b> {formatUTCDateToLocal(bus.fitness_upto)}
+            </Typography>
+            </Box>
+        </Card>
+
+
+        {/* Action Buttons */}
+        <CardActions>
+          <Box sx={{ display: "flex", gap: 1, justifyContent: "space-between", width: "100%" }}>
+            <Button variant="outlined" color="primary" size="small" onClick={onBack}>
+              Back
+            </Button>
+
+            {/* Update Button with Tooltip */}
+            <Tooltip
+              title={!canManageCompany ? "You don't have permission, contact the admin" : ""}
+              arrow
+              placement="top-start"
+            >
+              <span style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}>
+                <Button
+                  variant="contained"
+                  color="success"
+                  size="small"
+                  onClick={() => setUpdateFormOpen(true)}
+                  disabled={!canManageCompany}
+                  sx={{
+                    "&.Mui-disabled": {
+                      backgroundColor: "#81c784 !important",
+                      color: "#ffffff99",
+                    },
+                  }}
+                >
+                  Update
+                </Button>
+              </span>
+            </Tooltip>
+
+            {/* Delete Button with Tooltip */}
+            <Tooltip
+              title={!canManageCompany ? "You don't have permission, contact the admin" : ""}
+              arrow
+              placement="top-start"
+            >
+              <span style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}>
+                <Button
+                  variant="contained"
+                  color="error"
+                  size="small"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  startIcon={<DeleteIcon />}
+                  disabled={!canManageCompany}
+                  sx={{
+                    "&.Mui-disabled": {
+                      backgroundColor: "#e57373 !important",
+                      color: "#ffffff99",
+                    },
+                  }}
+                >
+                  Delete
+                </Button>
+              </span>
+            </Tooltip>
+          </Box>
+        </CardActions>
+      </Card>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <DialogContentText>Are you sure you want to delete this bus?</DialogContentText>
+          <Typography>
+            <b>Bus Name:</b> {bus.name}, <b>Registration Number:</b> {bus.registrationNumber}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleAccountDelete} color="error">
+            Confirm Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Update Form Modal */}
+      <Dialog open={updateFormOpen} onClose={() => setUpdateFormOpen(false)} maxWidth="xs" fullWidth>
+        <DialogContent>
+          <BusUpdateForm
+            refreshList={(value: any) => refreshList(value)}
+            busId={bus.id}
+            onClose={() => setUpdateFormOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+export default BusDetailsCard;

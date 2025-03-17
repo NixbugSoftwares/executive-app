@@ -10,7 +10,7 @@ const BusStop = lazy(() => import('../screens/busstop/BusStop'));
 
 const Company = lazy(() => import('../screens/company/company'));
 const Operator = lazy(() => import('../screens/operator/Operator'));
-const CRole = lazy(() => import('../screens/companyRole/CompanyRole'));
+const CRole = lazy(() => import('../screens/companyRole/Role'));
 const BusRoute = lazy(() => import('../screens/busroute/BusRoute'));
 const Fare = lazy(() => import('../screens/fare/Fare'));
 const Bus = lazy(() => import('../screens/bus/Bus'));

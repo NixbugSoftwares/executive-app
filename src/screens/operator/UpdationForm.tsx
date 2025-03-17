@@ -16,7 +16,7 @@ import {
   operatorupdationApi,
   operatorListApi,
   operatorRoleListApi,
-  operatorRoleUpdateApi,
+  operatorRoleAssignUpdateApi,
   fetchOperatorRoleMappingApi,
 } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
@@ -190,7 +190,7 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
 
         try {
           const roleUpdateResponse = await dispatch(
-            operatorRoleUpdateApi({
+            operatorRoleAssignUpdateApi({
               id: data.roleAssignmentId,
               role_id: data.role,
             })
