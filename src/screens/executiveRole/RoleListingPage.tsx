@@ -112,8 +112,8 @@ const RoleListingTable = () => {
       {/* Table Section */}
       <Box
         sx={{
-          flex: selectRole ? { xs: "0 0 100%", md: "0 0 50%" } : "0 0 100%",
-          maxWidth: selectRole ? { xs: "100%", md: "50%" } : "100%",
+          flex: selectRole ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
+          maxWidth: selectRole ? { xs: "100%", md: "65%" } : "100%",
           transition: "all 0.3s ease",
           overflowX: "auto", 
           overflowY: "auto", 
@@ -121,7 +121,7 @@ const RoleListingTable = () => {
       >
         {/* Create Role Button */}
         <Tooltip
-          title={!canManageRole ? "You don't have permission, contact the admin" : ""}
+          title={!canManageRole ? "You don't have permission, contact the admin" : "click to open the role creation form"}
           placement="top-end"
         >
           <span style={{ cursor: !canManageRole ? "not-allowed" : "default" }}>
@@ -153,7 +153,7 @@ const RoleListingTable = () => {
            <TableHead>
             <TableRow>
               <TableCell>
-                <b style={{ display: "block", textAlign: "center" }}>ID</b>
+                <b style={{ display: "block", textAlign: "center", fontSize: selectRole ? "0.8rem" : "1rem" }}>ID</b>
                 <TextField
                   variant="outlined"
                   size="small"
@@ -177,7 +177,7 @@ const RoleListingTable = () => {
               </TableCell>
 
               <TableCell>
-                <b style={{ display: "block", textAlign: "center" }}>Role Name</b>
+                <b style={{ display: "block", textAlign: "center", fontSize: selectRole ? "0.8rem" : "1rem", textWrap: "nowrap" }}>Role Name</b>
                 <TextField
                   variant="outlined"
                   size="small"
@@ -213,8 +213,7 @@ const RoleListingTable = () => {
               ].map((permission) => (
                 <TableCell key={permission} align="center" sx={{ width: "8%"  }}>
                   <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <Typography variant="caption" sx={{ fontWeight: "bold" }}>Manage</Typography>
-                    <Typography variant="caption" sx={{ fontWeight: "bold" }}>{permission}</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: "bold", fontSize: selectRole ? "0.8rem" : "1rem" }}>Manage {permission}</Typography>
                   </Box>
                 </TableCell>
               ))}
@@ -336,8 +335,8 @@ const RoleListingTable = () => {
       {selectRole && (
         <Box
           sx={{
-            flex: { xs: "0 0 100%", md: "0 0 35%" },
-            maxWidth: { xs: "100%", md: "35%" },
+            flex: { xs: "0 0 100%", md: "0 0 30%" },
+            maxWidth: { xs: "100%", md: "30%" },
             transition: "all 0.3s ease",
             bgcolor: "grey.100",
             p: 2,

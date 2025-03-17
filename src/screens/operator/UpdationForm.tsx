@@ -1,50 +1,47 @@
-import React, { useEffect, useState } from "react";
-import { useForm, SubmitHandler, Controller } from "react-hook-form";
+import React, { useState, useEffect } from "react";
 import {
-  Box,
   TextField,
   Button,
+  Box,
   Typography,
-  Container,
-  CssBaseline,
   CircularProgress,
+  Container,
   MenuItem,
-  InputAdornment,
+  CssBaseline,
   IconButton,
+  InputAdornment,
 } from "@mui/material";
-import Visibility from "@mui/icons-material/Visibility";
-import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { useAppDispatch } from "../../store/Hooks";
 import {
-  accountupdationApi,
-  roleListApi,
-  roleAssignUpdateApi,
-  accountListApi,
-  fetchRoleMappingApi,
+  operatorupdationApi,
+  operatorListApi,
+  operatorRoleListApi,
+  operatorRoleUpdateApi,
+  fetchOperatorRoleMappingApi,
 } from "../../slices/appSlice";
+import { useForm, SubmitHandler, Controller } from "react-hook-form";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 
-// Account update form interface
-interface IAccountFormInputs {
-  username?: string;
-  password?: string;
+type operatorFormValues = {
+  id: number;
+  username: string;
+  password: string;
   fullName?: string;
   phoneNumber?: string;
   email?: string;
   gender?: number;
-  designation?: string;
+  status?: number;
   role: number;
   roleAssignmentId?: number;
-  status?: number;
-}
+};
 
-interface IAccountUpdateFormProps {
-  accountId: number;
-  roleAssignmentId?: number;
+interface IOperatorUpdateFormProps {
   onClose: () => void;
   refreshList: (value: any) => void;
+  operatorId: number;
+  roleAssignmentId?: number;
 }
 
-// Gender options mapping
 const genderOptions = [
   { label: "Female", value: 1 },
   { label: "Male", value: 2 },
@@ -54,36 +51,35 @@ const genderOptions = [
 
 const statusOptions = [
   { label: "Active", value: 1 },
-  { label: "suspended", value: 2 },
+  { label: "Suspended", value: 2 },
 ];
 
-const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
-  accountId,
+const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
   onClose,
   refreshList,
+  operatorId,
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
-  const [accountData, setAccountData] = useState<IAccountFormInputs | null>(
+  const [operatorData, setOperatorData] = useState<operatorFormValues | null>(
     null
   );
-
   const {
     register,
     handleSubmit,
     control,
     reset,
     formState: { errors },
-  } = useForm<IAccountFormInputs>({});
-
+  } = useForm<operatorFormValues>();
   const [showPassword, setShowPassword] = useState(false);
   const handleTogglePassword = () => {
     setShowPassword((prev) => !prev);
   };
-  // Fetch roles and account data
+
+  // Fetch operator data on mount
   useEffect(() => {
-    dispatch(roleListApi())
+    dispatch(operatorRoleListApi())
       .unwrap()
       .then((res: any[]) => {
         setRoles(res.map((role) => ({ id: role.id, name: role.name })));
@@ -91,67 +87,69 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       .catch((err: any) => {
         console.error("Error fetching roles:", err);
       });
+    const fetchOperatorData = async () => {
+      try {
+        setLoading(true);
+        const operators = await dispatch(operatorListApi()).unwrap();
+        const operator = operators.find((r: any) => r.id === operatorId);
 
-    dispatch(accountListApi())
-      .unwrap()
-      .then(async (res: any[]) => {
-        const account = res.find((acc) => acc.id === accountId);
-        if (account) {
-          // Fetch role mapping for the account
+        if (operator) {
           const roleMapping = await dispatch(
-            fetchRoleMappingApi(accountId)
+            fetchOperatorRoleMappingApi(operatorId)
           ).unwrap();
-
-          setAccountData({
-            username: account.username,
-            password: account.password,
-            fullName: account.full_name,
-            phoneNumber: account.phone_number
-              ? account.phone_number.replace(/\D/g, "").replace(/^91/, "")
+          console.log("account===============>", operator);
+          console.log("Fetched Role Mapping:", roleMapping);
+          setOperatorData({
+            id: operator.id,
+            username: operator.username,
+            password: operator.password,
+            fullName: operator.full_name,
+            phoneNumber: operator.phone_number
+              ? operator.phone_number.replace(/\D/g, "").replace(/^91/, "")
               : "",
-            email: account.email_id,
-            gender: account.gender,
-            designation: account.designation,
-            status: account.status,
+            email: operator.email_id,
+            gender: operator.gender,
+            status: operator.status,
             role: roleMapping.role_id,
             roleAssignmentId: roleMapping.id,
           });
 
           reset({
-            username: account.username,
-            password: account.password,
-            fullName: account.full_name,
-            phoneNumber: account.phone_number
-              ? account.phone_number.replace(/\D/g, "").replace(/^91/, "")
+            id: operator.id,
+            username: operator.username,
+            password: operator.password,
+            fullName: operator.full_name,
+            phoneNumber: operator.phone_number
+              ? operator.phone_number.replace(/\D/g, "").replace(/^91/, "")
               : "",
-            email: account.email_id,
-            gender: account.gender,
-            designation: account.designation,
-            status: account.status,
+            email: operator.email_id,
+            gender: operator.gender,
+            status: operator.status,
             role: roleMapping.role_id,
             roleAssignmentId: roleMapping.id,
           });
         }
-      })
-      .catch((err: any) => {
-        console.error("Error fetching account data:", err);
-      });
-  }, [accountId, dispatch, reset]);
+      } catch (error) {
+        console.error("Error fetching operator data:", error);
+        alert("Failed to fetch operator data. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Handle Account Update & Role Assignment Update
-  const handleAccountUpdate: SubmitHandler<IAccountFormInputs> = async (
+    fetchOperatorData();
+  }, [operatorId, dispatch, reset]);
+
+  // Handle operator update
+  const handleOperatorUpdate: SubmitHandler<operatorFormValues> = async (
     data
   ) => {
     try {
       setLoading(true);
 
-      console.log("Form Data:", data);
-
       const formData = new URLSearchParams();
-      formData.append("id", accountId.toString());
-      if (data.username) {
-        formData.append("username", data.username);
-      }
+      formData.append("id", operatorId.toString());
+      formData.append("username", data.username);
       if (data.password) {
         formData.append("password", data.password);
       }
@@ -165,39 +163,39 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       if (data.email) {
         formData.append("email_id", data.email);
       }
-      if (data.designation) {
-        formData.append("designation", data.designation);
-      }
       if (data.status) {
         formData.append("status", data.status.toString());
       }
-
       console.log(
         "Form Data for Account Update:",
         Object.fromEntries(formData.entries())
       );
 
-      // Step 1: Update account
-      const accountResponse = await dispatch(
-        accountupdationApi({ accountId, formData })
+      const operatorResponse = await dispatch(
+        operatorupdationApi({ operatorId, formData })
       ).unwrap();
-
-      if (!accountResponse || !accountResponse.id) {
+      console.log("operator updated:", operatorResponse);
+      if (!operatorResponse || !operatorResponse.id) {
         alert("Account update failed! Please try again.");
         onClose();
         return;
       }
       refreshList("refresh");
 
-      // Step 2: Update role assignment if roleAssignmentId exists
       if (data.roleAssignmentId && data.role) {
+        console.log("Calling roleAssignUpdateApi with:", {
+          roleAssignmentId: data.roleAssignmentId,
+          role: data.role,
+        });
+
         try {
           const roleUpdateResponse = await dispatch(
-            roleAssignUpdateApi({
+            operatorRoleUpdateApi({
               id: data.roleAssignmentId,
               role_id: data.role,
             })
           ).unwrap();
+          console.log("Role Assignment Update Response:", roleUpdateResponse);
 
           if (!roleUpdateResponse || !roleUpdateResponse.id) {
             alert("Account updated, but role assignment update failed!");
@@ -218,13 +216,14 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       refreshList("refresh");
       onClose();
     } catch (error) {
-      alert("Something went wrong. Please try again.");
+      console.error("Error updating operator:", error);
+      alert("Failed to update operator. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  if (!accountData) {
+  if (!operatorData) {
     return <CircularProgress />;
   }
 
@@ -240,13 +239,13 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
         }}
       >
         <Typography component="h1" variant="h5">
-          Update Account
+          Update Operator
         </Typography>
         <Box
           component="form"
           noValidate
           sx={{ mt: 1 }}
-          onSubmit={handleSubmit(handleAccountUpdate)}
+          onSubmit={handleSubmit(handleOperatorUpdate)}
         >
           <TextField
             margin="normal"
@@ -285,7 +284,6 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
               />
             )}
           />
-
           <TextField
             margin="normal"
             placeholder="example@gmail.com"
@@ -296,6 +294,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             helperText={errors.email?.message}
             size="small"
           />
+
           <Controller
             name="gender"
             control={control}
@@ -316,15 +315,6 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
                 ))}
               </TextField>
             )}
-          />
-          <TextField
-            margin="normal"
-            fullWidth
-            label="Designation"
-            {...register("designation")}
-            error={!!errors.designation}
-            helperText={errors.designation?.message}
-            size="small"
           />
 
           <Controller
@@ -404,7 +394,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             {loading ? (
               <CircularProgress size={24} sx={{ color: "white" }} />
             ) : (
-              "Update Account"
+              "Update Operator"
             )}
           </Button>
         </Box>
@@ -413,4 +403,4 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
   );
 };
 
-export default AccountUpdateForm;
+export default OperatorUpdateForm;

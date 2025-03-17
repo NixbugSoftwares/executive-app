@@ -1,80 +1,67 @@
 import React, { useState } from "react";
 import { Card, CardActions, Typography, Button, Box, Avatar, Dialog, DialogActions, DialogContent, DialogTitle, DialogContentText, Tooltip } from "@mui/material";
 import {
-  Edit as EditIcon,
   Delete as DeleteIcon,
-  ArrowBack as BackIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
-  AccountCircle as UserIcon,
-  Work as WorkIcon,
-  Person as PersonIcon,
+  Person as PersonIcon
 } from "@mui/icons-material";
+import BadgeIcon from '@mui/icons-material/Badge';
 import ToggleOnIcon from '@mui/icons-material/ToggleOn';
 import ToggleOffIcon from '@mui/icons-material/ToggleOff';
 import { useAppDispatch } from "../../store/Hooks";
-import { accountDeleteApi } from "../../slices/appSlice";
+import { operatorDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
-import AccountUpdateForm from "./AccountUpdate";
+import OperatorUpdateForm from "./UpdationForm";
 
-interface AccountCardProps {
-  account: {
-    id: number;
-    fullName: string;
-    username: string;
-    password: string;
-    gender: string;
-    designation: string;
-    email: string;
-    phoneNumber: string;
-    status: string;
-  };
-  role?: {
-    name: string;
-    manage_company?: boolean;
-    manage_duty?: boolean;
-    manage_executive?: boolean;
-    manage_landmark?: boolean;
-    manage_role?: boolean;
-    manage_route?: boolean;
-    manage_schedule?: boolean;
-    manage_service?: boolean;
-    manage_vendor?: boolean;
-  };
+interface OperatorCardProps {
+  operator: {
+        id: number;
+        companyId: number;
+        companyName:string
+        username: string;
+        fullName: string;
+        password: string;
+        gender: string;
+        email: string;
+        phoneNumber: string;
+        status: string;
+        };
+  
   onUpdate: () => void;
   onDelete: (id: number) => void;
   onBack: () => void;
   refreshList: (value: any) => void;
-  canManageExecutive: boolean;
+  canManageCompany: boolean;
 }
 
-const AccountDetailsCard: React.FC<AccountCardProps> = ({
-  account,
+const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
+    operator,
   refreshList,
   onDelete,
   onBack,
-  canManageExecutive,
+  canManageCompany,
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const dispatch = useAppDispatch();
  
   const handleAccountDelete = async () => {
-    if (!account.id) {
+    if (!operator.id) {
       console.error("Error: Account ID is missing");
       return;
     }
 
     try {
       const formData = new FormData();
-      formData.append("id", String(account.id));
+      formData.append("id", String(operator.id));
 
-      const response = await dispatch(accountDeleteApi(formData)).unwrap();
+      const response = await dispatch(operatorDeleteApi(formData)).unwrap();
       console.log("Account deleted:", response);
 
       setDeleteConfirmOpen(false);
-      localStorageHelper.removeStoredItem(`account_${account.id}`);
-      onDelete(account.id);
+      localStorageHelper.removeStoredItem(`account_${operator.id}`);
+      onDelete(operator.id);
       refreshList("refresh");
     } catch (error) {
       console.error("Delete error:", error);
@@ -84,28 +71,39 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
 
   return (
     <>
-      <Card sx={{ maxWidth: 450, width: "100%", margin: "auto", boxShadow: 3, p: 2 }}>
+      <Card sx={{ maxWidth: 300, width: "100%", margin: "auto", boxShadow: 3, p: 2 }}>
         {/* User Avatar & Info */}
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
-          <Avatar sx={{ width: 80, height: 80, bgcolor: "darkblue" }}>
-            <UserIcon fontSize="large" />
+          <Avatar sx={{ width: 80, height: 80, bgcolor: "#187b48" }}>
+            <BadgeIcon fontSize="large" />
           </Avatar>
           <Typography variant="h6" sx={{ mt: 1 }}>
-            {account.fullName}
+            <b>{operator.fullName}</b>
           </Typography>
           <Typography variant="body2" color="textSecondary">
-            ID: {account.id} | @{account.username}
+           <b>ID:</b>  {operator.id} | <b>username:</b> {operator.username}
           </Typography>
         </Box>
 
         {/* User Contact Info */}
         <Card sx={{ p: 2, bgcolor: "grey.100", mb: 2 }}>
+
+        <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+          <Typography variant="body2" color="textSecondary">
+            <b>Company Name:</b> {operator.companyName}
+          </Typography>
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+          <Typography variant="body2" color="textSecondary">
+            <b>Company ID: </b> {operator.companyId}
+          </Typography>
+        </Box>
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <PhoneIcon color="action" sx={{ mr: 1 }} />
-            {account.phoneNumber ? (
-              <a href={`tel:${account.phoneNumber.replace("tel:", "")}`} style={{ textDecoration: "none" }}>
+            {operator.phoneNumber ? (
+              <a href={`tel:${operator.phoneNumber.replace("tel:", "")}`} style={{ textDecoration: "none" }}>
                 <Typography variant="body2" color="primary">
-                  {account.phoneNumber.replace("tel:", "")}
+                  {operator.phoneNumber.replace("tel:", "")}
                 </Typography>
               </a>
             ) : (
@@ -117,10 +115,10 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <EmailIcon color="action" sx={{ mr: 1 }} />
-            {account.email ? (
-              <a href={`mailto:${account.email}`} style={{ textDecoration: "none" }}>
+            {operator.email ? (
+              <a href={`mailto:${operator.email}`} style={{ textDecoration: "none" }}>
                 <Typography variant="body2" color="primary">
-                  {account.email}
+                  {operator.email}
                 </Typography>
               </a>
             ) : (
@@ -133,18 +131,12 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <PersonIcon color="action" sx={{ mr: 1 }} />
             <Typography variant="body2">
-              {account.gender ? account.gender : "Not added yet"}
+              {operator.gender ? operator.gender : "Not added yet"}
             </Typography>
           </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-            <WorkIcon color="action" sx={{ mr: 1 }} />
-            <Typography variant="body2">
-              {account.designation ? account.designation : "Not added yet"}
-            </Typography>
-          </Box>
           <Box sx={{ display: "flex", alignItems: "center", mb: 1, gap: 1 }}>
-            {account.status === "Active" ? (
+            {operator.status === "Active" ? (
               <>
                 <ToggleOnIcon sx={{ color: "green", fontSize: 30 }} />
                 <Typography sx={{ color: "green", fontWeight: "bold" }}>Active</Typography>
@@ -157,61 +149,66 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
             )}
           </Box>
 
+
         </Card>
 
         {/* Action Buttons */}
-        <CardActions sx={{ justifyContent: "space-between" }}>
-          <Box sx={{ display: "flex", gap: 1 }}>
+        <CardActions >
+          <Box sx={{ display: "flex", gap: 1, justifyContent: "space-between" }}>
             <Button
               variant="outlined"
               color="primary"
               size="small"
               onClick={onBack}
-              startIcon={<BackIcon />}
+              // startIcon={<BackIcon />}
             >
               Back
             </Button>
 
             {/* Update Button with Tooltip */}
             <Tooltip 
-              title={!canManageExecutive ? "You don't have permission, contact the admin" : ""}
+              title={!canManageCompany ? "You don't have permission, contact the admin" : ""}
               arrow
               placement="top-start"
             >
-              <span style={{ cursor: !canManageExecutive ? "not-allowed" : "default" }}> 
-                <Button
-                  variant="contained"
-                  color="success"
-                  size="small"
-                  onClick={() => setUpdateFormOpen(true)}
-                  startIcon={<EditIcon />}
-                  disabled={!canManageExecutive}
-                  sx={{
-                    "&.Mui-disabled": { 
-                      backgroundColor: "#81c784 !important",
-                      color: "#ffffff99",
-                    }
-                  }}
-                >
-                  Update
-                </Button>
+              <span style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}> 
+              <Button
+                variant="contained"
+                color="success"
+                size="small"
+                onClick={() => {
+                  console.log("Update button clicked"); // Debugging
+                  setUpdateFormOpen(true);
+                }}
+                // startIcon={<EditIcon />}
+                disabled={!canManageCompany}
+                sx={{
+                  "&.Mui-disabled": { 
+                    backgroundColor: "#81c784 !important",
+                    color: "#ffffff99", 
+                  }
+                }}
+              >
+                Update
+              </Button>
+
               </span>
             </Tooltip>
             
             {/* Delete Button with Tooltip */}
             <Tooltip 
-              title={!canManageExecutive ? "You don't have permission, contact the admin" : ""}
+              title={!canManageCompany ? "You don't have permission, contact the admin" : ""}
               arrow
               placement="top-start"
             >
-              <span style={{ cursor: !canManageExecutive ? "not-allowed" : "default" }}> 
+              <span style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}> 
                 <Button
                   variant="contained"
                   color="error"
                   size="small"
                   onClick={() => setDeleteConfirmOpen(true)}
                   startIcon={<DeleteIcon />}
-                  disabled={!canManageExecutive}
+                  disabled={!canManageCompany}
                   sx={{
                     "&.Mui-disabled": { 
                       backgroundColor: "#e57373 !important", 
@@ -233,8 +230,8 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
         <DialogContent>
           <DialogContentText>Are you sure you want to delete this account?</DialogContentText>
           <Typography>
-            <b>ID:</b> {account.id}, <b>Username:</b> {account.username}, <b>Full Name:</b>{" "}
-            {account.fullName}
+            <b>ID:</b> {operator.id}, <b>Username:</b> {operator.username}, <b>Full Name:</b>{" "}
+            {operator.fullName}
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -250,9 +247,9 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
       {/* Update Form Modal */}
       <Dialog open={updateFormOpen} onClose={() => setUpdateFormOpen(false)} maxWidth="xs" fullWidth>
         <DialogContent>
-          <AccountUpdateForm
+          <OperatorUpdateForm
             refreshList={(value: any) => refreshList(value)}
-            accountId={account.id}
+            operatorId={operator.id}
             onClose={() => setUpdateFormOpen(false)}
           />
         </DialogContent>
@@ -261,4 +258,4 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
   );
 };
 
-export default AccountDetailsCard;
+export default OperatorDetailsCard;

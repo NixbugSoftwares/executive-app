@@ -8,7 +8,6 @@ import { Draw } from "ol/interaction";
 import { Polygon } from "ol/geom";
 import { fromLonLat, toLonLat } from "ol/proj";
 import { Vector as VectorSource } from "ol/source";
-import { defaults as defaultControls, Zoom } from "ol/control";
 import { Box, Button, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
@@ -32,7 +31,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
 
     if (!mapInstance.current) {
       const map = new Map({
-        controls: defaultControls().extend([new Zoom()]),
+        controls: [],
         layers: [
           new TileLayer({ source: new OSM() }),
           new VectorLayer({ source: vectorSource.current }),

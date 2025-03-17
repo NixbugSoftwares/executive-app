@@ -14,98 +14,75 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  FormControl,
-  Select,
-  MenuItem,
 } from "@mui/material";
-import { SelectChangeEvent } from "@mui/material";
 import { useDispatch } from "react-redux";
-import { accountListApi } from "../../slices/appSlice";
-import AccountDetailsCard from "./AccountDetailsCard";
-import AccountCreationForm from "./AccountForm";
+import { companyListApi } from "../../slices/appSlice";
 import type { AppDispatch } from "../../store/Store";
 import localStorageHelper from "../../utils/localStorageHelper";
+import CompanyDetailsCard from "./CompanyDetailsCard";
+import CompanyCreationForm from "./CompanyCreationForm";
 
-interface Account {
+interface Company {
   id: number;
-  fullName: string;
-  username: string;
-  password: string;
-  gender: string;
-  designation: string;
-  email: string;
+  name: string;
+  ownerName: string;
+  location: string;
   phoneNumber: string;
+  address: string;
+  email: string;
   status: string;
 }
 
-const AccountListingTable = () => {
+const CompanyListingTable = () => {
   const dispatch = useDispatch<AppDispatch>();
-
-  const [accountList, setAccountList] = useState<Account[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
-
+  const [companyList, setCompanyList] = useState<Company[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [search, setSearch] = useState({
     id: "",
-    fullName: "",
-    designation: "",
-    gender: "",
+    name: "",
+    ownerName: "",
+    location: "",
+    address: "",
     email: "",
     phoneNumber: "",
   });
 
   const [page, setPage] = useState(0);
-  const rowsPerPage = selectedAccount ? 8 : 8;
-
+  const rowsPerPage = selectedCompany ? 8 : 8;
   const [openCreateModal, setOpenCreateModal] = useState(false);
-
   const roleDetails = localStorageHelper.getItem("@roleDetails");
-  const canManageExecutive = roleDetails?.manage_executive || false;
+  const canManageCompany = roleDetails?.manage_company || false;
 
   // Function to fetch accounts
-  const fetchAccounts = () => {
-    dispatch(accountListApi())
+  const fetchCompany = () => {
+    dispatch(companyListApi())
       .unwrap()
       .then((res: any[]) => {
-        console.log("API Response:", res);
-
         // Transform API data to match expected structure
-        const formattedAccounts = res.map((account: any) => ({
-          id: account.id,
-          fullName: account.full_name ?? "-",
-          username: account.username,
-          password: "",
-          gender:
-            account.gender === 1
-              ? "Female"
-              : account.gender === 2
-              ? "Male"
-              : account.gender === 3
-              ? "Transgender"
-              : "Other",
-          designation: account.designation ?? "-",
-          email: account.email_id ?? "-",
-          phoneNumber: account.phone_number ?? "-",
-          status: account.status === 1 ? "Active" : "Suspended",
+        const formattedAccounts = res.map((company: any) => ({
+          id: company.id,
+          name: company.name ?? "-",
+          address: company.address ?? "-",
+          location: company.location ?? "-",
+          ownerName: company.owner_name,
+          phoneNumber: company.phone_number ?? "-",
+          email: company.email_id ?? "-",
+          status: company.status === 1 ? "Active" : "Suspended",
         }));
-
-        console.log(
-          "Formatted Accounts>>>>>>>>>>>>>>>>>>>>:",
-          formattedAccounts
-        );
-        setAccountList(formattedAccounts);
+        setCompanyList(formattedAccounts);
       })
       .catch((err: any) => {
-        console.error("Error fetching accounts", err);
+        console.error("Error fetching companies", err);
       });
   };
 
   useEffect(() => {
-    fetchAccounts();
+    fetchCompany();
     refreshList;
   }, []);
 
-  const handleRowClick = (account: Account) => {
-    setSelectedAccount(account);
+  const handleRowClick = (company: Company) => {
+    setSelectedCompany(company);
   };
 
   const handleSearchChange = (
@@ -115,23 +92,21 @@ const AccountListingTable = () => {
     setSearch((prev) => ({ ...prev, [column]: e.target.value }));
   };
 
-  const handleSelectChange = (e: SelectChangeEvent<string>) => {
-    setSearch({ ...search, gender: e.target.value });
-  };
-
-  const filteredData = accountList.filter(
-    (row: Account) =>
+  const filteredData = companyList.filter(
+    (row: Company) =>
       (row.id?.toString()?.toLowerCase() || "").includes(
         search.id.toLowerCase()
       ) &&
-      (row.fullName?.toLowerCase() || "").includes(
-        search.fullName.toLowerCase()
+      (row.name?.toLowerCase() || "").includes(search.name.toLowerCase()) &&
+      (row.ownerName?.toLowerCase() || "").includes(
+        search.ownerName.toLowerCase()
       ) &&
-      (row.designation?.toLowerCase() || "").includes(
-        search.designation.toLowerCase()
+      (row.location?.toLowerCase() || "").includes(
+        search.location.toLowerCase()
       ) &&
-      (!search.gender ||
-        (row.gender?.toLowerCase() || "") === search.gender.toLowerCase()) &&
+      (row.address?.toLowerCase() || "").includes(
+        search.address.toLowerCase()
+      ) &&
       (row.email?.toLowerCase() || "").includes(search.email.toLowerCase()) &&
       (row.phoneNumber?.toLowerCase() || "").includes(
         search.phoneNumber.toLowerCase()
@@ -151,10 +126,10 @@ const AccountListingTable = () => {
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      console.log("Account list refreshed...");
-      fetchAccounts();
+      fetchCompany();
     }
   };
+
   return (
     <Box
       sx={{
@@ -167,24 +142,24 @@ const AccountListingTable = () => {
     >
       <Box
         sx={{
-          flex: selectedAccount
+          flex: selectedCompany
             ? { xs: "0 0 100%", md: "0 0 65%" }
             : "0 0 100%",
-          maxWidth: selectedAccount ? { xs: "100%", md: "65%" } : "100%",
+          maxWidth: selectedCompany ? { xs: "100%", md: "65%" } : "100%",
           transition: "all 0.3s ease",
-          overflowY: selectedAccount ? "auto" : "hidden",
+          overflowY: selectedCompany ? "auto" : "hidden",
         }}
       >
         <Tooltip
           title={
-            !canManageExecutive
+            !canManageCompany
               ? "You don't have permission, contact the admin"
-              : "click to open the account creation form"
+              : "click to open the company creation form"
           }
           placement="top-end"
         >
           <span
-            style={{ cursor: !canManageExecutive ? "not-allowed" : "default" }}
+            style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}
           >
             <Button
               sx={{
@@ -192,9 +167,9 @@ const AccountListingTable = () => {
                 mr: 2,
                 mb: 2,
                 display: "block",
-                backgroundColor: !canManageExecutive
+                backgroundColor: !canManageCompany
                   ? "#6c87b7 !important"
-                  : "#3f51b5",
+                  : "#187b48",
                 color: "white",
                 "&.Mui-disabled": {
                   backgroundColor: "#6c87b7 !important",
@@ -203,9 +178,9 @@ const AccountListingTable = () => {
               }}
               variant="contained"
               onClick={() => setOpenCreateModal(true)}
-              disabled={!canManageExecutive}
+              disabled={!canManageCompany}
             >
-              Create Account
+              Create Company
             </Button>
           </span>
         </Tooltip>
@@ -215,7 +190,15 @@ const AccountListingTable = () => {
             <TableHead>
               <TableRow>
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>ID</b>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    ID
+                  </b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -228,70 +211,124 @@ const AccountListingTable = () => {
                         height: 30,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedCompany ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedCompany ? "0.8rem" : "1rem",
                       },
                     }}
                   />
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>
-                    Full Name
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                      textWrap: "nowrap",
+                    }}
+                  >
+                    Company Name
                   </b>
                   <TextField
                     variant="outlined"
                     size="small"
                     placeholder="Search"
-                    value={search.fullName}
-                    onChange={(e) => handleSearchChange(e, "fullName")}
+                    value={search.name}
+                    onChange={(e) => handleSearchChange(e, "name")}
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
                         height: 30,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedCompany ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedCompany ? "0.8rem" : "1rem",
                       },
                     }}
                   />
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>
-                    Designation
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    Address
                   </b>
                   <TextField
                     variant="outlined"
                     size="small"
                     placeholder="Search"
-                    value={search.designation}
-                    onChange={(e) => handleSearchChange(e, "designation")}
+                    value={search.address}
+                    onChange={(e) => handleSearchChange(e, "address")}
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
                         height: 30,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedCompany ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedCompany ? "0.8rem" : "1rem",
                       },
                     }}
                   />
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>Phone</b>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                      textWrap: "nowrap",
+                    }}
+                  >
+                    Owner Name
+                  </b>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    value={search.ownerName}
+                    onChange={(e) => handleSearchChange(e, "ownerName")}
+                    fullWidth
+                    sx={{
+                      "& .MuiInputBase-root": {
+                        height: 30,
+                        padding: "4px",
+                        textAlign: "center",
+                        fontSize: selectedCompany ? "0.8rem" : "1rem",
+                      },
+                      "& .MuiInputBase-input": {
+                        textAlign: "center",
+                        fontSize: selectedCompany ? "0.8rem" : "1rem",
+                      },
+                    }}
+                  />
+                </TableCell>
+
+                <TableCell>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    Phone Number
+                  </b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -304,18 +341,26 @@ const AccountListingTable = () => {
                         height: 30,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedCompany ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedCompany ? "0.8rem" : "1rem",
                       },
                     }}
                   />
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>Email</b>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    Email
+                  </b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -328,53 +373,21 @@ const AccountListingTable = () => {
                         height: 30,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedCompany ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
+                        fontSize: selectedCompany ? "0.8rem" : "1rem",
                       },
                     }}
                   />
-                </TableCell>
-
-                <TableCell size="small">
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>
-                    Gender
-                  </b>
-                  <FormControl fullWidth size="small">
-                    <Select
-                      value={search.gender}
-                      onChange={handleSelectChange}
-                      displayEmpty
-                      size="small"
-                      sx={{
-                        textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
-                        "& .MuiInputBase-root": {
-                          height: 30,
-                          padding: "4px",
-                          textAlign: "center",
-                        },
-                        "& .MuiSelect-icon": {
-                          fontSize: selectedAccount ? "1rem" : "1.25rem",
-                        },
-                      }}
-                    >
-                      <MenuItem value="">All</MenuItem>
-                      <MenuItem value="Male">Male</MenuItem>
-                      <MenuItem value="Female">Female</MenuItem>
-                      <MenuItem value="Transgender">Transgender</MenuItem>
-                      <MenuItem value="Other">Other</MenuItem>
-                    </Select>
-                  </FormControl>
                 </TableCell>
               </TableRow>
             </TableHead>
 
             <TableBody
               sx={{
-                fontSize: selectedAccount ? "0.8rem" : "1rem",
+                fontSize: selectedCompany ? "0.8rem" : "1rem",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -384,7 +397,7 @@ const AccountListingTable = () => {
                 filteredData
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((row) => {
-                    const isSelected = selectedAccount?.id === row.id;
+                    const isSelected = selectedCompany?.id === row.id;
                     return (
                       <TableRow
                         key={row.id}
@@ -407,13 +420,13 @@ const AccountListingTable = () => {
                         }}
                       >
                         <TableCell>{row.id}</TableCell>
-                        <TableCell>{row.fullName}</TableCell>
-                        <TableCell>{row.designation}</TableCell>
+                        <TableCell>{row.name}</TableCell>
+                        <TableCell>{row.address}</TableCell>
+                        <TableCell>{row.ownerName}</TableCell>
                         <TableCell>
                           {row.phoneNumber.replace("tel:", "")}
                         </TableCell>
                         <TableCell>{row.email}</TableCell>
-                        <TableCell>{row.gender}</TableCell>
                       </TableRow>
                     );
                   })
@@ -487,7 +500,7 @@ const AccountListingTable = () => {
       </Box>
 
       {/* Right Side - Account Details Card */}
-      {selectedAccount && (
+      {selectedCompany && (
         <Box
           sx={{
             flex: { xs: "0 0 100%", md: "0 0 35%" },
@@ -501,13 +514,13 @@ const AccountListingTable = () => {
             height: "100%",
           }}
         >
-          <AccountDetailsCard
-            account={selectedAccount}
+          <CompanyDetailsCard
+            company={selectedCompany}
             onUpdate={() => {}}
             onDelete={() => {}}
-            onBack={() => setSelectedAccount(null)}
+            onBack={() => setSelectedCompany(null)}
             refreshList={(value: any) => refreshList(value)}
-            canManageExecutive={canManageExecutive}
+            canManageCompany={canManageCompany}
           />
         </Box>
       )}
@@ -520,7 +533,7 @@ const AccountListingTable = () => {
         fullWidth
       >
         <DialogContent>
-          <AccountCreationForm
+          <CompanyCreationForm
             refreshList={(value: any) => refreshList(value)}
             onClose={handleCloseModal}
           />
@@ -535,4 +548,4 @@ const AccountListingTable = () => {
   );
 };
 
-export default AccountListingTable;
+export default CompanyListingTable;
