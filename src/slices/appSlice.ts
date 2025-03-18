@@ -325,6 +325,99 @@ export const roleAssignUpdateApi = createAsyncThunk(
     }
   }
 );
+
+//************************************************** landmark APIS ************************************************************
+
+//landmark list API
+export const landmarkListApi = createAsyncThunk(
+  "/executive/landmark",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "/executive/landmark",
+        {},
+        true,
+        "application/json"
+      );
+      console.log("Full API Response==================>", response);
+
+      // Check if response is directly an array
+      if (Array.isArray(response)) {
+        return response;
+      }
+
+      // Check if response.data exists
+      if (!response || !response.data) {
+        throw new Error("Invalid response format");
+      }
+
+      return response.data; // Ensure correct return
+    } catch (error: any) {
+      console.log("Error fetching landmark=====================>", error);
+      return rejectWithValue(error?.response?.data?.message || "Failed to fetch landmarks");
+    }
+  }
+);
+
+//landmark create api
+export const landmarkCreationApi = createAsyncThunk(
+  "/executive/landmark",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "post",
+        "/executive/landmark",
+        data,
+        true,
+        "application/www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || "Role creation failed");
+    }
+  }
+);
+
+//landmark updation Api
+export const landmarkUpdationApi = createAsyncThunk(
+  "/executive/landmark",
+  async ({  formData }: { landmarkId: number; formData:FormData  }, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "patch",
+        "/executive/landmark",
+        formData,
+        true,
+        "application/x-www-form-urlencoded" 
+      );
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data); 
+      return rejectWithValue(error?.response?.data?.message || "Account update failed");
+    }
+  }
+);
+ 
+//landmark delete Api
+export const landmarkDeleteApi = createAsyncThunk(
+  "/executive/landmark",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "delete",
+        "/executive/landmark",
+        data,
+        true,
+        "application/x-www-form-urlencoded"
+      );
+
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error?.response?.data?.message || "Account deletion failed");
+    }
+  }
+);
   
 //*************************************************** company APIS ********************************************************************* */
 
@@ -750,7 +843,7 @@ export const busListApi = createAsyncThunk(
 // bus update Api
 export const busUpdationApi = createAsyncThunk(
   "/executive/company/bus",
-  async ({  formData }: { busId: number; formData: URLSearchParams }, { rejectWithValue }) => {
+  async ({  formData }: { busId: number; formData: FormData }, { rejectWithValue }) => {
     try {
       const response = await commonApi.apiCall(
         "patch",

@@ -8,15 +8,31 @@ import { Draw } from "ol/interaction";
 import { Polygon } from "ol/geom";
 import { fromLonLat, toLonLat } from "ol/proj";
 import { Vector as VectorSource } from "ol/source";
-import { Box, Button, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import * as ol from "ol";
+import localStorageHelper from "../../utils/localStorageHelper";
 
 interface MapComponentProps {
   onDrawEnd: (coordinates: string) => void;
   isOpen: boolean;
+  selectedBoundary?: string;
 }
 
-const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
+const MapComponent: React.FC<MapComponentProps> = ({
+  onDrawEnd,
+  isOpen,
+  selectedBoundary,
+}) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const vectorSource = useRef(new VectorSource());
   const mapInstance = useRef<Map | null>(null);
@@ -25,7 +41,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
   const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">("osm");
   const [mousePosition, setMousePosition] = useState<string>("");
   const navigate = useNavigate();
-
+  const roleDetails = localStorageHelper.getItem("@roleDetails");
+  const canManageLandmark = roleDetails?.manage_landmark || false;
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -38,7 +55,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
         ],
         target: mapRef.current,
         view: new View({
-          center: fromLonLat([76.9366, 8.5241]),
+          center: fromLonLat([76.9366, 8.5241]), // Set initial center in lat/lon
           zoom: 10,
           minZoom: 3,
           maxZoom: 18,
@@ -46,8 +63,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
       });
 
       map.on("pointermove", (event) => {
-        const coords = toLonLat(event.coordinate);
-        setMousePosition(`${coords[0].toFixed(7)}, ${coords[1].toFixed(7)}`);
+        const coords = toLonLat(event.coordinate); // Convert to lat/lon
+        setMousePosition(`${coords[1].toFixed(7)}, ${coords[0].toFixed(7)}`); // Display lat/lon
       });
 
       mapInstance.current = map;
@@ -60,26 +77,50 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
     }
   }, [isOpen, onDrawEnd, navigate]);
 
-  // Toggle drawing mode
+  useEffect(() => {
+    if (selectedBoundary && mapInstance.current) {
+      // Parse the selected boundary coordinates
+      const coordinates = selectedBoundary
+        .split(",")
+        .map((coord) => coord.trim().split(" ").map(Number))
+        .map((coord) => fromLonLat(coord)); // Convert lat/lon to map coordinates
+
+      // Create a polygon from the coordinates
+      const polygon = new Polygon([coordinates]);
+      vectorSource.current.clear();
+      vectorSource.current.addFeature(new ol.Feature(polygon));
+
+      // Fit the map view to the polygon's extent
+      const extent = polygon.getExtent();
+      mapInstance.current.getView().fit(extent, {
+        padding: [50, 50, 50, 50], // Add padding around the polygon
+        duration: 1000, // Animation duration in milliseconds
+      });
+    }
+  }, [selectedBoundary]);
+
   const toggleDrawing = () => {
     if (!mapInstance.current) return;
 
     if (isDrawing) {
-      // Disable drawing
       if (drawInteraction.current) {
         mapInstance.current.removeInteraction(drawInteraction.current);
       }
     } else {
-      // Enable drawing
       const draw = new Draw({
         source: vectorSource.current,
-        type: "Polygon", //maxPoints: 4
+        type: "Polygon",
       });
 
       draw.on("drawend", (event) => {
         const polygon = event.feature.getGeometry() as Polygon;
-        const coordinates = polygon.getCoordinates()[0].map((coord) => coord.join(" "));
-        onDrawEnd(coordinates.join(" , ")); // Open form modal with boundary
+        const coordinates = polygon
+          .getCoordinates()[0]
+          .map((coord) => toLonLat(coord));
+        const formattedCoordinates = coordinates
+          .map((coord) => coord.join(" "))
+          .join(",");
+        onDrawEnd(formattedCoordinates);
       });
 
       drawInteraction.current = draw;
@@ -129,61 +170,59 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDrawEnd, isOpen }) => {
 
   return (
     <Box height="100%">
-  {/* Toolbar Section */}
-  <Box
-    sx={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: 1,
-      backgroundColor: "#f5f5f5",
-      borderRadius: 1,
-    }}
-  >
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-      <Button
-        onClick={() => changeMapType("osm")}
-        disabled={mapType === "osm"}
-        variant="contained"
-        size="small"
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: 1,
+          backgroundColor: "#f5f5f5",
+          borderRadius: 1,
+        }}
       >
-        OSM 
-      </Button>
-      <Button
-        onClick={() => changeMapType("satellite")}
-        disabled={mapType === "satellite"}
-        variant="contained"
-        size="small"
-      >
-        Satellite 
-      </Button>
-      <Button
-        onClick={() => changeMapType("hybrid")}
-        disabled={mapType === "hybrid"}
-        variant="contained"
-        size="small"
-      >
-        Hybrid
-      </Button>
-      <Button
-        variant="contained"
-        color={isDrawing ? "secondary" : "primary"}
-        size="small"
-        onClick={toggleDrawing}
-      >
-        {isDrawing ? "Disable " : "Draw"}
-      </Button>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <FormControl variant="outlined" size="small">
+            <InputLabel>Map Type</InputLabel>
+            <Select
+              value={mapType}
+              onChange={(e) =>
+                changeMapType(e.target.value as "osm" | "satellite" | "hybrid")
+              }
+              label="Map Type"
+            >
+              <MenuItem value="osm">OSM</MenuItem>
+              <MenuItem value="satellite">Satellite</MenuItem>
+              <MenuItem value="hybrid">Hybrid</MenuItem>
+            </Select>
+          </FormControl>
+          <Tooltip
+            title={
+              !canManageLandmark
+                ? "You don't have permission, contact the admin"
+                : "click to Enable Drawing the landmark."
+            }
+            placement="top-end"
+          >
+            <span
+              style={{ cursor: !canManageLandmark ? "not-allowed" : "default" }}
+            >
+              <Button
+                color={isDrawing ? "secondary" : "primary"}
+                variant="contained"
+                onClick={toggleDrawing}
+                disabled={!canManageLandmark}
+              >
+                {isDrawing ? "Disable " : "Add Landmark"}
+              </Button>
+            </span>
+          </Tooltip>
+        </Box>
+        <Typography variant="body2">
+          <strong>{mousePosition}</strong>
+        </Typography>
+      </Box>
+      <Box ref={mapRef} width="100%" height="600px" flex={1} />
     </Box>
-
-    <Typography variant="body2">
-      <strong>{mousePosition}</strong>
-    </Typography>
-  </Box>
-
-  {/* Map Section */}
-  <Box ref={mapRef} width="100%" height="600px" flex={1} />
-</Box>
-
   );
 };
 

@@ -94,7 +94,7 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
       };
 
       const formData = new FormData();
-      formData.append("id", busId.toString()); // Add busId to FormData
+      formData.append("id", busId.toString()); 
       formData.append("registration_number", data.registration_number);
       formData.append("name", data.name);
       formData.append("capacity", data.capacity.toString());

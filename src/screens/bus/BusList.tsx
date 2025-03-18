@@ -295,226 +295,223 @@ const BusListingTable = () => {
         </Box>
 
         <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 600 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center", 
-                      fontSize: selectedBus ? "0.8rem" : "1rem"
-                    }}
-                  >
-                    ID
-                  </b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.id}
-                    onChange={(e) => handleSearchChange(e, "id")}
-                    sx={{
-                      width: 80,
-                      "& .MuiInputBase-root": {
-                        height: 30,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedBus ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedBus ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-
-                <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedBus ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    Company Name
-                  </b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.company_name}
-                    onChange={(e) => handleSearchChange(e, "company_name")}
-                    sx={{
-                      width: 120,
-                      "& .MuiInputBase-root": {
-                        height: 30,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedBus ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedBus ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-
-                <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedBus ? "0.8rem" : "1rem" }}>
-                    Registration Number
-                  </b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.registrationNumber}
-                    onChange={(e) => handleSearchChange(e, "registrationNumber")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 30,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedBus ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedBus ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-
-                <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedBus ? "0.8rem" : "1rem" }}>name</b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.name}
-                    onChange={(e) => handleSearchChange(e, "name")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 30,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedBus ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedBus ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-
-                <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedBus ? "0.8rem" : "1rem" }}>capacity</b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.capacity}
-                    onChange={(e) => handleSearchChange(e, "capacity")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 30,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedBus ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedBus ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedBus ? "0.8rem" : "1rem" }}>Model</b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.model}
-                    onChange={(e) => handleSearchChange(e, "model")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 30,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedBus ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedBus ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-
-              </TableRow>
-            </TableHead>
-
-            <TableBody
-              sx={{
+  <Table sx={{ minWidth: 600 }}>
+    <TableHead>
+      <TableRow>
+        <TableCell>
+          <b
+            style={{
+              display: "block",
+              textAlign: "center",
+              fontSize: selectedBus ? "0.8rem" : "1rem",
+            }}
+          >
+            ID
+          </b>
+          <TextField
+            variant="outlined"
+            size="small"
+            placeholder="Search"
+            value={search.id}
+            onChange={(e) => handleSearchChange(e, "id")}
+            sx={{
+              width: 80,
+              "& .MuiInputBase-root": {
+                height: 30,
+                padding: "4px",
+                textAlign: "center",
                 fontSize: selectedBus ? "0.8rem" : "1rem",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {filteredData.length > 0 ? (
-                filteredData
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row) => {
-                    const isSelected = selectedBus?.id === row.id;
-                    return (
-                      <TableRow
-                        key={row.id}
-                        hover
-                        onClick={() => handleRowClick(row)}
-                        sx={{
-                          cursor: "pointer",
-                          backgroundColor: isSelected
-                            ? "#1565C0 !important"
-                            : "inherit",
-                          color: isSelected ? "white !important" : "inherit",
-                          "&:hover": {
-                            backgroundColor: isSelected
-                              ? "#1565C0 !important"
-                              : "#E3F2FD",
-                          },
-                          "& td": {
-                            color: isSelected ? "white !important" : "inherit",
-                          },
-                        }}
-                      >
-                        <TableCell>{row.id}</TableCell>
-                        <TableCell>{getCompanyName(row.companyId)}</TableCell>
-                        <TableCell>{row.registrationNumber}</TableCell>
-                        <TableCell>{row.name}</TableCell>
-                        <TableCell>{row.capacity}</TableCell>
-                        <TableCell>{row.model}</TableCell>
-                      </TableRow>
-                    );
-                  })
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    No accounts found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              },
+              "& .MuiInputBase-input": {
+                textAlign: "center",
+                fontSize: selectedBus ? "0.8rem" : "1rem",
+              },
+            }}
+          />
+        </TableCell>
+
+        <TableCell sx={{ width: "200px" }}> {/* Adjust width for company name */}
+          <b
+            style={{
+              display: "block",
+              textAlign: "center",
+              fontSize: selectedBus ? "0.8rem" : "1rem",
+              whiteSpace: "nowrap", 
+            }}
+          >
+            Company Name
+          </b>
+          <TextField
+            variant="outlined"
+            size="small"
+            placeholder="Search"
+            value={search.company_name}
+            onChange={(e) => handleSearchChange(e, "company_name")}
+            sx={{
+              width: "100%",
+              "& .MuiInputBase-root": {
+                height: 30,
+                padding: "4px",
+                textAlign: "center",
+                fontSize: selectedBus ? "0.8rem" : "1rem",
+              },
+              "& .MuiInputBase-input": {
+                textAlign: "center",
+                fontSize: selectedBus ? "0.8rem" : "1rem",
+              },
+            }}
+          />
+        </TableCell>
+
+        <TableCell>
+          <b style={{ display: "block", textAlign: "center", fontSize: selectedBus ? "0.8rem" : "1rem", whiteSpace:selectedBus ? "nowrap" : "normal" }}>
+            Registration Number
+          </b>
+          <TextField
+            variant="outlined"
+            size="small"
+            placeholder="Search"
+            value={search.registrationNumber}
+            onChange={(e) => handleSearchChange(e, "registrationNumber")}
+            fullWidth
+            sx={{
+              "& .MuiInputBase-root": {
+                height: 30,
+                padding: "4px",
+                textAlign: "center",
+                fontSize: selectedBus ? "0.8rem" : "1rem",
+              },
+              "& .MuiInputBase-input": {
+                textAlign: "center",
+                fontSize: selectedBus ? "0.8rem" : "1rem",
+              },
+            }}
+          />
+        </TableCell>
+
+        <TableCell>
+          <b style={{ display: "block", textAlign: "center", fontSize: selectedBus ? "0.8rem" : "1rem" }}>Name</b>
+          <TextField
+            variant="outlined"
+            size="small"
+            placeholder="Search"
+            value={search.name}
+            onChange={(e) => handleSearchChange(e, "name")}
+            fullWidth
+            sx={{
+              "& .MuiInputBase-root": {
+                height: 30,
+                padding: "4px",
+                textAlign: "center",
+                fontSize: selectedBus ? "0.8rem" : "1rem",
+              },
+              "& .MuiInputBase-input": {
+                textAlign: "center",
+                fontSize: selectedBus ? "0.8rem" : "1rem",
+              },
+            }}
+          />
+        </TableCell>
+
+        <TableCell > 
+          <b style={{ display: "block", textAlign: "center", fontSize: selectedBus ? "0.8rem" : "1rem" }}>Capacity</b>
+          <TextField
+            variant="outlined"
+            size="small"
+            placeholder="Search"
+            value={search.capacity}
+            onChange={(e) => handleSearchChange(e, "capacity")}
+            sx={{
+              width: "100%",
+              "& .MuiInputBase-root": {
+                height: 30,
+                padding: "4px",
+                textAlign: "center",
+                fontSize: selectedBus ? "0.8rem" : "1rem",
+              },
+              "& .MuiInputBase-input": {
+                textAlign: "center",
+                fontSize: selectedBus ? "0.8rem" : "1rem",
+              },
+            }}
+          />
+        </TableCell>
+
+        <TableCell>
+          <b style={{ display: "block", textAlign: "center", fontSize: selectedBus ? "0.8rem" : "1rem" }}>Model</b>
+          <TextField
+            variant="outlined"
+            size="small"
+            placeholder="Search"
+            value={search.model}
+            onChange={(e) => handleSearchChange(e, "model")}
+            sx={{
+              width: "100%",
+              "& .MuiInputBase-root": {
+                height: 30,
+                padding: "4px",
+                textAlign: "center",
+                fontSize: selectedBus ? "0.8rem" : "1rem",
+              },
+              "& .MuiInputBase-input": {
+                textAlign: "center",
+                fontSize: selectedBus ? "0.8rem" : "1rem",
+              },
+            }}
+          />
+        </TableCell>
+      </TableRow>
+    </TableHead>
+
+    <TableBody
+      sx={{
+        fontSize: selectedBus ? "0.8rem" : "1rem",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+      }}
+    >
+      {filteredData.length > 0 ? (
+        filteredData
+          .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+          .map((row) => {
+            const isSelected = selectedBus?.id === row.id;
+            return (
+              <TableRow
+                key={row.id}
+                hover
+                onClick={() => handleRowClick(row)}
+                sx={{
+                  cursor: "pointer",
+                  backgroundColor: isSelected ? "#1565C0 !important" : "inherit",
+                  color: isSelected ? "white !important" : "inherit",
+                  "&:hover": {
+                    backgroundColor: isSelected ? "#1565C0 !important" : "#E3F2FD",
+                  },
+                  "& td": {
+                    color: isSelected ? "white !important" : "inherit",
+                  },
+                }}
+              >
+                <TableCell>{row.id}</TableCell>
+                <TableCell sx={{ whiteSpace: "nowrap" }}>{getCompanyName(row.companyId)}</TableCell> {/* Prevent wrapping */}
+                <TableCell>{row.registrationNumber}</TableCell>
+                <TableCell>{row.name}</TableCell>
+                <TableCell>{row.capacity}</TableCell>
+                <TableCell>{row.model}</TableCell>
+              </TableRow>
+            );
+          })
+      ) : (
+        <TableRow>
+          <TableCell colSpan={6} align="center">
+            No accounts found.
+          </TableCell>
+        </TableRow>
+      )}
+    </TableBody>
+  </Table>
+</TableContainer>
 
         {/* Pagination */}
         <Box

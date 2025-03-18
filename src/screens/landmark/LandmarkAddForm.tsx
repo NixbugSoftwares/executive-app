@@ -1,81 +1,177 @@
-import React, { useState, useEffect } from "react";
-import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem, Typography, SelectChangeEvent } from "@mui/material";
-import { useLocation } from "react-router-dom"; // Import useLocation
+import React, { useEffect } from "react";
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  MenuItem,
+} from "@mui/material";
+import { useForm, Controller, SubmitHandler } from "react-hook-form";
+import { useAppDispatch } from "../../store/Hooks";
+import { landmarkCreationApi } from "../../slices/appSlice";
+// import { yupResolver } from "@hookform/resolvers/yup";
 
-type LandmarkFormValues = {
+
+interface ILandmarkFormInputs {
   name: string;
   boundary: string;
   status: string;
   importance: string;
+}
+
+interface ILandmarkCreationFormProps {
+  boundary: string;
   onClose: () => void;
-};
+  refreshList: (value: string) => void;
+}
 
+const statusOptions =  [
+  { label: "VALIDATING", value: "1" },
+  { label: "VERIFIED", value: "2" },
+];
 
-const LandmarkAddForm: React.FC<LandmarkFormValues> = ({ boundary, onClose }) =>  {
-  const location = useLocation();
-  const Mapboundary = location.state?.boundary || ""; 
+const importanceOptions = [
+  { label: "LOW", value: 1 },
+  { label: "MEDIUM", value: 2 },
+  { label: "HIGH", value: 3 },
+]
+const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
+  boundary,
+  onClose,
+  refreshList,
+}) => {
+  const dispatch = useAppDispatch();
 
-  const [formValues, setFormValues] = useState({
-    name: "",
-    boundary: Mapboundary, 
-    status: "Verifying",
-    importance: "low",
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<ILandmarkFormInputs>({
+    // resolver: yupResolver(landmarkCreationSchema),
+    defaultValues: {
+      name: "",
+      boundary: boundary,
+      status: "1",
+      importance: "1",
+    },
   });
-  
+
   useEffect(() => {
-    setFormValues((prev) => ({ ...prev, boundary }));
-  }, [boundary]);
-
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
-    const { name, value } = event.target;
-    setFormValues((prevValues) => ({
-      ...prevValues,
-      [name!]: value,
-    }));
-  };
-
-  const handleSelectChange = (event: SelectChangeEvent<string>) => {
-    const { name, value } = event.target;
-    setFormValues((prevValues) => ({
-      ...prevValues,
-      [name!]: value,
-    }));
-  };
-
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    console.log("Form submitted:", formValues);
-    alert("Landmark added successfully!");
-    onClose();
+    setValue("boundary", `POLYGON((${boundary}))`);
+  }, [boundary, setValue]);
+  
+  const handleLandmarkCreation: SubmitHandler<ILandmarkFormInputs> = async (data) => {
+    try {
+      const formData = new FormData();
+      formData.append("name", data.name);
+      formData.append("boundary", data.boundary); 
+      formData.append("status", data.status);
+      formData.append("importance", data.importance);
+  
+      console.log("Form Data:", {
+        name: data.name,
+        boundary: data.boundary,
+        status: data.status,
+        importance: data.importance,
+      });
+  
+      const response = await dispatch(landmarkCreationApi(formData)).unwrap();
+      console.log("Landmark created successfully:", response);
+      alert("Landmark created successfully!");
+      refreshList("refresh");
+      onClose();
+    } catch (error) {
+      console.error("Error creating landmark:", error);
+      alert("Something went wrong. Please try again.");
+    }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 1.5, width: 500, margin: "auto", mt: 10, p: 2, border: "1px solid #ccc", borderRadius: "8px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
+    <Box
+      component="form"
+      onSubmit={handleSubmit(handleLandmarkCreation)}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.5,
+        width: 500,
+        margin: "auto",
+        mt: 10,
+        p: 2,
+        border: "1px solid #ccc",
+        borderRadius: "8px",
+        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+      }}
+    >
       <Typography variant="h6" align="center" gutterBottom>
         Landmark Creation Form
       </Typography>
 
-      <TextField label="Name" name="name" value={formValues.name} onChange={handleChange} variant="outlined" size="small" required />
+      {/* Name Field */}
+      <Controller
+        name="name"
+        control={control}
+        render={({ field }) => (
+          <TextField
+            label="Name"
+            variant="outlined"
+            size="small"
+            required
+            error={!!errors.name}
+            helperText={errors.name?.message}
+            {...field}
+          />
+        )}
+      />
 
-      <TextField label="Boundary" name="boundary" value={formValues.boundary} variant="outlined" required fullWidth InputProps={{ readOnly: true }} />
+      {/* Boundary Field */}
+      <Controller
+        name="boundary"
+        control={control}
+        render={({ field }) => (
+          <TextField
+            label="Boundary"
+            variant="outlined"
+            required
+            fullWidth
+            InputProps={{ readOnly: true }}
+            error={!!errors.boundary}
+            helperText={errors.boundary?.message}
+            {...field}
+          />
+        )}
+      />
 
-      <FormControl size="small" required fullWidth>
-        <InputLabel>Status</InputLabel>
-        <Select name="status" value={formValues.status} onChange={handleSelectChange} label="Status">
-          <MenuItem value="Verifying">Verifying</MenuItem>
-          <MenuItem value="Verified">Verified</MenuItem>
-        </Select>
-      </FormControl>
+      {/* Status Field */}
+      <Controller
+        name="status"
+        control={control}
+        render={({ field }) => (
+          <TextField margin="normal" fullWidth select label="Status" {...field} error={!!errors.status} size="small">
+            {statusOptions.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        )}
+      />
 
-      <FormControl size="small" required>
-        <InputLabel>Importance</InputLabel>
-        <Select name="importance" value={formValues.importance} onChange={handleSelectChange} label="Importance">
-          <MenuItem value="low">Low</MenuItem>
-          <MenuItem value="medium">Medium</MenuItem>
-          <MenuItem value="high">High</MenuItem>
-        </Select>
-      </FormControl>
-
+      {/* Importance Field */}
+      <Controller
+        name="importance"
+        control={control}
+        render={({ field }) => (
+          <TextField margin="normal" fullWidth select label="Importance" {...field} error={!!errors.importance} size="small">
+            {importanceOptions.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        )}
+      />
       <Button type="submit" variant="contained" color="success" fullWidth>
         Add Landmark
       </Button>
