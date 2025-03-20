@@ -47,28 +47,23 @@ const LoginPage: React.FC = () => {
   };
   const handleLogin: SubmitHandler<ILoginFormInputs> = async (data) => {
     try {
-      // FormData for multipart request
+   
       const formData = new FormData();
       formData.append("username", data.username);
       formData.append("password", data.password);
-      //API call
+      
       const response = await dispatch(LoginApi(formData)).unwrap();
       if (response?.access_token) {
         const expiresAt = Date.now() + response.expires_in * 1000;
-        // Store token in localStorage
+  
         localStorage.setItem("@token", response.access_token);
         localStorage.setItem("@token_expires", expiresAt.toString());
-        // Store user details in localStorage
+ 
         const user: User = {
           executive_id: response.executive_id,
-          access_token: response.access_token,
-          token_type: response.token_type,
-          created_on: response.created_on,
-          expires_in: response.expires_in,
-          client_id: response.client_id,
         };
         localStorage.setItem("@user", JSON.stringify(user));
-        // Dispatch user login action
+
         dispatch(userLoggedIn(user));
         // Fetch Role Mapping API
         const roleResponse = await dispatch(fetchRoleMappingApi(response.executive_id)).unwrap();

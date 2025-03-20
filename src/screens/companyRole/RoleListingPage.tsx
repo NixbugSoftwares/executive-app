@@ -235,7 +235,7 @@ const RoleListingTable = () => {
                 onClick={() => setOpenCreateModal(true)}
                 disabled={!canManageCompany}
               >
-                Add Operator
+                Add Role
               </Button>
             </span>
           </Tooltip>

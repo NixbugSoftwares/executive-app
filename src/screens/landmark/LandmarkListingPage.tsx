@@ -15,14 +15,18 @@ import {
   DialogContent,
   DialogTitle,
   Typography,
-  Tooltip,
+  Chip,
 } from "@mui/material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle"; 
+import WarningIcon from "@mui/icons-material/Warning"; 
+import LowPriorityIcon from "@mui/icons-material/LowPriority"; 
+import MediumPriorityIcon from "@mui/icons-material/Height"; 
+import HighPriorityIcon from "@mui/icons-material/PriorityHigh"; 
 import LandmarkAddForm from "./LandmarkAddForm";
 import MapComponent from "./MapComponent";
 import { useDispatch } from "react-redux";
 import { landmarkListApi, landmarkDeleteApi } from "../../slices/appSlice";
 import { AppDispatch } from "../../store/Store";
-import localStorageHelper from "../../utils/localStorageHelper";
 import LandmarkUpdateForm from "./LandmarkUpdateForm";
 
 interface Landmark {
@@ -40,15 +44,11 @@ const LandmarkListing = () => {
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [search, setSearch] = useState({ id: "", name: "", location: "" });
   const [page, setPage] = useState(0);
-  const rowsPerPage = 5;
+  const rowsPerPage = 10;
   const [boundary, setBoundary] = useState<string>("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [landmarkToDelete, setLandmarkToDelete] = useState<Landmark | null>(null);
   const [openUpdateModal, setOpenUpdateModal] = useState(false);
-  const [landmarkToUpdate, setLandmarkToUpdate] = useState<Landmark | null>(null);
-  const roleDetails = localStorageHelper.getItem("@roleDetails");
-  const canManageLandmark = roleDetails?.manage_landmark || false;
-
   const extractRawPoints = (polygonString: string): string => {
     if (!polygonString) return "";
     const matches = polygonString.match(/\(\((.*?)\)\)/);
@@ -90,16 +90,10 @@ const LandmarkListing = () => {
 
     try {
       const formData = new FormData();
-      formData.append("id", String(landmarkToDelete.id)); // Append the landmark ID
-
-      // Dispatch the delete API
+      formData.append("id", String(landmarkToDelete.id)); 
       const response = await dispatch(landmarkDeleteApi(formData)).unwrap();
       console.log("Landmark deleted:", response);
-
-      // Close the confirmation dialog
       setDeleteConfirmOpen(false);
-
-      // Refresh the landmark list
       refreshList("refresh");
     } catch (error) {
       console.error("Delete error:", error);
@@ -168,14 +162,14 @@ const LandmarkListing = () => {
           maxWidth: { xs: "100%", md: "50%" },
           transition: "all 0.3s ease",
           overflow: "hidden",
-          overflowY: selectedLandmark ? "auto" : "hidden",
+          overflowY: "auto",
         }}
       >
         <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
           <Table sx={{ borderCollapse: "collapse", width: "100%" }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ width: "15%" }}>
+                <TableCell sx={{ width: "20%" }}>
                   <Box
                     display="flex"
                     flexDirection="column"
@@ -195,7 +189,7 @@ const LandmarkListing = () => {
                     />
                   </Box>
                 </TableCell>
-                <TableCell sx={{ width: "15%" }}>
+                <TableCell sx={{ width: "35%" }}>
                   <Box
                     display="flex"
                     flexDirection="column"
@@ -217,17 +211,12 @@ const LandmarkListing = () => {
                 </TableCell>
                 <TableCell>
                   <Box display="flex" justifyContent="center">
-                    <b>Status</b>
+                     <b>Importance</b>
                   </Box>
                 </TableCell>
-                <TableCell sx={{ width: "200px" }}>
+                <TableCell sx={{  }}>
                   <Box display="flex" justifyContent="center">
-                    <b>Importance</b>
-                  </Box>
-                </TableCell>
-                <TableCell sx={{ width: "200px" }}>
-                  <Box display="flex" justifyContent="center">
-                    <b>Actions</b>
+                  <b>Status</b>
                   </Box>
                 </TableCell>
               </TableRow>
@@ -246,86 +235,87 @@ const LandmarkListing = () => {
                         sx={{
                           cursor: "pointer",
                           backgroundColor: isSelected
-                            ? "#1565C0 !important"
+                            ? "#E3F2FD  "
                             : "inherit",
-                          color: isSelected ? "white !important" : "inherit",
+                          color: isSelected ? "black " : "black",
                           "&:hover": {
                             backgroundColor: isSelected
-                              ? "#1565C0 !important"
+                              ? "#E3F2FD !important"
                               : "#E3F2FD",
                           },
                           "& td": {
-                            color: isSelected ? "white !important" : "inherit",
+                            color: isSelected ? "black" : "black",
                           },
                         }}
                       >
                         <TableCell>{row.id}</TableCell>
                         <TableCell>{row.name}</TableCell>
-                        <TableCell>{row.importance}</TableCell>
-                        <TableCell>{row.status}</TableCell>
                         <TableCell>
-                          <Box display="flex" justifyContent="center" gap={1}>
-                            <Tooltip
-                              title={
-                                !canManageLandmark
-                                  ? "You don't have permission, contact the admin"
-                                  : "click to Update the landmark."
-                              }
-                              placement="top-end"
-                            >
-                              <span
-                                style={{
-                                  cursor: !canManageLandmark
-                                    ? "not-allowed"
-                                    : "default",
-                                }}
-                              >
-                                <Button
-                                  variant="contained"
-                                  size="small"
-                                  color="primary"
-                                  onClick={(e) => {
-                                    e.stopPropagation(); // Prevent row click
-                                    setLandmarkToUpdate(row); // Set the landmark to update
-                                    setOpenUpdateModal(true); // Open the update modal
-                                  }}
-                                  disabled={!canManageLandmark} // Disable if no permission
-                                >
-                                  Update
-                                </Button>
-                              </span>
-                            </Tooltip>
-                            <Tooltip
-                              title={
-                                !canManageLandmark
-                                  ? "You don't have permission, contact the admin"
-                                  : "click to Delete  the landmark."
-                              }
-                              placement="top-end"
-                            >
-                              <span
-                                style={{
-                                  cursor: !canManageLandmark
-                                    ? "not-allowed"
-                                    : "default",
-                                }}
-                              >
-                                <Button
-                                  variant="contained"
-                                  size="small"
-                                  color="error"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setLandmarkToDelete(row);
-                                    setDeleteConfirmOpen(true);
-                                  }}
-                                >
-                                  Delete
-                                </Button>
-                              </span>
-                            </Tooltip>
-                          </Box>
-                        </TableCell>
+                  {/* Importance Chip */}
+                  {row.importance === "Low" && (
+                    <Chip
+                      icon={<LowPriorityIcon />}
+                      label="Low"
+                      color="info"
+                      size="small"
+                      sx={{
+                        backgroundColor: isSelected ? "#90CAF9" : "#E3F2FD",
+                        color: isSelected ? "#1565C0" : "#1565C0",
+                      }}
+                    />
+                  )}
+                  {row.importance === "Medium" && (
+                    <Chip
+                      icon={<MediumPriorityIcon />}
+                      label="Medium"
+                      color="warning"
+                      size="small"
+                      sx={{
+                        backgroundColor: isSelected ? "#FFE082" : "#FFF3E0",
+                        color: isSelected ? "#FFA000" : "#FFA000",
+                      }}
+                    />
+                  )}
+                  {row.importance === "High" && (
+                    <Chip
+                      icon={<HighPriorityIcon />}
+                      label="High"
+                      color="error"
+                      size="small"
+                      sx={{
+                        backgroundColor: isSelected ? "#EF9A9A" : "#FFEBEE",
+                        color: isSelected ? "#D32F2F" : "#D32F2F",
+                      }}
+                    />
+                  )}
+                </TableCell>
+                <TableCell>
+                  {/* Status Chip */}
+                  {row.status === "Validating" && (
+                    <Chip
+                      icon={<WarningIcon />}
+                      label="Validating"
+                      color="warning"
+                      size="small"
+                      sx={{
+                        backgroundColor: isSelected ? "#FFE082" : "#edd18f",
+                        color: isSelected ? "#9f3b03" : "#9f3b03",
+                      }}
+                    />
+                  )}
+                  {row.status === "Verified" && (
+                    <Chip
+                      icon={<CheckCircleIcon />}
+                      label="Verified"
+                      color="success"
+                      size="small"
+                      sx={{
+                        backgroundColor: isSelected ? "#A5D6A7" : "#E8F5E9",
+                        color: isSelected ? "#2E7D32" : "#2E7D32",
+                      }}
+                    />
+                  )}
+                </TableCell>
                       </TableRow>
                     );
                   })
@@ -401,17 +391,19 @@ const LandmarkListing = () => {
       {/* Right Side: Map */}
       <Box
         sx={{
-          flex: { xs: "0 0 100%", md: "30%" },
-          height: "1000px",
+          flex: { xs: "0 0 100%", md: "50%" },
+          height: "100vh",
           maxWidth: { xs: "100%", md: "50%" },
           display: "flex",
           flexDirection: "column",
           gap: 2,
         }}
       >
+      
+        {/* Map Component */}
         <Box
           sx={{
-            height: "100%",
+            height: "calc(100vh - 20px)",
             borderRadius: 2,
             overflow: "hidden",
             boxShadow: 2,
@@ -421,8 +413,17 @@ const LandmarkListing = () => {
             onDrawEnd={handlePolygonSelect}
             isOpen={true}
             selectedBoundary={selectedLandmark?.boundary}
+            selectedLandmark={selectedLandmark}
+            onUpdateClick={() => setOpenUpdateModal(true)}
+            onDeleteClick={() => {
+              setLandmarkToDelete(selectedLandmark);
+              setDeleteConfirmOpen(true);
+            }}
+            
           />
         </Box>
+
+       
       </Box>
 
       {/* Dialog for Adding a Landmark */}
@@ -452,19 +453,13 @@ const LandmarkListing = () => {
         onClose={() => setOpenUpdateModal(false)}
         maxWidth="sm"
         fullWidth
-        sx={{
-          position: "absolute",
-          top: "10%", // Adjust the position as needed
-          left: "50%", // Center horizontally
-          transform: "translateX(-50%)", // Center horizontally
-        }}
       >
         <DialogContent>
-          {landmarkToUpdate && (
+          {selectedLandmark && (
             <LandmarkUpdateForm
               onClose={() => setOpenUpdateModal(false)}
               refreshList={(value: string) => refreshList(value)}
-              landmarkId={landmarkToUpdate.id}
+              landmarkId={selectedLandmark.id}
             />
           )}
         </DialogContent>

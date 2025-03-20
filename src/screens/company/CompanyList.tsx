@@ -406,16 +406,16 @@ const CompanyListingTable = () => {
                         sx={{
                           cursor: "pointer",
                           backgroundColor: isSelected
-                            ? "#1565C0 !important"
+                            ? "#E3F2FD !important"
                             : "inherit",
-                          color: isSelected ? "white !important" : "inherit",
+                          color: isSelected ? "black !important" : "inherit",
                           "&:hover": {
                             backgroundColor: isSelected
-                              ? "#1565C0 !important"
+                              ? "#E3F2FD !important"
                               : "#E3F2FD",
                           },
                           "& td": {
-                            color: isSelected ? "white !important" : "inherit",
+                            color: isSelected ? "black !important" : "inherit",
                           },
                         }}
                       >

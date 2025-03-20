@@ -53,10 +53,11 @@ const Sidebar: React.FC = () => {
       items: [
         { label: "company", path: "/company", icon: <BusinessIcon /> },
         { label: "Operator", path: "/operator", icon: <EngineeringIcon /> },
+        { label: "Bus", path: "/bus", icon: <DirectionsBusIcon /> },
         { label: "Role", path: "/companyrole", icon: <Diversity3Icon /> },
         { label: "Route", path: "/busroute", icon: <RouteIcon /> },
         { label: "Fare", path: "/fare", icon: <CorporateFareIcon /> },
-        { label: "Bus", path: "/bus", icon: <DirectionsBusIcon /> },
+        
       ],
     },
   ];
@@ -135,7 +136,7 @@ const Sidebar: React.FC = () => {
                             ? "primary.light"
                             : "inherit",
                         "&:hover": {
-                          backgroundColor: "primary.light",
+                          backgroundColor: "#E3F2FD",
                         },
                         "&.Mui-selected": {
                           backgroundColor: "primary.main",

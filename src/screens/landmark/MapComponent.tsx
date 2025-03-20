@@ -15,23 +15,39 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import * as ol from "ol";
 import localStorageHelper from "../../utils/localStorageHelper";
-
+import { Coordinate } from "ol/coordinate";
+import { Style, Stroke, Fill } from "ol/style";
+// MapComponent.tsx
+interface Landmark {
+  id: number;
+  name: string;
+  boundary: string;
+  status: string;
+  importance: string;
+}
 interface MapComponentProps {
   onDrawEnd: (coordinates: string) => void;
   isOpen: boolean;
   selectedBoundary?: string;
+  selectedLandmark?: Landmark | null;
+  onUpdateClick: () => void;
+  onDeleteClick: () => void;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
   onDrawEnd,
   isOpen,
   selectedBoundary,
+  selectedLandmark,
+  onUpdateClick,
+  onDeleteClick,
 }) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const vectorSource = useRef(new VectorSource());
@@ -43,6 +59,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const navigate = useNavigate();
   const roleDetails = localStorageHelper.getItem("@roleDetails");
   const canManageLandmark = roleDetails?.manage_landmark || false;
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -55,7 +73,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         ],
         target: mapRef.current,
         view: new View({
-          center: fromLonLat([76.9366, 8.5241]), // Set initial center in lat/lon
+          center: fromLonLat([76.9366, 8.5241]),
           zoom: 10,
           minZoom: 3,
           maxZoom: 18,
@@ -63,8 +81,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
       });
 
       map.on("pointermove", (event) => {
-        const coords = toLonLat(event.coordinate); // Convert to lat/lon
-        setMousePosition(`${coords[1].toFixed(7)}, ${coords[0].toFixed(7)}`); // Display lat/lon
+        const coords = toLonLat(event.coordinate);
+        setMousePosition(`${coords[1].toFixed(7)}, ${coords[0].toFixed(7)}`);
       });
 
       mapInstance.current = map;
@@ -79,22 +97,19 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   useEffect(() => {
     if (selectedBoundary && mapInstance.current) {
-      // Parse the selected boundary coordinates
       const coordinates = selectedBoundary
         .split(",")
         .map((coord) => coord.trim().split(" ").map(Number))
-        .map((coord) => fromLonLat(coord)); // Convert lat/lon to map coordinates
+        .map((coord) => fromLonLat(coord));
 
-      // Create a polygon from the coordinates
       const polygon = new Polygon([coordinates]);
       vectorSource.current.clear();
       vectorSource.current.addFeature(new ol.Feature(polygon));
 
-      // Fit the map view to the polygon's extent
       const extent = polygon.getExtent();
       mapInstance.current.getView().fit(extent, {
-        padding: [50, 50, 50, 50], // Add padding around the polygon
-        duration: 1000, // Animation duration in milliseconds
+        padding: [50, 50, 50, 50],
+        duration: 1000,
       });
     }
   }, [selectedBoundary]);
@@ -109,17 +124,53 @@ const MapComponent: React.FC<MapComponentProps> = ({
     } else {
       const draw = new Draw({
         source: vectorSource.current,
-        type: "Polygon",
+        type: "Circle",
+        geometryFunction: (coordinates, geometry) => {
+          if (!geometry) {
+            geometry = new Polygon([[]]);
+          }
+
+          const coords = coordinates as Coordinate[];
+          const start = coords[0];
+          const end = coords[1];
+          const minX = Math.min(start[0], end[0]);
+          const maxX = Math.max(start[0], end[0]);
+          const minY = Math.min(start[1], end[1]);
+          const maxY = Math.max(start[1], end[1]);
+
+          geometry.setCoordinates([
+            [
+              [minX, minY],
+              [maxX, minY],
+              [maxX, maxY],
+              [minX, maxY],
+              [minX, minY],
+            ],
+          ]);
+
+          return geometry;
+        },
+        style: new Style({
+          stroke: new Stroke({
+            color: "rgba(0, 0, 255, 1)",
+            width: 2,
+          }),
+          fill: new Fill({
+            color: "rgba(0, 0, 255, 0.2)",
+          }),
+        }),
       });
 
       draw.on("drawend", (event) => {
         const polygon = event.feature.getGeometry() as Polygon;
+
         const coordinates = polygon
           .getCoordinates()[0]
           .map((coord) => toLonLat(coord));
         const formattedCoordinates = coordinates
           .map((coord) => coord.join(" "))
           .join(",");
+
         onDrawEnd(formattedCoordinates);
       });
 
@@ -128,6 +179,34 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
 
     setIsDrawing(!isDrawing);
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery || !mapInstance.current) return;
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          searchQuery
+        )}`
+      );
+      const data = await response.json();
+
+      if (data.length > 0) {
+        const { lat, lon } = data[0];
+        const coordinates = fromLonLat([parseFloat(lon), parseFloat(lat)]);
+
+        mapInstance.current.getView().animate({
+          center: coordinates,
+          zoom: 14,
+        });
+      } else {
+        alert("Location not found. Please try a different query.");
+      }
+    } catch (error) {
+      console.error("Geocoding error:", error);
+      alert("Error searching for location. Please try again.");
+    }
   };
 
   const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
@@ -167,6 +246,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       setMapType(type);
     }
   };
+  
 
   return (
     <Box height="100%">
@@ -195,33 +275,137 @@ const MapComponent: React.FC<MapComponentProps> = ({
               <MenuItem value="hybrid">Hybrid</MenuItem>
             </Select>
           </FormControl>
+
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <TextField
+              variant="outlined"
+              size="small"
+              placeholder="Search Location (e.g., India)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              fullWidth
+            />
+            <Button
+              size="small"
+              variant="contained"
+              sx={{ backgroundColor: "green" }}
+              onClick={handleSearch}
+            >
+              Search
+            </Button>
+          </Box>
+
           <Tooltip
             title={
               !canManageLandmark
                 ? "You don't have permission, contact the admin"
                 : "click to Enable Drawing the landmark."
             }
-            placement="top-end"
+            placement="bottom"
           >
             <span
               style={{ cursor: !canManageLandmark ? "not-allowed" : "default" }}
             >
-              <Button
+             <Button
+                size="small"
                 color={isDrawing ? "secondary" : "primary"}
                 variant="contained"
                 onClick={toggleDrawing}
                 disabled={!canManageLandmark}
+                sx={{
+                  backgroundColor: !canManageLandmark
+                    ? "#6c87b7 !important" 
+                    : isDrawing
+                    ? "#a923d1  !important" 
+                    : "#3f51b5 !important", 
+                }}
               >
-                {isDrawing ? "Disable " : "Add Landmark"}
-              </Button>
+  {isDrawing ? "Disable Drawing" : "Add Landmark"}
+</Button>
+
             </span>
           </Tooltip>
         </Box>
+      </Box>
+
+      {/* Map Section */}
+      <Box ref={mapRef} width="100%" height="calc(100% - 128px)" flex={1} />
+
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: 1,
+          backgroundColor: "#f5f5f5",
+          borderRadius: 1,
+          marginTop: 1,
+        }}
+      >
         <Typography variant="body2">
           <strong>{mousePosition}</strong>
         </Typography>
+        {selectedLandmark && (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Tooltip
+              title={
+                !canManageLandmark
+                  ? "You don't have permission, contact the admin"
+                  : "click to Update the landmark."
+              }
+              placement="top-end"
+            >
+              <span
+                style={{
+                  cursor: !canManageLandmark ? "not-allowed" : "default",
+                }}
+              >
+                <Button
+                variant="contained"
+                color="success"
+                size="small"
+                onClick={onUpdateClick}
+                
+                disabled={!canManageLandmark}
+                sx={{
+                  "&.Mui-disabled": { 
+                    backgroundColor: "#81c784 !important", 
+                    color: "#ffffff99", 
+                  }
+                }}
+              >
+                Update Landmark
+              </Button>
+              </span>
+            </Tooltip>
+            
+            <Tooltip
+              title={
+                !canManageLandmark
+                  ? "You don't have permission, contact the admin"
+                  : "click to Delete the landmark."
+              }
+              placement="top-end"
+            >
+              <span
+                style={{
+                  cursor: !canManageLandmark ? "not-allowed" : "default",
+                }}
+              >
+                <Button
+                  variant="contained"
+                  size="small"
+                  color="error"
+                  onClick={onDeleteClick}
+                  disabled={!canManageLandmark}
+                >
+                  Delete
+                </Button>
+              </span>
+            </Tooltip>
+          </Box>
+        )}
       </Box>
-      <Box ref={mapRef} width="100%" height="600px" flex={1} />
     </Box>
   );
 };

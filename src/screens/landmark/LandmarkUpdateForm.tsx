@@ -3,6 +3,7 @@ import { TextField, Button, Box, Typography, MenuItem, CircularProgress } from "
 import { useAppDispatch } from "../../store/Hooks";
 import { landmarkUpdationApi, landmarkListApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
+import MapModal from "./MapModal";
 
 interface ILandmarkFormInputs {
   name: string;
@@ -15,6 +16,7 @@ interface ILandmarkUpdateFormProps {
   onClose: () => void;
   refreshList: (value: string) => void;
   landmarkId: number;
+  boundary?: string;
 }
 
 const statusOptions = [
@@ -32,10 +34,13 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
   onClose,
   refreshList,
   landmarkId,
+  boundary,
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [landmarkData, setLandmarkData] = useState<ILandmarkFormInputs | null>(null);
+  const [mapModalOpen, setMapModalOpen] = useState(false);
+  const [updatedBoundary, setUpdatedBoundary] = useState(boundary || "");
 
   const {
     register,
@@ -43,7 +48,16 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
     control,
     reset,
     formState: { errors },
-  } = useForm<ILandmarkFormInputs>();
+  } = useForm<ILandmarkFormInputs>({
+    defaultValues: {
+      boundary: boundary || "",
+    },
+  });
+
+  const handleSaveBoundary = (coordinates: string) => {
+    setUpdatedBoundary(coordinates);
+    setMapModalOpen(false);
+  };
 
   // Fetch landmark data on mount
   useEffect(() => {
@@ -52,15 +66,17 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
         setLoading(true);
         const landmarks = await dispatch(landmarkListApi()).unwrap();
         const landmark = landmarks.find((r: any) => r.id === landmarkId);
+        console.log("Landmark Data>>>>>>>>>>>>>>>:", landmark);
 
         if (landmark) {
           setLandmarkData(landmark);
           reset({
             name: landmark.name,
-            boundary: landmark.boundary,
+            boundary: boundary || landmark.boundary,
             status: landmark.status,
             importance: landmark.importance,
           });
+          setUpdatedBoundary(boundary || landmark.boundary);
         }
       } catch (error) {
         console.error("Error fetching landmark data:", error);
@@ -71,7 +87,7 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
     };
 
     fetchLandmarkData();
-  }, [landmarkId, dispatch, reset]);
+  }, [landmarkId, dispatch, reset, boundary]);
 
   // Handle Landmark Update
   const handleLandmarkUpdate: SubmitHandler<ILandmarkFormInputs> = async (data) => {
@@ -79,8 +95,9 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       setLoading(true);
 
       const formData = new FormData();
+      formData.append("id", landmarkId.toString());
       formData.append("name", data.name);
-      formData.append("boundary", data.boundary);
+      formData.append("boundary", data.boundary || updatedBoundary);
       formData.append("status", data.status);
       formData.append("importance", data.importance);
 
@@ -145,16 +162,20 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       <TextField
         label="Boundary"
         {...register("boundary", { required: "Boundary is required" })}
-        error={!!errors.boundary}
-        helperText={errors.boundary?.message}
-        variant="outlined"
-        size="small"
-        fullWidth
+        value={updatedBoundary}
         InputProps={{ readOnly: true }}
+        onClick={() => setMapModalOpen(true)}
+        fullWidth
       />
 
-      {/* Status Field */}
-      <Controller
+      <MapModal
+        open={mapModalOpen}
+        onClose={() => setMapModalOpen(false)}
+        initialBoundary={updatedBoundary}
+        onSave={handleSaveBoundary}
+      />
+
+<Controller
         name="status"
         control={control}
         render={({ field }) => (
@@ -200,7 +221,13 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       />
 
       {/* Submit Button */}
-      <Button type="submit" variant="contained" color="primary" fullWidth disabled={loading}>
+      <Button
+        type="submit"
+        variant="contained"
+        color="primary"
+        fullWidth
+        disabled={loading}
+      >
         {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Update Landmark"}
       </Button>
     </Box>
@@ -208,3 +235,4 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
 };
 
 export default LandmarkUpdateForm;
+
