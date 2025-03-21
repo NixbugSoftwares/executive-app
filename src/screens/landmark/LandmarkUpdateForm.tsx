@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { TextField, Button, Box, Typography, MenuItem, CircularProgress } from "@mui/material";
+import {
+  TextField,
+  Button,
+  Box,
+  Typography,
+  MenuItem,
+  CircularProgress,
+} from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
 import { landmarkUpdationApi, landmarkListApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
@@ -38,7 +45,9 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  const [landmarkData, setLandmarkData] = useState<ILandmarkFormInputs | null>(null);
+  const [landmarkData, setLandmarkData] = useState<ILandmarkFormInputs | null>(
+    null
+  );
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [updatedBoundary, setUpdatedBoundary] = useState(boundary || "");
 
@@ -90,7 +99,9 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
   }, [landmarkId, dispatch, reset, boundary]);
 
   // Handle Landmark Update
-  const handleLandmarkUpdate: SubmitHandler<ILandmarkFormInputs> = async (data) => {
+  const handleLandmarkUpdate: SubmitHandler<ILandmarkFormInputs> = async (
+    data
+  ) => {
     try {
       setLoading(true);
 
@@ -109,7 +120,9 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       });
 
       // Dispatch the update API
-      const response = await dispatch(landmarkUpdationApi({ landmarkId, formData })).unwrap();
+      const response = await dispatch(
+        landmarkUpdationApi({ landmarkId, formData })
+      ).unwrap();
       console.log("Landmark updated:", response);
       alert("Landmark updated successfully!");
       refreshList("refresh");
@@ -175,7 +188,7 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
         onSave={handleSaveBoundary}
       />
 
-<Controller
+      <Controller
         name="status"
         control={control}
         render={({ field }) => (
@@ -228,11 +241,14 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
         fullWidth
         disabled={loading}
       >
-        {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Update Landmark"}
+        {loading ? (
+          <CircularProgress size={24} sx={{ color: "white" }} />
+        ) : (
+          "Update Landmark"
+        )}
       </Button>
     </Box>
   );
 };
 
 export default LandmarkUpdateForm;
-

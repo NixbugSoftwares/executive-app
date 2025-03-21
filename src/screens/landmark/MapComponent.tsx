@@ -12,6 +12,7 @@ import {
   Box,
   Button,
   FormControl,
+  IconButton,
   InputLabel,
   MenuItem,
   Select,
@@ -24,6 +25,7 @@ import * as ol from "ol";
 import localStorageHelper from "../../utils/localStorageHelper";
 import { Coordinate } from "ol/coordinate";
 import { Style, Stroke, Fill } from "ol/style";
+import { Refresh } from "@mui/icons-material";
 // MapComponent.tsx
 interface Landmark {
   id: number;
@@ -60,7 +62,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const roleDetails = localStorageHelper.getItem("@roleDetails");
   const canManageLandmark = roleDetails?.manage_landmark || false;
   const [searchQuery, setSearchQuery] = useState<string>("");
-
+  const clearBoundaries = () => {
+    vectorSource.current.clear();
+  };
+  
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -294,37 +299,48 @@ const MapComponent: React.FC<MapComponentProps> = ({
               Search
             </Button>
           </Box>
-
+        { !selectedLandmark && (
           <Tooltip
-            title={
-              !canManageLandmark
-                ? "You don't have permission, contact the admin"
-                : "click to Enable Drawing the landmark."
-            }
-            placement="bottom"
+          title={
+            !canManageLandmark
+              ? "You don't have permission, contact the admin"
+              : "click to Enable Drawing the landmark."
+          }
+          placement="bottom"
+        >
+          <span
+            style={{ cursor: !canManageLandmark ? "not-allowed" : "default" }}
           >
-            <span
-              style={{ cursor: !canManageLandmark ? "not-allowed" : "default" }}
+           <Button
+              size="small"
+              color={isDrawing ? "secondary" : "primary"}
+              variant="contained"
+              onClick={toggleDrawing}
+              disabled={!canManageLandmark}
+              sx={{
+                backgroundColor: !canManageLandmark
+                  ? "#6c87b7 !important" 
+                  : isDrawing
+                  ? "#a923d1  !important" 
+                  : "#3f51b5 !important", 
+              }}
             >
-             <Button
-                size="small"
-                color={isDrawing ? "secondary" : "primary"}
-                variant="contained"
-                onClick={toggleDrawing}
-                disabled={!canManageLandmark}
-                sx={{
-                  backgroundColor: !canManageLandmark
-                    ? "#6c87b7 !important" 
-                    : isDrawing
-                    ? "#a923d1  !important" 
-                    : "#3f51b5 !important", 
-                }}
-              >
-  {isDrawing ? "Disable Drawing" : "Add Landmark"}
-</Button>
+                {isDrawing ? "Disable " : "Add Landmark"}
+            </Button>
 
-            </span>
-          </Tooltip>
+          </span>
+        </Tooltip>
+        )}
+          
+          
+          {!selectedLandmark && isDrawing && (
+        <Tooltip title="Clear Drawings" placement="bottom">
+          <IconButton color="warning" onClick={clearBoundaries}>
+            <Refresh />
+          </IconButton>
+        </Tooltip>
+      )}
+
         </Box>
       </Box>
 

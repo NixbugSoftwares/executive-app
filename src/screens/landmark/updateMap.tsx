@@ -3,14 +3,14 @@ import Map from "ol/Map";
 import View from "ol/View";
 import TileLayer from "ol/layer/Tile";
 import VectorLayer from "ol/layer/Vector";
-import { OSM } from "ol/source";
+import { OSM, XYZ } from "ol/source";
 import { Draw } from "ol/interaction";
 import { Polygon } from "ol/geom";
 import { fromLonLat, toLonLat } from "ol/proj";
 import { Vector as VectorSource } from "ol/source";
 import { Feature } from "ol";
 import { Style, Stroke, Fill } from "ol/style";
-import { Button, Box } from "@mui/material";
+import { Button, Box, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
 import { Coordinate } from "ol/coordinate";
 
 interface MapComponentProps {
@@ -22,26 +22,28 @@ interface MapComponentProps {
 const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSave, onClose }) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const vectorSource = useRef(new VectorSource());
+  const initialVectorSource = useRef(new VectorSource());
   const mapInstance = useRef<Map | null>(null);
   const drawInteraction = useRef<Draw | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [updatedCoordinates, setUpdatedCoordinates] = useState<string | null>(null);
+  const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">("osm");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Ensure the map container has dimensions
     if (mapRef.current.clientWidth === 0 || mapRef.current.clientHeight === 0) {
       console.error("Map container has no dimensions. Ensure it has width and height.");
       return;
     }
 
-    // Initialize the map
     const map = new Map({
       controls: [],
       layers: [
         new TileLayer({ source: new OSM() }),
-        new VectorLayer({ source: vectorSource.current }),
+        new VectorLayer({ source: initialVectorSource.current }), // Initial boundary layer
+        new VectorLayer({ source: vectorSource.current }), // Updated boundary layer
       ],
       target: mapRef.current,
       view: new View({
@@ -57,19 +59,19 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
     // Load initial boundary if provided and valid
     if (initialBoundary) {
       try {
-        console.log("Initial Boundary:", initialBoundary); 
+        console.log("Initial Boundary:", initialBoundary);
         const coordinatesString = initialBoundary
-          .replace("POLYGON ((", "") 
-          .replace("))", "") 
-          .split(",") 
-          .map((coord) => coord.trim().split(" ").map(Number)); 
+          .replace("POLYGON ((", "")
+          .replace("))", "")
+          .split(",")
+          .map((coord) => coord.trim().split(" ").map(Number));
 
-        console.log("Parsed Coordinates:", coordinatesString); 
+        console.log("Parsed Coordinates:", coordinatesString);
         const coordinates = coordinatesString.map((coord) => fromLonLat(coord));
         if (coordinates.length >= 3) {
           const polygon = new Polygon([coordinates]);
-          vectorSource.current.clear();
-          vectorSource.current.addFeature(new Feature(polygon));
+          initialVectorSource.current.clear();
+          initialVectorSource.current.addFeature(new Feature(polygon));
 
           const extent = polygon.getExtent();
           map.getView().fit(extent, {
@@ -84,14 +86,16 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
       }
     }
 
-    // Cleanup on unmount
     return () => {
-      map.setTarget(undefined); // Remove the map from the DOM
+      map.setTarget(undefined);
     };
   }, [initialBoundary]);
 
   const startDrawing = () => {
     if (!mapInstance.current) return;
+
+    // Remove previous updated boundary before starting a new one
+    vectorSource.current.clear();
 
     const draw = new Draw({
       source: vectorSource.current,
@@ -104,6 +108,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
         const coords = coordinates as Coordinate[];
         const start = coords[0];
         const end = coords[1];
+
         const minX = Math.min(start[0], end[0]);
         const maxX = Math.max(start[0], end[0]);
         const minY = Math.min(start[1], end[1]);
@@ -115,7 +120,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
             [maxX, minY],
             [maxX, maxY],
             [minX, maxY],
-            [minX, minY], 
+            [minX, minY],
           ],
         ]);
 
@@ -123,16 +128,18 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
       },
       style: new Style({
         stroke: new Stroke({
-          color: "rgba(0, 0, 255, 1)",
+          color: "rgb(249, 11, 11)",
           width: 2,
         }),
         fill: new Fill({
-          color: "rgba(0, 0, 255, 0.2)",
+          color: "rgba(200, 83, 83, 0.35)", 
         }),
       }),
     });
 
     draw.on("drawend", (event) => {
+      vectorSource.current.clear(); 
+
       const polygon = event.feature.getGeometry() as Polygon;
 
       const coordinates = polygon
@@ -143,7 +150,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
         .join(",");
 
       const wktCoordinates = `POLYGON ((${formattedCoordinates}))`;
-      console.log("Updated WKT Coordinates:", wktCoordinates); 
+      console.log("Updated WKT Coordinates:", wktCoordinates);
       setUpdatedCoordinates(wktCoordinates);
       setIsDrawing(false);
     });
@@ -160,32 +167,155 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
     }
   };
 
+  const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
+    if (!mapInstance.current) return;
+
+    const baseLayer = mapInstance.current
+      .getLayers()
+      .getArray()
+      .find((layer) => layer instanceof TileLayer) as TileLayer;
+
+    if (baseLayer) {
+      switch (type) {
+        case "osm":
+          baseLayer.setSource(new OSM());
+          break;
+        case "satellite":
+          baseLayer.setSource(
+            new XYZ({
+              url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            })
+          );
+          break;
+        case "hybrid":
+          baseLayer.setSource(
+            new XYZ({
+              url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            })
+          );
+          const labelLayer = new TileLayer({
+            source: new XYZ({
+              url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+            }),
+          });
+          mapInstance.current.addLayer(labelLayer);
+          break;
+      }
+      setMapType(type);
+    }
+  };
+
+  const handleSearch = async () => {
+      if (!searchQuery || !mapInstance.current) return;
+  
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+            searchQuery
+          )}`
+        );
+        const data = await response.json();
+  
+        if (data.length > 0) {
+          const { lat, lon } = data[0];
+          const coordinates = fromLonLat([parseFloat(lon), parseFloat(lat)]);
+  
+          mapInstance.current.getView().animate({
+            center: coordinates,
+            zoom: 14,
+          });
+        } else {
+          alert("Location not found. Please try a different query.");
+        }
+      } catch (error) {
+        console.error("Geocoding error:", error);
+        alert("Error searching for location. Please try again.");
+      }
+    };
+
+  
+
   return (
-    <div>
-      <div
-        ref={mapRef}
-        style={{ width: "100%", height: "500px", minHeight: "500px" }}
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, p: 2 }}>
+    {/* Search & Map Type Section */}
+    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+      <FormControl variant="outlined" size="small" sx={{ minWidth: 150 }}>
+        <InputLabel>Map Type</InputLabel>
+        <Select
+          value={mapType}
+          onChange={(e) =>
+            changeMapType(e.target.value as "osm" | "satellite" | "hybrid")
+          }
+          label="Map Type"
+        >
+          <MenuItem value="osm">OSM</MenuItem>
+          <MenuItem value="satellite">Satellite</MenuItem>
+          <MenuItem value="hybrid">Hybrid</MenuItem>
+        </Select>
+      </FormControl>
+  
+      <TextField
+        variant="outlined"
+        size="small"
+        placeholder="Search Location (e.g., India)"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        sx={{ flex: 1 }}
       />
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={startDrawing}
-          disabled={isDrawing}
-        >
-          {isDrawing ? "Drawing..." : "Draw Updated Boundary"}
-        </Button>
-        <Button
-          variant="contained"
-          color="secondary"
-          onClick={handleConfirm}
-          disabled={!updatedCoordinates}
-          sx={{ ml: 2 }}
-        >
-          Confirm
-        </Button>
-      </Box>
-    </div>
+  
+      <Button
+        size="small"
+        variant="contained"
+        sx={{ backgroundColor: "green", whiteSpace: "nowrap" }}
+        onClick={handleSearch}
+      >
+        Search
+      </Button>
+    </Box>
+  
+    {/* Map Section */}
+    <Box
+      ref={mapRef}
+      sx={{
+        width: "100%",
+        height: "400px",
+        minHeight: "400px",
+        borderRadius: 2,
+        overflow: "hidden",
+        boxShadow: 3,
+      }}
+    />
+  
+    {/* Buttons Section */}
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        mt: 2,
+        flexWrap: "wrap",
+      }}
+    >
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={startDrawing}
+        disabled={isDrawing}
+      >
+        {isDrawing ? "Drawing..." : "Draw New Boundary"}
+      </Button>
+  
+      <Button
+        variant="contained"
+        color="secondary"
+        onClick={handleConfirm}
+        disabled={!updatedCoordinates}
+      >
+        Confirm
+      </Button>
+    </Box>
+  </Box>
+  
   );
 };
 

@@ -271,8 +271,8 @@ const LandmarkListing = () => {
                       color="warning"
                       size="small"
                       sx={{
-                        backgroundColor: isSelected ? "#FFE082" : "#FFF3E0",
-                        color: isSelected ? "#FFA000" : "#FFA000",
+                        backgroundColor: isSelected ? "#edd18f" : "#FFE082",
+                        color: isSelected ? "#9f3b03" : "#9f3b03",
                       }}
                     />
                   )}
@@ -298,7 +298,7 @@ const LandmarkListing = () => {
                       color="warning"
                       size="small"
                       sx={{
-                        backgroundColor: isSelected ? "#FFE082" : "#edd18f",
+                        backgroundColor: isSelected ? "#edd18f" : "#FFE082",
                         color: isSelected ? "#9f3b03" : "#9f3b03",
                       }}
                     />
@@ -452,7 +452,7 @@ const LandmarkListing = () => {
         open={openUpdateModal}
         onClose={() => setOpenUpdateModal(false)}
         maxWidth="sm"
-        fullWidth
+       
       >
         <DialogContent>
           {selectedLandmark && (

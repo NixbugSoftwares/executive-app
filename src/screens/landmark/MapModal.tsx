@@ -16,7 +16,7 @@ const MapModal: React.FC<MapModalProps> = ({ open, onClose, initialBoundary, onS
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md"  fullWidth>
       <DialogContent>
         <UpdateMapComponent initialBoundary={initialBoundary} onSave={handleSave} onClose={function (): void {
           throw new Error("Function not implemented.");
