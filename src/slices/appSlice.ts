@@ -57,6 +57,39 @@ export const logoutApi = createAsyncThunk(
   }
 );
 
+//loggedinuser api
+
+export const loggedinuserAPI  = createAsyncThunk(
+  "/executive/account",
+  async (executive_id: number, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "/executive/account",
+        { executive_id },
+        true,
+        "application/json"
+      );
+      console.log("Full API Response==================>", response);
+
+      // Check if response is directly an array
+      if (Array.isArray(response)) {
+        return response;
+      }
+
+      // Check if response.data exists
+      if (!response || !response.data) {
+        throw new Error("Invalid response format");
+      }
+
+      return response.data; // Ensure correct return
+    } catch (error: any) {
+      console.log("Error fetching accounts=====================>", error);
+      return rejectWithValue(error?.response?.data?.message || "Failed to fetch accounts");
+    }
+  }
+);
+
 
 //***************************************************************Executive Account APIS***********************************************************************
 //Account creation API

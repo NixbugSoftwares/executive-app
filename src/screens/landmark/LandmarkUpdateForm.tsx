@@ -11,6 +11,7 @@ import { useAppDispatch } from "../../store/Hooks";
 import { landmarkUpdationApi, landmarkListApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import MapModal from "./MapModal";
+import {  showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
 
 interface ILandmarkFormInputs {
   name: string;
@@ -89,7 +90,7 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
         }
       } catch (error) {
         console.error("Error fetching landmark data:", error);
-        alert("Failed to fetch landmark data. Please try again.");
+        showErrorToast("Failed to fetch landmark data. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -124,12 +125,12 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
         landmarkUpdationApi({ landmarkId, formData })
       ).unwrap();
       console.log("Landmark updated:", response);
-      alert("Landmark updated successfully!");
+      showSuccessToast("Landmark updated successfully!");
       refreshList("refresh");
       onClose();
     } catch (error) {
       console.error("Error updating landmark:", error);
-      alert("Failed to update landmark. Please try again.");
+      showErrorToast("Failed to update landmark. Please try again.");
     } finally {
       setLoading(false);
     }

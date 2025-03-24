@@ -7,7 +7,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   TextField,
   Box,
   Button,
@@ -18,6 +17,7 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
+import ErrorIcon  from '@mui/icons-material/Error';
 import { SelectChangeEvent } from "@mui/material";
 import { useDispatch } from "react-redux";
 import { accountListApi } from "../../slices/appSlice";
@@ -54,7 +54,7 @@ const AccountListingTable = () => {
   });
 
   const [page, setPage] = useState(0);
-  const rowsPerPage = selectedAccount ? 8 : 8;
+  const rowsPerPage = selectedAccount ? 10 : 10;
 
   const [openCreateModal, setOpenCreateModal] = useState(false);
 
@@ -71,7 +71,7 @@ const AccountListingTable = () => {
         // Transform API data to match expected structure
         const formattedAccounts = res.map((account: any) => ({
           id: account.id,
-          fullName: account.full_name ?? "-",
+          fullName: account.full_name,
           username: account.username,
           password: "",
           gender:
@@ -82,9 +82,9 @@ const AccountListingTable = () => {
               : account.gender === 3
               ? "Transgender"
               : "Other",
-          designation: account.designation ?? "-",
-          email: account.email_id ?? "-",
-          phoneNumber: account.phone_number ?? "-",
+          designation: account.designation,
+          email: account.email_id,
+          phoneNumber: account.phone_number ?? "",
           status: account.status === 1 ? "Active" : "Suspended",
         }));
 
@@ -106,6 +106,10 @@ const AccountListingTable = () => {
 
   const handleRowClick = (account: Account) => {
     setSelectedAccount(account);
+  };
+
+  const handleCloseDetailCard = () => {
+    setSelectedAccount(null); 
   };
 
   const handleSearchChange = (
@@ -155,6 +159,7 @@ const AccountListingTable = () => {
       fetchAccounts();
     }
   };
+
   return (
     <Box
       sx={{
@@ -166,14 +171,15 @@ const AccountListingTable = () => {
       }}
     >
       <Box
-        sx={{
-          flex: selectedAccount
-            ? { xs: "0 0 100%", md: "0 0 65%" }
-            : "0 0 100%",
-          maxWidth: selectedAccount ? { xs: "100%", md: "65%" } : "100%",
-          transition: "all 0.3s ease",
-          overflowY: selectedAccount ? "auto" : "hidden",
-        }}
+       sx={{
+        flex: selectedAccount ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
+        maxWidth: selectedAccount ? { xs: "100%", md: "65%" } : "100%",
+        transition: "all 0.3s ease",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden", // Prevent nested scrolling
+      }}
       >
         <Tooltip
           title={
@@ -210,12 +216,24 @@ const AccountListingTable = () => {
           </span>
         </Tooltip>
 
-        <TableContainer component={Paper}>
+        <TableContainer  sx={{
+          flex: 1,
+    maxHeight: "calc(100vh - 100px)", 
+    overflowY: "hidden",
+  }} >
           <Table>
             <TableHead>
               <TableRow>
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>ID</b>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedAccount ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    ID
+                  </b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -225,7 +243,7 @@ const AccountListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedAccount ? "0.8rem" : "1rem",
@@ -239,7 +257,13 @@ const AccountListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedAccount ? "0.8rem" : "1rem",
+                    }}
+                  >
                     Full Name
                   </b>
                   <TextField
@@ -251,7 +275,7 @@ const AccountListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedAccount ? "0.8rem" : "1rem",
@@ -265,7 +289,13 @@ const AccountListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedAccount ? "0.8rem" : "1rem",
+                    }}
+                  >
                     Designation
                   </b>
                   <TextField
@@ -277,7 +307,7 @@ const AccountListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedAccount ? "0.8rem" : "1rem",
@@ -291,7 +321,15 @@ const AccountListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>Phone</b>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedAccount ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    Phone
+                  </b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -301,7 +339,7 @@ const AccountListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedAccount ? "0.8rem" : "1rem",
@@ -315,7 +353,15 @@ const AccountListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>Email</b>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedAccount ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    Email
+                  </b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -325,7 +371,7 @@ const AccountListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedAccount ? "0.8rem" : "1rem",
@@ -339,7 +385,13 @@ const AccountListingTable = () => {
                 </TableCell>
 
                 <TableCell size="small">
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedAccount ? "0.8rem" : "1rem" }}>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedAccount ? "0.8rem" : "1rem",
+                    }}
+                  >
                     Gender
                   </b>
                   <FormControl fullWidth size="small">
@@ -347,17 +399,16 @@ const AccountListingTable = () => {
                       value={search.gender}
                       onChange={handleSelectChange}
                       displayEmpty
-                      size="small"
                       sx={{
-                        textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
                         "& .MuiInputBase-root": {
                           height: 30,
                           padding: "4px",
                           textAlign: "center",
+                          fontSize: selectedAccount ? "0.8rem" : "1rem",
                         },
-                        "& .MuiSelect-icon": {
-                          fontSize: selectedAccount ? "1rem" : "1.25rem",
+                        "& .MuiInputBase-input": {
+                          textAlign: "center",
+                          fontSize: selectedAccount ? "0.8rem" : "1rem",
                         },
                       }}
                     >
@@ -407,12 +458,42 @@ const AccountListingTable = () => {
                         }}
                       >
                         <TableCell>{row.id}</TableCell>
-                        <TableCell>{row.fullName}</TableCell>
-                        <TableCell>{row.designation}</TableCell>
                         <TableCell>
-                          {row.phoneNumber.replace("tel:", "")}
+                          {row.fullName ? (
+                            row.fullName
+                          ) : (
+                            <Tooltip title=" Full Name not added yet" placement="bottom">
+                              <ErrorIcon  sx={{ color: "#737d72 " }} />
+                            </Tooltip>
+                          )}
                         </TableCell>
-                        <TableCell>{row.email}</TableCell>
+                        <TableCell>
+                          {row.designation ? (
+                            row.designation
+                          ) : (
+                            <Tooltip title=" Designation not added yet" placement="bottom">
+                              <ErrorIcon  sx={{ color: "#737d72 " }} />
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {row.phoneNumber ? (
+                            row.phoneNumber.replace("tel:", "")
+                          ) : (
+                            <Tooltip title=" Phone Number not added yet" placement="bottom">
+                              <ErrorIcon  sx={{ color: "#737d72" }} />
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {row.email ? (
+                            row.email
+                          ) : (
+                            <Tooltip title=" Email not added yet" placement="bottom">
+                              <ErrorIcon  sx={{ color: "#737d72 " }} />
+                            </Tooltip>
+                          )}
+                        </TableCell>
                         <TableCell>{row.gender}</TableCell>
                       </TableRow>
                     );
@@ -430,60 +511,65 @@ const AccountListingTable = () => {
 
         {/* Pagination */}
         <Box
-          sx={{
-            display: "flex",
-            justifyContent: "right",
-            alignItems: "right",
-            gap: 1,
-            mt: 1,
-            mr: 20,
-          }}
-        >
-          <Button
-            onClick={() => handleChangePage(null, page - 1)}
-            disabled={page === 0}
-            sx={{ padding: "5px 10px", minWidth: 40 }}
-          >
-            &lt;
-          </Button>
-          {Array.from(
-            { length: Math.ceil(filteredData.length / rowsPerPage) },
-            (_, index) => index
-          )
-            .slice(
-              Math.max(0, page - 1),
-              Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
-            )
-            .map((pageNumber) => (
-              <Button
-                key={pageNumber}
-                onClick={() => handleChangePage(null, pageNumber)}
-                sx={{
-                  padding: "5px 10px",
-                  minWidth: 40,
-                  bgcolor:
-                    page === pageNumber
-                      ? "rgba(21, 101, 192, 0.2)"
-                      : "transparent",
-                  fontWeight: page === pageNumber ? "bold" : "normal",
-                  borderRadius: "5px",
-                  transition: "all 0.3s",
-                  "&:hover": {
-                    bgcolor: "rgba(21, 101, 192, 0.3)",
-                  },
-                }}
-              >
-                {pageNumber + 1}
-              </Button>
-            ))}
-          <Button
-            onClick={() => handleChangePage(null, page + 1)}
-            disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
-            sx={{ padding: "5px 10px", minWidth: 40 }}
-          >
-            &gt;
-          </Button>
-        </Box>
+  sx={{
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 1,
+    mt: 2,
+    position: "sticky",
+    bottom: 0,
+    backgroundColor: "white",
+    zIndex: 1,
+    p: 1,
+    borderTop: "1px solid #e0e0e0",
+  }}
+>
+  <Button
+    onClick={() => handleChangePage(null, page - 1)}
+    disabled={page === 0}
+    sx={{ padding: "5px 10px", minWidth: 40 }}
+  >
+    &lt;
+  </Button>
+  {Array.from(
+    { length: Math.ceil(filteredData.length / rowsPerPage) },
+    (_, index) => index
+  )
+    .slice(
+      Math.max(0, page - 1),
+      Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
+    )
+    .map((pageNumber) => (
+      <Button
+        key={pageNumber}
+        onClick={() => handleChangePage(null, pageNumber)}
+        sx={{
+          padding: "5px 10px",
+          minWidth: 40,
+          bgcolor:
+            page === pageNumber
+              ? "rgba(21, 101, 192, 0.2)"
+              : "transparent",
+          fontWeight: page === pageNumber ? "bold" : "normal",
+          borderRadius: "5px",
+          transition: "all 0.3s",
+          "&:hover": {
+            bgcolor: "rgba(21, 101, 192, 0.3)",
+          },
+        }}
+      >
+        {pageNumber + 1}
+      </Button>
+    ))}
+  <Button
+    onClick={() => handleChangePage(null, page + 1)}
+    disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
+    sx={{ padding: "5px 10px", minWidth: 40 }}
+  >
+    &gt;
+  </Button>
+</Box>
       </Box>
 
       {/* Right Side - Account Details Card */}
@@ -508,6 +594,7 @@ const AccountListingTable = () => {
             onBack={() => setSelectedAccount(null)}
             refreshList={(value: any) => refreshList(value)}
             canManageExecutive={canManageExecutive}
+            onCloseDetailCard={handleCloseDetailCard} 
           />
         </Box>
       )}

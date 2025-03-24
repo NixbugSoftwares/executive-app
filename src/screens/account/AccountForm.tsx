@@ -7,7 +7,7 @@ import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { useAppDispatch } from "../../store/Hooks";
 import { accountCreationApi, roleListApi, roleAssignApi } from "../../slices/appSlice";
-
+import {  showSuccessToast } from "../../common/toastMessageHelper";
 // Account creation form interface
 interface IAccountFormInputs {
   username: string;
@@ -77,13 +77,13 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({ onClose, ref
   const handleAccountCreation: SubmitHandler<IAccountFormInputs> = async (data) => {
     try {
       setLoading(true);
-
+  
       // Prepare form data for account creation
       const formData = new FormData();
       formData.append("username", data.username);
       formData.append("password", data.password);
       formData.append("gender", data.gender?.toString() || "");
-
+  
       if (data.fullName) {
         formData.append("full_name", data.fullName);
       }
@@ -96,39 +96,39 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({ onClose, ref
       if (data.designation) {
         formData.append("designation", data.designation);
       }
-
+  
       // Step 1: Create account
       const accountResponse = await dispatch(accountCreationApi(formData)).unwrap();
-
+  
       if (accountResponse?.id) {
-        // Step 2: Assign role
+        // Step 2: Assign role to the created account
         const roleResponse = await dispatch(
           roleAssignApi({ executive_id: accountResponse.id, role_id: data.role })
         ).unwrap();
-
+  
         if (roleResponse?.id && roleResponse?.role_id) {
           // Store the role assignment ID in the account object or state
           const updatedAccount = {
             ...accountResponse,
             roleAssignmentId: roleResponse.id, // Store the role assignment ID
           };
-
-          console.log("Role Assignment ID>>>>>>>>>>>>>>>>>>>:", updatedAccount);
-
-          alert("Account and role assigned successfully!");
+  
+          console.log("Role Assignment ID:", updatedAccount);
+  
+          showSuccessToast("Account and role assigned successfully!");
           refreshList('refresh');
           onClose();
         } else {
           console.error("Role assignment failed:", roleResponse);
-          alert("Account created, but role assignment failed!");
+          throw new Error("Account created, but role assignment failed!");
         }
       } else {
         console.error("Unexpected account creation response:", accountResponse);
-        alert("Account creation failed!");
+        throw new Error("Account creation failed!");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error during account creation:", error);
-      alert("Something went wrong. Please try again.");
+      throw error;
     } finally {
       setLoading(false);
     }

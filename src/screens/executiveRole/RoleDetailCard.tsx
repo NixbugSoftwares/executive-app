@@ -5,6 +5,7 @@ import { useAppDispatch } from "../../store/Hooks";
 import { roleDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import RoleUpdateForm from "./RoleUpdate";
+import {  showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
 interface RoleCardProps {
   role: {
     id: number;
@@ -24,9 +25,10 @@ interface RoleCardProps {
   onDelete: (id: number) => void; 
   refreshList: (value:any)=>void;
   canManageRole: boolean;
+  handleCloseDetailCard: () => void
 }
 
-const RoleDetailsCard: React.FC<RoleCardProps> = ({ role, onBack, onDelete, refreshList,canManageRole }) => {
+const RoleDetailsCard: React.FC<RoleCardProps> = ({ role, onBack, onDelete, refreshList,canManageRole, handleCloseDetailCard }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
 
@@ -51,9 +53,10 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({ role, onBack, onDelete, refr
         setDeleteConfirmOpen(false);
         localStorageHelper.removeStoredItem(`role_${role.id}`);
         onDelete(role.id);
+        showSuccessToast("Role deleted successfully!");
         refreshList('refresh');
       } catch (error) {
-        console.error("Delete error:", error);
+        showErrorToast("Failed to delete role. Please try again.");
       }
     };
 
@@ -176,6 +179,7 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({ role, onBack, onDelete, refr
             refreshList={(value:any)=>refreshList(value)}
             roleId={role.id} 
             onClose={() => setUpdateFormOpen(false)} 
+            handleCloseDetailCard={handleCloseDetailCard}
           />
         </DialogContent>
       </Dialog>

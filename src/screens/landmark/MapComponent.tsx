@@ -11,7 +11,9 @@ import { Vector as VectorSource } from "ol/source";
 import {
   Box,
   Button,
+  Checkbox,
   FormControl,
+  FormControlLabel,
   IconButton,
   InputLabel,
   MenuItem,
@@ -26,6 +28,9 @@ import localStorageHelper from "../../utils/localStorageHelper";
 import { Coordinate } from "ol/coordinate";
 import { Style, Stroke, Fill } from "ol/style";
 import { Refresh } from "@mui/icons-material";
+import { getArea } from "ol/sphere";
+import { showErrorToast } from "../../common/toastMessageHelper";
+
 // MapComponent.tsx
 interface Landmark {
   id: number;
@@ -41,6 +46,10 @@ interface MapComponentProps {
   selectedLandmark?: Landmark | null;
   onUpdateClick: () => void;
   onDeleteClick: () => void;
+  handleCloseRowClick: () => void;
+  clearBoundaries: () => void;
+  vectorSource: React.MutableRefObject<VectorSource>;
+  landmarks?: Landmark[];
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
@@ -50,6 +59,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   selectedLandmark,
   onUpdateClick,
   onDeleteClick,
+  handleCloseRowClick,
+  landmarks,
 }) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const vectorSource = useRef(new VectorSource());
@@ -58,14 +69,20 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [isDrawing, setIsDrawing] = useState(false);
   const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">("osm");
   const [mousePosition, setMousePosition] = useState<string>("");
+  const [drawingArea, setDrawingArea] = useState<string>("");
   const navigate = useNavigate();
   const roleDetails = localStorageHelper.getItem("@roleDetails");
   const canManageLandmark = roleDetails?.manage_landmark || false;
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [showAllBoundaries, setShowAllBoundaries] = useState(false);
+
   const clearBoundaries = () => {
     vectorSource.current.clear();
+    setDrawingArea("");
+    setShowAllBoundaries(false);
   };
-  
+
+  // ********************************Initialize the map********************************
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -119,6 +136,118 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   }, [selectedBoundary]);
 
+  // ************************ shwo exsting booundaries **************************************
+  useEffect(() => {
+    if (!mapInstance.current) return;
+
+    // Always clear existing boundaries first
+    vectorSource.current.clear();
+
+    // Show selected boundary if one is selected
+    if (selectedBoundary) {
+      const coordinates = selectedBoundary
+        .split(",")
+        .map((coord) => coord.trim().split(" ").map(Number))
+        .map((coord) => fromLonLat(coord));
+
+      const polygon = new Polygon([coordinates]);
+      const feature = new ol.Feature(polygon);
+
+      feature.setStyle(
+        new Style({
+          stroke: new Stroke({
+            color: "rgb(255, 149, 0)",
+            width: 3,
+          }),
+          fill: new Fill({
+            color: "rgba(221, 201, 75, 0.3)",
+          }),
+        })
+      );
+
+      vectorSource.current.addFeature(feature);
+
+      // Fit view to the selected boundary
+      const extent = polygon.getExtent();
+      mapInstance.current.getView().fit(extent, {
+        padding: [50, 50, 50, 50],
+        duration: 1000,
+      });
+    }
+
+    // Show all boundaries if checkbox is checked and no specific boundary is selected
+    if (showAllBoundaries && landmarks && !selectedBoundary) {
+      landmarks.forEach((landmark) => {
+        if (landmark.boundary) {
+          const coordinates = landmark.boundary
+            .split(",")
+            .map((coord) => coord.trim().split(" ").map(Number))
+            .map((coord) => fromLonLat(coord));
+
+          const polygon = new Polygon([coordinates]);
+          const feature = new ol.Feature(polygon);
+
+          feature.setStyle(
+            new Style({
+              stroke: new Stroke({
+                color: "rgba(0, 0, 255, 0.7)",
+                width: 2,
+              }),
+              fill: new Fill({
+                color: "rgba(0, 0, 255, 0.1)",
+              }),
+            })
+          );
+
+          vectorSource.current.addFeature(feature);
+        }
+      });
+    }
+  }, [showAllBoundaries, landmarks, selectedBoundary, selectedLandmark]);
+
+  //**************************************** Check for Overlaps *************************
+  const checkForOverlaps = (newPolygon: Polygon): boolean => {
+    if (!landmarks || landmarks.length === 0) return false;
+
+    const newCoords = newPolygon.getCoordinates()[0];
+
+    for (const landmark of landmarks) {
+      if (!landmark.boundary) continue;
+
+      try {
+        const existingCoords = landmark.boundary
+          .split(",")
+          .map((coord) => coord.trim().split(" ").map(Number))
+          .map((coord) => fromLonLat(coord));
+
+        const existingPolygon = new Polygon([existingCoords]);
+
+        // Check if any point of new polygon is inside existing polygon
+        for (const coord of newCoords) {
+          if (existingPolygon.intersectsCoordinate(coord)) {
+            return true;
+          }
+        }
+
+        // Check if any point of existing polygon is inside new polygon
+        for (const coord of existingPolygon.getCoordinates()[0]) {
+          if (newPolygon.intersectsCoordinate(coord)) {
+            return true;
+          }
+        }
+      } catch (error) {
+        console.error(
+          "Error checking overlap with landmark",
+          landmark.id,
+          error
+        );
+      }
+    }
+
+    return false;
+  };
+
+  //**************************************** Function to toggle drawing *************************
   const toggleDrawing = () => {
     if (!mapInstance.current) return;
 
@@ -126,6 +255,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       if (drawInteraction.current) {
         mapInstance.current.removeInteraction(drawInteraction.current);
       }
+      setDrawingArea("");
     } else {
       const draw = new Draw({
         source: vectorSource.current,
@@ -153,6 +283,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
             ],
           ]);
 
+          // Calculate area
+          const area = getArea(geometry);
+          setDrawingArea(`${(area / 1000000).toFixed(2)} km²`);
+
           return geometry;
         },
         style: new Style({
@@ -168,6 +302,24 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       draw.on("drawend", (event) => {
         const polygon = event.feature.getGeometry() as Polygon;
+
+        // Validate area
+        const area = getArea(polygon);
+        if (area < 2 || area > 5000000) {
+          showErrorToast("Area must be between 2 m² and 5 km².");
+          vectorSource.current.clear();
+          setDrawingArea("");
+          return;
+        }
+
+        if (checkForOverlaps(polygon)) {
+          showErrorToast(
+            "Boundary overlaps with an existing landmark. Please choose a different area."
+          );
+          vectorSource.current.clear();
+          setDrawingArea("");
+          return;
+        }
 
         const coordinates = polygon
           .getCoordinates()[0]
@@ -186,6 +338,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setIsDrawing(!isDrawing);
   };
 
+  //********************************************** search location *********************************** */
   const handleSearch = async () => {
     if (!searchQuery || !mapInstance.current) return;
 
@@ -206,14 +359,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
           zoom: 14,
         });
       } else {
-        alert("Location not found. Please try a different query.");
+        showErrorToast("Location not found. Please try a different query.");
       }
     } catch (error) {
       console.error("Geocoding error:", error);
-      alert("Error searching for location. Please try again.");
+      showErrorToast("Error searching for location. Please try again.");
     }
   };
 
+  //********************************************** map types *********************************** */
   const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
     if (!mapInstance.current) return;
 
@@ -251,7 +405,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       setMapType(type);
     }
   };
-  
 
   return (
     <Box height="100%">
@@ -299,48 +452,50 @@ const MapComponent: React.FC<MapComponentProps> = ({
               Search
             </Button>
           </Box>
-        { !selectedLandmark && (
-          <Tooltip
-          title={
-            !canManageLandmark
-              ? "You don't have permission, contact the admin"
-              : "click to Enable Drawing the landmark."
-          }
-          placement="bottom"
-        >
-          <span
-            style={{ cursor: !canManageLandmark ? "not-allowed" : "default" }}
-          >
-           <Button
-              size="small"
-              color={isDrawing ? "secondary" : "primary"}
-              variant="contained"
-              onClick={toggleDrawing}
-              disabled={!canManageLandmark}
-              sx={{
-                backgroundColor: !canManageLandmark
-                  ? "#6c87b7 !important" 
-                  : isDrawing
-                  ? "#a923d1  !important" 
-                  : "#3f51b5 !important", 
-              }}
+          {!selectedLandmark && (
+            <Tooltip
+              title={
+                !canManageLandmark
+                  ? "You don't have permission, contact the admin"
+                  : "click to Enable Drawing the landmark."
+              }
+              placement="bottom"
             >
-                {isDrawing ? "Disable " : "Add Landmark"}
-            </Button>
+              <span
+                style={{
+                  cursor: !canManageLandmark ? "not-allowed" : "default",
+                }}
+              >
+                <Button
+                  size="small"
+                  color={isDrawing ? "secondary" : "primary"}
+                  variant="contained"
+                  onClick={toggleDrawing}
+                  disabled={!canManageLandmark}
+                  sx={{
+                    backgroundColor: !canManageLandmark
+                      ? "#6c87b7 !important"
+                      : isDrawing
+                      ? "#a923d1  !important"
+                      : "#3f51b5 !important",
+                  }}
+                >
+                  {isDrawing ? "Disable " : "Add Landmark"}
+                </Button>
+              </span>
+            </Tooltip>
+          )}
 
-          </span>
-        </Tooltip>
-        )}
-          
-          
           {!selectedLandmark && isDrawing && (
-        <Tooltip title="Clear Drawings" placement="bottom">
-          <IconButton color="warning" onClick={clearBoundaries}>
-            <Refresh />
-          </IconButton>
-        </Tooltip>
-      )}
-
+            <Box>
+              {" "}
+              <Tooltip title="Clear Drawings" placement="bottom">
+                <IconButton color="warning" onClick={clearBoundaries}>
+                  <Refresh />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
         </Box>
       </Box>
 
@@ -358,11 +513,44 @@ const MapComponent: React.FC<MapComponentProps> = ({
           marginTop: 1,
         }}
       >
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={showAllBoundaries}
+              onChange={(e) => {
+                setShowAllBoundaries(e.target.checked);
+                if (e.target.checked && selectedBoundary) {
+                  handleCloseRowClick();
+                }
+              }}
+              color="primary"
+              disabled={!!selectedBoundary} 
+            />
+          }
+          label="Show All Boundaries"
+          sx={{ ml: 1 }}
+        />
         <Typography variant="body2">
           <strong>{mousePosition}</strong>
         </Typography>
+        {isDrawing && (
+          <Typography variant="body2">
+            <strong>Area: {drawingArea}</strong>
+          </Typography>
+        )}
         {selectedLandmark && (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              size="small"
+              onClick={() => {
+                handleCloseRowClick();
+                clearBoundaries();
+              }}
+            >
+              Back
+            </Button>
             <Tooltip
               title={
                 !canManageLandmark
@@ -377,24 +565,23 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 }}
               >
                 <Button
-                variant="contained"
-                color="success"
-                size="small"
-                onClick={onUpdateClick}
-                
-                disabled={!canManageLandmark}
-                sx={{
-                  "&.Mui-disabled": { 
-                    backgroundColor: "#81c784 !important", 
-                    color: "#ffffff99", 
-                  }
-                }}
-              >
-                Update Landmark
-              </Button>
+                  variant="contained"
+                  color="success"
+                  size="small"
+                  onClick={onUpdateClick}
+                  disabled={!canManageLandmark}
+                  sx={{
+                    "&.Mui-disabled": {
+                      backgroundColor: "#81c784 !important",
+                      color: "#ffffff99",
+                    },
+                  }}
+                >
+                  Update
+                </Button>
               </span>
             </Tooltip>
-            
+
             <Tooltip
               title={
                 !canManageLandmark

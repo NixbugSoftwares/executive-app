@@ -10,16 +10,23 @@ import { fromLonLat, toLonLat } from "ol/proj";
 import { Vector as VectorSource } from "ol/source";
 import { Feature } from "ol";
 import { Style, Stroke, Fill } from "ol/style";
-import { Button, Box, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+import { Button, Box, FormControl, InputLabel, MenuItem, Select, TextField, FormControlLabel, Checkbox } from "@mui/material";
 import { Coordinate } from "ol/coordinate";
+
+interface Landmark {
+  id: number;
+  name: string;
+  boundary: string;
+}
 
 interface MapComponentProps {
   initialBoundary?: string;
   onSave: (coordinates: string) => void;
   onClose: () => void;
+  landmarks?: Landmark[];
 }
 
-const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSave, onClose }) => {
+const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSave, onClose, landmarks }) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const vectorSource = useRef(new VectorSource());
   const initialVectorSource = useRef(new VectorSource());
@@ -29,21 +36,18 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
   const [updatedCoordinates, setUpdatedCoordinates] = useState<string | null>(null);
   const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">("osm");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [showAllBoundaries, setShowAllBoundaries] = useState(false);
 
+  // Initialize map and load initial boundary
   useEffect(() => {
     if (!mapRef.current) return;
-
-    if (mapRef.current.clientWidth === 0 || mapRef.current.clientHeight === 0) {
-      console.error("Map container has no dimensions. Ensure it has width and height.");
-      return;
-    }
 
     const map = new Map({
       controls: [],
       layers: [
         new TileLayer({ source: new OSM() }),
-        new VectorLayer({ source: initialVectorSource.current }), // Initial boundary layer
-        new VectorLayer({ source: vectorSource.current }), // Updated boundary layer
+        new VectorLayer({ source: initialVectorSource.current }),
+        new VectorLayer({ source: vectorSource.current }),
       ],
       target: mapRef.current,
       view: new View({
@@ -56,30 +60,25 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
 
     mapInstance.current = map;
 
-    // Load initial boundary if provided and valid
+    // Load initial boundary
     if (initialBoundary) {
       try {
-        console.log("Initial Boundary:", initialBoundary);
         const coordinatesString = initialBoundary
           .replace("POLYGON ((", "")
           .replace("))", "")
           .split(",")
           .map((coord) => coord.trim().split(" ").map(Number));
 
-        console.log("Parsed Coordinates:", coordinatesString);
         const coordinates = coordinatesString.map((coord) => fromLonLat(coord));
         if (coordinates.length >= 3) {
           const polygon = new Polygon([coordinates]);
           initialVectorSource.current.clear();
           initialVectorSource.current.addFeature(new Feature(polygon));
 
-          const extent = polygon.getExtent();
-          map.getView().fit(extent, {
+          map.getView().fit(polygon.getExtent(), {
             padding: [50, 50, 50, 50],
             duration: 1000,
           });
-        } else {
-          console.error("Invalid polygon: At least 3 coordinates are required.");
         }
       } catch (error) {
         console.error("Error parsing initialBoundary:", error);
@@ -91,11 +90,68 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
     };
   }, [initialBoundary]);
 
+  // Show all boundaries when checkbox is checked
+  useEffect(() => {
+    if (!mapInstance.current || !landmarks) return;
+
+    if (!showAllBoundaries) {
+      vectorSource.current.clear();
+      return;
+    }
+
+    landmarks.forEach((landmark) => {
+      if (landmark.boundary) {
+        try {
+          const coordinatesString = landmark.boundary
+            .replace("POLYGON ((", "")
+            .replace("))", "")
+            .split(",")
+            .map((coord) => coord.trim().split(" ").map(Number));
+
+          const coordinates = coordinatesString.map((coord) => fromLonLat(coord));
+          if (coordinates.length >= 3) {
+            const polygon = new Polygon([coordinates]);
+            const feature = new Feature(polygon);
+            
+            if (landmark.boundary === initialBoundary) {
+              feature.setStyle(
+                new Style({
+                  stroke: new Stroke({
+                    color: "rgb(228, 53, 225)",
+                    width: 3,
+                  }),
+                  fill: new Fill({
+                    color: "rgba(220, 57, 196, 0.2)",
+                  }),
+                })
+              );
+            } else {
+              feature.setStyle(
+                new Style({
+                  stroke: new Stroke({
+                    color: "rgba(0, 0, 255, 0.7)",
+                    width: 2,
+                  }),
+                  fill: new Fill({
+                    color: "rgba(0, 0, 255, 0.1)",
+                  }),
+                })
+              );
+            }
+            
+            vectorSource.current.addFeature(feature);
+          }
+        } catch (error) {
+          console.error("Error parsing landmark boundary:", error);
+        }
+      }
+    });
+  }, [showAllBoundaries, landmarks, initialBoundary]);
+
   const startDrawing = () => {
     if (!mapInstance.current) return;
-
-    // Remove previous updated boundary before starting a new one
     vectorSource.current.clear();
+    setShowAllBoundaries(false);
 
     const draw = new Draw({
       source: vectorSource.current,
@@ -138,19 +194,15 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
     });
 
     draw.on("drawend", (event) => {
-      vectorSource.current.clear(); 
-
+      vectorSource.current.clear();
       const polygon = event.feature.getGeometry() as Polygon;
-
       const coordinates = polygon
         .getCoordinates()[0]
         .map((coord) => toLonLat(coord));
       const formattedCoordinates = coordinates
         .map((coord) => coord.join(" "))
         .join(",");
-
       const wktCoordinates = `POLYGON ((${formattedCoordinates}))`;
-      console.log("Updated WKT Coordinates:", wktCoordinates);
       setUpdatedCoordinates(wktCoordinates);
       setIsDrawing(false);
     });
@@ -163,6 +215,8 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
   const handleConfirm = () => {
     if (updatedCoordinates) {
       onSave(updatedCoordinates);
+      vectorSource.current.clear();
+      setShowAllBoundaries(false);
       onClose();
     }
   };
@@ -233,89 +287,99 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
       }
     };
 
-  
-
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2, p: 2 }}>
-    {/* Search & Map Type Section */}
-    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-      <FormControl variant="outlined" size="small" sx={{ minWidth: 150 }}>
-        <InputLabel>Map Type</InputLabel>
-        <Select
-          value={mapType}
-          onChange={(e) =>
-            changeMapType(e.target.value as "osm" | "satellite" | "hybrid")
-          }
-          label="Map Type"
+      {/* Search & Map Type Section */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <FormControl variant="outlined" size="small" sx={{ minWidth: 150 }}>
+          <InputLabel>Map Type</InputLabel>
+          <Select
+            value={mapType}
+            onChange={(e) =>
+              changeMapType(e.target.value as "osm" | "satellite" | "hybrid")
+            }
+            label="Map Type"
+          >
+            <MenuItem value="osm">OSM</MenuItem>
+            <MenuItem value="satellite">Satellite</MenuItem>
+            <MenuItem value="hybrid">Hybrid</MenuItem>
+          </Select>
+        </FormControl>
+    
+        <TextField
+          variant="outlined"
+          size="small"
+          placeholder="Search Location (e.g., India)"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{ flex: 1 }}
+        />
+    
+        <Button
+          size="small"
+          variant="contained"
+          sx={{ backgroundColor: "green", whiteSpace: "nowrap" }}
+          onClick={handleSearch}
         >
-          <MenuItem value="osm">OSM</MenuItem>
-          <MenuItem value="satellite">Satellite</MenuItem>
-          <MenuItem value="hybrid">Hybrid</MenuItem>
-        </Select>
-      </FormControl>
-  
-      <TextField
-        variant="outlined"
-        size="small"
-        placeholder="Search Location (e.g., India)"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        sx={{ flex: 1 }}
+          Search
+        </Button>
+      </Box>
+    
+      {/* Map Section */}
+      <Box
+        ref={mapRef}
+        sx={{
+          width: "100%",
+          height: "400px",
+          minHeight: "400px",
+          borderRadius: 2,
+          overflow: "hidden",
+          boxShadow: 3,
+        }}
       />
-  
-      <Button
-        size="small"
-        variant="contained"
-        sx={{ backgroundColor: "green", whiteSpace: "nowrap" }}
-        onClick={handleSearch}
+    
+      {/* Buttons Section */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mt: 2,
+          flexWrap: "wrap",
+        }}
       >
-        Search
-      </Button>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={startDrawing}
+          disabled={isDrawing}
+        >
+          {isDrawing ? "Drawing..." : "Draw New Boundary"}
+        </Button>
+    
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={handleConfirm}
+          disabled={!updatedCoordinates}
+        >
+          Confirm
+        </Button>
+
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={showAllBoundaries}
+              onChange={(e) => setShowAllBoundaries(e.target.checked)}
+              color="primary"
+              disabled={isDrawing}
+            />
+          }
+          label="Show All Boundaries"
+          sx={{ ml: 1 }}
+        />
+      </Box>
     </Box>
-  
-    {/* Map Section */}
-    <Box
-      ref={mapRef}
-      sx={{
-        width: "100%",
-        height: "400px",
-        minHeight: "400px",
-        borderRadius: 2,
-        overflow: "hidden",
-        boxShadow: 3,
-      }}
-    />
-  
-    {/* Buttons Section */}
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        mt: 2,
-        flexWrap: "wrap",
-      }}
-    >
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={startDrawing}
-        disabled={isDrawing}
-      >
-        {isDrawing ? "Drawing..." : "Draw New Boundary"}
-      </Button>
-  
-      <Button
-        variant="contained"
-        color="secondary"
-        onClick={handleConfirm}
-        disabled={!updatedCoordinates}
-      >
-        Confirm
-      </Button>
-    </Box>
-  </Box>
-  
   );
 };
 

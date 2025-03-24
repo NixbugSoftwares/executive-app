@@ -13,7 +13,7 @@ import {
 import { useAppDispatch } from "../../store/Hooks";
 import { companyUpdationApi, companyListApi } from "../../slices/appSlice";
 import MapModal from "./MapModal";
-
+import {  showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
 interface ICompanyFormInputs {
   name: string;
   address: string;
@@ -30,6 +30,7 @@ interface ICompanyUpdateFormProps {
   companyId: number;
   onClose: () => void;
   refreshList: (value: any) => void;
+  handleCloseDetailCard: () => void;
 }
 
 const statusOptions = [
@@ -41,6 +42,7 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
   companyId,
   onClose,
   refreshList,
+  handleCloseDetailCard
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
@@ -150,12 +152,13 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
 
       const updateResponse = await dispatch(companyUpdationApi({ companyId, formData })).unwrap();
       console.log("Company updated:", updateResponse);
-      alert("Company updated successfully!");
+      showSuccessToast("Company updated successfully!");
       refreshList("refresh");
+      handleCloseDetailCard();
       onClose();
     } catch (error) {
       console.error("Error updating company:", error);
-      alert("Failed to update company. Please try again.");
+      showErrorToast("Failed to update company. Please try again.");
     } finally {
       setLoading(false);
     }

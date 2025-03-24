@@ -67,26 +67,36 @@ const handleResponse = async (response: any) => {
 //******************************************************  errorResponse handler  **************************************** */
 const handleErrorResponse = (errorResponse: any) => {
   if (!errorResponse) {
-    toast.error("Network error. Please try again.");
-    return { error: "Network error" };
+    // Handle network errors (e.g., ERR_CONNECTION_REFUSED)
+    toast.error("Network error. Please check your connection.");
+    throw new Error("Network error");
   }
 
   const { status, data } = errorResponse;
-  const errorMessage = data?.message || "Api Failed";
+  const errorMessage = data?.detail || data?.message || "Api Failed";
 
   if (status === 400 && Array.isArray(data?.message)) {
+    // Handle validation errors (400 Bad Request)
     const validationErrors = data.message
       .map((err: any) => Object.values(err.constraints).join(", "))
       .join(" | ");
     toast.error(validationErrors);
-    return { error: validationErrors };
+    throw new Error(validationErrors);
+  } else if (status === 401) {
+    toast.error(errorMessage);
+    throw new Error(errorMessage);
+  } else if (status === 409) {
+    toast.error(errorMessage);
+    throw new Error(errorMessage);
+  } else if (status === 500) {
+    toast.error(errorMessage);
+    throw new Error(errorMessage);
   } else {
-    if (status !== 500) {
-      toast.error(errorMessage);
-    }
-    return { error: errorMessage }; 
+    toast.error(errorMessage);
+    throw new Error(errorMessage);
   }
 };
+
 
 //******************************************************  apiCall  ****************************************
 
@@ -101,7 +111,6 @@ const apiCall = async (
   console.log("method===========>", method);
   try {
     const headers = await prepareHeaders(tokenNeeded);
-
     headers["Content-Type"] = contentType;
 
     const config = {
@@ -109,15 +118,22 @@ const apiCall = async (
       url: `${base_URL}${route}`,
       headers,
       data: method !== "get" ? params : undefined,
-      params: method === "get" ? params : undefined, 
+      params: method === "get" ? params : undefined,
     };
 
     console.log("CONFIG ===> ", config);
 
     const response = await axios(config);
+    console.log("response=====>", response);
+
     return await handleResponse(response);
   } catch (err: any) {
     console.log("errorrr======>", err);
+    if (err.code === "ERR_NETWORK" || err.message === "Network Error") {
+      toast.error("Network error. Please check your connection.");
+      throw new Error("Network error");
+    }
+
     return handleErrorResponse(err?.response);
   }
 };

@@ -88,6 +88,11 @@ const RoleListingTable = () => {
     setSelectedRole(role);
   };
 
+  const handleCloseDetailCard = () => {
+    setSelectedRole(null); 
+  };
+
+
   const handleCloseModal = () => {
     setOpenCreateModal(false);
   };
@@ -353,6 +358,7 @@ const RoleListingTable = () => {
             onDelete={() => {}}
             refreshList={(value: any) => refreshList(value)}
             canManageRole={canManageRole}
+            handleCloseDetailCard={handleCloseDetailCard}
           />
         </Box>
       )}

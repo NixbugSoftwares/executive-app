@@ -22,6 +22,8 @@ import {
   accountListApi,
   fetchRoleMappingApi,
 } from "../../slices/appSlice";
+import localStorageHelper from "../../utils/localStorageHelper";
+import {  showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
 
 // Account update form interface
 interface IAccountFormInputs {
@@ -42,6 +44,7 @@ interface IAccountUpdateFormProps {
   roleAssignmentId?: number;
   onClose: () => void;
   refreshList: (value: any) => void;
+  onCloseDetailCard(): void;
 }
 
 // Gender options mapping
@@ -56,15 +59,20 @@ const statusOptions = [
   { label: "Active", value: 1 },
   { label: "suspended", value: 2 },
 ];
+const loggedInUser = localStorageHelper.getItem("@user");
+const userId = loggedInUser?.executive_id; 
+
 
 const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
   accountId,
   onClose,
   refreshList,
+  onCloseDetailCard
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
+  const isLoggedInUser = accountId=== userId;
   const [accountData, setAccountData] = useState<IAccountFormInputs | null>(
     null
   );
@@ -200,13 +208,13 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
           ).unwrap();
 
           if (!roleUpdateResponse || !roleUpdateResponse.id) {
-            alert("Account updated, but role assignment update failed!");
+            showErrorToast("Account updated, but role assignment update failed!");
             onClose();
             return;
           }
         } catch (roleError) {
           console.error("Error during role assignment update:", roleError);
-          alert("Account updated, but role assignment update failed!");
+          showErrorToast("Account updated, but role assignment update failed!");
         }
       } else {
         console.warn(
@@ -214,11 +222,12 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
         );
       }
 
-      alert("Account updated successfully!");
+     showSuccessToast("Account Updated successfully!");
+      onCloseDetailCard();
       refreshList("refresh");
       onClose();
     } catch (error) {
-      alert("Something went wrong. Please try again.");
+      showErrorToast("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -327,7 +336,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             size="small"
           />
 
-          <Controller
+          {!isLoggedInUser && <Controller
             name="status"
             control={control}
             render={({ field }) => (
@@ -347,7 +356,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
                 ))}
               </TextField>
             )}
-          />
+          />}
 
           <Controller
             name="role"

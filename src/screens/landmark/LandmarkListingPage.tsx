@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Table,
   TableBody,
@@ -28,6 +28,7 @@ import { useDispatch } from "react-redux";
 import { landmarkListApi, landmarkDeleteApi } from "../../slices/appSlice";
 import { AppDispatch } from "../../store/Store";
 import LandmarkUpdateForm from "./LandmarkUpdateForm";
+import VectorSource from "ol/source/Vector";
 
 interface Landmark {
   id: number;
@@ -49,6 +50,7 @@ const LandmarkListing = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [landmarkToDelete, setLandmarkToDelete] = useState<Landmark | null>(null);
   const [openUpdateModal, setOpenUpdateModal] = useState(false);
+   const vectorSource = useRef(new VectorSource());
   const extractRawPoints = (polygonString: string): string => {
     if (!polygonString) return "";
     const matches = polygonString.match(/\(\((.*?)\)\)/);
@@ -99,9 +101,20 @@ const LandmarkListing = () => {
       console.error("Delete error:", error);
     }
   };
+  
+
 
   const handleRowClick = (landmark: Landmark) => {
     setSelectedLandmark(landmark);
+    
+  };
+
+  const handleCloseRowClick = () => {
+    setSelectedLandmark(null);
+    clearBoundaries(); 
+  };
+  const clearBoundaries = () => {
+    vectorSource.current.clear();
   };
 
   const handlePolygonSelect = (coordinates: string) => {
@@ -419,7 +432,11 @@ const LandmarkListing = () => {
               setLandmarkToDelete(selectedLandmark);
               setDeleteConfirmOpen(true);
             }}
-            
+            handleCloseRowClick={handleCloseRowClick }
+            clearBoundaries={clearBoundaries}
+            vectorSource={vectorSource}
+            landmarks={landmarkList}
+           
           />
         </Box>
 
@@ -460,6 +477,7 @@ const LandmarkListing = () => {
               onClose={() => setOpenUpdateModal(false)}
               refreshList={(value: string) => refreshList(value)}
               landmarkId={selectedLandmark.id}
+              
             />
           )}
         </DialogContent>

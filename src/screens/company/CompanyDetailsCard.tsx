@@ -16,6 +16,7 @@ import { companyDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import  CompanyUpdateForm from "./UpdationForm";
 import MapComponent from "./map";
+import {  showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
 interface companyCardProps {
     company: {
     id: number;
@@ -33,6 +34,7 @@ interface companyCardProps {
   onBack: () => void;
   refreshList: (value: any) => void;
   canManageCompany: boolean;
+  handleCloseDetailCard: () => void;
 }
 
 const companyDetailsCard: React.FC<companyCardProps> = ({
@@ -41,6 +43,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
   onDelete,
   onBack,
   canManageCompany,
+  handleCloseDetailCard
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
@@ -73,9 +76,11 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
       setDeleteConfirmOpen(false);
       localStorageHelper.removeStoredItem(`company_${company.id}`);
       onDelete(company.id);
+      showSuccessToast("Company deleted successfully!");
       refreshList("refresh");
     } catch (error) {
       console.error("Delete error:", error);
+      showErrorToast("Failed to delete company. Please try again.");
     }
   };
 
@@ -284,6 +289,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
             companyId={company.id}
             refreshList={(value: any) => refreshList(value)}
             onClose={() => setUpdateFormOpen(false)}
+            handleCloseDetailCard={handleCloseDetailCard}
           />
         </DialogContent>
       </Dialog> 

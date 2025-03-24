@@ -84,6 +84,9 @@ const CompanyListingTable = () => {
   const handleRowClick = (company: Company) => {
     setSelectedCompany(company);
   };
+  const handleCloseDetailCard = () => {
+    setSelectedCompany(null); 
+  };
 
   const handleSearchChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -521,6 +524,7 @@ const CompanyListingTable = () => {
             onBack={() => setSelectedCompany(null)}
             refreshList={(value: any) => refreshList(value)}
             canManageCompany={canManageCompany}
+            handleCloseDetailCard={handleCloseDetailCard}
           />
         </Box>
       )}

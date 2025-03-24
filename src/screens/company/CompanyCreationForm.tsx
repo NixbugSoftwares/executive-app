@@ -14,6 +14,8 @@ import { companyCreationApi } from "../../slices/appSlice";
 import MapModal from "./MapModal";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { companyCreationSchema } from "../auth/validations/authValidation";
+import {  showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
+
 interface ICompanyFormInputs {
   name: string;
   address: string;
@@ -71,15 +73,15 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
       const response = await dispatch(companyCreationApi(formData)).unwrap();
       console.log("Company creation response:", response);
       if (response?.id) {
-        alert("Company created successfully!");
+        showSuccessToast("Company created successfully!");
         refreshList("refresh");
         onClose();
       } else {
-        alert("Company creation failed. Please try again.");
+        showErrorToast("Company creation failed. Please try again.");
       }
     } catch (error) {
       console.error("Error during company creation:", error);
-      alert("Something went wrong. Please try again.");
+      showErrorToast("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

@@ -10,6 +10,7 @@ import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { useAppDispatch } from "../../store/Hooks";
 import { landmarkCreationApi } from "../../slices/appSlice";
 // import { yupResolver } from "@hookform/resolvers/yup";
+import {  showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
 
 
 interface ILandmarkFormInputs {
@@ -78,12 +79,12 @@ const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
   
       const response = await dispatch(landmarkCreationApi(formData)).unwrap();
       console.log("Landmark created successfully:", response);
-      alert("Landmark created successfully!");
+      showSuccessToast("Landmark created successfully!");
       refreshList("refresh");
       onClose();
     } catch (error) {
       console.error("Error creating landmark:", error);
-      alert("Something went wrong. Please try again.");
+      showErrorToast("Something went wrong. Please try again.");
     }
   };
 

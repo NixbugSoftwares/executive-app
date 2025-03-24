@@ -3,7 +3,7 @@ import { TextField, Button, Box, Typography, Switch, CircularProgress } from "@m
 import { useAppDispatch } from "../../store/Hooks";
 import { roleUpdationApi, roleListApi } from "../../slices/appSlice"; 
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
-
+import {  showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
 type RoleFormValues = {
   id: number; // Add ID for update
   name: string;
@@ -22,12 +22,14 @@ interface IRoleUpdateFormProps {
   onClose: () => void; 
   refreshList: (value: any) => void; 
   roleId: number; 
+  handleCloseDetailCard: () => void 
 }
 
 const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
   onClose,
   refreshList,
   roleId,
+  handleCloseDetailCard
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
@@ -80,7 +82,7 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
         }
       } catch (error) {
         console.error("Error fetching role data:", error);
-        alert("Failed to fetch role data. Please try again.");
+        showErrorToast("Failed to fetch role data. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -110,12 +112,13 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
       //  update API
       const response = await dispatch(roleUpdationApi({ roleId, formData })).unwrap();
       console.log("Role updated:", response);
-      alert("Role updated successfully!");
+      showSuccessToast("Role updated successfully!");
       refreshList("refresh"); 
+      handleCloseDetailCard();
       onClose(); 
     } catch (error) {
       console.error("Error updating role:", error);
-      alert("Failed to update role. Please try again.");
+      showErrorToast("Failed to update role. Please try again.");
     } finally {
       setLoading(false);
     }

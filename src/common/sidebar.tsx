@@ -10,6 +10,8 @@ import {
   Typography,
   Divider,
   IconButton,
+  Avatar,
+  Collapse,
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -21,16 +23,20 @@ import EngineeringIcon from "@mui/icons-material/Engineering";
 import RouteIcon from "@mui/icons-material/Route";
 import CorporateFareIcon from "@mui/icons-material/CorporateFare";
 import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
-import BusinessIcon from '@mui/icons-material/Business';
+import BusinessIcon from "@mui/icons-material/Business";
 import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { useTheme, useMediaQuery } from "@mui/material";
 import LogoutConfirmationModal from "./logoutModal";
+import LoggedInUser from "./UserDetails";
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isUserSectionOpen, setIsUserSectionOpen] = useState(false);
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -57,14 +63,12 @@ const Sidebar: React.FC = () => {
         { label: "Role", path: "/companyrole", icon: <Diversity3Icon /> },
         { label: "Route", path: "/busroute", icon: <RouteIcon /> },
         { label: "Fare", path: "/fare", icon: <CorporateFareIcon /> },
-        
       ],
     },
   ];
 
   return (
     <>
-      {/******************************************  Toggle Button for Small Screens**************************************************/}
       {isSmallScreen && (
         <IconButton
           color="inherit"
@@ -82,11 +86,10 @@ const Sidebar: React.FC = () => {
         </IconButton>
       )}
 
-      {/****************************************************  SidebarDrawer *************************************************/}
       <Drawer
-        variant={isSmallScreen ? "temporary" : "permanent"} // Switch variant based on screen size
-        open={isSmallScreen ? isOpen : true} // Open state for small screens
-        onClose={() => setIsOpen(false)} // Close sidebar for small screens
+        variant={isSmallScreen ? "temporary" : "permanent"}
+        open={isSmallScreen ? isOpen : true}
+        onClose={() => setIsOpen(false)}
         sx={{
           width: isSmallScreen ? "auto" : 240,
           flexShrink: 0,
@@ -96,7 +99,6 @@ const Sidebar: React.FC = () => {
           },
         }}
       >
-        {/* Company Name */}
         <Box
           sx={{
             textAlign: "center",
@@ -105,17 +107,12 @@ const Sidebar: React.FC = () => {
             color: "white",
           }}
         >
-          <Typography
-            variant="h5"
-            fontWeight="bold"
-            fontSize={{ xs: "1rem", sm: "1.5rem" }}
-          >
+          <Typography variant="h5" fontWeight="bold" fontSize={{ xs: "1rem", sm: "1.5rem" }}>
             EnteBus
           </Typography>
         </Box>
         <Divider />
 
-        {/* Navigation Items */}
         <Box sx={{ overflow: "auto", p: 2 }}>
           {sections.map((section, index) => (
             <Box key={index} sx={{ mb: 3 }}>
@@ -128,19 +125,13 @@ const Sidebar: React.FC = () => {
                     <ListItemButton
                       onClick={() => {
                         navigate(item.path);
-                        if (isSmallScreen) setIsOpen(false); // Close sidebar on navigation for small screens
+                        if (isSmallScreen) setIsOpen(false);
                       }}
                       sx={{
                         backgroundColor:
-                          location.pathname === item.path
-                            ? "primary.light"
-                            : "inherit",
+                          location.pathname === item.path ? "primary.light" : "inherit",
                         "&:hover": {
                           backgroundColor: "#E3F2FD",
-                        },
-                        "&.Mui-selected": {
-                          backgroundColor: "primary.main",
-                          color: "white",
                         },
                       }}
                     >
@@ -155,17 +146,33 @@ const Sidebar: React.FC = () => {
           ))}
         </Box>
 
-        {/* *******************************************************logout section******************************************************** */}
         <Box sx={{ mt: "auto", p: 2 }}>
           <List>
             <ListItem disablePadding>
-              <ListItemButton onClick={() => setIsLogoutModalOpen(true)}>
+              <ListItemButton onClick={() => setIsUserSectionOpen(!isUserSectionOpen)}>
                 <ListItemIcon>
-                  <PowerSettingsNewIcon color="error" />
+                  <Avatar sx={{ bgcolor: "primary.main" }}>
+                    <AccountCircleOutlinedIcon />
+                  </Avatar>
                 </ListItemIcon>
-                <ListItemText primary="Logout" sx={{ color: "error.main" }} />
+                <ListItemText primary="User" />
+                {isUserSectionOpen ? < ExpandMoreIcon /> : <ExpandLessIcon />}
               </ListItemButton>
             </ListItem>
+
+            <Collapse in={isUserSectionOpen} timeout="auto" unmountOnExit>
+              <Box sx={{ pl: 4, pr: 2 }}>
+                <LoggedInUser />
+                <ListItem disablePadding>
+                  <ListItemButton onClick={() => setIsLogoutModalOpen(true)}>
+                    <ListItemIcon>
+                      <PowerSettingsNewIcon color="error" />
+                    </ListItemIcon>
+                    <ListItemText primary="Logout" sx={{ color: "error.main" }} />
+                  </ListItemButton>
+                </ListItem>
+              </Box>
+            </Collapse>
           </List>
         </Box>
       </Drawer>
