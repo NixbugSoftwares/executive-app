@@ -11,9 +11,7 @@ import { Vector as VectorSource } from "ol/source";
 import {
   Box,
   Button,
-  Checkbox,
   FormControl,
-  FormControlLabel,
   IconButton,
   InputLabel,
   MenuItem,
@@ -22,6 +20,8 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { useNavigate } from "react-router-dom";
 import * as ol from "ol";
 import localStorageHelper from "../../utils/localStorageHelper";
@@ -31,7 +31,6 @@ import { Refresh } from "@mui/icons-material";
 import { getArea } from "ol/sphere";
 import { showErrorToast } from "../../common/toastMessageHelper";
 
-// MapComponent.tsx
 interface Landmark {
   id: number;
   name: string;
@@ -39,6 +38,7 @@ interface Landmark {
   status: string;
   importance: string;
 }
+
 interface MapComponentProps {
   onDrawEnd: (coordinates: string) => void;
   isOpen: boolean;
@@ -50,6 +50,8 @@ interface MapComponentProps {
   clearBoundaries: () => void;
   vectorSource: React.MutableRefObject<VectorSource>;
   landmarks?: Landmark[];
+  isDrawing: boolean;
+  onDrawingChange: (isDrawing: boolean) => void;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
@@ -61,6 +63,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onDeleteClick,
   handleCloseRowClick,
   landmarks,
+  onDrawingChange,
 }) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const vectorSource = useRef(new VectorSource());
@@ -82,7 +85,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setShowAllBoundaries(false);
   };
 
-  // ********************************Initialize the map********************************
+  // Initialize the map
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -136,14 +139,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   }, [selectedBoundary]);
 
-  // ************************ shwo exsting booundaries **************************************
+  // Show existing boundaries
   useEffect(() => {
     if (!mapInstance.current) return;
 
-    // Always clear existing boundaries first
     vectorSource.current.clear();
 
-    // Show selected boundary if one is selected
     if (selectedBoundary) {
       const coordinates = selectedBoundary
         .split(",")
@@ -167,7 +168,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       vectorSource.current.addFeature(feature);
 
-      // Fit view to the selected boundary
       const extent = polygon.getExtent();
       mapInstance.current.getView().fit(extent, {
         padding: [50, 50, 50, 50],
@@ -175,8 +175,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       });
     }
 
-    // Show all boundaries if checkbox is checked and no specific boundary is selected
-    if (showAllBoundaries && landmarks && !selectedBoundary) {
+    if (showAllBoundaries && landmarks) {
       landmarks.forEach((landmark) => {
         if (landmark.boundary) {
           const coordinates = landmark.boundary
@@ -205,7 +204,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   }, [showAllBoundaries, landmarks, selectedBoundary, selectedLandmark]);
 
-  //**************************************** Check for Overlaps *************************
   const checkForOverlaps = (newPolygon: Polygon): boolean => {
     if (!landmarks || landmarks.length === 0) return false;
 
@@ -222,14 +220,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
         const existingPolygon = new Polygon([existingCoords]);
 
-        // Check if any point of new polygon is inside existing polygon
         for (const coord of newCoords) {
           if (existingPolygon.intersectsCoordinate(coord)) {
             return true;
           }
         }
 
-        // Check if any point of existing polygon is inside new polygon
         for (const coord of existingPolygon.getCoordinates()[0]) {
           if (newPolygon.intersectsCoordinate(coord)) {
             return true;
@@ -247,7 +243,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return false;
   };
 
-  //**************************************** Function to toggle drawing *************************
   const toggleDrawing = () => {
     if (!mapInstance.current) return;
 
@@ -283,7 +278,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
             ],
           ]);
 
-          // Calculate area
           const area = getArea(geometry);
           setDrawingArea(`${(area / 1000000).toFixed(2)} km²`);
 
@@ -303,7 +297,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       draw.on("drawend", (event) => {
         const polygon = event.feature.getGeometry() as Polygon;
 
-        // Validate area
         const area = getArea(polygon);
         if (area < 2 || area > 5000000) {
           showErrorToast("Area must be between 2 m² and 5 km².");
@@ -335,10 +328,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
       mapInstance.current.addInteraction(draw);
     }
 
-    setIsDrawing(!isDrawing);
+    const newDrawingState = !isDrawing;
+    setIsDrawing(newDrawingState);
+    onDrawingChange(newDrawingState);
   };
 
-  //********************************************** search location *********************************** */
   const handleSearch = async () => {
     if (!searchQuery || !mapInstance.current) return;
 
@@ -367,7 +361,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
-  //********************************************** map types *********************************** */
   const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
     if (!mapInstance.current) return;
 
@@ -488,7 +481,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
           {!selectedLandmark && isDrawing && (
             <Box>
-              {" "}
               <Tooltip title="Clear Drawings" placement="bottom">
                 <IconButton color="warning" onClick={clearBoundaries}>
                   <Refresh />
@@ -496,10 +488,28 @@ const MapComponent: React.FC<MapComponentProps> = ({
               </Tooltip>
             </Box>
           )}
+          <Tooltip
+            title={
+              showAllBoundaries
+                ? "Hide all landmarks"
+                : "Click to Show all landmarks"
+            }
+            arrow
+          >
+            <IconButton
+              onClick={() => {
+                setShowAllBoundaries(!showAllBoundaries);
+                if (!showAllBoundaries && selectedBoundary) {
+                }
+              }}
+              sx={{ ml: 1 }}
+            >
+              {showAllBoundaries ? <VisibilityOffIcon /> : <VisibilityIcon />}
+            </IconButton>
+          </Tooltip>
         </Box>
       </Box>
 
-      {/* Map Section */}
       <Box ref={mapRef} width="100%" height="calc(100% - 128px)" flex={1} />
 
       <Box
@@ -513,31 +523,17 @@ const MapComponent: React.FC<MapComponentProps> = ({
           marginTop: 1,
         }}
       >
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={showAllBoundaries}
-              onChange={(e) => {
-                setShowAllBoundaries(e.target.checked);
-                if (e.target.checked && selectedBoundary) {
-                  handleCloseRowClick();
-                }
-              }}
-              color="primary"
-              disabled={!!selectedBoundary} 
-            />
-          }
-          label="Show All Boundaries"
-          sx={{ ml: 1 }}
-        />
-        <Typography variant="body2">
-          <strong>{mousePosition}</strong>
-        </Typography>
-        {isDrawing && (
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           <Typography variant="body2">
-            <strong>Area: {drawingArea}</strong>
+            <strong>[{mousePosition?mousePosition:"coordinates"}]</strong>
           </Typography>
-        )}
+          {isDrawing && (
+            <Typography variant="body2">
+              <strong>Area: {drawingArea}</strong>
+            </Typography>
+          )}
+        </Box>
+
         {selectedLandmark && (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Button

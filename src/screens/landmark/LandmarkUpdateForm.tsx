@@ -11,7 +11,15 @@ import { useAppDispatch } from "../../store/Hooks";
 import { landmarkUpdationApi, landmarkListApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import MapModal from "./MapModal";
-import {  showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
+import { showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
+
+interface Landmark {
+  id: number;
+  name: string;
+  boundary: string;
+  status: string;
+  importance: string;
+}
 
 interface ILandmarkFormInputs {
   name: string;
@@ -46,11 +54,10 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  const [landmarkData, setLandmarkData] = useState<ILandmarkFormInputs | null>(
-    null
-  );
+  const [landmarkData, setLandmarkData] = useState<ILandmarkFormInputs | null>(null);
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [updatedBoundary, setUpdatedBoundary] = useState(boundary || "");
+  const [allLandmarks, setAllLandmarks] = useState<Landmark[]>([]);
 
   const {
     register,
@@ -75,8 +82,10 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       try {
         setLoading(true);
         const landmarks = await dispatch(landmarkListApi()).unwrap();
+        setAllLandmarks(landmarks); // Store all landmarks
+        
         const landmark = landmarks.find((r: any) => r.id === landmarkId);
-        console.log("Landmark Data>>>>>>>>>>>>>>>:", landmark);
+        console.log("Landmark Data:", landmark);
 
         if (landmark) {
           setLandmarkData(landmark);
@@ -99,10 +108,7 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
     fetchLandmarkData();
   }, [landmarkId, dispatch, reset, boundary]);
 
-  // Handle Landmark Update
-  const handleLandmarkUpdate: SubmitHandler<ILandmarkFormInputs> = async (
-    data
-  ) => {
+  const handleLandmarkUpdate: SubmitHandler<ILandmarkFormInputs> = async (data) => {
     try {
       setLoading(true);
 
@@ -113,18 +119,9 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       formData.append("status", data.status);
       formData.append("importance", data.importance);
 
-      console.log("Form Data:", {
-        name: data.name,
-        boundary: data.boundary,
-        status: data.status,
-        importance: data.importance,
-      });
-
-      // Dispatch the update API
-      const response = await dispatch(
-        landmarkUpdationApi({ landmarkId, formData })
-      ).unwrap();
-      console.log("Landmark updated:", response);
+      const response = await dispatch(landmarkUpdationApi({ landmarkId, formData })).unwrap();
+      console.log("Landmark updated successfully:", response);
+      
       showSuccessToast("Landmark updated successfully!");
       refreshList("refresh");
       onClose();
@@ -161,7 +158,6 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
         Update Landmark
       </Typography>
 
-      {/* Name Field */}
       <TextField
         label="Name"
         {...register("name", { required: "Name is required" })}
@@ -172,7 +168,6 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
         fullWidth
       />
 
-      {/* Boundary Field */}
       <TextField
         label="Boundary"
         {...register("boundary", { required: "Boundary is required" })}
@@ -187,6 +182,7 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
         onClose={() => setMapModalOpen(false)}
         initialBoundary={updatedBoundary}
         onSave={handleSaveBoundary}
+        landmarks={allLandmarks}
       />
 
       <Controller
@@ -211,7 +207,6 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
         )}
       />
 
-      {/* Importance Field */}
       <Controller
         name="importance"
         control={control}
@@ -234,7 +229,6 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
         )}
       />
 
-      {/* Submit Button */}
       <Button
         type="submit"
         variant="contained"

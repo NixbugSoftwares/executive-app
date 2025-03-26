@@ -16,12 +16,13 @@ import {
   DialogTitle,
   Typography,
   Chip,
+  Tooltip,
 } from "@mui/material";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle"; 
-import WarningIcon from "@mui/icons-material/Warning"; 
-import LowPriorityIcon from "@mui/icons-material/LowPriority"; 
-import MediumPriorityIcon from "@mui/icons-material/Height"; 
-import HighPriorityIcon from "@mui/icons-material/PriorityHigh"; 
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import WarningIcon from "@mui/icons-material/Warning";
+import LowPriorityIcon from "@mui/icons-material/LowPriority";
+import MediumPriorityIcon from "@mui/icons-material/Height";
+import HighPriorityIcon from "@mui/icons-material/PriorityHigh";
 import LandmarkAddForm from "./LandmarkAddForm";
 import MapComponent from "./MapComponent";
 import { useDispatch } from "react-redux";
@@ -41,16 +42,22 @@ interface Landmark {
 const LandmarkListing = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [landmarkList, setLandmarkList] = useState<Landmark[]>([]);
-  const [selectedLandmark, setSelectedLandmark] = useState<Landmark | null>(null);
+  const [selectedLandmark, setSelectedLandmark] = useState<Landmark | null>(
+    null
+  );
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [search, setSearch] = useState({ id: "", name: "", location: "" });
   const [page, setPage] = useState(0);
   const rowsPerPage = 10;
   const [boundary, setBoundary] = useState<string>("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [landmarkToDelete, setLandmarkToDelete] = useState<Landmark | null>(null);
+  const [landmarkToDelete, setLandmarkToDelete] = useState<Landmark | null>(
+    null
+  );
   const [openUpdateModal, setOpenUpdateModal] = useState(false);
-   const vectorSource = useRef(new VectorSource());
+  const vectorSource = useRef(new VectorSource());
+  const [isDrawing, setIsDrawing] = useState(false);
+
   const extractRawPoints = (polygonString: string): string => {
     if (!polygonString) return "";
     const matches = polygonString.match(/\(\((.*?)\)\)/);
@@ -92,7 +99,7 @@ const LandmarkListing = () => {
 
     try {
       const formData = new FormData();
-      formData.append("id", String(landmarkToDelete.id)); 
+      formData.append("id", String(landmarkToDelete.id));
       const response = await dispatch(landmarkDeleteApi(formData)).unwrap();
       console.log("Landmark deleted:", response);
       setDeleteConfirmOpen(false);
@@ -101,18 +108,19 @@ const LandmarkListing = () => {
       console.error("Delete error:", error);
     }
   };
-  
-
 
   const handleRowClick = (landmark: Landmark) => {
+    if (isDrawing) {
+      return; // Prevent selection when drawing is active
+    }
     setSelectedLandmark(landmark);
-    
   };
 
   const handleCloseRowClick = () => {
     setSelectedLandmark(null);
-    clearBoundaries(); 
+    clearBoundaries();
   };
+
   const clearBoundaries = () => {
     vectorSource.current.clear();
   };
@@ -120,6 +128,10 @@ const LandmarkListing = () => {
   const handlePolygonSelect = (coordinates: string) => {
     setBoundary(coordinates);
     setTimeout(() => setOpenCreateModal(true), 0);
+  };
+
+  const handleDrawingChange = (drawingState: boolean) => {
+    setIsDrawing(drawingState);
   };
 
   const handleSearchChange = (
@@ -168,7 +180,6 @@ const LandmarkListing = () => {
         gap: 2,
       }}
     >
-      {/* Left Side: Table */}
       <Box
         sx={{
           flex: { xs: "0 0 100%", md: "50%" },
@@ -224,12 +235,12 @@ const LandmarkListing = () => {
                 </TableCell>
                 <TableCell>
                   <Box display="flex" justifyContent="center">
-                     <b>Importance</b>
+                    <b>Importance</b>
                   </Box>
                 </TableCell>
-                <TableCell sx={{  }}>
+                <TableCell>
                   <Box display="flex" justifyContent="center">
-                  <b>Status</b>
+                    <b>Status</b>
                   </Box>
                 </TableCell>
               </TableRow>
@@ -241,95 +252,108 @@ const LandmarkListing = () => {
                   .map((row) => {
                     const isSelected = selectedLandmark?.id === row.id;
                     return (
-                      <TableRow
+                      <Tooltip
                         key={row.id}
-                        hover
-                        onClick={() => handleRowClick(row)}
-                        sx={{
-                          cursor: "pointer",
-                          backgroundColor: isSelected
-                            ? "#E3F2FD  "
-                            : "inherit",
-                          color: isSelected ? "black " : "black",
-                          "&:hover": {
-                            backgroundColor: isSelected
-                              ? "#E3F2FD !important"
-                              : "#E3F2FD",
-                          },
-                          "& td": {
-                            color: isSelected ? "black" : "black",
-                          },
-                        }}
+                        title={
+                          isDrawing
+                            ? "Finish drawing on the map first"
+                            : "Click to view details"
+                        }
                       >
-                        <TableCell>{row.id}</TableCell>
-                        <TableCell>{row.name}</TableCell>
-                        <TableCell>
-                  {/* Importance Chip */}
-                  {row.importance === "Low" && (
-                    <Chip
-                      icon={<LowPriorityIcon />}
-                      label="Low"
-                      color="info"
-                      size="small"
-                      sx={{
-                        backgroundColor: isSelected ? "#90CAF9" : "#E3F2FD",
-                        color: isSelected ? "#1565C0" : "#1565C0",
-                      }}
-                    />
-                  )}
-                  {row.importance === "Medium" && (
-                    <Chip
-                      icon={<MediumPriorityIcon />}
-                      label="Medium"
-                      color="warning"
-                      size="small"
-                      sx={{
-                        backgroundColor: isSelected ? "#edd18f" : "#FFE082",
-                        color: isSelected ? "#9f3b03" : "#9f3b03",
-                      }}
-                    />
-                  )}
-                  {row.importance === "High" && (
-                    <Chip
-                      icon={<HighPriorityIcon />}
-                      label="High"
-                      color="error"
-                      size="small"
-                      sx={{
-                        backgroundColor: isSelected ? "#EF9A9A" : "#FFEBEE",
-                        color: isSelected ? "#D32F2F" : "#D32F2F",
-                      }}
-                    />
-                  )}
-                </TableCell>
-                <TableCell>
-                  {/* Status Chip */}
-                  {row.status === "Validating" && (
-                    <Chip
-                      icon={<WarningIcon />}
-                      label="Validating"
-                      color="warning"
-                      size="small"
-                      sx={{
-                        backgroundColor: isSelected ? "#edd18f" : "#FFE082",
-                        color: isSelected ? "#9f3b03" : "#9f3b03",
-                      }}
-                    />
-                  )}
-                  {row.status === "Verified" && (
-                    <Chip
-                      icon={<CheckCircleIcon />}
-                      label="Verified"
-                      color="success"
-                      size="small"
-                      sx={{
-                        backgroundColor: isSelected ? "#A5D6A7" : "#E8F5E9",
-                        color: isSelected ? "#2E7D32" : "#2E7D32",
-                      }}
-                    />
-                  )}
-                </TableCell>
-                      </TableRow>
+                        <TableRow
+                          hover
+                          onClick={() => handleRowClick(row)}
+                          sx={{
+                            cursor: isDrawing ? "not-allowed" : "pointer",
+                            backgroundColor: isSelected ? "#E3F2FD" : "inherit",
+                            opacity: isDrawing ? 0.7 : 1,
+                            "&:hover": {
+                              backgroundColor: isDrawing
+                                ? "inherit"
+                                : isSelected
+                                ? "#E3F2FD !important"
+                                : "#E3F2FD",
+                            },
+                          }}
+                        >
+                          <TableCell>{row.id}</TableCell>
+                          <TableCell>{row.name}</TableCell>
+                          <TableCell>
+                            {row.importance === "Low" && (
+                              <Chip
+                                icon={<LowPriorityIcon />}
+                                label="Low"
+                                color="info"
+                                size="small"
+                                sx={{
+                                  backgroundColor: isSelected
+                                    ? "#90CAF9"
+                                    : "#E3F2FD",
+                                  color: isSelected ? "#1565C0" : "#1565C0",
+                                }}
+                              />
+                            )}
+                            {row.importance === "Medium" && (
+                              <Chip
+                                icon={<MediumPriorityIcon />}
+                                label="Medium"
+                                color="warning"
+                                size="small"
+                                sx={{
+                                  backgroundColor: isSelected
+                                    ? "#edd18f"
+                                    : "#FFE082",
+                                  color: isSelected ? "#9f3b03" : "#9f3b03",
+                                }}
+                              />
+                            )}
+                            {row.importance === "High" && (
+                              <Chip
+                                icon={<HighPriorityIcon />}
+                                label="High"
+                                color="error"
+                                size="small"
+                                sx={{
+                                  backgroundColor: isSelected
+                                    ? "#EF9A9A"
+                                    : "#FFEBEE",
+                                  color: isSelected ? "#D32F2F" : "#D32F2F",
+                                }}
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {row.status === "Validating" && (
+                              <Chip
+                                icon={<WarningIcon />}
+                                label="Validating"
+                                color="warning"
+                                size="small"
+                                sx={{
+                                  backgroundColor: isSelected
+                                    ? "#edd18f"
+                                    : "#FFE082",
+                                  color: isSelected ? "#9f3b03" : "#9f3b03",
+                                }}
+                              />
+                            )}
+                            {row.status === "Verified" && (
+                              <Chip
+                                icon={<CheckCircleIcon />}
+                                label="Verified"
+                                color="success"
+                                size="small"
+                                sx={{
+                                  backgroundColor: isSelected
+                                    ? "#A5D6A7"
+                                    : "#E8F5E9",
+                                  color: isSelected ? "#2E7D32" : "#2E7D32",
+                                }}
+                              />
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      </Tooltip>
                     );
                   })
               ) : (
@@ -343,7 +367,6 @@ const LandmarkListing = () => {
           </Table>
         </TableContainer>
 
-        {/* Pagination */}
         <Box
           sx={{
             display: "flex",
@@ -401,7 +424,6 @@ const LandmarkListing = () => {
         </Box>
       </Box>
 
-      {/* Right Side: Map */}
       <Box
         sx={{
           flex: { xs: "0 0 100%", md: "50%" },
@@ -412,8 +434,6 @@ const LandmarkListing = () => {
           gap: 2,
         }}
       >
-      
-        {/* Map Component */}
         <Box
           sx={{
             height: "calc(100vh - 20px)",
@@ -432,18 +452,16 @@ const LandmarkListing = () => {
               setLandmarkToDelete(selectedLandmark);
               setDeleteConfirmOpen(true);
             }}
-            handleCloseRowClick={handleCloseRowClick }
+            handleCloseRowClick={handleCloseRowClick}
             clearBoundaries={clearBoundaries}
             vectorSource={vectorSource}
             landmarks={landmarkList}
-           
+            isDrawing={isDrawing}
+            onDrawingChange={handleDrawingChange}
           />
         </Box>
-
-       
       </Box>
 
-      {/* Dialog for Adding a Landmark */}
       <Dialog
         open={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
@@ -464,12 +482,10 @@ const LandmarkListing = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Dialog for Updating a Landmark */}
       <Dialog
         open={openUpdateModal}
         onClose={() => setOpenUpdateModal(false)}
         maxWidth="sm"
-       
       >
         <DialogContent>
           {selectedLandmark && (
@@ -477,7 +493,6 @@ const LandmarkListing = () => {
               onClose={() => setOpenUpdateModal(false)}
               refreshList={(value: string) => refreshList(value)}
               landmarkId={selectedLandmark.id}
-              
             />
           )}
         </DialogContent>
@@ -488,7 +503,6 @@ const LandmarkListing = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}

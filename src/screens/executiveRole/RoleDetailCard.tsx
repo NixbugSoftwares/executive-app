@@ -1,11 +1,29 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardActions, Typography, Button, Box, Dialog, DialogActions, DialogContent, DialogTitle, Avatar, Chip, Tooltip } from "@mui/material";
+import { 
+  Card, 
+  CardContent, 
+  CardActions, 
+  Typography, 
+  Button, 
+  Box, 
+  Dialog, 
+  DialogActions, 
+  DialogContent, 
+  DialogTitle, 
+  Avatar, 
+  Chip, 
+  Tooltip,
+  Checkbox,
+  FormControlLabel,
+  Alert
+} from "@mui/material";
 import { Diversity3 as Diversity3Icon } from "@mui/icons-material";
 import { useAppDispatch } from "../../store/Hooks";
 import { roleDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import RoleUpdateForm from "./RoleUpdate";
-import {  showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
+import { showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
+
 interface RoleCardProps {
   role: {
     id: number;
@@ -23,42 +41,50 @@ interface RoleCardProps {
   onBack: () => void; 
   onUpdate: (id: number) => void; 
   onDelete: (id: number) => void; 
-  refreshList: (value:any)=>void;
+  refreshList: (value: any) => void;
   canManageRole: boolean;
-  handleCloseDetailCard: () => void
+  handleCloseDetailCard: () => void;
 }
 
-const RoleDetailsCard: React.FC<RoleCardProps> = ({ role, onBack, onDelete, refreshList,canManageRole, handleCloseDetailCard }) => {
+const RoleDetailsCard: React.FC<RoleCardProps> = ({ 
+  role, 
+  onBack, 
+  onDelete, 
+  refreshList,
+  canManageRole, 
+  handleCloseDetailCard 
+}) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
-
+  const [acknowledgedWarning, setAcknowledgedWarning] = useState(false);
   const dispatch = useAppDispatch();
 
   const handleRoleDelete = async () => {
-      console.log("Deleting role...id----------------", role.id);
-  
-      if (!role.id) {
-        console.error("Error: role ID is missing");
-        return;
-      }
-  
-      try {
-        console.log("Deleting role with ID================>:", role.id);
-        const formData = new FormData();
-        formData.append("id", String(role.id)); 
+    console.log("Deleting role...id----------------", role.id);
 
-        // Pass the FormData object to the API
-        const response = await dispatch(roleDeleteApi(formData)).unwrap();
-        console.log("Account deleted:", response);
-        setDeleteConfirmOpen(false);
-        localStorageHelper.removeStoredItem(`role_${role.id}`);
-        onDelete(role.id);
-        showSuccessToast("Role deleted successfully!");
-        refreshList('refresh');
-      } catch (error) {
-        showErrorToast("Failed to delete role. Please try again.");
-      }
-    };
+    if (!role.id) {
+      console.error("Error: role ID is missing");
+      return;
+    }
+
+    try {
+      console.log("Deleting role with ID================>:", role.id);
+      const formData = new FormData();
+      formData.append("id", String(role.id)); 
+
+      const response = await dispatch(roleDeleteApi(formData)).unwrap();
+      console.log("Account deleted:", response);
+      setDeleteConfirmOpen(false);
+      localStorageHelper.removeStoredItem(`role_${role.id}`);
+      onDelete(role.id);
+      showSuccessToast("Role deleted successfully!");
+      refreshList('refresh');
+    } catch (error) {
+      showErrorToast("Failed to delete role. Please try again.");
+    } finally {
+      setAcknowledgedWarning(false); // Reset acknowledgment for next time
+    }
+  };
 
   return (
     <>
@@ -109,7 +135,6 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({ role, onBack, onDelete, refr
                 color="success"
                 size="small"
                 onClick={() => setUpdateFormOpen(true)}
-               
                 disabled={!canManageRole}
                 sx={{
                   "&.Mui-disabled": { 
@@ -135,7 +160,6 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({ role, onBack, onDelete, refr
                 color="error"
                 size="small"
                 onClick={() => setDeleteConfirmOpen(true)}
-                
                 disabled={!canManageRole}
                 sx={{
                   "&.Mui-disabled": { 
@@ -148,43 +172,64 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({ role, onBack, onDelete, refr
               </Button>
             </span>
           </Tooltip>
-
         </CardActions>
       </Card>
 
       {/* Delete Confirmation Modal */}
-      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+      <Dialog open={deleteConfirmOpen} onClose={() => {
+        setDeleteConfirmOpen(false);
+        setAcknowledgedWarning(false); // Reset when dialog closes
+      }}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
-          <Typography>Are you sure you want to delete this Role?</Typography>
-          <Typography>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            <strong>Warning:</strong> This role might be assigned to executives. 
+            Deleting it will remove all associated permissions from those accounts.
+          </Alert>
+          
+          <Typography gutterBottom>
             <b>ID:</b> {role.id}, <b>Role Name:</b> {role.name}
           </Typography>
+          
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={acknowledgedWarning}
+                onChange={(e) => setAcknowledgedWarning(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="I understand that deleting this role will affect all executives assigned to it"
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteConfirmOpen(false)} color="primary">
+          <Button onClick={() => {
+            setDeleteConfirmOpen(false);
+            setAcknowledgedWarning(false);
+          }} color="primary">
             Cancel
           </Button>
-          <Button onClick={handleRoleDelete} color="error">
+          <Button 
+            onClick={handleRoleDelete} 
+            color="error"
+            disabled={!acknowledgedWarning}
+          >
             Confirm Delete
           </Button>
         </DialogActions>
       </Dialog>
 
-
       {/* Update Form Modal */}
       <Dialog open={updateFormOpen} onClose={() => setUpdateFormOpen(false)} maxWidth="xs" fullWidth>
         <DialogContent>
           <RoleUpdateForm
-            refreshList={(value:any)=>refreshList(value)}
+            refreshList={(value: any) => refreshList(value)}
             roleId={role.id} 
             onClose={() => setUpdateFormOpen(false)} 
             handleCloseDetailCard={handleCloseDetailCard}
           />
         </DialogContent>
       </Dialog>
-
-      
     </>
   );
 };
