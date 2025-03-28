@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -52,7 +53,7 @@ const CompanyListingTable = () => {
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const roleDetails = localStorageHelper.getItem("@roleDetails");
   const canManageCompany = roleDetails?.manage_company || false;
-
+  const navigate = useNavigate();
   // Function to fetch accounts
   const fetchCompany = () => {
     dispatch(companyListApi())
@@ -83,9 +84,11 @@ const CompanyListingTable = () => {
 
   const handleRowClick = (company: Company) => {
     setSelectedCompany(company);
+    navigate(`/executive/company/${company.id}`);
   };
   const handleCloseDetailCard = () => {
-    setSelectedCompany(null); 
+    setSelectedCompany(null);
+    navigate("/executive/company");
   };
 
   const handleSearchChange = (

@@ -24,6 +24,7 @@ interface IAccountFormInputs {
 interface IOperatorCreationFormProps {
   onClose: () => void;
   refreshList: (value: any) => void;
+  defaultCompanyId?: number;
 }
 
 // Gender options mapping
@@ -34,7 +35,7 @@ const genderOptions = [
   { label: "Other", value: 4 },
 ];
 
-const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, refreshList }) => {
+const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, refreshList, defaultCompanyId }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [companies, setCompanies] = useState<{ id: number; name: string }[]>([]);
@@ -107,7 +108,7 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, r
       setLoading(true);
       const formData = new FormData();
       if (data.companyId) {
-        formData.append("company_id", data.companyId.toString());
+        formData.append("company_id", defaultCompanyId.toString());
       }
       formData.append("username", data.username);
       formData.append("password", data.password);

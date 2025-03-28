@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Box, TextField, Dialog, DialogActions, DialogContent, Tooltip, Typography, Autocomplete } from "@mui/material";
+import { 
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, 
+  Button, Box, TextField, Dialog, DialogContent, Tooltip, 
+  Typography
+} from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import RoleDetailsCard from "./RoleDetailCard";
@@ -8,6 +12,7 @@ import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store/Store";
 import { operatorRoleListApi, companyListApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
+import { useParams, useLocation } from "react-router-dom";
 
 interface Role {
   id: number;
@@ -28,20 +33,43 @@ interface Company {
 }
 
 const RoleListingTable = () => {
+  const { companyId } = useParams();
+  const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
   const [roleList, setRoleList] = useState<Role[]>([]);
   const [companyList, setCompanyList] = useState<Company[]>([]);
   const [selectRole, setSelectedRole] = useState<Role | null>(null);
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [search, setSearch] = useState({ id: "", Rolename: "", companyName: "" });
-  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
-  const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
+  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(() => {
+    const urlCompanyId = companyId ? parseInt(companyId) : null;
+    const storedCompanyId = localStorageHelper.getItem('roleFilterCompanyId');
+    return urlCompanyId || storedCompanyId || null;
+  });
+
+  useEffect(() => {
+    if (filterCompanyId) {
+      localStorageHelper.storeItem('roleFilterCompanyId', filterCompanyId);
+    }
+  }, [filterCompanyId]);
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const urlCompanyId = companyId || queryParams.get('companyId');
+    
+    if (urlCompanyId) {
+      const id = parseInt(urlCompanyId);
+      if (!isNaN(id)) {
+        setFilterCompanyId(id);
+      }
+    }
+  }, [companyId, location.search]);
 
   const roleDetails = localStorageHelper.getItem("@roleDetails");
   const canManageCompany = roleDetails?.manage_company || false;
 
   const fetchRoleList = () => {
-    dispatch(operatorRoleListApi())
+    dispatch(operatorRoleListApi(filterCompanyId))
       .unwrap()
       .then((res: any[]) => {
         const formattedRoles = res.map((role: any) => ({
@@ -61,16 +89,17 @@ const RoleListingTable = () => {
       .catch((err: any) => console.error("Error fetching roles:", err));
   };
 
-  useEffect(() => {
-    fetchRoleList();
-  }, []);
-
   const fetchCompany = () => {
     dispatch(companyListApi())
       .unwrap()
       .then((res: any[]) => {
-        console.log("Company API Response:", res);
         setCompanyList(res);
+        if (location.state?.companyId) {
+          const company = res.find(c => c.id === location.state.companyId);
+          if (company) {
+            setSearch(prev => ({...prev, companyName: company.name}));
+          }
+        }
       })
       .catch((err: any) => {
         console.error("Error fetching companies", err);
@@ -78,9 +107,9 @@ const RoleListingTable = () => {
   };
 
   useEffect(() => {
-    fetchCompany();
     fetchRoleList();
-  }, []);
+    fetchCompany();
+  }, [filterCompanyId]);
 
   const getCompanyName = (companyId: number) => {
     const company = companyList.find((company) => company.id === companyId);
@@ -93,7 +122,8 @@ const RoleListingTable = () => {
       row.name.toLowerCase().includes(search.Rolename.toLowerCase()) &&
       (getCompanyName(row.companyId)?.toLowerCase() || "").includes(
         search.companyName.toLowerCase()
-      )
+      ) &&
+      (!filterCompanyId || row.companyId === filterCompanyId)
   );
 
   const [page, setPage] = useState(0);
@@ -125,7 +155,6 @@ const RoleListingTable = () => {
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      console.log("Account list refreshed...");
       fetchRoleList();
     }
   };
@@ -150,7 +179,6 @@ const RoleListingTable = () => {
           overflowY: "auto",
         }}
       >
-       
         <Box
           sx={{
             display: "flex",
@@ -161,73 +189,29 @@ const RoleListingTable = () => {
             justifyContent: "space-between",
           }}
         >
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <Autocomplete
-              sx={{ width: 200 }}
-              options={companyList}
-              getOptionLabel={(option) => option.name}
-              value={
-                companyList.find((c) => c.name === selectedCompanyName) || null
-              }
-              onChange={(_, newValue) => {
-                setSelectedCompanyName(newValue ? newValue.name : "");
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Select Company"
-                  variant="outlined"
-                  size="small"
-                />
-              )}
-            />
-
-            {/* Company ID Input */}
-            <TextField
-              label="Company ID"
-              variant="outlined"
-              size="small"
-              value={selectedCompanyId || ""}
-              onChange={(e) =>
-                setSelectedCompanyId(
-                  e.target.value ? parseInt(e.target.value, 10) : null
-                )
-              }
-              placeholder="Enter Company ID"
-              sx={{ width: 120 }}
-            />
-
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setSelectedCompanyId(null);
-                setSelectedCompanyName("");
-              }}
-            >
-              Clear Filters
-            </Button>
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+            {filterCompanyId && (
+              <Typography variant="body2" color="textSecondary">
+                Showing roles for company: {companyList.find(c => c.id === filterCompanyId)?.name || filterCompanyId}
+              </Typography>
+            )}
           </Box>
 
           <Tooltip
             title={
               !canManageCompany
                 ? "You don't have permission, contact the admin"
-                : "click to open the operator creation form"
+                : "Click to open the role creation form"
             }
             placement="top-end"
           >
-            <span
-              style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}
-            >
+            <span style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}>
               <Button
-              
                 sx={{
-                  backgroundColor: !canManageCompany
-                    ? "#6c87b7 !important"
-                    : "#187b48",
+                  backgroundColor: !canManageCompany ? "#6c87b7" : "#187b48",
                   color: "white",
                   "&.Mui-disabled": {
-                    backgroundColor: "#6c87b7 !important",
+                    backgroundColor: "#6c87b7",
                     color: "#ffffff99",
                   },
                 }}
@@ -241,13 +225,12 @@ const RoleListingTable = () => {
           </Tooltip>
         </Box>
 
-        {/* Table */}
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectRole ? "0.8rem" : "1rem" }}>ID</b>
+                  <b style={{ display: "block", textAlign: "center" }}>ID</b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -256,57 +239,34 @@ const RoleListingTable = () => {
                     onChange={(e) => handleSearchChange(e, "id")}
                     fullWidth
                     sx={{
-                      width: 80,
                       "& .MuiInputBase-root": {
                         height: 30,
                         padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectRole ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: "1rem",
-                        ontSize: selectRole ? "0.8rem" : "1rem",
                       },
                     }}
                   />
                 </TableCell>
 
                 <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectRole ? "0.8rem" : "1rem",
-                      textWrap: "nowrap",
-                    }}
-                  >
-                    Company Name
-                  </b>
+                  <b style={{ display: "block", textAlign: "center" }}>Company</b>
                   <TextField
                     variant="outlined"
                     size="small"
                     placeholder="Search"
                     value={search.companyName}
                     onChange={(e) => handleSearchChange(e, "companyName")}
+                    fullWidth
                     sx={{
-                      width: 120,
                       "& .MuiInputBase-root": {
                         height: 30,
                         padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectRole ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectRole ? "0.8rem" : "1rem",
                       },
                     }}
                   />
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectRole ? "0.8rem" : "1rem", textWrap: "nowrap" }}>Role Name</b>
+                  <b style={{ display: "block", textAlign: "center" }}>Role Name</b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -318,29 +278,14 @@ const RoleListingTable = () => {
                       "& .MuiInputBase-root": {
                         height: 30,
                         padding: "4px",
-                        textAlign: "center",
-                        fontSize: "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: "1rem",
                       },
                     }}
                   />
                 </TableCell>
 
-                {[
-                  "Bus",
-                  "Route",
-                  "Schedule",
-                  "Role",
-                  "Operator",
-                  "Company",
-                ].map((permission) => (
-                  <TableCell key={permission} align="center" sx={{ width: "8%" }}>
-                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                      <Typography variant="caption" sx={{ fontWeight: "bold", fontSize: selectRole ? "0.8rem" : "1rem" }}>Manage {permission}</Typography>
-                    </Box>
+                {["Bus", "Route", "Schedule", "Role", "Operator", "Company"].map((permission) => (
+                  <TableCell key={permission} align="center">
+                    <b style={{ display: "block", textAlign: "center" }}>Manage {permission}</b>
                   </TableCell>
                 ))}
               </TableRow>
@@ -352,7 +297,6 @@ const RoleListingTable = () => {
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((row) => {
                     const isSelected = selectRole?.id === row.id;
-
                     return (
                       <TableRow
                         key={row.id}
@@ -360,15 +304,13 @@ const RoleListingTable = () => {
                         onClick={() => handleRowClick(row)}
                         sx={{
                           cursor: "pointer",
-                          backgroundColor: isSelected ? "#E3F2FD !important" : "inherit",
-                          "&:hover": {
-                            backgroundColor: isSelected ? "#E3F2FD !important" : "#F5F5F5",
-                          },
+                          backgroundColor: isSelected ? "#E3F2FD" : "inherit",
+                          "&:hover": { backgroundColor: "#E3F2FD" },
                         }}
                       >
                         <TableCell>{row.id}</TableCell>
                         <TableCell>{getCompanyName(row.companyId)}</TableCell>
-                        <TableCell sx={{ cursor: "pointer" }}>{row.name}</TableCell>
+                        <TableCell>{row.name}</TableCell>
 
                         {[
                           "manage_bus",
@@ -391,7 +333,7 @@ const RoleListingTable = () => {
                   })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={11} align="center">
+                  <TableCell colSpan={9} align="center">
                     No roles found.
                   </TableCell>
                 </TableRow>
@@ -433,12 +375,15 @@ const RoleListingTable = () => {
                 sx={{
                   padding: "5px 10px",
                   minWidth: 40,
-                  bgcolor: page === pageNumber ? "rgba(97, 97, 97, 0.2)" : "transparent",
+                  bgcolor:
+                    page === pageNumber
+                      ? "rgba(21, 101, 192, 0.2)"
+                      : "transparent",
                   fontWeight: page === pageNumber ? "bold" : "normal",
                   borderRadius: "5px",
                   transition: "all 0.3s",
                   "&:hover": {
-                    bgcolor: "rgba(97, 97, 97, 0.3)",
+                    bgcolor: "rgba(21, 101, 192, 0.3)",
                   },
                 }}
               >
@@ -455,42 +400,37 @@ const RoleListingTable = () => {
         </Box>
       </Box>
 
-      {/* Side Panel for Role Details */}
+      {/* Role Details Card */}
       {selectRole && (
         <Box
           sx={{
-            flex: { xs: "0 0 100%", md: "0 0 30%" },
-            maxWidth: { xs: "100%", md: "30%" },
-            transition: "all 0.3s ease",
+            flex: { xs: "0 0 100%", md: "0 0 35%" },
+            maxWidth: { xs: "100%", md: "35%" },
             bgcolor: "grey.100",
             p: 2,
-            mt: { xs: 2, md: 0 },
             overflowY: "auto",
-            overflowX: "hidden",
-            height: "100%",
           }}
         >
           <RoleDetailsCard
             role={selectRole}
-            onBack={() => setSelectedRole(null)}
             onUpdate={() => {}}
             onDelete={() => {}}
-            refreshList={(value: any) => refreshList(value)}
+            onBack={() => setSelectedRole(null)}
+            refreshList={refreshList}
             canManageCompany={canManageCompany}
           />
         </Box>
       )}
 
-      {/* Create Role Modal */}
+      {/* Create Role Dialog */}
       <Dialog open={openCreateModal} onClose={handleCloseModal} maxWidth="sm" fullWidth>
         <DialogContent>
-          <RoleCreatingForm onClose={handleCloseModal} refreshList={(value: any) => refreshList(value)} />
+          <RoleCreatingForm
+            refreshList={refreshList}
+            onClose={handleCloseModal}
+            // defaultCompanyId={filterCompanyId}
+          />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal} color="error">
-            Cancel
-          </Button>
-        </DialogActions>
       </Dialog>
     </Box>
   );
