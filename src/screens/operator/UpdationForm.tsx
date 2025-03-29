@@ -31,6 +31,7 @@ type operatorFormValues = {
   email?: string;
   gender?: number;
   status?: number;
+  companyId?: number;
   role: number;
   roleAssignmentId?: number;
 };
@@ -61,44 +62,61 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
-  const [operatorData, setOperatorData] = useState<operatorFormValues | null>(
-    null
-  );
+  const [roles, setRoles] = useState<{ id: number; name: string; company_id: number }[]>([]);
+  const [operatorData, setOperatorData] = useState<operatorFormValues | null>(null);
+  const [filteredRoles, setFilteredRoles] = useState<{ id: number; name: string }[]>([]);
+  const [showPassword, setShowPassword] = useState(false);
+  
   const {
     register,
     handleSubmit,
     control,
     reset,
+    watch,
     formState: { errors },
   } = useForm<operatorFormValues>();
-  const [showPassword, setShowPassword] = useState(false);
+  
+  const selectedCompanyId = watch("companyId");
+
   const handleTogglePassword = () => {
     setShowPassword((prev) => !prev);
   };
 
+  // Filter roles based on company ID
+  useEffect(() => {
+    if (selectedCompanyId) {
+      const filtered = roles.filter(role => role.company_id === selectedCompanyId);
+      setFilteredRoles(filtered.map(role => ({ id: role.id, name: role.name })));
+    } else {
+      setFilteredRoles([]);
+    }
+  }, [selectedCompanyId, roles]);
+
   // Fetch operator data on mount
   useEffect(() => {
-    dispatch(operatorRoleListApi())
-      .unwrap()
-      .then((res: any[]) => {
-        setRoles(res.map((role) => ({ id: role.id, name: role.name })));
-      })
-      .catch((err: any) => {
-        console.error("Error fetching roles:", err);
-      });
     const fetchOperatorData = async () => {
       try {
         setLoading(true);
-        const operators = await dispatch(operatorListApi()).unwrap();
+        const operators = await dispatch(operatorListApi(selectedCompanyId??0)).unwrap();
         const operator = operators.find((r: any) => r.id === operatorId);
 
         if (operator) {
+          // Fetch role mapping
           const roleMapping = await dispatch(
             fetchOperatorRoleMappingApi(operatorId)
           ).unwrap();
-          console.log("account===============>", operator);
-          console.log("Fetched Role Mapping:", roleMapping);
+          
+          // Fetch roles for the operator's company
+          const companyRoles = await dispatch(
+            operatorRoleListApi(operator.company_id)
+          ).unwrap();
+          
+          setRoles(companyRoles.map((role: any) => ({
+            id: role.id,
+            name: role.name,
+            company_id: role.company_id
+          })));
+
           setOperatorData({
             id: operator.id,
             username: operator.username,
@@ -110,6 +128,7 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             email: operator.email_id,
             gender: operator.gender,
             status: operator.status,
+            companyId: operator.company_id,
             role: roleMapping.role_id,
             roleAssignmentId: roleMapping.id,
           });
@@ -125,6 +144,7 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             email: operator.email_id,
             gender: operator.gender,
             status: operator.status,
+            companyId: operator.company_id,
             role: roleMapping.role_id,
             roleAssignmentId: roleMapping.id,
           });
@@ -141,9 +161,7 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
   }, [operatorId, dispatch, reset]);
 
   // Handle operator update
-  const handleOperatorUpdate: SubmitHandler<operatorFormValues> = async (
-    data
-  ) => {
+  const handleOperatorUpdate: SubmitHandler<operatorFormValues> = async (data) => {
     try {
       setLoading(true);
 
@@ -166,28 +184,18 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
       if (data.status) {
         formData.append("status", data.status.toString());
       }
-      console.log(
-        "Form Data for Account Update:",
-        Object.fromEntries(formData.entries())
-      );
 
       const operatorResponse = await dispatch(
         operatorupdationApi({ operatorId, formData })
       ).unwrap();
-      console.log("operator updated:", operatorResponse);
+
       if (!operatorResponse || !operatorResponse.id) {
         alert("Account update failed! Please try again.");
         onClose();
         return;
       }
-      refreshList("refresh");
 
       if (data.roleAssignmentId && data.role) {
-        console.log("Calling roleAssignUpdateApi with:", {
-          roleAssignmentId: data.roleAssignmentId,
-          role: data.role,
-        });
-
         try {
           const roleUpdateResponse = await dispatch(
             operatorRoleAssignUpdateApi({
@@ -195,7 +203,6 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
               role_id: data.role,
             })
           ).unwrap();
-          console.log("Role Assignment Update Response:", roleUpdateResponse);
 
           if (!roleUpdateResponse || !roleUpdateResponse.id) {
             alert("Account updated, but role assignment update failed!");
@@ -206,10 +213,6 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
           console.error("Error during role assignment update:", roleError);
           alert("Account updated, but role assignment update failed!");
         }
-      } else {
-        console.warn(
-          "Role Assignment ID or Role ID is missing. Skipping role assignment update."
-        );
       }
 
       alert("Account updated successfully!");
@@ -256,6 +259,7 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             helperText={errors.fullName?.message}
             size="small"
           />
+
           <Controller
             name="phoneNumber"
             control={control}
@@ -270,20 +274,15 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
                 helperText={errors.phoneNumber?.message}
                 value={field.value ? `+91${field.value}` : ""}
                 onChange={(e) => {
-                  let value = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters
-                  if (value.startsWith("91")) value = value.slice(2); // Prevent extra +91
-                  if (value.length > 10) value = value.slice(0, 10); // Limit to 10 digits
-                  field.onChange(value || ""); // Allow empty value
-                }}
-                onFocus={() => {
-                  if (!field.value) field.onChange(""); // Ensure user can start fresh
-                }}
-                onBlur={() => {
-                  if (!field.value) field.onChange(""); // Keep field empty if cleared
+                  let value = e.target.value.replace(/\D/g, "");
+                  if (value.startsWith("91")) value = value.slice(2);
+                  if (value.length > 10) value = value.slice(0, 10);
+                  field.onChange(value || "");
                 }}
               />
             )}
           />
+
           <TextField
             margin="normal"
             placeholder="example@gmail.com"
@@ -325,7 +324,7 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
                 margin="normal"
                 fullWidth
                 select
-                label="status"
+                label="Status"
                 {...field}
                 error={!!errors.status}
                 size="small"
@@ -355,11 +354,17 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
                 helperText={errors.role?.message}
                 size="small"
               >
-                {roles.map((role) => (
-                  <MenuItem key={role.id} value={role.id}>
-                    {role.name}
+                {filteredRoles.length > 0 ? (
+                  filteredRoles.map((role) => (
+                    <MenuItem key={role.id} value={role.id}>
+                      {role.name}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled value="">
+                    No roles available for this company
                   </MenuItem>
-                ))}
+                )}
               </TextField>
             )}
           />
@@ -383,10 +388,10 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
               ),
             }}
           />
+
           <Button
             type="submit"
             fullWidth
-            color="primary"
             variant="contained"
             sx={{ mt: 3, mb: 2, bgcolor: "darkblue" }}
             disabled={loading}

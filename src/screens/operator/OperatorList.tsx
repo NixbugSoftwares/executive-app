@@ -18,6 +18,7 @@ import {
   MenuItem,
   Typography,
 } from "@mui/material";
+import ErrorIcon  from '@mui/icons-material/Error';
 import { SelectChangeEvent } from "@mui/material";
 import { useDispatch } from "react-redux";
 import { operatorListApi, companyListApi } from "../../slices/appSlice";
@@ -51,22 +52,9 @@ const OperatorListingTable = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [operatorList, setOperatorList] = useState<Operator[]>([]);
   const [companyList, setCompanyList] = useState<Company[]>([]);
-  const [selectedOperator, setSelectedOperator] = useState<Operator | null>(
-    null
-  );
-  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(() => {
-    const urlCompanyId = companyId ? parseInt(companyId) : null;
-    const storedCompanyId = localStorageHelper.getItem(
-      "operatorFilterCompanyId"
-    );
-    return urlCompanyId || storedCompanyId || null;
-  });
+  const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
+  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(companyId ? parseInt(companyId) : null);
 
-  useEffect(() => {
-    if (filterCompanyId) {
-      localStorageHelper.storeItem("operatorFilterCompanyId", filterCompanyId);
-    }
-  }, [filterCompanyId]);
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -104,7 +92,7 @@ const OperatorListingTable = () => {
           id: operator.id,
           companyId: operator.company_id,
           companyName: operator.company_name,
-          fullName: operator.full_name ?? "-",
+          fullName: operator.full_name ,
           username: operator.username,
           password: "",
           gender:
@@ -115,8 +103,8 @@ const OperatorListingTable = () => {
               : operator.gender === 3
               ? "Transgender"
               : "Other",
-          email: operator.email_id ?? "-",
-          phoneNumber: operator.phone_number ?? "-",
+          email: operator.email_id ,
+          phoneNumber: operator.phone_number || "",
           status: operator.status === 1 ? "Active" : "Suspended",
         }));
         setOperatorList(formattedAccounts);
@@ -208,24 +196,24 @@ const OperatorListingTable = () => {
 
   return (
     <Box
-      sx={{
-        display: "flex",
-        flexDirection: { xs: "column", md: "row" },
-        width: "100%",
-        height: "100vh",
-        gap: 2,
-        overflow: "hidden",
-      }}
+    sx={{
+      display: "flex",
+      flexDirection: { xs: "column", md: "row" },
+      width: "100%",
+      height: "100vh",
+      gap: 2,
+    }}
     >
       <Box
-        sx={{
-          flex: selectedOperator
-            ? { xs: "0 0 100%", md: "0 0 65%" }
-            : "0 0 100%",
-          maxWidth: selectedOperator ? { xs: "100%", md: "65%" } : "100%",
-          transition: "all 0.3s ease",
-          overflowY: "auto",
-        }}
+       sx={{
+        flex: selectedOperator ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
+        maxWidth: selectedOperator ? { xs: "100%", md: "65%" } : "100%",
+        transition: "all 0.3s ease",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden", 
+      }}
       >
         <Box
           sx={{
@@ -240,7 +228,7 @@ const OperatorListingTable = () => {
           <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
             {filterCompanyId && (
               <Typography variant="body2" color="textSecondary">
-                Showing operators for company:{" "}
+                Company Name :{" "}
                 {companyList.find((c) => c.id === filterCompanyId)?.name ||
                   filterCompanyId}
               </Typography>
@@ -284,7 +272,7 @@ const OperatorListingTable = () => {
           <Table sx={{ minWidth: 600 }}>
             <TableHead>
               <TableRow>
-                {["ID", "Company", "Full Name", "Phone", "Email", "Gender"].map(
+                {["ID", "Full Name", "Phone", "Email", "Gender"].map(
                   (header) => (
                     <TableCell key={header}>
                       <b style={{ display: "block", textAlign: "center" }}>
@@ -334,8 +322,14 @@ const OperatorListingTable = () => {
                           }
                           sx={{
                             "& .MuiInputBase-root": {
-                              height: 30,
+                              height: 40,
                               padding: "4px",
+                              textAlign: "center",
+                              fontSize: selectedOperator ? "0.8rem" : "1rem",
+                            },
+                            "& .MuiInputBase-input": {
+                              textAlign: "center",
+                              fontSize: selectedOperator ? "0.8rem" : "1rem",
                             },
                           }}
                           fullWidth
@@ -368,12 +362,33 @@ const OperatorListingTable = () => {
                         }}
                       >
                         <TableCell>{row.id}</TableCell>
-                        <TableCell>{getCompanyName(row.companyId)}</TableCell>
-                        <TableCell>{row.fullName}</TableCell>
                         <TableCell>
-                          {row.phoneNumber.replace("tel:", "")}
+                          {row.fullName ? (
+                            row.fullName
+                          ) : (
+                            <Tooltip title=" Full Name not added yet" placement="bottom">
+                              <ErrorIcon  sx={{ color: "#737d72 " }} />
+                            </Tooltip>
+                          )}
                         </TableCell>
-                        <TableCell>{row.email}</TableCell>
+                        <TableCell>
+                          {row.phoneNumber ? (
+                            row.phoneNumber.replace("tel:", "")
+                          ) : (
+                            <Tooltip title=" Phone Number not added yet" placement="bottom">
+                              <ErrorIcon  sx={{ color: "#737d72" }} />
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {row.email ? (
+                            row.email
+                          ) : (
+                            <Tooltip title=" Email not added yet" placement="bottom">
+                              <ErrorIcon  sx={{ color: "#737d72 " }} />
+                            </Tooltip>
+                          )}
+                        </TableCell>
                         <TableCell>{row.gender}</TableCell>
                       </TableRow>
                     );
@@ -489,7 +504,7 @@ const OperatorListingTable = () => {
           <OperatorCreationForm
             refreshList={refreshList}
             onClose={handleCloseModal}
-            // defaultCompanyId={filterCompanyId}
+            defaultCompanyId={filterCompanyId ?? undefined}
           />
         </DialogContent>
       </Dialog>

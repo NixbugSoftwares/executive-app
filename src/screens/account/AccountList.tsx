@@ -178,7 +178,7 @@ const AccountListingTable = () => {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        overflow: "hidden", // Prevent nested scrolling
+        overflow: "hidden", 
       }}
       >
         <Tooltip

@@ -13,7 +13,6 @@ import {
   DialogContentText,
   Tooltip,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -100,14 +99,6 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
       showErrorToast("Failed to delete company. Please try again.");
     }
   };
-
-  const navigate = useNavigate();
-  const onOperatorListClick = () => {
-    navigate(`/executive/company/operator`, {
-      state: { companyId: company.id },
-    });
-  };
-
   return (
     <>
       <Card
@@ -311,7 +302,6 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
           </Box>
         </CardActions>
       </Card>
-      <Button onClick={onOperatorListClick}>operatorlist</Button>
 
       {/* Delete Confirmation Modal */}
       <Dialog

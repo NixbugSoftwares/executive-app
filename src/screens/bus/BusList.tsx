@@ -14,7 +14,7 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  Autocomplete,
+  Typography,
 } from "@mui/material";
 import { useDispatch } from "react-redux";
 import { busListApi, companyListApi } from "../../slices/appSlice";
@@ -22,6 +22,7 @@ import type { AppDispatch } from "../../store/Store";
 import localStorageHelper from "../../utils/localStorageHelper";
 import BusDetailsCard from "./BusDetail";
 import BusCreationForm from "./BusCreationForm";
+import { useParams, useLocation } from "react-router-dom";
 
 interface Bus {
   id: number;
@@ -34,7 +35,7 @@ interface Bus {
   manufactured_on: string;
   insurance_upto: string;
   pollution_upto: string;
-  fitness_upto: string
+  fitness_upto: string;
 }
 
 interface Company {
@@ -43,13 +44,15 @@ interface Company {
 }
 
 const BusListingTable = () => {
+  const { companyId } = useParams();
+  const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
-
+  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(
+    companyId ? parseInt(companyId) : null
+  );
   const [busList, setBusList] = useState<Bus[]>([]);
   const [companyList, setCompanyList] = useState<Company[]>([]);
-  const [selectedBus, setSelectedBus] = useState<Bus | null>(
-    null
-  );
+  const [selectedBus, setSelectedBus] = useState<Bus | null>(null);
 
   const [search, setSearch] = useState({
     id: "",
@@ -61,11 +64,6 @@ const BusListingTable = () => {
     model: "",
   });
 
-  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(
-    null
-  );
-  const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
-
   const [page, setPage] = useState(0);
   const rowsPerPage = selectedBus ? 8 : 8;
 
@@ -75,10 +73,21 @@ const BusListingTable = () => {
   console.log("rolesdetails>>>>>>>>>>>>>", roleDetails);
 
   const canManageCompany = roleDetails?.manage_company || false;
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const urlCompanyId = companyId || queryParams.get("companyId");
+
+    if (urlCompanyId) {
+      const id = parseInt(urlCompanyId);
+      if (!isNaN(id)) {
+        setFilterCompanyId(id);
+      }
+    }
+  }, [companyId, location.search]);
 
   // Function to fetch accounts
   const fetchBus = () => {
-    dispatch(busListApi())
+    dispatch(busListApi(filterCompanyId))
       .unwrap()
       .then((res: any[]) => {
         console.log("API Response:", res);
@@ -96,7 +105,6 @@ const BusListingTable = () => {
           insurance_upto: bus.insurance_upto ?? "-",
           pollution_upto: bus.pollution_upto ?? "-",
           fitness_upto: bus.fitness_upto ?? "-",
-         
         }));
 
         console.log("Formatted Accounts:", formattedAccounts);
@@ -135,7 +143,6 @@ const BusListingTable = () => {
     setSearch((prev) => ({ ...prev, [column]: e.target.value }));
   };
 
-
   const filteredData = busList.filter(
     (row: Bus) =>
       (row.id?.toString()?.toLowerCase() || "").includes(
@@ -143,21 +150,15 @@ const BusListingTable = () => {
       ) &&
       (getCompanyName(row.companyId)?.toLowerCase() || "").includes(
         search.company_name.toLowerCase()
-      ) &&(row.registrationNumber?.toLowerCase() || "").includes(
+      ) &&
+      (row.registrationNumber?.toLowerCase() || "").includes(
         search.registrationNumber.toLowerCase()
       ) &&
-      (row.name?.toLowerCase() || "").includes(
-        search.name.toLowerCase()
-      ) && 
+      (row.name?.toLowerCase() || "").includes(search.name.toLowerCase()) &&
       (row.capacity?.toString().toLowerCase() || "").includes(
         search.capacity.toLowerCase()
-      ) && 
-      (row.model?.toLowerCase() || "").includes(
-        search.model.toLowerCase()
       ) &&
-      (!selectedCompanyName ||
-        getCompanyName(row.companyId) === selectedCompanyName) &&
-      (!selectedCompanyId || row.companyId === selectedCompanyId)
+      (row.model?.toLowerCase() || "").includes(search.model.toLowerCase())
   );
 
   const handleChangePage = (
@@ -191,17 +192,15 @@ const BusListingTable = () => {
         width: "100%",
         height: "100vh",
         gap: 2,
-        overflow: "hidden",
       }}
     >
       <Box
         sx={{
-          flex: selectedBus
-            ? { xs: "0 0 100%", md: "0 0 65%" }
-            : "0 0 100%",
+          flex: selectedBus ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
           maxWidth: selectedBus ? { xs: "100%", md: "65%" } : "100%",
           transition: "all 0.3s ease",
-          overflowY: selectedBus ? "auto" : "hidden",
+          overflowX: "auto",
+          overflowY: "auto",
         }}
       >
         <Box
@@ -214,51 +213,14 @@ const BusListingTable = () => {
             justifyContent: "space-between",
           }}
         >
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <Autocomplete
-              sx={{ width: 200 }}
-              options={companyList}
-              getOptionLabel={(option) => option.name}
-              value={
-                companyList.find((c) => c.name === selectedCompanyName) || null
-              }
-              onChange={(_, newValue) => {
-                setSelectedCompanyName(newValue ? newValue.name : "");
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Select Company"
-                  variant="outlined"
-                  size="small"
-                />
-              )}
-            />
-
-            {/* Company ID Input */}
-            <TextField
-              label="Company ID"
-              variant="outlined"
-              size="small"
-              value={selectedCompanyId || ""}
-              onChange={(e) =>
-                setSelectedCompanyId(
-                  e.target.value ? parseInt(e.target.value, 10) : null
-                )
-              }
-              placeholder="Enter Company ID"
-              sx={{ width: 120 }}
-            />
-
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setSelectedCompanyId(null);
-                setSelectedCompanyName("");
-              }}
-            >
-              Clear Filters
-            </Button>
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+            {filterCompanyId && (
+              <Typography variant="body2" color="textSecondary">
+                Company Name:{" "}
+                {companyList.find((c) => c.id === filterCompanyId)?.name ||
+                  filterCompanyId}
+              </Typography>
+            )}
           </Box>
 
           <Tooltip
@@ -273,7 +235,6 @@ const BusListingTable = () => {
               style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}
             >
               <Button
-              
                 sx={{
                   backgroundColor: !canManageCompany
                     ? "#6c87b7 !important"
@@ -295,223 +256,227 @@ const BusListingTable = () => {
         </Box>
 
         <TableContainer component={Paper}>
-  <Table sx={{ minWidth: 600 }}>
-    <TableHead>
-      <TableRow>
-        <TableCell>
-          <b
-            style={{
-              display: "block",
-              textAlign: "center",
-              fontSize: selectedBus ? "0.8rem" : "1rem",
-            }}
-          >
-            ID
-          </b>
-          <TextField
-            variant="outlined"
-            size="small"
-            placeholder="Search"
-            value={search.id}
-            onChange={(e) => handleSearchChange(e, "id")}
-            sx={{
-              width: 80,
-              "& .MuiInputBase-root": {
-                height: 30,
-                padding: "4px",
-                textAlign: "center",
-                fontSize: selectedBus ? "0.8rem" : "1rem",
-              },
-              "& .MuiInputBase-input": {
-                textAlign: "center",
-                fontSize: selectedBus ? "0.8rem" : "1rem",
-              },
-            }}
-          />
-        </TableCell>
+          <Table sx={{ minWidth: 600 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedBus ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    ID
+                  </b>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    value={search.id}
+                    onChange={(e) => handleSearchChange(e, "id")}
+                    sx={{
+                      width: 80,
+                      "& .MuiInputBase-root": {
+                        height: 30,
+                        padding: "4px",
+                        textAlign: "center",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
+                      },
+                      "& .MuiInputBase-input": {
+                        textAlign: "center",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
+                      },
+                    }}
+                  />
+                </TableCell>
+                
 
-        <TableCell sx={{ width: "200px" }}> {/* Adjust width for company name */}
-          <b
-            style={{
-              display: "block",
-              textAlign: "center",
-              fontSize: selectedBus ? "0.8rem" : "1rem",
-              whiteSpace: "nowrap", 
-            }}
-          >
-            Company Name
-          </b>
-          <TextField
-            variant="outlined"
-            size="small"
-            placeholder="Search"
-            value={search.company_name}
-            onChange={(e) => handleSearchChange(e, "company_name")}
-            sx={{
-              width: "100%",
-              "& .MuiInputBase-root": {
-                height: 30,
-                padding: "4px",
-                textAlign: "center",
-                fontSize: selectedBus ? "0.8rem" : "1rem",
-              },
-              "& .MuiInputBase-input": {
-                textAlign: "center",
-                fontSize: selectedBus ? "0.8rem" : "1rem",
-              },
-            }}
-          />
-        </TableCell>
+                <TableCell>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedBus ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    Name
+                  </b>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    value={search.name}
+                    onChange={(e) => handleSearchChange(e, "name")}
+                    fullWidth
+                    sx={{
+                      "& .MuiInputBase-root": {
+                        height: 30,
+                        padding: "4px",
+                        textAlign: "center",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
+                      },
+                      "& .MuiInputBase-input": {
+                        textAlign: "center",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
+                      },
+                    }}
+                  />
+                </TableCell>
 
-        <TableCell>
-          <b style={{ display: "block", textAlign: "center", fontSize: selectedBus ? "0.8rem" : "1rem", whiteSpace:selectedBus ? "nowrap" : "normal" }}>
-            Registration Number
-          </b>
-          <TextField
-            variant="outlined"
-            size="small"
-            placeholder="Search"
-            value={search.registrationNumber}
-            onChange={(e) => handleSearchChange(e, "registrationNumber")}
-            fullWidth
-            sx={{
-              "& .MuiInputBase-root": {
-                height: 30,
-                padding: "4px",
-                textAlign: "center",
-                fontSize: selectedBus ? "0.8rem" : "1rem",
-              },
-              "& .MuiInputBase-input": {
-                textAlign: "center",
-                fontSize: selectedBus ? "0.8rem" : "1rem",
-              },
-            }}
-          />
-        </TableCell>
+                <TableCell>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedBus ? "0.8rem" : "1rem",
+                      whiteSpace: selectedBus ? "nowrap" : "normal",
+                    }}
+                  >
+                    Registration Number
+                  </b>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    value={search.registrationNumber}
+                    onChange={(e) =>
+                      handleSearchChange(e, "registrationNumber")
+                    }
+                    fullWidth
+                    sx={{
+                      "& .MuiInputBase-root": {
+                        height: 30,
+                        padding: "4px",
+                        textAlign: "center",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
+                      },
+                      "& .MuiInputBase-input": {
+                        textAlign: "center",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
+                      },
+                    }}
+                  />
+                </TableCell>
 
-        <TableCell>
-          <b style={{ display: "block", textAlign: "center", fontSize: selectedBus ? "0.8rem" : "1rem" }}>Name</b>
-          <TextField
-            variant="outlined"
-            size="small"
-            placeholder="Search"
-            value={search.name}
-            onChange={(e) => handleSearchChange(e, "name")}
-            fullWidth
-            sx={{
-              "& .MuiInputBase-root": {
-                height: 30,
-                padding: "4px",
-                textAlign: "center",
-                fontSize: selectedBus ? "0.8rem" : "1rem",
-              },
-              "& .MuiInputBase-input": {
-                textAlign: "center",
-                fontSize: selectedBus ? "0.8rem" : "1rem",
-              },
-            }}
-          />
-        </TableCell>
+                <TableCell>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedBus ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    Capacity
+                  </b>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    value={search.capacity}
+                    onChange={(e) => handleSearchChange(e, "capacity")}
+                    sx={{
+                      width: "100%",
+                      "& .MuiInputBase-root": {
+                        height: 30,
+                        padding: "4px",
+                        textAlign: "center",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
+                      },
+                      "& .MuiInputBase-input": {
+                        textAlign: "center",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
+                      },
+                    }}
+                  />
+                </TableCell>
 
-        <TableCell > 
-          <b style={{ display: "block", textAlign: "center", fontSize: selectedBus ? "0.8rem" : "1rem" }}>Capacity</b>
-          <TextField
-            variant="outlined"
-            size="small"
-            placeholder="Search"
-            value={search.capacity}
-            onChange={(e) => handleSearchChange(e, "capacity")}
-            sx={{
-              width: "100%",
-              "& .MuiInputBase-root": {
-                height: 30,
-                padding: "4px",
-                textAlign: "center",
-                fontSize: selectedBus ? "0.8rem" : "1rem",
-              },
-              "& .MuiInputBase-input": {
-                textAlign: "center",
-                fontSize: selectedBus ? "0.8rem" : "1rem",
-              },
-            }}
-          />
-        </TableCell>
-
-        <TableCell>
-          <b style={{ display: "block", textAlign: "center", fontSize: selectedBus ? "0.8rem" : "1rem" }}>Model</b>
-          <TextField
-            variant="outlined"
-            size="small"
-            placeholder="Search"
-            value={search.model}
-            onChange={(e) => handleSearchChange(e, "model")}
-            sx={{
-              width: "100%",
-              "& .MuiInputBase-root": {
-                height: 30,
-                padding: "4px",
-                textAlign: "center",
-                fontSize: selectedBus ? "0.8rem" : "1rem",
-              },
-              "& .MuiInputBase-input": {
-                textAlign: "center",
-                fontSize: selectedBus ? "0.8rem" : "1rem",
-              },
-            }}
-          />
-        </TableCell>
-      </TableRow>
-    </TableHead>
-
-    <TableBody
-      sx={{
-        fontSize: selectedBus ? "0.8rem" : "1rem",
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-      }}
-    >
-      {filteredData.length > 0 ? (
-        filteredData
-          .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-          .map((row) => {
-            const isSelected = selectedBus?.id === row.id;
-            return (
-              <TableRow
-                key={row.id}
-                hover
-                onClick={() => handleRowClick(row)}
-                sx={{
-                  cursor: "pointer",
-                  backgroundColor: isSelected ? "#1565C0 !important" : "inherit",
-                  color: isSelected ? "white !important" : "inherit",
-                  "&:hover": {
-                    backgroundColor: isSelected ? "#1565C0 !important" : "#E3F2FD",
-                  },
-                  "& td": {
-                    color: isSelected ? "white !important" : "inherit",
-                  },
-                }}
-              >
-                <TableCell>{row.id}</TableCell>
-                <TableCell sx={{ whiteSpace: "nowrap" }}>{getCompanyName(row.companyId)}</TableCell> {/* Prevent wrapping */}
-                <TableCell>{row.registrationNumber}</TableCell>
-                <TableCell>{row.name}</TableCell>
-                <TableCell>{row.capacity}</TableCell>
-                <TableCell>{row.model}</TableCell>
+                <TableCell>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedBus ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    Model
+                  </b>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    value={search.model}
+                    onChange={(e) => handleSearchChange(e, "model")}
+                    sx={{
+                      width: "100%",
+                      "& .MuiInputBase-root": {
+                        height: 30,
+                        padding: "4px",
+                        textAlign: "center",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
+                      },
+                      "& .MuiInputBase-input": {
+                        textAlign: "center",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
+                      },
+                    }}
+                  />
+                </TableCell>
               </TableRow>
-            );
-          })
-      ) : (
-        <TableRow>
-          <TableCell colSpan={6} align="center">
-            No accounts found.
-          </TableCell>
-        </TableRow>
-      )}
-    </TableBody>
-  </Table>
-</TableContainer>
+            </TableHead>
+
+            <TableBody
+              sx={{
+                fontSize: selectedBus ? "0.8rem" : "1rem",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {filteredData.length > 0 ? (
+                filteredData
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((row) => {
+                    const isSelected = selectedBus?.id === row.id;
+                    return (
+                      <TableRow
+                        key={row.id}
+                        hover
+                        onClick={() => handleRowClick(row)}
+                        sx={{
+                          cursor: "pointer",
+                          backgroundColor: isSelected
+                            ? "#1565C0 !important"
+                            : "inherit",
+                          color: isSelected ? "white !important" : "inherit",
+                          "&:hover": {
+                            backgroundColor: isSelected
+                              ? "#1565C0 !important"
+                              : "#E3F2FD",
+                          },
+                          "& td": {
+                            color: isSelected ? "white !important" : "inherit",
+                          },
+                        }}
+                      >
+                        <TableCell>{row.id}</TableCell>
+                        <TableCell>{row.name}</TableCell>
+                        <TableCell>{row.registrationNumber}</TableCell>
+                        <TableCell>{row.capacity}</TableCell>
+                        <TableCell>{row.model}</TableCell>
+                      </TableRow>
+                    );
+                  })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    No accounts found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
         {/* Pagination */}
         <Box
@@ -607,6 +572,7 @@ const BusListingTable = () => {
           <BusCreationForm
             refreshList={(value: any) => refreshList(value)}
             onClose={handleCloseModal}
+            defaultCompanyId={filterCompanyId ?? undefined}
           />
         </DialogContent>
         <DialogActions>

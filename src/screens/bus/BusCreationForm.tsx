@@ -21,13 +21,14 @@ interface IAccountFormInputs {
 interface IOperatorCreationFormProps {
   onClose: () => void;
   refreshList: (value: any) => void;
+  defaultCompanyId?: number;
 }
 
-const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, refreshList }) => {
+const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, refreshList, defaultCompanyId }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [companies, setCompanies] = useState<{ id: number; name: string }[]>([]);
-  const [filteredCompanies, setFilteredCompanies] = useState<{ id: number; name: string }[]>([]);
+  const filteredCompanies = defaultCompanyId ? companies.filter(company => company.id === defaultCompanyId): companies;
 
   const {
     register,
@@ -36,20 +37,25 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, refres
     formState: { errors },
   } = useForm<IAccountFormInputs>({
     resolver: yupResolver(busCreationSchema),
+    defaultValues: {
+      companyId: defaultCompanyId || undefined,
+    }
   });
 
   useEffect(() => {
-    dispatch(companyListApi())
-      .unwrap()
-      .then((res: any[]) => {
-        const companyList = res.map((company) => ({ id: company.id, name: company.name }));
-        setCompanies(companyList);
-        setFilteredCompanies(companyList);
-      })
-      .catch((err: any) => {
-        console.error("Error fetching company:", err);
-      });
-  }, [dispatch]);
+      dispatch(companyListApi())
+        .unwrap()
+        .then((res: any[]) => {
+          const companyList = res.map((company) => ({ 
+            id: company.id, 
+            name: company.name 
+          }));
+          setCompanies(companyList);
+        })
+        .catch((err: any) => {
+          console.error("Error fetching company:", err);
+        });
+    }, [dispatch]);
 
   const handleAccountCreation: SubmitHandler<IAccountFormInputs> = async (data) => {
     try {
@@ -63,7 +69,10 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, refres
       };
   
       const formData = new FormData();
-      formData.append("company_id", data.companyId.toString());
+      const companyIdToUse = defaultCompanyId || data.companyId;
+      if (companyIdToUse) {
+        formData.append("company_id", companyIdToUse.toString());
+      }
       formData.append("registration_number", data.registrationNumber);
       formData.append("name", data.name);
       formData.append("capacity", data.capacity.toString());
@@ -101,12 +110,6 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, refres
     }
   };
 
-  const handleCompanySearch = (_event: React.ChangeEvent<{}>, value: string) => {
-    const filtered = companies.filter((company) =>
-      company.name.toLowerCase().includes(value.toLowerCase())
-    );
-    setFilteredCompanies(filtered);
-  };
 
   return (
     <Container component="main" maxWidth="xs">
@@ -117,29 +120,31 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, refres
         </Typography>
         <Box component="form" noValidate sx={{ mt: 1 }} onSubmit={handleSubmit(handleAccountCreation)}>
           <Controller
-            name="companyId"
-            control={control}
-            render={({ field }) => (
-              <Autocomplete
-                options={filteredCompanies}
-                getOptionLabel={(option) => option.name}
-                onChange={(_event, value) => field.onChange(value ? value.id : null)}
-                onInputChange={handleCompanySearch}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    margin="normal"
-                    required
-                    fullWidth
-                    label="Company Name"
-                    error={!!errors.companyId}
-                    helperText={errors.companyId?.message}
-                    size="small"
-                  />
-                )}
-              />
-            )}
-          />
+                  name="companyId"
+                  control={control}
+                  rules={{ required: "Company is required" }}
+                  render={({ field }) => (
+                    <Autocomplete
+                      options={filteredCompanies}
+                      getOptionLabel={(option) => option.name}
+                      onChange={(_event, value) => field.onChange(value ? value.id : null)}
+                      value={filteredCompanies.find(c => c.id === field.value) || null}
+                      disabled={!!defaultCompanyId && filteredCompanies.length === 1}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          margin="normal"
+                          required
+                          fullWidth
+                          label="Company Name"
+                          error={!!errors.companyId}
+                          helperText={errors.companyId?.message}
+                          size="small"
+                        />
+                      )}
+                    />
+                  )}
+                />
           <TextField
             margin="normal"
             required

@@ -20,13 +20,14 @@ type RoleFormValues = {
 interface IRoleCreationFormProps {
   onClose: () => void;
   refreshList: (value: any) => void;
+  defaultCompanyId?: number;
 }
 
-const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({ onClose, refreshList }) => {
+const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({ onClose, refreshList, defaultCompanyId }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [companies, setCompanies] = useState<{ id: number; name: string }[]>([]);
-  const [filteredCompanies, setFilteredCompanies] = useState<{ id: number; name: string }[]>([]);
+  const filteredCompanies = defaultCompanyId ? companies.filter(company => company.id === defaultCompanyId): companies;
 
   const {
     register,
@@ -37,24 +38,26 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({ onClose, refreshLi
     resolver: yupResolver(operatorRoleCreationSchema), 
     defaultValues: {
       name: "",
-      companyId: 0, 
+      companyId: defaultCompanyId || undefined, 
       manage_bus: false,
       manage_route: false,
       manage_schedule: false,
       manage_role: false,
       manage_operator: false,
       manage_company: false,
+      
     },
   });
 
-  // Fetch companies on mount
-  useEffect(() => {
+useEffect(() => {
     dispatch(companyListApi())
       .unwrap()
       .then((res: any[]) => {
-        const companyList = res.map((company) => ({ id: company.id, name: company.name }));
+        const companyList = res.map((company) => ({ 
+          id: company.id, 
+          name: company.name 
+        }));
         setCompanies(companyList);
-        setFilteredCompanies(companyList);
       })
       .catch((err: any) => {
         console.error("Error fetching company:", err);
@@ -66,12 +69,9 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({ onClose, refreshLi
     try {
       const formData = new FormData();
       formData.append("name", data.name);
-      if (data.companyId) {
-        formData.append("company_id", data.companyId.toString());
-      } else {
-        alert("Company is required");
-        setLoading(false);
-        return;
+      const companyIdToUse = defaultCompanyId || data.companyId;
+      if (companyIdToUse) {
+        formData.append("company_id", companyIdToUse.toString());
       }
       formData.append("manage_bus", String(data.manage_bus));
       formData.append("manage_route", String(data.manage_route));
@@ -125,7 +125,8 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({ onClose, refreshLi
             options={filteredCompanies}
             getOptionLabel={(option) => option.name}
             onChange={(_event, value) => field.onChange(value ? value.id : null)}
-            value={companies.find((company) => company.id === field.value) || null}
+            value={filteredCompanies.find(c => c.id === field.value) || null}
+            disabled={!!defaultCompanyId && filteredCompanies.length === 1}
             renderInput={(params) => (
               <TextField
                 {...params}

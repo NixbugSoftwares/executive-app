@@ -928,12 +928,13 @@ export const busCreationApi = createAsyncThunk(
 //bus list Api
 export const busListApi = createAsyncThunk(
   "/executive/company/bus",
-  async (_, { rejectWithValue }) => {
+  async (companyId: number | null, { rejectWithValue }) => {
     try {
+      const params = companyId ? { company_id: companyId } : {};
       const response = await commonApi.apiCall(
         "get",
         "/executive/company/bus",
-        {},
+        params,
         true,
         "application/json"
       );

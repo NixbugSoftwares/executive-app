@@ -41,17 +41,8 @@ const RoleListingTable = () => {
   const [selectRole, setSelectedRole] = useState<Role | null>(null);
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [search, setSearch] = useState({ id: "", Rolename: "", companyName: "" });
-  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(() => {
-    const urlCompanyId = companyId ? parseInt(companyId) : null;
-    const storedCompanyId = localStorageHelper.getItem('roleFilterCompanyId');
-    return urlCompanyId || storedCompanyId || null;
-  });
+  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(companyId ? parseInt(companyId) : null);
 
-  useEffect(() => {
-    if (filterCompanyId) {
-      localStorageHelper.storeItem('roleFilterCompanyId', filterCompanyId);
-    }
-  }, [filterCompanyId]);
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -248,24 +239,6 @@ const RoleListingTable = () => {
                 </TableCell>
 
                 <TableCell>
-                  <b style={{ display: "block", textAlign: "center" }}>Company</b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.companyName}
-                    onChange={(e) => handleSearchChange(e, "companyName")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 30,
-                        padding: "4px",
-                      },
-                    }}
-                  />
-                </TableCell>
-
-                <TableCell>
                   <b style={{ display: "block", textAlign: "center" }}>Role Name</b>
                   <TextField
                     variant="outlined"
@@ -309,7 +282,6 @@ const RoleListingTable = () => {
                         }}
                       >
                         <TableCell>{row.id}</TableCell>
-                        <TableCell>{getCompanyName(row.companyId)}</TableCell>
                         <TableCell>{row.name}</TableCell>
 
                         {[
@@ -428,7 +400,7 @@ const RoleListingTable = () => {
           <RoleCreatingForm
             refreshList={refreshList}
             onClose={handleCloseModal}
-            // defaultCompanyId={filterCompanyId}
+            defaultCompanyId={filterCompanyId ?? undefined}
           />
         </DialogContent>
       </Dialog>
