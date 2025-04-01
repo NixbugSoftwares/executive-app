@@ -5,7 +5,7 @@ import { roleCreationApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { roleCreationSchema } from "../auth/validations/authValidation";
-
+import {  showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
 type RoleFormValues = {
   name: string;
   manageExecutive?: boolean;
@@ -67,15 +67,15 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({ onClose, refreshLi
       const response = await dispatch(roleCreationApi(formData)).unwrap();
       console.log("Role created>>>>>>>>>>>>>>>>>>>>:", response);
       if (response?.id) {
-        alert("Role created successfully!");
+        showSuccessToast("Role created successfully!");
         refreshList("refresh");
         onClose();
       } else {
-        alert("Role creation failed. Please try again.");
+        showErrorToast("Role creation failed. Please try again.");
       }
     } catch (error) {
       console.error("Error creating role:", error);
-      alert("Failed to create role. Please try again.");
+      showErrorToast("Failed to create role. Please try again.");
     } finally {
       setLoading(false);
     }

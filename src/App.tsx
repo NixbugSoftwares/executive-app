@@ -5,6 +5,8 @@ import { Nonet } from "./common";
 import { toast } from "react-toastify";
 import store from "./store/Store";
 import { Provider as ReduxProvider } from "react-redux";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 
 const App: React.FC = () => {
@@ -32,7 +34,7 @@ const App: React.FC = () => {
  
   return (
     <ReduxProvider store={store}>
-      
+      <ToastContainer position="top-center" autoClose={5000} />
     <Routes>
     {isOnline ? (
       <Route path="*" element={<AppRouter />} />

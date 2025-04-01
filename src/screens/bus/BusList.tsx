@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -15,62 +14,113 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  Typography,
 } from "@mui/material";
 import { useDispatch } from "react-redux";
-import { companyListApi } from "../../slices/appSlice";
+import { busListApi, companyListApi } from "../../slices/appSlice";
 import type { AppDispatch } from "../../store/Store";
 import localStorageHelper from "../../utils/localStorageHelper";
-import CompanyDetailsCard from "./CompanyDetailsCard";
-import CompanyCreationForm from "./CompanyCreationForm";
+import BusDetailsCard from "./BusDetail";
+import BusCreationForm from "./BusCreationForm";
+import { useParams, useLocation } from "react-router-dom";
+
+interface Bus {
+  id: number;
+  companyId: number;
+  companyName: string;
+  registrationNumber: string;
+  name: string;
+  capacity: number;
+  model: string;
+  manufactured_on: string;
+  insurance_upto: string;
+  pollution_upto: string;
+  fitness_upto: string;
+}
 
 interface Company {
   id: number;
   name: string;
-  ownerName: string;
-  location: string;
-  phoneNumber: string;
-  address: string;
-  email: string;
-  status: string;
 }
 
-const CompanyListingTable = () => {
+const BusListingTable = () => {
+  const { companyId } = useParams();
+  const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
+  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(
+    companyId ? parseInt(companyId) : null
+  );
+  const [busList, setBusList] = useState<Bus[]>([]);
   const [companyList, setCompanyList] = useState<Company[]>([]);
-  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [selectedBus, setSelectedBus] = useState<Bus | null>(null);
+
   const [search, setSearch] = useState({
     id: "",
+    company_id: "",
+    company_name: "",
+    registrationNumber: "",
     name: "",
-    ownerName: "",
-    location: "",
-    address: "",
-    email: "",
-    phoneNumber: "",
+    capacity: "",
+    model: "",
   });
 
   const [page, setPage] = useState(0);
-  const rowsPerPage = selectedCompany ? 8 : 8;
+  const rowsPerPage = selectedBus ? 8 : 8;
+
   const [openCreateModal, setOpenCreateModal] = useState(false);
+
   const roleDetails = localStorageHelper.getItem("@roleDetails");
+  console.log("rolesdetails>>>>>>>>>>>>>", roleDetails);
+
   const canManageCompany = roleDetails?.manage_company || false;
-  const navigate = useNavigate();
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const urlCompanyId = companyId || queryParams.get("companyId");
+
+    if (urlCompanyId) {
+      const id = parseInt(urlCompanyId);
+      if (!isNaN(id)) {
+        setFilterCompanyId(id);
+      }
+    }
+  }, [companyId, location.search]);
+
   // Function to fetch accounts
+  const fetchBus = () => {
+    dispatch(busListApi(filterCompanyId))
+      .unwrap()
+      .then((res: any[]) => {
+        console.log("API Response:", res);
+
+        // Transform API data to match expected structure
+        const formattedAccounts = res.map((bus: any) => ({
+          id: bus.id,
+          companyId: bus.company_id,
+          companyName: bus.company_name,
+          registrationNumber: bus.registration_number ?? "-",
+          name: bus.name ?? "-",
+          capacity: bus.capacity ?? "-",
+          model: bus.model ?? "-",
+          manufactured_on: bus.manufactured_on ?? "-",
+          insurance_upto: bus.insurance_upto ?? "-",
+          pollution_upto: bus.pollution_upto ?? "-",
+          fitness_upto: bus.fitness_upto ?? "-",
+        }));
+
+        console.log("Formatted Accounts:", formattedAccounts);
+        setBusList(formattedAccounts);
+      })
+      .catch((err: any) => {
+        console.error("Error fetching accounts", err);
+      });
+  };
+
   const fetchCompany = () => {
     dispatch(companyListApi())
       .unwrap()
       .then((res: any[]) => {
-        // Transform API data to match expected structure
-        const formattedAccounts = res.map((company: any) => ({
-          id: company.id,
-          name: company.name ?? "-",
-          address: company.address ?? "-",
-          location: company.location ?? "-",
-          ownerName: company.owner_name,
-          phoneNumber: company.phone_number ?? "-",
-          email: company.email_id ?? "-",
-          status: company.status === 1 ? "Active" : "Suspended",
-        }));
-        setCompanyList(formattedAccounts);
+        console.log("Company API Response:", res);
+        setCompanyList(res);
       })
       .catch((err: any) => {
         console.error("Error fetching companies", err);
@@ -78,17 +128,12 @@ const CompanyListingTable = () => {
   };
 
   useEffect(() => {
+    fetchBus();
     fetchCompany();
-    refreshList;
   }, []);
-
-  const handleRowClick = (company: Company) => {
-    setSelectedCompany(company);
-    navigate(`/executive/company/${company.id}`);
-  };
-  const handleCloseDetailCard = () => {
-    setSelectedCompany(null);
-    navigate("/executive/company");
+  const getCompanyName = (companyId: number) => {
+    const company = companyList.find((company) => company.id === companyId);
+    return company ? company.name : "Unknown Company";
   };
 
   const handleSearchChange = (
@@ -98,25 +143,22 @@ const CompanyListingTable = () => {
     setSearch((prev) => ({ ...prev, [column]: e.target.value }));
   };
 
-  const filteredData = companyList.filter(
-    (row: Company) =>
+  const filteredData = busList.filter(
+    (row: Bus) =>
       (row.id?.toString()?.toLowerCase() || "").includes(
         search.id.toLowerCase()
       ) &&
+      (getCompanyName(row.companyId)?.toLowerCase() || "").includes(
+        search.company_name.toLowerCase()
+      ) &&
+      (row.registrationNumber?.toLowerCase() || "").includes(
+        search.registrationNumber.toLowerCase()
+      ) &&
       (row.name?.toLowerCase() || "").includes(search.name.toLowerCase()) &&
-      (row.ownerName?.toLowerCase() || "").includes(
-        search.ownerName.toLowerCase()
+      (row.capacity?.toString().toLowerCase() || "").includes(
+        search.capacity.toLowerCase()
       ) &&
-      (row.location?.toLowerCase() || "").includes(
-        search.location.toLowerCase()
-      ) &&
-      (row.address?.toLowerCase() || "").includes(
-        search.address.toLowerCase()
-      ) &&
-      (row.email?.toLowerCase() || "").includes(search.email.toLowerCase()) &&
-      (row.phoneNumber?.toLowerCase() || "").includes(
-        search.phoneNumber.toLowerCase()
-      )
+      (row.model?.toLowerCase() || "").includes(search.model.toLowerCase())
   );
 
   const handleChangePage = (
@@ -132,8 +174,14 @@ const CompanyListingTable = () => {
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      fetchCompany();
+      console.log("Account list refreshed...");
+      fetchBus();
     }
+  };
+
+  const handleRowClick = (bus: Bus) => {
+    const companyName = getCompanyName(bus.companyId);
+    setSelectedBus({ ...bus, companyName: companyName });
   };
 
   return (
@@ -148,51 +196,67 @@ const CompanyListingTable = () => {
     >
       <Box
         sx={{
-          flex: selectedCompany
-            ? { xs: "0 0 100%", md: "0 0 65%" }
-            : "0 0 100%",
-          maxWidth: selectedCompany ? { xs: "100%", md: "65%" } : "100%",
+          flex: selectedBus ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
+          maxWidth: selectedBus ? { xs: "100%", md: "65%" } : "100%",
           transition: "all 0.3s ease",
-          overflowY: selectedCompany ? "auto" : "hidden",
+          overflowX: "auto",
+          overflowY: "auto",
         }}
       >
-        <Tooltip
-          title={
-            !canManageCompany
-              ? "You don't have permission, contact the admin"
-              : "click to open the company creation form"
-          }
-          placement="top-end"
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            mb: 2,
+            mt: 1,
+            justifyContent: "space-between",
+          }}
         >
-          <span
-            style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+            {filterCompanyId && (
+              <Typography variant="body2" color="textSecondary">
+                Company Name:{" "}
+                {companyList.find((c) => c.id === filterCompanyId)?.name ||
+                  filterCompanyId}
+              </Typography>
+            )}
+          </Box>
+
+          <Tooltip
+            title={
+              !canManageCompany
+                ? "You don't have permission, contact the admin"
+                : "click to open the operator creation form"
+            }
+            placement="top-end"
           >
-            <Button
-              sx={{
-                ml: "auto",
-                mr: 2,
-                mb: 2,
-                display: "block",
-                backgroundColor: !canManageCompany
-                  ? "#6c87b7 !important"
-                  : "#187b48",
-                color: "white",
-                "&.Mui-disabled": {
-                  backgroundColor: "#6c87b7 !important",
-                  color: "#ffffff99",
-                },
-              }}
-              variant="contained"
-              onClick={() => setOpenCreateModal(true)}
-              disabled={!canManageCompany}
+            <span
+              style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}
             >
-              Create Company
-            </Button>
-          </span>
-        </Tooltip>
+              <Button
+                sx={{
+                  backgroundColor: !canManageCompany
+                    ? "#6c87b7 !important"
+                    : "#187b48",
+                  color: "white",
+                  "&.Mui-disabled": {
+                    backgroundColor: "#6c87b7 !important",
+                    color: "#ffffff99",
+                  },
+                }}
+                variant="contained"
+                onClick={() => setOpenCreateModal(true)}
+                disabled={!canManageCompany}
+              >
+                Add Bus
+              </Button>
+            </span>
+          </Tooltip>
+        </Box>
 
         <TableContainer component={Paper}>
-          <Table>
+          <Table sx={{ minWidth: 600 }}>
             <TableHead>
               <TableRow>
                 <TableCell>
@@ -200,7 +264,7 @@ const CompanyListingTable = () => {
                     style={{
                       display: "block",
                       textAlign: "center",
-                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                      fontSize: selectedBus ? "0.8rem" : "1rem",
                     }}
                   >
                     ID
@@ -211,32 +275,32 @@ const CompanyListingTable = () => {
                     placeholder="Search"
                     value={search.id}
                     onChange={(e) => handleSearchChange(e, "id")}
-                    fullWidth
                     sx={{
+                      width: 80,
                       "& .MuiInputBase-root": {
                         height: 30,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
                       },
                     }}
                   />
                 </TableCell>
+                
 
                 <TableCell>
                   <b
                     style={{
                       display: "block",
                       textAlign: "center",
-                      fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      textWrap: "nowrap",
+                      fontSize: selectedBus ? "0.8rem" : "1rem",
                     }}
                   >
-                    Company Name
+                    Name
                   </b>
                   <TextField
                     variant="outlined"
@@ -250,11 +314,11 @@ const CompanyListingTable = () => {
                         height: 30,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
                       },
                     }}
                   />
@@ -265,28 +329,31 @@ const CompanyListingTable = () => {
                     style={{
                       display: "block",
                       textAlign: "center",
-                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                      fontSize: selectedBus ? "0.8rem" : "1rem",
+                      whiteSpace: selectedBus ? "nowrap" : "normal",
                     }}
                   >
-                    Address
+                    Registration Number
                   </b>
                   <TextField
                     variant="outlined"
                     size="small"
                     placeholder="Search"
-                    value={search.address}
-                    onChange={(e) => handleSearchChange(e, "address")}
+                    value={search.registrationNumber}
+                    onChange={(e) =>
+                      handleSearchChange(e, "registrationNumber")
+                    }
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
                         height: 30,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
                       },
                     }}
                   />
@@ -297,29 +364,28 @@ const CompanyListingTable = () => {
                     style={{
                       display: "block",
                       textAlign: "center",
-                      fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      textWrap: "nowrap",
+                      fontSize: selectedBus ? "0.8rem" : "1rem",
                     }}
                   >
-                    Owner Name
+                    Capacity
                   </b>
                   <TextField
                     variant="outlined"
                     size="small"
                     placeholder="Search"
-                    value={search.ownerName}
-                    onChange={(e) => handleSearchChange(e, "ownerName")}
-                    fullWidth
+                    value={search.capacity}
+                    onChange={(e) => handleSearchChange(e, "capacity")}
                     sx={{
+                      width: "100%",
                       "& .MuiInputBase-root": {
                         height: 30,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
                       },
                     }}
                   />
@@ -330,60 +396,28 @@ const CompanyListingTable = () => {
                     style={{
                       display: "block",
                       textAlign: "center",
-                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                      fontSize: selectedBus ? "0.8rem" : "1rem",
                     }}
                   >
-                    Phone Number
+                    Model
                   </b>
                   <TextField
                     variant="outlined"
                     size="small"
                     placeholder="Search"
-                    value={search.phoneNumber}
-                    onChange={(e) => handleSearchChange(e, "phoneNumber")}
-                    fullWidth
+                    value={search.model}
+                    onChange={(e) => handleSearchChange(e, "model")}
                     sx={{
+                      width: "100%",
                       "& .MuiInputBase-root": {
                         height: 30,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-
-                <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedCompany ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    Email
-                  </b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.email}
-                    onChange={(e) => handleSearchChange(e, "email")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 30,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        fontSize: selectedBus ? "0.8rem" : "1rem",
                       },
                     }}
                   />
@@ -393,7 +427,7 @@ const CompanyListingTable = () => {
 
             <TableBody
               sx={{
-                fontSize: selectedCompany ? "0.8rem" : "1rem",
+                fontSize: selectedBus ? "0.8rem" : "1rem",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -403,7 +437,7 @@ const CompanyListingTable = () => {
                 filteredData
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((row) => {
-                    const isSelected = selectedCompany?.id === row.id;
+                    const isSelected = selectedBus?.id === row.id;
                     return (
                       <TableRow
                         key={row.id}
@@ -412,27 +446,24 @@ const CompanyListingTable = () => {
                         sx={{
                           cursor: "pointer",
                           backgroundColor: isSelected
-                            ? "#E3F2FD !important"
+                            ? "#1565C0 !important"
                             : "inherit",
-                          color: isSelected ? "black !important" : "inherit",
+                          color: isSelected ? "white !important" : "inherit",
                           "&:hover": {
                             backgroundColor: isSelected
-                              ? "#E3F2FD !important"
+                              ? "#1565C0 !important"
                               : "#E3F2FD",
                           },
                           "& td": {
-                            color: isSelected ? "black !important" : "inherit",
+                            color: isSelected ? "white !important" : "inherit",
                           },
                         }}
                       >
                         <TableCell>{row.id}</TableCell>
                         <TableCell>{row.name}</TableCell>
-                        <TableCell>{row.address}</TableCell>
-                        <TableCell>{row.ownerName}</TableCell>
-                        <TableCell>
-                          {row.phoneNumber.replace("tel:", "")}
-                        </TableCell>
-                        <TableCell>{row.email}</TableCell>
+                        <TableCell>{row.registrationNumber}</TableCell>
+                        <TableCell>{row.capacity}</TableCell>
+                        <TableCell>{row.model}</TableCell>
                       </TableRow>
                     );
                   })
@@ -506,7 +537,7 @@ const CompanyListingTable = () => {
       </Box>
 
       {/* Right Side - Account Details Card */}
-      {selectedCompany && (
+      {selectedBus && (
         <Box
           sx={{
             flex: { xs: "0 0 100%", md: "0 0 35%" },
@@ -520,19 +551,17 @@ const CompanyListingTable = () => {
             height: "100%",
           }}
         >
-          <CompanyDetailsCard
-            company={selectedCompany}
+          <BusDetailsCard
+            bus={selectedBus}
             onUpdate={() => {}}
             onDelete={() => {}}
-            onBack={() => setSelectedCompany(null)}
+            onBack={() => setSelectedBus(null)}
             refreshList={(value: any) => refreshList(value)}
             canManageCompany={canManageCompany}
-            handleCloseDetailCard={handleCloseDetailCard}
           />
         </Box>
       )}
 
-      {/* Create Account Modal */}
       <Dialog
         open={openCreateModal}
         onClose={handleCloseModal}
@@ -540,9 +569,10 @@ const CompanyListingTable = () => {
         fullWidth
       >
         <DialogContent>
-          <CompanyCreationForm
+          <BusCreationForm
             refreshList={(value: any) => refreshList(value)}
             onClose={handleCloseModal}
+            defaultCompanyId={filterCompanyId ?? undefined}
           />
         </DialogContent>
         <DialogActions>
@@ -555,4 +585,4 @@ const CompanyListingTable = () => {
   );
 };
 
-export default CompanyListingTable;
+export default BusListingTable;

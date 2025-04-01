@@ -1,2 +1,1 @@
-
-export { default as CRole } from './CompanyRole';
+export { default as operatorRole } from './Role';

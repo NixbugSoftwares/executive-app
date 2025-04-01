@@ -12,13 +12,13 @@ import {
   Box,
   Button,
   Dialog,
-  DialogActions,
   DialogContent,
   FormControl,
   Select,
   MenuItem,
-  Autocomplete,
+  Typography,
 } from "@mui/material";
+import ErrorIcon  from '@mui/icons-material/Error';
 import { SelectChangeEvent } from "@mui/material";
 import { useDispatch } from "react-redux";
 import { operatorListApi, companyListApi } from "../../slices/appSlice";
@@ -26,6 +26,7 @@ import type { AppDispatch } from "../../store/Store";
 import localStorageHelper from "../../utils/localStorageHelper";
 import OperatorDetailsCard from "./OperatorDetails";
 import OperatorCreationForm from "./OperatorCreationForm";
+import { useLocation, useParams } from "react-router-dom";
 
 interface Operator {
   id: number;
@@ -46,17 +47,29 @@ interface Company {
 }
 
 const OperatorListingTable = () => {
+  const { companyId } = useParams();
+  const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
-
   const [operatorList, setOperatorList] = useState<Operator[]>([]);
   const [companyList, setCompanyList] = useState<Company[]>([]);
-  const [selectedOperator, setSelectedOperator] = useState<Operator | null>(
-    null
-  );
+  const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
+  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(companyId ? parseInt(companyId) : null);
+
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const urlCompanyId = companyId || queryParams.get("companyId");
+
+    if (urlCompanyId) {
+      const id = parseInt(urlCompanyId);
+      if (!isNaN(id)) {
+        setFilterCompanyId(id);
+      }
+    }
+  }, [companyId, location.search]);
 
   const [search, setSearch] = useState({
     id: "",
-    company_id: "",
     company_name: "",
     fullName: "",
     gender: "",
@@ -64,34 +77,22 @@ const OperatorListingTable = () => {
     phoneNumber: "",
   });
 
-  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(
-    null
-  );
-  const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
-
   const [page, setPage] = useState(0);
-  const rowsPerPage = selectedOperator ? 8 : 8;
-
+  const rowsPerPage = 8;
   const [openCreateModal, setOpenCreateModal] = useState(false);
 
   const roleDetails = localStorageHelper.getItem("@roleDetails");
-  console.log("rolesdetails>>>>>>>>>>>>>", roleDetails);
-
   const canManageCompany = roleDetails?.manage_company || false;
 
-  // Function to fetch accounts
   const fetchAccounts = () => {
-    dispatch(operatorListApi())
+    dispatch(operatorListApi(filterCompanyId))
       .unwrap()
       .then((res: any[]) => {
-        console.log("API Response:", res);
-
-        // Transform API data to match expected structure
         const formattedAccounts = res.map((operator: any) => ({
           id: operator.id,
           companyId: operator.company_id,
           companyName: operator.company_name,
-          fullName: operator.full_name ?? "-",
+          fullName: operator.full_name ,
           username: operator.username,
           password: "",
           gender:
@@ -102,12 +103,10 @@ const OperatorListingTable = () => {
               : operator.gender === 3
               ? "Transgender"
               : "Other",
-          email: operator.email_id ?? "-",
-          phoneNumber: operator.phone_number ?? "-",
+          email: operator.email_id ,
+          phoneNumber: operator.phone_number || "",
           status: operator.status === 1 ? "Active" : "Suspended",
         }));
-
-        console.log("Formatted Accounts:", formattedAccounts);
         setOperatorList(formattedAccounts);
       })
       .catch((err: any) => {
@@ -119,8 +118,13 @@ const OperatorListingTable = () => {
     dispatch(companyListApi())
       .unwrap()
       .then((res: any[]) => {
-        console.log("Company API Response:", res);
         setCompanyList(res);
+        if (location.state?.companyId) {
+          const company = res.find((c) => c.id === location.state.companyId);
+          if (company) {
+            setSearch((prev) => ({ ...prev, company_name: company.name }));
+          }
+        }
       })
       .catch((err: any) => {
         console.error("Error fetching companies", err);
@@ -130,7 +134,8 @@ const OperatorListingTable = () => {
   useEffect(() => {
     fetchAccounts();
     fetchCompany();
-  }, []);
+  }, [filterCompanyId]);
+
   const getCompanyName = (companyId: number) => {
     const company = companyList.find((company) => company.id === companyId);
     return company ? company.name : "Unknown Company";
@@ -164,9 +169,7 @@ const OperatorListingTable = () => {
       (row.phoneNumber?.toLowerCase() || "").includes(
         search.phoneNumber.toLowerCase()
       ) &&
-      (!selectedCompanyName ||
-        getCompanyName(row.companyId) === selectedCompanyName) &&
-      (!selectedCompanyId || row.companyId === selectedCompanyId)
+      (!filterCompanyId || row.companyId === filterCompanyId)
   );
 
   const handleChangePage = (
@@ -182,7 +185,6 @@ const OperatorListingTable = () => {
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      console.log("Account list refreshed...");
       fetchAccounts();
     }
   };
@@ -194,24 +196,24 @@ const OperatorListingTable = () => {
 
   return (
     <Box
-      sx={{
-        display: "flex",
-        flexDirection: { xs: "column", md: "row" },
-        width: "100%",
-        height: "100vh",
-        gap: 2,
-        overflow: "hidden",
-      }}
+    sx={{
+      display: "flex",
+      flexDirection: { xs: "column", md: "row" },
+      width: "100%",
+      height: "100vh",
+      gap: 2,
+    }}
     >
       <Box
-        sx={{
-          flex: selectedOperator
-            ? { xs: "0 0 100%", md: "0 0 65%" }
-            : "0 0 100%",
-          maxWidth: selectedOperator ? { xs: "100%", md: "65%" } : "100%",
-          transition: "all 0.3s ease",
-          overflowY: selectedOperator ? "auto" : "hidden",
-        }}
+       sx={{
+        flex: selectedOperator ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
+        maxWidth: selectedOperator ? { xs: "100%", md: "65%" } : "100%",
+        transition: "all 0.3s ease",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden", 
+      }}
       >
         <Box
           sx={{
@@ -223,58 +225,21 @@ const OperatorListingTable = () => {
             justifyContent: "space-between",
           }}
         >
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <Autocomplete
-              sx={{ width: 200 }}
-              options={companyList}
-              getOptionLabel={(option) => option.name}
-              value={
-                companyList.find((c) => c.name === selectedCompanyName) || null
-              }
-              onChange={(_, newValue) => {
-                setSelectedCompanyName(newValue ? newValue.name : "");
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Select Company"
-                  variant="outlined"
-                  size="small"
-                />
-              )}
-            />
-
-            {/* Company ID Input */}
-            <TextField
-              label="Company ID"
-              variant="outlined"
-              size="small"
-              value={selectedCompanyId || ""}
-              onChange={(e) =>
-                setSelectedCompanyId(
-                  e.target.value ? parseInt(e.target.value, 10) : null
-                )
-              }
-              placeholder="Enter Company ID"
-              sx={{ width: 120 }}
-            />
-
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setSelectedCompanyId(null);
-                setSelectedCompanyName("");
-              }}
-            >
-              Clear Filters
-            </Button>
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+            {filterCompanyId && (
+              <Typography variant="body2" color="textSecondary">
+                Company Name :{" "}
+                {companyList.find((c) => c.id === filterCompanyId)?.name ||
+                  filterCompanyId}
+              </Typography>
+            )}
           </Box>
 
           <Tooltip
             title={
               !canManageCompany
                 ? "You don't have permission, contact the admin"
-                : "click to open the operator creation form"
+                : "Click to open the operator creation form"
             }
             placement="top-end"
           >
@@ -282,19 +247,19 @@ const OperatorListingTable = () => {
               style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}
             >
               <Button
-              
                 sx={{
-                  backgroundColor: !canManageCompany
-                    ? "#6c87b7 !important"
-                    : "#187b48",
+                  backgroundColor: !canManageCompany ? "#6c87b7" : "#187b48",
                   color: "white",
                   "&.Mui-disabled": {
-                    backgroundColor: "#6c87b7 !important",
+                    backgroundColor: "#6c87b7",
                     color: "#ffffff99",
                   },
                 }}
                 variant="contained"
-                onClick={() => setOpenCreateModal(true)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenCreateModal(true);
+                }}
                 disabled={!canManageCompany}
               >
                 Add Operator
@@ -307,186 +272,76 @@ const OperatorListingTable = () => {
           <Table sx={{ minWidth: 600 }}>
             <TableHead>
               <TableRow>
-                <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center", 
-                      fontSize: selectedOperator ? "0.8rem" : "1rem"
-                    }}
-                  >
-                    ID
-                  </b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.id}
-                    onChange={(e) => handleSearchChange(e, "id")}
-                    sx={{
-                      width: 80,
-                      "& .MuiInputBase-root": {
-                        height: 30,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedOperator ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedOperator ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-
-                <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedOperator ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    Company Name
-                  </b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.company_name}
-                    onChange={(e) => handleSearchChange(e, "company_name")}
-                    sx={{
-                      width: 120,
-                      "& .MuiInputBase-root": {
-                        height: 30,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedOperator ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedOperator ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-
-                <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedOperator ? "0.8rem" : "1rem" }}>
-                    Full Name
-                  </b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.fullName}
-                    onChange={(e) => handleSearchChange(e, "fullName")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 30,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedOperator ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedOperator ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-
-                <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedOperator ? "0.8rem" : "1rem" }}>Phone</b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.phoneNumber}
-                    onChange={(e) => handleSearchChange(e, "phoneNumber")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 30,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedOperator ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedOperator ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-
-                <TableCell>
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedOperator ? "0.8rem" : "1rem" }}>Email</b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.email}
-                    onChange={(e) => handleSearchChange(e, "email")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 30,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedOperator ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedOperator ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-
-                <TableCell size="small">
-                  <b style={{ display: "block", textAlign: "center", fontSize: selectedOperator ? "0.8rem" : "1rem" }}>
-                    Gender
-                  </b>
-                  <FormControl fullWidth size="small">
-                    <Select
-                      value={search.gender}
-                      onChange={handleSelectChange}
-                      displayEmpty
-                      size="small"
-                      sx={{
-                        textAlign: "center",
-                        fontSize: selectedOperator ? "0.8rem" : "1rem",
-                        "& .MuiInputBase-root": {
-                          height: 30,
-                          padding: "4px",
-                          textAlign: "center",
-                        },
-                        "& .MuiSelect-icon": {
-                          fontSize: selectedOperator ? "1rem" : "1.25rem",
-                        },
-                      }}
-                    >
-                      <MenuItem value="">All</MenuItem>
-                      <MenuItem value="Male">Male</MenuItem>
-                      <MenuItem value="Female">Female</MenuItem>
-                      <MenuItem value="Transgender">Transgender</MenuItem>
-                      <MenuItem value="Other">Other</MenuItem>
-                    </Select>
-                  </FormControl>
-                </TableCell>
+                {["ID", "Full Name", "Phone", "Email", "Gender"].map(
+                  (header) => (
+                    <TableCell key={header}>
+                      <b style={{ display: "block", textAlign: "center" }}>
+                        {header}
+                      </b>
+                      {header === "Gender" ? (
+                        <FormControl fullWidth size="small">
+                          <Select
+                            value={search.gender}
+                            onChange={handleSelectChange}
+                            displayEmpty
+                            size="small"
+                            sx={{
+                              textAlign: "center",
+                              "& .MuiInputBase-root": {
+                                height: 30,
+                                padding: "4px",
+                              },
+                            }}
+                          >
+                            <MenuItem value="">All</MenuItem>
+                            <MenuItem value="Male">Male</MenuItem>
+                            <MenuItem value="Female">Female</MenuItem>
+                            <MenuItem value="Transgender">Transgender</MenuItem>
+                            <MenuItem value="Other">Other</MenuItem>
+                          </Select>
+                        </FormControl>
+                      ) : (
+                        <TextField
+                          variant="outlined"
+                          size="small"
+                          placeholder="Search"
+                          value={
+                            search[
+                              header
+                                .toLowerCase()
+                                .replace(" ", "_") as keyof typeof search
+                            ] || ""
+                          }
+                          onChange={(e) =>
+                            handleSearchChange(
+                              e,
+                              header
+                                .toLowerCase()
+                                .replace(" ", "_") as keyof typeof search
+                            )
+                          }
+                          sx={{
+                            "& .MuiInputBase-root": {
+                              height: 40,
+                              padding: "4px",
+                              textAlign: "center",
+                              fontSize: selectedOperator ? "0.8rem" : "1rem",
+                            },
+                            "& .MuiInputBase-input": {
+                              textAlign: "center",
+                              fontSize: selectedOperator ? "0.8rem" : "1rem",
+                            },
+                          }}
+                          fullWidth
+                        />
+                      )}
+                    </TableCell>
+                  )
+                )}
               </TableRow>
             </TableHead>
 
-            <TableBody
-              sx={{
-                fontSize: selectedOperator ? "0.8rem" : "1rem",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
+            <TableBody>
               {filteredData.length > 0 ? (
                 filteredData
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
@@ -496,30 +351,44 @@ const OperatorListingTable = () => {
                       <TableRow
                         key={row.id}
                         hover
-                        onClick={() => handleRowClick(row)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRowClick(row);
+                        }}
                         sx={{
                           cursor: "pointer",
-                          backgroundColor: isSelected
-                            ? "#1565C0 !important"
-                            : "inherit",
-                          color: isSelected ? "white !important" : "inherit",
-                          "&:hover": {
-                            backgroundColor: isSelected
-                              ? "#1565C0 !important"
-                              : "#E3F2FD",
-                          },
-                          "& td": {
-                            color: isSelected ? "white !important" : "inherit",
-                          },
+                          backgroundColor: isSelected ? "#E3F2FD" : "inherit",
+                          "&:hover": { backgroundColor: "#E3F2FD" },
                         }}
                       >
                         <TableCell>{row.id}</TableCell>
-                        <TableCell>{getCompanyName(row.companyId)}</TableCell>
-                        <TableCell>{row.fullName}</TableCell>
                         <TableCell>
-                          {row.phoneNumber.replace("tel:", "")}
+                          {row.fullName ? (
+                            row.fullName
+                          ) : (
+                            <Tooltip title=" Full Name not added yet" placement="bottom">
+                              <ErrorIcon  sx={{ color: "#737d72 " }} />
+                            </Tooltip>
+                          )}
                         </TableCell>
-                        <TableCell>{row.email}</TableCell>
+                        <TableCell>
+                          {row.phoneNumber ? (
+                            row.phoneNumber.replace("tel:", "")
+                          ) : (
+                            <Tooltip title=" Phone Number not added yet" placement="bottom">
+                              <ErrorIcon  sx={{ color: "#737d72" }} />
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {row.email ? (
+                            row.email
+                          ) : (
+                            <Tooltip title=" Email not added yet" placement="bottom">
+                              <ErrorIcon  sx={{ color: "#737d72 " }} />
+                            </Tooltip>
+                          )}
+                        </TableCell>
                         <TableCell>{row.gender}</TableCell>
                       </TableRow>
                     );
@@ -527,7 +396,7 @@ const OperatorListingTable = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} align="center">
-                    No accounts found.
+                    No operators found.
                   </TableCell>
                 </TableRow>
               )}
@@ -547,7 +416,10 @@ const OperatorListingTable = () => {
           }}
         >
           <Button
-            onClick={() => handleChangePage(null, page - 1)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleChangePage(null, page - 1);
+            }}
             disabled={page === 0}
             sx={{ padding: "5px 10px", minWidth: 40 }}
           >
@@ -564,7 +436,10 @@ const OperatorListingTable = () => {
             .map((pageNumber) => (
               <Button
                 key={pageNumber}
-                onClick={() => handleChangePage(null, pageNumber)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleChangePage(null, pageNumber);
+                }}
                 sx={{
                   padding: "5px 10px",
                   minWidth: 40,
@@ -584,7 +459,10 @@ const OperatorListingTable = () => {
               </Button>
             ))}
           <Button
-            onClick={() => handleChangePage(null, page + 1)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleChangePage(null, page + 1);
+            }}
             disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
             sx={{ padding: "5px 10px", minWidth: 40 }}
           >
@@ -593,19 +471,15 @@ const OperatorListingTable = () => {
         </Box>
       </Box>
 
-      {/* Right Side - Account Details Card */}
+      {/* Operator Details Card */}
       {selectedOperator && (
         <Box
           sx={{
             flex: { xs: "0 0 100%", md: "0 0 35%" },
             maxWidth: { xs: "100%", md: "35%" },
-            transition: "all 0.3s ease",
             bgcolor: "grey.100",
             p: 2,
-            mt: { xs: 2, md: 0 },
             overflowY: "auto",
-            overflowX: "hidden",
-            height: "100%",
           }}
         >
           <OperatorDetailsCard
@@ -613,12 +487,13 @@ const OperatorListingTable = () => {
             onUpdate={() => {}}
             onDelete={() => {}}
             onBack={() => setSelectedOperator(null)}
-            refreshList={(value: any) => refreshList(value)}
+            refreshList={refreshList}
             canManageCompany={canManageCompany}
           />
         </Box>
       )}
 
+      {/* Create Operator Dialog */}
       <Dialog
         open={openCreateModal}
         onClose={handleCloseModal}
@@ -627,15 +502,11 @@ const OperatorListingTable = () => {
       >
         <DialogContent>
           <OperatorCreationForm
-            refreshList={(value: any) => refreshList(value)}
+            refreshList={refreshList}
             onClose={handleCloseModal}
+            defaultCompanyId={filterCompanyId ?? undefined}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal} color="error">
-            Cancel
-          </Button>
-        </DialogActions>
       </Dialog>
     </Box>
   );

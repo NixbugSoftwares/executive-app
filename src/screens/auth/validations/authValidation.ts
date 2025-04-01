@@ -144,13 +144,13 @@ export const companyCreationSchema = yup.object().shape({
   name: yup
   .string()
   .required("name name  is required")
-  .min(4, "Owner name must be at least 4 characters")
-  .max(32, "Owner name cannot exceed 32 characters"),
+  .min(4, "Company name must be at least 4 characters")
+  .max(32, "Company name cannot exceed 32 characters"),
 
   address: yup
   .string()
-  .min(4, "Owner name must be at least 4 characters")
-  .max(512, "Owner name cannot exceed 32 characters")
+  .min(4, "Address must be at least 4 characters")
+  .max(512, "Address name cannot exceed 32 characters")
   .required("address is required"),
 
   location: yup
@@ -225,3 +225,31 @@ export const operatorCreationSchema = yup.object().shape({
   .required("Role is required"),
 
 })
+
+
+//*********************************************************operator role creating validation schema**********************************************
+export const operatorRoleCreationSchema = yup.object().shape({
+  name: yup.string().required("Role name is required"),
+  companyId: yup.number().required("Company is required"),
+  manage_bus: yup.boolean(),
+  manage_route: yup.boolean(),
+  manage_schedule: yup.boolean(),
+  manage_role: yup.boolean(),
+  manage_operator: yup.boolean(),
+  manage_company: yup.boolean(),
+});
+
+
+
+//******************************************************Company Bus Creation *********************************************** */
+export const busCreationSchema = yup.object().shape({
+  companyId: yup.number().required("Company is required"),
+  registrationNumber: yup.string().min(4).max(16).required("Registration number is required"),
+  name: yup.string().min(4).max(64).required("Bus name is required"),
+  capacity: yup.number().min(1).max(120).required("Capacity is required"),
+  model: yup.string().min(4).max(32).required("Model is required"),
+  manufactured_on: yup.string().required("Manufacture date is required"),
+  insurance_upto: yup.string().nullable(),
+  pollution_upto: yup.string().nullable(),
+  fitness_upto: yup.string().nullable(),
+});

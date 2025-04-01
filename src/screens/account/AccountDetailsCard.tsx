@@ -1,5 +1,18 @@
 import React, { useState } from "react";
-import { Card, CardActions, Typography, Button, Box, Avatar, Dialog, DialogActions, DialogContent, DialogTitle, DialogContentText, Tooltip } from "@mui/material";
+import {
+  Card,
+  CardActions,
+  Typography,
+  Button,
+  Box,
+  Avatar,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  DialogContentText,
+  Tooltip,
+} from "@mui/material";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -10,8 +23,8 @@ import {
   Work as WorkIcon,
   Person as PersonIcon,
 } from "@mui/icons-material";
-import ToggleOnIcon from '@mui/icons-material/ToggleOn';
-import ToggleOffIcon from '@mui/icons-material/ToggleOff';
+import ToggleOnIcon from "@mui/icons-material/ToggleOn";
+import ToggleOffIcon from "@mui/icons-material/ToggleOff";
 import { useAppDispatch } from "../../store/Hooks";
 import { accountDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
@@ -46,7 +59,11 @@ interface AccountCardProps {
   onBack: () => void;
   refreshList: (value: any) => void;
   canManageExecutive: boolean;
+  onCloseDetailCard: () => void;
 }
+
+const loggedInUser = localStorageHelper.getItem("@user");
+const userId = loggedInUser?.executive_id; 
 
 const AccountDetailsCard: React.FC<AccountCardProps> = ({
   account,
@@ -54,11 +71,13 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
   onDelete,
   onBack,
   canManageExecutive,
+  onCloseDetailCard,
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const dispatch = useAppDispatch();
- 
+  const isLoggedInUser = account.id === userId;
+
   const handleAccountDelete = async () => {
     if (!account.id) {
       console.error("Error: Account ID is missing");
@@ -78,7 +97,6 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
       refreshList("refresh");
     } catch (error) {
       console.error("Delete error:", error);
-      
     }
   };
 
@@ -156,11 +174,14 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
               </>
             )}
           </Box>
-
         </Card>
 
         {/* Action Buttons */}
-        <CardActions sx={{ justifyContent: "space-between" }}>
+          <CardActions sx={{
+            justifyContent: isLoggedInUser ? "center" : "space-between",
+            alignItems: "center",
+            mt: 2,
+          }}>
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button
               variant="outlined"
@@ -173,56 +194,60 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
             </Button>
 
             {/* Update Button with Tooltip */}
-            <Tooltip 
+            <Tooltip
               title={!canManageExecutive ? "You don't have permission, contact the admin" : ""}
               arrow
               placement="top-start"
             >
-              <span style={{ cursor: !canManageExecutive ? "not-allowed" : "default" }}> 
-                <Button
-                  variant="contained"
-                  color="success"
-                  size="small"
-                  onClick={() => setUpdateFormOpen(true)}
-                  startIcon={<EditIcon />}
-                  disabled={!canManageExecutive}
-                  sx={{
-                    "&.Mui-disabled": { 
-                      backgroundColor: "#81c784 !important",
-                      color: "#ffffff99",
-                    }
-                  }}
-                >
-                  Update
-                </Button>
+              <span style={{ cursor: !canManageExecutive ? "not-allowed" : "default" }}>
+              <Button
+                variant="contained"
+                color="success"
+                size="small"
+                onClick={() => {
+                  setUpdateFormOpen(true);
+                }}
+                startIcon={<EditIcon />}
+                disabled={!canManageExecutive}
+                sx={{
+                  "&.Mui-disabled": {
+                    backgroundColor: "#81c784 !important",
+                    color: "#ffffff99",
+                  },
+                }}
+              >
+                Update
+              </Button>
               </span>
             </Tooltip>
-            
-            {/* Delete Button with Tooltip */}
-            <Tooltip 
-              title={!canManageExecutive ? "You don't have permission, contact the admin" : ""}
-              arrow
-              placement="top-start"
-            >
-              <span style={{ cursor: !canManageExecutive ? "not-allowed" : "default" }}> 
-                <Button
-                  variant="contained"
-                  color="error"
-                  size="small"
-                  onClick={() => setDeleteConfirmOpen(true)}
-                  startIcon={<DeleteIcon />}
-                  disabled={!canManageExecutive}
-                  sx={{
-                    "&.Mui-disabled": { 
-                      backgroundColor: "#e57373 !important", 
-                      color: "#ffffff99", 
-                    }
-                  }}
-                >
-                  Delete
-                </Button>
-              </span>
-            </Tooltip>
+
+            {/* Delete Button (Hidden for Logged-in User) */}
+            {!isLoggedInUser && (
+              <Tooltip
+                title={!canManageExecutive ? "You don't have permission, contact the admin" : ""}
+                arrow
+                placement="top-start"
+              >
+                <span style={{ cursor: !canManageExecutive ? "not-allowed" : "default" }}>
+                  <Button
+                    variant="contained"
+                    color="error"
+                    size="small"
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    startIcon={<DeleteIcon />}
+                    disabled={!canManageExecutive}
+                    sx={{
+                      "&.Mui-disabled": {
+                        backgroundColor: "#e57373 !important",
+                        color: "#ffffff99",
+                      },
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </span>
+              </Tooltip>
+            )}
           </Box>
         </CardActions>
       </Card>
@@ -249,14 +274,15 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
 
       {/* Update Form Modal */}
       <Dialog open={updateFormOpen} onClose={() => setUpdateFormOpen(false)} maxWidth="xs" fullWidth>
-        <DialogContent>
-          <AccountUpdateForm
-            refreshList={(value: any) => refreshList(value)}
-            accountId={account.id}
-            onClose={() => setUpdateFormOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+  <DialogContent>
+    <AccountUpdateForm
+      refreshList={(value: any) => refreshList(value)}
+      accountId={account.id}
+      onClose={() => setUpdateFormOpen(false)}
+      onCloseDetailCard={onCloseDetailCard}
+    />
+  </DialogContent>
+</Dialog>
     </>
   );
 };

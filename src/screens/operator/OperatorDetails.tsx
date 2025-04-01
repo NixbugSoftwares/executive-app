@@ -251,6 +251,7 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
             refreshList={(value: any) => refreshList(value)}
             operatorId={operator.id}
             onClose={() => setUpdateFormOpen(false)}
+            
           />
         </DialogContent>
       </Dialog>

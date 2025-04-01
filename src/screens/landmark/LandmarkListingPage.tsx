@@ -1,147 +1,531 @@
-import { useState } from "react";
-import { Table, TablePagination, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Box, TextField, Dialog, DialogActions, DialogContent } from "@mui/material";
+import { useEffect, useRef, useState } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Button,
+  Box,
+  TextField,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Typography,
+  Chip,
+  Tooltip,
+} from "@mui/material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import WarningIcon from "@mui/icons-material/Warning";
+import LowPriorityIcon from "@mui/icons-material/LowPriority";
+import MediumPriorityIcon from "@mui/icons-material/Height";
+import HighPriorityIcon from "@mui/icons-material/PriorityHigh";
 import LandmarkAddForm from "./LandmarkAddForm";
 import MapComponent from "./MapComponent";
-import LandmarkDetailsCard from "./LandmarkDetailCard";
+import { useDispatch } from "react-redux";
+import { landmarkListApi, landmarkDeleteApi } from "../../slices/appSlice";
+import { AppDispatch } from "../../store/Store";
+import LandmarkUpdateForm from "./LandmarkUpdateForm";
+import VectorSource from "ol/source/Vector";
 
-// Define the Type for Landmarks
 interface Landmark {
   id: number;
   name: string;
-  location: string;
-  status: "Verified" | "Verifying";
-  importance: "low" | "medium" | "high";
+  boundary: string;
+  status: string;
+  importance: string;
 }
 
 const LandmarkListing = () => {
-  const data: Landmark[] = [
-    { id: 123, name: "Landmark1", location: "location1", status: "Verified", importance: "low" },
-    { id: 26546, name: "Landmark2", location: "location2", status: "Verifying", importance: "medium" },
-    { id: 3354, name: "Landmark3", location: "location3", status: "Verifying", importance: "high" },
-    { id: 187, name: "Landmark4", location: "location4", status: "Verified", importance: "low" },
-    { id: 2534, name: "Landmark5", location: "location5", status: "Verifying", importance: "medium" },
-    { id: 15346, name: "Landmark6", location: "location6", status: "Verified", importance: "low" },
-    { id: 9782, name: "Landmark7", location: "location7", status: "Verifying", importance: "medium" },
-    { id: 3897, name: "Landmark8", location: "location8", status: "Verifying", importance: "high" },
-    { id: 3255, name: "Landmark9", location: "location9", status: "Verifying", importance: "high" }
-  ];
-
-  const [selectedLandmark, setSelectedLandmark] = useState<Landmark | null>(null);
+  const dispatch = useDispatch<AppDispatch>();
+  const [landmarkList, setLandmarkList] = useState<Landmark[]>([]);
+  const [selectedLandmark, setSelectedLandmark] = useState<Landmark | null>(
+    null
+  );
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [search, setSearch] = useState({ id: "", name: "", location: "" });
   const [page, setPage] = useState(0);
-  const rowsPerPage = 8;
-  const [boundary, setBoundary] = useState<string>(''); 
-   
+  const rowsPerPage = 10;
+  const [boundary, setBoundary] = useState<string>("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [landmarkToDelete, setLandmarkToDelete] = useState<Landmark | null>(
+    null
+  );
+  const [openUpdateModal, setOpenUpdateModal] = useState(false);
+  const vectorSource = useRef(new VectorSource());
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  const extractRawPoints = (polygonString: string): string => {
+    if (!polygonString) return "";
+    const matches = polygonString.match(/\(\((.*?)\)\)/);
+    return matches ? matches[1] : "";
+  };
+
+  const fetchLandmark = () => {
+    dispatch(landmarkListApi())
+      .unwrap()
+      .then((res: any[]) => {
+        const formattedLandmarks = res.map((landmark: any) => ({
+          id: landmark.id,
+          name: landmark.name,
+          boundary: extractRawPoints(landmark.boundary),
+          importance:
+            landmark.importance === 1
+              ? "Low"
+              : landmark.importance === 2
+              ? "Medium"
+              : "High",
+          status: landmark.status === 1 ? "Validating" : "Verified",
+        }));
+        setLandmarkList(formattedLandmarks);
+      })
+      .catch((err: any) => {
+        console.error("Error fetching accounts", err);
+      });
+  };
+
+  useEffect(() => {
+    fetchLandmark();
+  }, []);
+
+  const handleLandmarkDelete = async () => {
+    if (!landmarkToDelete) {
+      console.error("Error: Landmark to delete is missing");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("id", String(landmarkToDelete.id));
+      const response = await dispatch(landmarkDeleteApi(formData)).unwrap();
+      console.log("Landmark deleted:", response);
+      setDeleteConfirmOpen(false);
+      refreshList("refresh");
+    } catch (error) {
+      console.error("Delete error:", error);
+    }
+  };
 
   const handleRowClick = (landmark: Landmark) => {
+    if (isDrawing) {
+      return; // Prevent selection when drawing is active
+    }
     setSelectedLandmark(landmark);
+  };
+
+  const handleCloseRowClick = () => {
+    setSelectedLandmark(null);
+    clearBoundaries();
+  };
+
+  const clearBoundaries = () => {
+    vectorSource.current.clear();
   };
 
   const handlePolygonSelect = (coordinates: string) => {
     setBoundary(coordinates);
-    setTimeout(() => setOpenCreateModal(true), 0); 
+    setTimeout(() => setOpenCreateModal(true), 0);
   };
 
- const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, column: keyof typeof search) => {
-   setSearch((prev) => ({ ...prev, [column]: (e.target as HTMLInputElement).value }));
- };
-  const filteredData = data.filter(
-    (row) =>
-      row.id.toString().toLowerCase().includes(search.id.toLowerCase()) &&
-      row.name.toLowerCase().includes(search.name.toLowerCase()) &&
-      row.location.toLowerCase().includes(search.location.toLowerCase())
-  );
+  const handleDrawingChange = (drawingState: boolean) => {
+    setIsDrawing(drawingState);
+  };
+
+  const handleSearchChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    column: keyof typeof search
+  ) => {
+    setSearch((prev) => ({
+      ...prev,
+      [column]: (e.target as HTMLInputElement).value,
+    }));
+  };
+
+  const filteredData = landmarkList.filter((row) => {
+    const id = row.id ? row.id.toString().toLowerCase() : "";
+    const name = row.name ? row.name.toLowerCase() : "";
+    const location = row.boundary ? row.boundary.toLowerCase() : "";
+
+    const searchId = search.id ? search.id.toLowerCase() : "";
+    const searchName = search.name ? search.name.toLowerCase() : "";
+    const searchLocation = search.location ? search.location.toLowerCase() : "";
+
+    return (
+      id.includes(searchId) &&
+      name.includes(searchName) &&
+      location.includes(searchLocation)
+    );
+  });
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
+  const refreshList = (value: string) => {
+    if (value === "refresh") {
+      fetchLandmark();
+    }
+  };
+
   return (
-    <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, width: "100%", height: "100vh", gap: 2 }}>
-      {/* Left Side: Table */}
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: { xs: "column", md: "row" },
+        width: "100%",
+        height: "100vh",
+        gap: 2,
+      }}
+    >
       <Box
         sx={{
           flex: { xs: "0 0 100%", md: "50%" },
           maxWidth: { xs: "100%", md: "50%" },
           transition: "all 0.3s ease",
           overflow: "hidden",
-          overflowY: selectedLandmark ? "auto" : "hidden",
+          overflowY: "auto",
         }}
       >
-       
         <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
           <Table sx={{ borderCollapse: "collapse", width: "100%" }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ width: "15%" }}>
-                  <b>ID</b>
-                  <TextField variant="outlined" size="small" placeholder="Search" value={search.id} onChange={(e) => handleSearchChange(e, "id")} fullWidth sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }} />
+                <TableCell sx={{ width: "20%" }}>
+                  <Box
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="center"
+                  >
+                    <b>ID</b>
+                    <TextField
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.id}
+                      onChange={(e) => handleSearchChange(e, "id")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": { height: 30, padding: "4px" },
+                      }}
+                    />
+                  </Box>
                 </TableCell>
-                <TableCell sx={{ width: "15%" }}>
-                  <b>Name</b>
-                  <TextField variant="outlined" size="small" placeholder="Search" value={search.name} onChange={(e) => handleSearchChange(e, "name")} fullWidth sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }} />
-                </TableCell>
-                <TableCell sx={{ width: "30%" }}>
-                  <b>Location</b>
-                  <TextField variant="outlined" size="small" placeholder="Search" value={search.location} onChange={(e) => handleSearchChange(e, "location")} fullWidth sx={{ "& .MuiInputBase-root": { height: 30, padding: "4px" } }} />
+                <TableCell sx={{ width: "35%" }}>
+                  <Box
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="center"
+                  >
+                    <b>Name</b>
+                    <TextField
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.name}
+                      onChange={(e) => handleSearchChange(e, "name")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": { height: 30, padding: "4px" },
+                      }}
+                    />
+                  </Box>
                 </TableCell>
                 <TableCell>
-                  <b>Status</b>
+                  <Box display="flex" justifyContent="center">
+                    <b>Importance</b>
+                  </Box>
                 </TableCell>
-                <TableCell sx={{ width: "200px" }}>
-                  <b>Importance</b>
+                <TableCell>
+                  <Box display="flex" justifyContent="center">
+                    <b>Status</b>
+                  </Box>
                 </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
-                <TableRow key={row.id} hover>
-                  <TableCell>{row.id}</TableCell>
-                  <TableCell sx={{ cursor: "pointer", color: "blue" }} onClick={() => handleRowClick(row)}>
-                    {row.name}
+              {filteredData.length > 0 ? (
+                filteredData
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((row) => {
+                    const isSelected = selectedLandmark?.id === row.id;
+                    return (
+                      <Tooltip
+                        key={row.id}
+                        title={
+                          isDrawing
+                            ? "Finish drawing on the map first"
+                            : "Click to view details"
+                        }
+                      >
+                        <TableRow
+                          hover
+                          onClick={() => handleRowClick(row)}
+                          sx={{
+                            cursor: isDrawing ? "not-allowed" : "pointer",
+                            backgroundColor: isSelected ? "#E3F2FD" : "inherit",
+                            opacity: isDrawing ? 0.7 : 1,
+                            "&:hover": {
+                              backgroundColor: isDrawing
+                                ? "inherit"
+                                : isSelected
+                                ? "#E3F2FD !important"
+                                : "#E3F2FD",
+                            },
+                          }}
+                        >
+                          <TableCell>{row.id}</TableCell>
+                          <TableCell>{row.name}</TableCell>
+                          <TableCell>
+                            {row.importance === "Low" && (
+                              <Chip
+                                icon={<LowPriorityIcon />}
+                                label="Low"
+                                color="info"
+                                size="small"
+                                sx={{
+                                  backgroundColor: isSelected
+                                    ? "#90CAF9"
+                                    : "#E3F2FD",
+                                  color: isSelected ? "#1565C0" : "#1565C0",
+                                }}
+                              />
+                            )}
+                            {row.importance === "Medium" && (
+                              <Chip
+                                icon={<MediumPriorityIcon />}
+                                label="Medium"
+                                color="warning"
+                                size="small"
+                                sx={{
+                                  backgroundColor: isSelected
+                                    ? "#edd18f"
+                                    : "#FFE082",
+                                  color: isSelected ? "#9f3b03" : "#9f3b03",
+                                }}
+                              />
+                            )}
+                            {row.importance === "High" && (
+                              <Chip
+                                icon={<HighPriorityIcon />}
+                                label="High"
+                                color="error"
+                                size="small"
+                                sx={{
+                                  backgroundColor: isSelected
+                                    ? "#EF9A9A"
+                                    : "#FFEBEE",
+                                  color: isSelected ? "#D32F2F" : "#D32F2F",
+                                }}
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {row.status === "Validating" && (
+                              <Chip
+                                icon={<WarningIcon />}
+                                label="Validating"
+                                color="warning"
+                                size="small"
+                                sx={{
+                                  backgroundColor: isSelected
+                                    ? "#edd18f"
+                                    : "#FFE082",
+                                  color: isSelected ? "#9f3b03" : "#9f3b03",
+                                }}
+                              />
+                            )}
+                            {row.status === "Verified" && (
+                              <Chip
+                                icon={<CheckCircleIcon />}
+                                label="Verified"
+                                color="success"
+                                size="small"
+                                sx={{
+                                  backgroundColor: isSelected
+                                    ? "#A5D6A7"
+                                    : "#E8F5E9",
+                                  color: isSelected ? "#2E7D32" : "#2E7D32",
+                                }}
+                              />
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      </Tooltip>
+                    );
+                  })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    No landmarks found.
                   </TableCell>
-                  <TableCell>{row.location}</TableCell>
-                  <TableCell sx={{ color: row.status === "Verified" ? "green" : "red" }}>{row.status}</TableCell>
-                  <TableCell>{row.importance}</TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </TableContainer>
-        <TablePagination component="div" count={filteredData.length} page={page} onPageChange={handleChangePage} rowsPerPage={rowsPerPage} rowsPerPageOptions={[]} labelDisplayedRows={() => ""} sx={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "10px 0" }} />
+
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "right",
+            alignItems: "right",
+            gap: 1,
+            mt: 1,
+            mr: 20,
+          }}
+        >
+          <Button
+            onClick={() => handleChangePage(null, page - 1)}
+            disabled={page === 0}
+            sx={{ padding: "5px 10px", minWidth: 40 }}
+          >
+            &lt;
+          </Button>
+          {Array.from(
+            { length: Math.ceil(filteredData.length / rowsPerPage) },
+            (_, index) => index
+          )
+            .slice(
+              Math.max(0, page - 1),
+              Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
+            )
+            .map((pageNumber) => (
+              <Button
+                key={pageNumber}
+                onClick={() => handleChangePage(null, pageNumber)}
+                sx={{
+                  padding: "5px 10px",
+                  minWidth: 40,
+                  bgcolor:
+                    page === pageNumber
+                      ? "rgba(21, 101, 192, 0.2)"
+                      : "transparent",
+                  fontWeight: page === pageNumber ? "bold" : "normal",
+                  borderRadius: "5px",
+                  transition: "all 0.3s",
+                  "&:hover": {
+                    bgcolor: "rgba(21, 101, 192, 0.3)",
+                  },
+                }}
+              >
+                {pageNumber + 1}
+              </Button>
+            ))}
+          <Button
+            onClick={() => handleChangePage(null, page + 1)}
+            disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
+            sx={{ padding: "5px 10px", minWidth: 40 }}
+          >
+            &gt;
+          </Button>
+        </Box>
       </Box>
 
-      {/* Right Side: Map */}
       <Box
         sx={{
           flex: { xs: "0 0 100%", md: "50%" },
+          height: "100vh",
           maxWidth: { xs: "100%", md: "50%" },
           display: "flex",
           flexDirection: "column",
           gap: 2,
         }}
       >
-        {/* Map Section */}
-        <Box sx={{ height: "70%", borderRadius: 2, overflow: "hidden", boxShadow: 2 }}>
-          <MapComponent onDrawEnd={handlePolygonSelect}  isOpen={true} />
+        <Box
+          sx={{
+            height: "calc(100vh - 20px)",
+            borderRadius: 2,
+            overflow: "hidden",
+            boxShadow: 2,
+          }}
+        >
+          <MapComponent
+            onDrawEnd={handlePolygonSelect}
+            isOpen={true}
+            selectedBoundary={selectedLandmark?.boundary}
+            selectedLandmark={selectedLandmark}
+            onUpdateClick={() => setOpenUpdateModal(true)}
+            onDeleteClick={() => {
+              setLandmarkToDelete(selectedLandmark);
+              setDeleteConfirmOpen(true);
+            }}
+            handleCloseRowClick={handleCloseRowClick}
+            clearBoundaries={clearBoundaries}
+            vectorSource={vectorSource}
+            landmarks={landmarkList}
+            isDrawing={isDrawing}
+            onDrawingChange={handleDrawingChange}
+          />
         </Box>
-
-        {/* Additional Details or Selected Landmark Info */}
-        {selectedLandmark && (
-          <Paper sx={{ padding: 1, height: "100%", overflowY: "auto" }}>
-            <LandmarkDetailsCard landmark={selectedLandmark} onBack={() => setSelectedLandmark(null)} onDelete={() => setSelectedLandmark(null)} onUpdate={() => setSelectedLandmark(null) } />
-          </Paper>
-        )}
       </Box>
 
-      {/* Dialog for Adding a Landmark */}
-      <Dialog open={openCreateModal} onClose={() => setOpenCreateModal(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={openCreateModal}
+        onClose={() => setOpenCreateModal(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogContent>
-          <LandmarkAddForm boundary={boundary} onClose={() => setOpenCreateModal(false)} name={""} status={""} importance={""} />
+          <LandmarkAddForm
+            boundary={boundary}
+            onClose={() => setOpenCreateModal(false)}
+            refreshList={(value: any) => refreshList(value)}
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenCreateModal(false)} color="error">Cancel</Button>
+          <Button onClick={() => setOpenCreateModal(false)} color="error">
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openUpdateModal}
+        onClose={() => setOpenUpdateModal(false)}
+        maxWidth="sm"
+      >
+        <DialogContent>
+          {selectedLandmark && (
+            <LandmarkUpdateForm
+              onClose={() => setOpenUpdateModal(false)}
+              refreshList={(value: string) => refreshList(value)}
+              landmarkId={selectedLandmark.id}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenUpdateModal(false)} color="error">
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this Landmark?
+          </Typography>
+          {landmarkToDelete && (
+            <Typography>
+              <b>ID:</b> {landmarkToDelete.id}, <b>Name:</b>{" "}
+              {landmarkToDelete.name}
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleLandmarkDelete} color="error">
+            Confirm Delete
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
@@ -149,4 +533,3 @@ const LandmarkListing = () => {
 };
 
 export default LandmarkListing;
-

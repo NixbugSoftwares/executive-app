@@ -1,35 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { TextField, Button, Box, Typography, Switch, CircularProgress } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
-import { roleUpdationApi, roleListApi } from "../../slices/appSlice"; 
+import { operatorRoleUpdationApi, operatorRoleListApi } from "../../slices/appSlice"; 
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
-import {  showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
+
 type RoleFormValues = {
-  id: number; // Add ID for update
+  id: number; 
   name: string;
-  manageExecutive?: boolean;
-  manageRole?: boolean;
-  manageLandmark?: boolean;
-  manageCompany?: boolean;
-  manageVendor?: boolean;
-  manageRoute?: boolean;
-  manageSchedule?: boolean;
-  manageService?: boolean;
-  manageDuty?: boolean;
+  manage_bus?: boolean;
+  manage_route?: boolean;
+  manage_schedule?: boolean;
+  manage_role?: boolean;
+  manage_operator?: boolean;
+  manage_company?: boolean;
 };
 
 interface IRoleUpdateFormProps {
   onClose: () => void; 
   refreshList: (value: any) => void; 
   roleId: number; 
-  handleCloseDetailCard: () => void 
 }
 
 const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
   onClose,
   refreshList,
   roleId,
-  handleCloseDetailCard
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
@@ -48,41 +43,35 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
     const fetchRoleData = async () => {
       try {
         setLoading(true);
-        const roles = await dispatch(roleListApi()).unwrap();
+        const roles = await dispatch(operatorRoleListApi()).unwrap();
         const role = roles.find((r: any) => r.id === roleId);
 
         if (role) {
           setRoleData({
             id: role.id,
             name: role.name,
-            manageExecutive: role.manage_executive,
-            manageRole: role.manage_role,
-            manageLandmark: role.manage_landmark,
-            manageCompany: role.manage_company,
-            manageVendor: role.manage_vendor,
-            manageRoute: role.manage_route,
-            manageSchedule: role.manage_schedule,
-            manageService: role.manage_service,
-            manageDuty: role.manage_duty,
+            manage_bus: role.manage_bus,
+            manage_route: role.manage_route,
+            manage_schedule: role.manage_schedule,
+            manage_role: role.manage_role,
+            manage_operator: role.manage_operator,
+            manage_company: role.manage_company
           });
 
           reset({
             id: role.id,
             name: role.name,
-            manageExecutive: role.manage_executive,
-            manageRole: role.manage_role,
-            manageLandmark: role.manage_landmark,
-            manageCompany: role.manage_company,
-            manageVendor: role.manage_vendor,
-            manageRoute: role.manage_route,
-            manageSchedule: role.manage_schedule,
-            manageService: role.manage_service,
-            manageDuty: role.manage_duty,
+            manage_bus: role.manage_bus,
+            manage_route: role.manage_route,  
+            manage_schedule: role.manage_schedule,
+            manage_role: role.manage_role,  
+            manage_operator: role.manage_operator,
+            manage_company: role.manage_company
           });
         }
       } catch (error) {
         console.error("Error fetching role data:", error);
-        showErrorToast("Failed to fetch role data. Please try again.");
+        alert("Failed to fetch role data. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -99,26 +88,22 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
       const formData = new URLSearchParams();
       formData.append("id", roleId.toString()); 
       formData.append("name", data.name);
-      formData.append("manage_executive", String(data.manageExecutive));
-      formData.append("manage_role", String(data.manageRole));
-      formData.append("manage_landmark", String(data.manageLandmark));
-      formData.append("manage_company", String(data.manageCompany));
-      formData.append("manage_vendor", String(data.manageVendor));
-      formData.append("manage_route", String(data.manageRoute));
-      formData.append("manage_schedule", String(data.manageSchedule));
-      formData.append("manage_service", String(data.manageService));
-      formData.append("manage_duty", String(data.manageDuty));
+      formData.append("manage_bus", String(data.manage_bus));
+      formData.append("manage_route", String(data.manage_route));
+      formData.append("manage_schedule", String(data.manage_schedule));
+      formData.append("manage_role", String(data.manage_role));
+      formData.append("manage_operator", String(data.manage_operator));
+      formData.append("manage_company", String(data.manage_company));
 
       //  update API
-      const response = await dispatch(roleUpdationApi({ roleId, formData })).unwrap();
+      const response = await dispatch(operatorRoleUpdationApi({roleId, formData })).unwrap();
       console.log("Role updated:", response);
-      showSuccessToast("Role updated successfully!");
+      alert("Role updated successfully!");
       refreshList("refresh"); 
-      handleCloseDetailCard();
       onClose(); 
     } catch (error) {
       console.error("Error updating role:", error);
-      showErrorToast("Failed to update role. Please try again.");
+      alert("Failed to update role. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -151,15 +136,12 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
 
       
       {([
-        "manageExecutive",
-        "manageRole",
-        "manageLandmark",
-        "manageCompany",
-        "manageVendor",
-        "manageRoute",
-        "manageSchedule",
-        "manageService",
-        "manageDuty",
+        "manage_bus",
+        "manage_route",
+        "manage_schedule",
+        "manage_role",
+        "manage_operator",
+        "manage_company",
       ] as (keyof RoleFormValues)[]).map((field) => (
         <Box key={field} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Typography>{field.replace("manage", "Manage ")}</Typography>
