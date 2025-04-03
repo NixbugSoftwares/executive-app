@@ -7,10 +7,11 @@ import {
   CircularProgress,
   Container,
   CssBaseline,
+  MenuItem,
 } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
 import { busUpdationApi, busListApi } from "../../slices/appSlice";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useForm, SubmitHandler, Controller } from "react-hook-form";
 
 type BusFormValues = {
   id: number;
@@ -18,6 +19,7 @@ type BusFormValues = {
   name: string;
   capacity: number;
   model: string;
+  status?: string;
   manufactured_on: string;
   insurance_upto?: string | null;
   pollution_upto?: string | null;
@@ -29,6 +31,12 @@ interface IOperatorUpdateFormProps {
   refreshList: (value: any) => void;
   busId: number;
 }
+
+const statusOptions = [
+  { label: "Active", value: 1 },
+  { label: "Suspended", value: 2 },
+];
+
 
 const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
   onClose,
@@ -42,6 +50,7 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
   const {
     register,
     handleSubmit,
+    control,
     reset,
     formState: { errors },
   } = useForm<BusFormValues>();
@@ -58,7 +67,7 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
     const fetchBusData = async () => {
       try {
         setLoading(true);
-        const busses = await dispatch(busListApi()).unwrap();
+        const busses = await dispatch(busListApi(null)).unwrap();
         const bus = busses.find((b: any) => b.id === busId);
 
         if (bus) {
@@ -103,7 +112,7 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
       if (data.insurance_upto) formData.append("insurance_upto", formatDateToUTC(data.insurance_upto) || "");
       if (data.pollution_upto) formData.append("pollution_upto", formatDateToUTC(data.pollution_upto) || "");
       if (data.fitness_upto) formData.append("fitness_upto", formatDateToUTC(data.fitness_upto) || "");
-
+      formData.append("status", data.status?.toString() || "1"); // Default to "Active" if not provided
       console.log("FormData being sent:", {
         id: busId, // Log busId for debugging
         registration_number: data.registration_number,
@@ -114,6 +123,7 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
         insurance_upto: formatDateToUTC(data.insurance_upto??null),
         pollution_upto: formatDateToUTC(data.pollution_upto??null),
         fitness_upto: formatDateToUTC(data.fitness_upto??null),
+        status: data.status,
       });
 
       const updateResponse = await dispatch(busUpdationApi({ busId, formData })).unwrap();
@@ -178,7 +188,6 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             required
             fullWidth
             label="Capacity"
-            type="number"
             {...register("capacity")}
             error={!!errors.capacity}
             helperText={errors.capacity?.message}
@@ -194,6 +203,28 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             helperText={errors.model?.message}
             size="small"
           />
+          <Controller
+            name="status"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                margin="normal"
+                fullWidth
+                select
+                label="Status"
+                {...field}
+                error={!!errors.status}
+                size="small"
+              >
+                {statusOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+          
           <TextField
             margin="normal"
             required

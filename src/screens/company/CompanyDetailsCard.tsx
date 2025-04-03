@@ -20,8 +20,9 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
 } from "@mui/icons-material";
-import ToggleOnIcon from "@mui/icons-material/ToggleOn";
-import ToggleOffIcon from "@mui/icons-material/ToggleOff";
+import VerifiedIcon from "@mui/icons-material/Verified";
+import NewReleasesIcon from "@mui/icons-material/NewReleases";
+import BlockIcon from "@mui/icons-material/Block";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import BusinessIcon from "@mui/icons-material/Business";
 import { useAppDispatch } from "../../store/Hooks";
@@ -65,10 +66,19 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const dispatch = useAppDispatch();
-
+  console.log(
+    "Received company in details card>>>>>>>>>>>>>>>>>>>>>:",
+    company
+  );
   const extractCoordinates = (location: string) => {
-    const regex = /POINT \(([\d.]+) ([\d.]+)\)/;
+    if (!location) return null;
+
+    // Updated regex to handle format without spaces: POINT(lon lat)
+    const regex = /POINT\(([\d.]+) ([\d.]+)\)/;
     const match = location.match(regex);
+
+    console.log("Regex match result:", match); // Debugging
+
     if (match) {
       return {
         longitude: parseFloat(match[1]),
@@ -147,7 +157,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <LocationOnIcon color="action" sx={{ mr: 1 }} />
-            {coordinates && (
+            {company.location ? (
               <Typography
                 variant="body2"
                 color="primary"
@@ -155,8 +165,12 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
                 style={{ cursor: "pointer" }}
               >
                 <b>
-                  <u> Location </u>
+                  <u>View on Map</u>
                 </b>
+              </Typography>
+            ) : (
+              <Typography variant="body2" color="textSecondary">
+                Location not available
               </Typography>
             )}
           </Box>
@@ -198,18 +212,25 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
           </Box>
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1, gap: 1 }}>
-            {company.status === "Active" ? (
+            {company.status === "Validating" ? (
               <>
-                <ToggleOnIcon sx={{ color: "green", fontSize: 30 }} />
+                <NewReleasesIcon sx={{ color: "#FFA500", fontSize: 30 }} />
+                <Typography sx={{ color: "#FFA500", fontWeight: "bold" }}>
+                  VALIDATING
+                </Typography>
+              </>
+            ) : company.status === "Verified" ? (
+              <>
+                <VerifiedIcon sx={{ color: "green", fontSize: 30 }} />
                 <Typography sx={{ color: "green", fontWeight: "bold" }}>
-                  Active
+                  VERIFIED
                 </Typography>
               </>
             ) : (
               <>
-                <ToggleOffIcon sx={{ color: "#d93550", fontSize: 30 }} />
+                <BlockIcon sx={{ color: "#d93550", fontSize: 30 }} />
                 <Typography sx={{ color: "#d93550", fontWeight: "bold" }}>
-                  Suspended
+                  SUSPENDED
                 </Typography>
               </>
             )}

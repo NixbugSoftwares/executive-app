@@ -13,7 +13,10 @@ import {
 import { useAppDispatch } from "../../store/Hooks";
 import { companyUpdationApi, companyListApi } from "../../slices/appSlice";
 import MapModal from "./MapModal";
-import {  showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
+import {
+  showSuccessToast,
+  showErrorToast,
+} from "../../common/toastMessageHelper";
 interface ICompanyFormInputs {
   name: string;
   address: string;
@@ -24,6 +27,7 @@ interface ICompanyFormInputs {
   status?: number;
   latitude?: number;
   longitude?: number;
+  company_type?: number;
 }
 
 interface ICompanyUpdateFormProps {
@@ -34,19 +38,27 @@ interface ICompanyUpdateFormProps {
 }
 
 const statusOptions = [
-  { label: "Active", value: 1 },
-  { label: "Suspended", value: 2 },
+  { label: "Validating", value: 1 },
+  { label: "Verified", value: 2 },
+  { label: "Suspended", value: 3 },
+];
+
+const typeOptions = [
+  { label: "Privet", value: 1 },
+  { label: "Government", value: 2 },
 ];
 
 const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
   companyId,
   onClose,
   refreshList,
-  handleCloseDetailCard
+  handleCloseDetailCard,
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  const [companyData, setCompanyData] = useState<ICompanyFormInputs | null>(null);
+  const [companyData, setCompanyData] = useState<ICompanyFormInputs | null>(
+    null
+  );
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [locationName, setLocationName] = useState<string>("");
   const {
@@ -58,8 +70,8 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
     formState: { errors },
   } = useForm<ICompanyFormInputs>();
 
-   // Fetch location name from coordinates
-   const fetchLocationName = async (lat: number, lng: number) => {
+  // Fetch location name from coordinates
+  const fetchLocationName = async (lat: number, lng: number) => {
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
@@ -72,6 +84,8 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
     }
   };
 
+  console.log("fetching company location:", fetchLocationName);
+
   // Fetch company data
   useEffect(() => {
     dispatch(companyListApi())
@@ -80,7 +94,7 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
         const company = res.find((company) => company.id === companyId);
         if (company) {
           // Parse the location string into latitude and longitude
-          const locationRegex = /POINT \(([\d.]+) ([\d.]+)\)/;
+          const locationRegex = /POINT\(([\d.]+) ([\d.]+)\)/;
           const match = company.location.match(locationRegex);
           const latitude = match ? parseFloat(match[2]) : undefined;
           const longitude = match ? parseFloat(match[1]) : undefined;
@@ -101,6 +115,7 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
             status: company.status,
             latitude,
             longitude,
+            company_type: company.type,
           });
 
           reset({
@@ -115,6 +130,7 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
             status: company.status,
             latitude,
             longitude,
+            company_type: company.type,
           });
         }
       })
@@ -124,15 +140,23 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
   }, [companyId, dispatch, reset]);
 
   // Handle location selection from MapModal
-  const handleLocationSelect = (location: { name: string; lat: number; lng: number }) => {
+  const handleLocationSelect = (location: {
+    name: string;
+    lat: number;
+    lng: number;
+  }) => {
     setValue("location", `POINT (${location.lng} ${location.lat})`);
     setValue("latitude", location.lat);
     setValue("longitude", location.lng);
     setLocationName(location.name);
   };
+  console.log("locationName:", locationName);
+  console.log("companyData:", companyData);
 
   // Handle Account Update
-  const handleAccountUpdate: SubmitHandler<ICompanyFormInputs> = async (data) => {
+  const handleAccountUpdate: SubmitHandler<ICompanyFormInputs> = async (
+    data
+  ) => {
     try {
       setLoading(true);
 
@@ -141,16 +165,24 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
       if (data.name) formData.append("name", data.name);
       if (data.address) formData.append("address", data.address);
       if (data.latitude && data.longitude) {
-        formData.append("location", `POINT (${data.longitude} ${data.latitude})`);
+        formData.append(
+          "location",
+          `POINT (${data.longitude} ${data.latitude})`
+        );
       }
       if (data.owner_name) formData.append("owner_name", data.owner_name);
-      if (data.phone_number) formData.append("phone_number", `+91${data.phone_number}`);
+      if (data.phone_number)
+        formData.append("phone_number", `+91${data.phone_number}`);
       if (data.email) formData.append("email_id", data.email);
       if (data.status) formData.append("status", data.status.toString());
+      if (data.company_type)
+        formData.append("type", data.company_type.toString());
 
       console.log("Form Data:", formData);
 
-      const updateResponse = await dispatch(companyUpdationApi({ companyId, formData })).unwrap();
+      const updateResponse = await dispatch(
+        companyUpdationApi({ companyId, formData })
+      ).unwrap();
       console.log("Company updated:", updateResponse);
       showSuccessToast("Company updated successfully!");
       refreshList("refresh");
@@ -209,7 +241,7 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
             helperText={errors.address?.message}
             size="small"
           />
-         <TextField
+          <TextField
             margin="normal"
             required
             fullWidth
@@ -290,6 +322,29 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
               </TextField>
             )}
           />
+
+          <Controller
+            name="company_type"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                margin="normal"
+                fullWidth
+                select
+                label="type"
+                {...field}
+                error={!!errors.company_type}
+                size="small"
+              >
+                {typeOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+
           <Button
             type="submit"
             fullWidth

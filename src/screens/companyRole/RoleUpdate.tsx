@@ -43,7 +43,7 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
     const fetchRoleData = async () => {
       try {
         setLoading(true);
-        const roles = await dispatch(operatorRoleListApi()).unwrap();
+        const roles = await dispatch(operatorRoleListApi(null)).unwrap();
         const role = roles.find((r: any) => r.id === roleId);
 
         if (role) {

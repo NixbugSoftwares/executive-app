@@ -176,6 +176,11 @@ export const companyCreationSchema = yup.object().shape({
     .matches(/^(?!.*\.\.)[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+)*@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}|^$/, "Invalid email format")
     .optional(),
 
+
+    company_type: yup
+    .string()
+    .required(),
+
 })
 
 
@@ -247,9 +252,9 @@ export const busCreationSchema = yup.object().shape({
   registrationNumber: yup.string().min(4).max(16).required("Registration number is required"),
   name: yup.string().min(4).max(64).required("Bus name is required"),
   capacity: yup.number().min(1).max(120).required("Capacity is required"),
-  model: yup.string().min(4).max(32).required("Model is required"),
   manufactured_on: yup.string().required("Manufacture date is required"),
   insurance_upto: yup.string().nullable(),
   pollution_upto: yup.string().nullable(),
   fitness_upto: yup.string().nullable(),
+  road_tax_upto: yup.string().nullable(),
 });

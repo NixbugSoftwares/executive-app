@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { TextField, Button, Box, Typography, Switch, CircularProgress } from "@mui/material";
+import {  Button, Box, Typography, Switch, CircularProgress } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
 import { roleUpdationApi, roleListApi } from "../../slices/appSlice"; 
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
@@ -36,11 +36,9 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
   const [roleData, setRoleData] = useState<RoleFormValues | null>(null); 
 
   const {
-    register,
     handleSubmit,
     control,
-    reset, 
-    formState: { errors },
+    reset,
   } = useForm<RoleFormValues>();
 
   // Fetch role data on mount
@@ -139,15 +137,9 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
       </Typography>
 
       
-      <TextField
-        label="Role Name"
-        {...register("name")}
-        error={!!errors.name}
-        helperText={errors.name?.message}
-        variant="outlined"
-        size="small"
-        fullWidth
-      />
+      <Typography variant="body1" gutterBottom>
+ <b>Name:</b> {roleData?.name}
+</Typography>
 
       
       {([

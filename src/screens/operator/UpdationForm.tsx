@@ -30,7 +30,7 @@ type operatorFormValues = {
   phoneNumber?: string;
   email?: string;
   gender?: number;
-  status?: number;
+  status?: string;
   companyId?: number;
   role: number;
   roleAssignmentId?: number;
@@ -131,6 +131,7 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             companyId: operator.company_id,
             role: roleMapping.role_id,
             roleAssignmentId: roleMapping.id,
+            
           });
 
           reset({

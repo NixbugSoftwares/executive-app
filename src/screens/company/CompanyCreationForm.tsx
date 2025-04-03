@@ -8,6 +8,7 @@ import {
   Container,
   CssBaseline,
   CircularProgress,
+  MenuItem,
 } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
 import { companyCreationApi } from "../../slices/appSlice";
@@ -25,12 +26,19 @@ interface ICompanyFormInputs {
   email?: string;
   latitude?: number;
   longitude?: number;
+  company_type: string;
 }
 
 interface ICompanyCreationFormProps {
   onClose: () => void;
   refreshList: (value: any) => void;
 }
+
+const TypeOptions = [
+  { label: "Privet", value: 1 },
+  { label: "Government", value: 2 },
+]
+
 
 const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
   onClose,
@@ -48,6 +56,9 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
     formState: { errors },
   } = useForm<ICompanyFormInputs>({
     resolver: yupResolver(companyCreationSchema),
+    defaultValues: {
+      company_type: "1",
+    },
   });
 
   const handleLocationSelect = (location: { name: string; lat: number; lng: number }) => {
@@ -64,12 +75,14 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
       formData.append("name", data.name);
       formData.append("address", data.address);
       formData.append("location", `POINT (${data.longitude} ${data.latitude})`);
-      formData.append("owner_name", data.owner_name);
+      formData.append("contact_person", data.owner_name);
       formData.append("phone_number", `+91${data.phone_number}`);
-      
       if (data.email) {
         formData.append("email_id", data.email);
       }
+      formData.append("type", data.company_type);
+      console.log("Form data before dispatch:", formData.get("location"));
+      
       const response = await dispatch(companyCreationApi(formData)).unwrap();
       console.log("Company creation response:", response);
       if (response?.id) {
@@ -189,6 +202,22 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
             helperText={errors.email?.message}
             size="small"
           />
+          
+
+          <Controller
+                  name="company_type"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField margin="normal" fullWidth select label="type" {...field} error={!!errors.company_type} size="small">
+                      {TypeOptions.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
+
           <Button
             type="submit"
             fullWidth

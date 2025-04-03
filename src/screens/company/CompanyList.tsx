@@ -65,12 +65,19 @@ const CompanyListingTable = () => {
           name: company.name ?? "-",
           address: company.address ?? "-",
           location: company.location ?? "-",
-          ownerName: company.owner_name,
+          ownerName: company.contact_person,
           phoneNumber: company.phone_number ?? "-",
           email: company.email_id ?? "-",
-          status: company.status === 1 ? "Active" : "Suspended",
+          status:
+          company.status === 1
+            ? "Validating"
+            : company.status === 2
+            ? "Verified"
+            : "Suspended",
         }));
         setCompanyList(formattedAccounts);
+        console.log("Company list:", formattedAccounts);
+        
       })
       .catch((err: any) => {
         console.error("Error fetching companies", err);
