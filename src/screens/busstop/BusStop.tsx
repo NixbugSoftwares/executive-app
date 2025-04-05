@@ -1,11 +1,24 @@
 import React from 'react';
 import { Sidebar } from "../../common";
 import { Box } from '@mui/material';
+import  BusStopListing  from './BusStopListing';
 const BusStopPage: React.FC = () => {
   return(
-    <Box>
+    <Box
+    sx={{
+      display: "flex",
+      height: "100%",
+      width: "100%",
+      scrollBehavior: "auto",
+    }}>
       <Sidebar/>
-      <h1>BusStopPage</h1>
+      <Box
+      sx={{ width: "100%", p: 3 }}
+      >
+      <BusStopListing/>
+      </Box>
+      
+
     </Box>
 
   )

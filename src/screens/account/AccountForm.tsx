@@ -168,7 +168,7 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({ onClose, ref
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton onClick={handleTogglePassword} edge="end">
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                    {showPassword ? <Visibility /> : < VisibilityOff />}
                   </IconButton>
                 </InputAdornment>
               ),

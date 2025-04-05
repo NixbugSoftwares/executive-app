@@ -116,7 +116,9 @@ export const accountUpdationFormSchema = yup.object().shape({
 
 //*********************************************************Role creating validation schema********************************************** 
 export const roleCreationSchema = yup.object().shape({
-  name: yup.string().required("Role name is required"),
+  name: yup.string().required("Role name is required")
+  .min(4, "landmark name must be at least 4 characters")
+  .max(32, "landmark name cannot exceed 32 characters"),
   manageExecutive: yup.boolean(),
   manageRole: yup.boolean(),
   manageLandmark: yup.boolean(),
@@ -133,8 +135,12 @@ export const roleCreationSchema = yup.object().shape({
 //*********************************************************landmark creating validation schema********************************************** 
 
 export const landMarkAddSchema = yup.object().shape({
-  name: yup.string().required("landmark name  is required"),
-  boundary: yup.string().required("Boundary is required")
+  name: yup.string().required("landmark name  is required")
+  .min(4, "landmark name must be at least 4 characters")
+  .max(32, "landmark name cannot exceed 32 characters"),
+  boundary: yup.string().required("Boundary is required"),
+  status: yup.string().required("Status is required"),
+  importance: yup.string().required("Importance is required"),
 })
 
 

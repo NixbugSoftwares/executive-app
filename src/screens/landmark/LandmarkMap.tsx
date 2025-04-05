@@ -107,7 +107,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       map.on("pointermove", (event) => {
         const coords = toLonLat(event.coordinate);
-        setMousePosition(`${coords[1].toFixed(7)}, ${coords[0].toFixed(7)}`);
+        setMousePosition(`${coords[0].toFixed(7)},${coords[1].toFixed(7)} `);
       });
 
       mapInstance.current = map;

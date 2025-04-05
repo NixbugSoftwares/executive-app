@@ -20,43 +20,54 @@ import {
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import WarningIcon from "@mui/icons-material/Warning";
-import LowPriorityIcon from "@mui/icons-material/LowPriority";
-import MediumPriorityIcon from "@mui/icons-material/Height";
-import HighPriorityIcon from "@mui/icons-material/PriorityHigh";
-import LandmarkAddForm from "./LandmarkAddForm";
-import MapComponent from "./LandmarkMap";
+import BusStopAddForm from "./creationForm";
 import { useDispatch } from "react-redux";
-import { landmarkListApi, landmarkDeleteApi } from "../../slices/appSlice";
+import MapComponent from "./BusStopMap";
+import { busStopListApi, landmarkListApi,busStopDeleteApi } from "../../slices/appSlice";
 import { AppDispatch } from "../../store/Store";
-import LandmarkUpdateForm from "./LandmarkUpdateForm";
 import VectorSource from "ol/source/Vector";
 
-interface Landmark {
+interface BusStop {
   id: number;
   name: string;
-  boundary: string;
+  landmark_id: number;
+  location: string;
   status: string;
-  importance: string;
+  parsedLocation?: [number, number];
 }
+interface Landmark {
+    id: number;
+    landmarkName: string;
+    boundary: string;
+    importance: string;
+    status: string;
+  }
 
-const LandmarkListing = () => {
+const BusStopListing = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const [busStopList, setBusStopList] = useState<BusStop[]>([]);
   const [landmarkList, setLandmarkList] = useState<Landmark[]>([]);
-  const [selectedLandmark, setSelectedLandmark] = useState<Landmark | null>(
-    null
-  );
+  const [selectedBusStop, setSelectedBusStop] = useState<BusStop | null>(null);
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [search, setSearch] = useState({ id: "", name: "", location: "" });
   const [page, setPage] = useState(0);
   const rowsPerPage = 10;
-  const [boundary, setBoundary] = useState<string>("");
+//   const [loccation, setLoccation] = useState<string>("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [landmarkToDelete, setLandmarkToDelete] = useState<Landmark | null>(
-    null
-  );
-  const [openUpdateModal, setOpenUpdateModal] = useState(false);
+  const [busStopToDelete, setBusStopToDelete] = useState<BusStop | null>(null);
+//   const [openUpdateModal, setOpenUpdateModal] = useState(false);
   const vectorSource = useRef(new VectorSource());
-  const [isDrawing, setIsDrawing] = useState(false);
+
+  const parsePointString = (pointString: string): [number, number] | null => {
+    if (!pointString) return null;
+    const matches = pointString.match(/POINT\(([^)]+)\)/);
+    if (!matches) return null;
+    
+    const coords = matches[1].split(' ');
+    if (coords.length !== 2) return null;
+    
+    return [parseFloat(coords[0]), parseFloat(coords[1])];
+  };
 
   const extractRawPoints = (polygonString: string): string => {
     if (!polygonString) return "";
@@ -64,44 +75,72 @@ const LandmarkListing = () => {
     return matches ? matches[1] : "";
   };
 
-
-  const fetchLandmark = () => {
-    dispatch(landmarkListApi())
+  //****************************bus stop listing ********************************
+  const fetchBusStop = () => {
+    dispatch(busStopListApi())
       .unwrap()
       .then((res: any[]) => {
-        const formattedLandmarks = res.map((landmark: any) => ({
-          id: landmark.id,
-          name: landmark.name,
-          boundary: extractRawPoints(landmark.boundary),
-          importance:
-            landmark.importance === 1
-              ? "Low"
-              : landmark.importance === 2
-              ? "Medium"
-              : "High",
-          status: landmark.status === 1 ? "Validating" : "Verified",
-        }));
-        setLandmarkList(formattedLandmarks);
+        const formattedBusStops = res.map((BusStop: any) => {
+          const coords = parsePointString(BusStop.location);
+          return {
+            id: BusStop.id,
+            name: BusStop.name,
+            landmark_id: BusStop.landmark_id,
+            location: BusStop.location,
+            parsedLocation: coords, 
+            status: BusStop.status === 1 ? "Validating" : "Verified",
+          };
+        });
+        setBusStopList(formattedBusStops);
       })
       .catch((err: any) => {
         console.error("Error fetching accounts", err);
       });
   };
 
+  //****************************landmark listing ********************************
+    const fetchLandmark = () => {
+      dispatch(landmarkListApi())
+        .unwrap()
+        .then((res: any[]) => {
+          const formattedLandmarks = res.map((landmark: any) => ({
+            id: landmark.id,
+            landmarkName: landmark.name,
+            boundary: extractRawPoints(landmark.boundary),
+            importance:
+              landmark.importance === 1
+                ? "Low"
+                : landmark.importance === 2
+                ? "Medium"
+                : "High",
+            status: landmark.status === 1 ? "Validating" : "Verified",
+          }));
+          setLandmarkList(formattedLandmarks);
+        })
+        .catch((err: any) => {
+          console.error("Error fetching accounts", err);
+        });
+    };
+
   useEffect(() => {
+    fetchBusStop();
     fetchLandmark();
   }, []);
-
-  const handleLandmarkDelete = async () => {
-    if (!landmarkToDelete) {
+  const getLandmarkNameById = (landmarkId: number): string => {
+    const landmark = landmarkList.find(landmark => landmark.id === landmarkId);
+    return landmark ? landmark.landmarkName : "Unknown Landmark";
+  };
+//***********************************bus stop delete *****************************
+  const handleBusStopDelete = async () => {
+    if (!busStopToDelete) {
       console.error("Error: Landmark to delete is missing");
       return;
     }
 
     try {
       const formData = new FormData();
-      formData.append("id", String(landmarkToDelete.id));
-      const response = await dispatch(landmarkDeleteApi(formData)).unwrap();
+      formData.append("id", String(busStopToDelete.id));
+      const response = await dispatch(busStopDeleteApi(formData)).unwrap();
       console.log("Landmark deleted:", response);
       setDeleteConfirmOpen(false);
       refreshList("refresh");
@@ -110,29 +149,25 @@ const LandmarkListing = () => {
     }
   };
 
-  const handleRowClick = (landmark: Landmark) => {
-    if (isDrawing) {
-      return; // Prevent selection when drawing is active
-    }
-    setSelectedLandmark(landmark);
-  };
+
+const handleRowClick = (busStop: BusStop) => {
+  const coordinates = parsePointString(busStop.location);
+  if (coordinates) {
+    setSelectedBusStop({
+      ...busStop,
+      parsedLocation: coordinates 
+    });
+  }
+};
+
+const clearBoundaries = () => {
+  vectorSource.current.clear();
+};
+
 
   const handleCloseRowClick = () => {
-    setSelectedLandmark(null);
+    setSelectedBusStop(null);
     clearBoundaries();
-  };
-
-  const clearBoundaries = () => {
-    vectorSource.current.clear();
-  };
-
-  const handlePolygonSelect = (coordinates: string) => {
-    setBoundary(coordinates);
-    setTimeout(() => setOpenCreateModal(true), 0);
-  };
-
-  const handleDrawingChange = (drawingState: boolean) => {
-    setIsDrawing(drawingState);
   };
 
   const handleSearchChange = (
@@ -145,10 +180,10 @@ const LandmarkListing = () => {
     }));
   };
 
-  const filteredData = landmarkList.filter((row) => {
+  const filteredData = busStopList.filter((row) => {
     const id = row.id ? row.id.toString().toLowerCase() : "";
     const name = row.name ? row.name.toLowerCase() : "";
-    const location = row.boundary ? row.boundary.toLowerCase() : "";
+    const location = row.location ? row.location.toLowerCase() : "--";
 
     const searchId = search.id ? search.id.toLowerCase() : "";
     const searchName = search.name ? search.name.toLowerCase() : "";
@@ -167,7 +202,7 @@ const LandmarkListing = () => {
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      fetchLandmark();
+      fetchBusStop();
     }
   };
 
@@ -236,7 +271,7 @@ const LandmarkListing = () => {
                 </TableCell>
                 <TableCell>
                   <Box display="flex" justifyContent="center">
-                    <b>Importance</b>
+                    <b>LandMark Name</b>
                   </Box>
                 </TableCell>
                 <TableCell>
@@ -251,78 +286,24 @@ const LandmarkListing = () => {
                 filteredData
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((row) => {
-                    const isSelected = selectedLandmark?.id === row.id;
+                    const isSelected = selectedBusStop?.id === row.id;
                     return (
-                      <Tooltip
-                        key={row.id}
-                        title={
-                          isDrawing
-                            ? "Finish drawing on the map first"
-                            : "Click to view details"
-                        }
-                      >
+                     
                         <TableRow
                           hover
                           onClick={() => handleRowClick(row)}
                           sx={{
-                            cursor: isDrawing ? "not-allowed" : "pointer",
+                            cursor:  "pointer",
                             backgroundColor: isSelected ? "#E3F2FD" : "inherit",
-                            opacity: isDrawing ? 0.7 : 1,
+                            opacity: 1,
                             "&:hover": {
-                              backgroundColor: isDrawing
-                                ? "inherit"
-                                : isSelected
-                                ? "#E3F2FD !important"
-                                : "#E3F2FD",
+                              backgroundColor:  "#E3F2FD",
                             },
                           }}
                         >
                           <TableCell>{row.id}</TableCell>
                           <TableCell>{row.name}</TableCell>
-                          <TableCell>
-                            {row.importance === "Low" && (
-                              <Chip
-                                icon={<LowPriorityIcon />}
-                                label="Low"
-                                color="info"
-                                size="small"
-                                sx={{
-                                  backgroundColor: isSelected
-                                    ? "#90CAF9"
-                                    : "#E3F2FD",
-                                  color: isSelected ? "#1565C0" : "#1565C0",
-                                }}
-                              />
-                            )}
-                            {row.importance === "Medium" && (
-                              <Chip
-                                icon={<MediumPriorityIcon />}
-                                label="Medium"
-                                color="warning"
-                                size="small"
-                                sx={{
-                                  backgroundColor: isSelected
-                                    ? "#edd18f"
-                                    : "#FFE082",
-                                  color: isSelected ? "#9f3b03" : "#9f3b03",
-                                }}
-                              />
-                            )}
-                            {row.importance === "High" && (
-                              <Chip
-                                icon={<HighPriorityIcon />}
-                                label="High"
-                                color="error"
-                                size="small"
-                                sx={{
-                                  backgroundColor: isSelected
-                                    ? "#EF9A9A"
-                                    : "#FFEBEE",
-                                  color: isSelected ? "#D32F2F" : "#D32F2F",
-                                }}
-                              />
-                            )}
-                          </TableCell>
+                            <TableCell>{getLandmarkNameById(row.landmark_id)}</TableCell>
                           <TableCell>
                             {row.status === "Validating" && (
                               <Chip
@@ -354,13 +335,13 @@ const LandmarkListing = () => {
                             )}
                           </TableCell>
                         </TableRow>
-                      </Tooltip>
+                     
                     );
                   })
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} align="center">
-                    No landmarks found.
+                    No Bus Stop found.
                   </TableCell>
                 </TableRow>
               )}
@@ -444,34 +425,28 @@ const LandmarkListing = () => {
           }}
         >
           <MapComponent
-            onDrawEnd={handlePolygonSelect}
-            isOpen={true}
-            selectedBoundary={selectedLandmark?.boundary}
-            selectedLandmark={selectedLandmark}
-            onUpdateClick={() => setOpenUpdateModal(true)}
-            onDeleteClick={() => {
-              setLandmarkToDelete(selectedLandmark);
-              setDeleteConfirmOpen(true);
-            }}
-            handleCloseRowClick={handleCloseRowClick}
-            clearBoundaries={clearBoundaries}
-            vectorSource={vectorSource}
-            landmarks={landmarkList}
-            isDrawing={isDrawing}
-            onDrawingChange={handleDrawingChange}
+          selectedBuststop={selectedBusStop}
+          vectorSource={vectorSource}
+          handleCloseRowClick={handleCloseRowClick}
+          busStops={busStopList}
+          onDeleteClick={() => {
+            setBusStopToDelete(selectedBusStop);
+            setDeleteConfirmOpen(true);
+          }}
+          landmarkList={landmarkList}
           />
         </Box>
       </Box>
 
-      <Dialog
+      {/* <Dialog
         open={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
         maxWidth="sm"
         fullWidth
       >
         <DialogContent>
-          <LandmarkAddForm
-            boundary={boundary}
+          <BusStopAddForm
+            busStop=""
             onClose={() => setOpenCreateModal(false)}
             refreshList={(value: any) => refreshList(value)}
           />
@@ -481,9 +456,9 @@ const LandmarkListing = () => {
             Cancel
           </Button>
         </DialogActions>
-      </Dialog>
+      </Dialog>  */}
 
-      <Dialog
+       {/* <Dialog
         open={openUpdateModal}
         onClose={() => setOpenUpdateModal(false)}
         maxWidth="sm"
@@ -502,7 +477,7 @@ const LandmarkListing = () => {
             Cancel
           </Button>
         </DialogActions>
-      </Dialog>
+      </Dialog> */}
 
       <Dialog
         open={deleteConfirmOpen}
@@ -513,10 +488,10 @@ const LandmarkListing = () => {
           <Typography>
             Are you sure you want to delete this Landmark?
           </Typography>
-          {landmarkToDelete && (
+          {busStopToDelete && (
             <Typography>
-              <b>ID:</b> {landmarkToDelete.id}, <b>Name:</b>{" "}
-              {landmarkToDelete.name}
+              <b>ID:</b> {busStopToDelete.id}, <b>Name:</b>{" "}
+              {busStopToDelete.name}
             </Typography>
           )}
         </DialogContent>
@@ -524,13 +499,13 @@ const LandmarkListing = () => {
           <Button onClick={() => setDeleteConfirmOpen(false)} color="primary">
             Cancel
           </Button>
-          <Button onClick={handleLandmarkDelete} color="error">
+          <Button onClick={handleBusStopDelete} color="error">
             Confirm Delete
           </Button>
         </DialogActions>
-      </Dialog>
+      </Dialog> 
     </Box>
   );
 };
 
-export default LandmarkListing;
+export default BusStopListing;

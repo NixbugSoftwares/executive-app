@@ -418,7 +418,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton onClick={handleTogglePassword} edge="end">
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                    {showPassword ? <Visibility /> : < VisibilityOff />}
                   </IconButton>
                 </InputAdornment>
               ),
