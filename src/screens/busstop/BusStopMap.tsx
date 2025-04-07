@@ -19,22 +19,24 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { Point } from 'ol/geom';
-import { Style, Icon } from 'ol/style';
-import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
+import { Point } from "ol/geom";
+import { Style, Icon } from "ol/style";
+import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { useNavigate } from "react-router-dom";
 import * as ol from "ol";
 import localStorageHelper from "../../utils/localStorageHelper";
-import { Fill, Stroke } from 'ol/style';
+import { Fill, Stroke } from "ol/style";
 import { Refresh } from "@mui/icons-material";
 import { showErrorToast } from "../../common/toastMessageHelper";
 import busstopimage from "../../assets/png/busstopimage.png";
+
 interface BusStop {
   id: number;
   name: string;
   location: string;
   status: string;
-  parsedLocation?: [number, number] | null; 
+  parsedLocation?: [number, number] | null;
 }
 interface Landmark {
   id: number;
@@ -44,23 +46,23 @@ interface Landmark {
   status: string;
 }
 
-
 interface MapComponentProps {
-  onDrawEnd: (coordinates: string) => void;
-  isOpen: boolean;
-  selectedBoundary?: string;
   selectedBuststop?: BusStop | null;
-  onUpdateClick: () => void;
-  onDeleteClick: () => void;
-  handleCloseRowClick: () => void;
-  clearBoundaries: () => void;
+  selectedLandmark?: Landmark | null;
   vectorSource: React.MutableRefObject<VectorSource>;
+  handleCloseRowClick: () => void;
   busStops?: BusStop[];
   landmarkList?: Landmark[];
+  onLandmarkSelect?: (landmark: Landmark | null) => void;
+  onCreateBusStop?: (coordinates: string) => void;
+  onDeleteClick?: () => void;
+  onUpdateClick?: () => void;
+  clearBoundaries: () => void;
+  isOpen?: boolean;
+  selectedBoundary?: string;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
-  onDrawEnd,
   isOpen,
   selectedBoundary,
   selectedBuststop,
@@ -68,7 +70,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onDeleteClick,
   handleCloseRowClick,
   busStops,
-  landmarkList
+  landmarkList,
+  selectedLandmark,
+  onLandmarkSelect,
+  onCreateBusStop,
 }) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const vectorSource = useRef(new VectorSource());
@@ -80,6 +85,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const canManageLandmark = roleDetails?.manage_landmark || false;
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showAllBusStops, setShowAllBusStops] = useState(false);
+  const [showAllBoundaries, setShowAllBoundaries] = useState(false);
+  const [landmarkFeatures, setLandmarkFeatures] = useState<ol.Feature[]>([]);
+  const [busStopFeatures, setBusStopFeatures] = useState<ol.Feature[]>([]);
+  const [drawingMode, setDrawingMode] = useState(false);
+  const [selectedPoint, setSelectedPoint] = useState<[number, number] | null>(
+    null
+  );
 
   const clearBoundaries = () => {
     vectorSource.current.clear();
@@ -90,16 +102,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
     if (!pointString) return null;
     const matches = pointString.match(/POINT\(([^)]+)\)/);
     if (!matches) return null;
-    
-    const coords = matches[1].split(' ');
+
+    const coords = matches[1].split(" ");
     if (coords.length !== 2) return null;
-    
+
     return [parseFloat(coords[0]), parseFloat(coords[1])];
   };
 
-
-
-  //************************************Initialize the map********************************
+  //********************************************* Initialize the map ********************************
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -132,7 +142,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
         mapInstance.current?.updateSize();
       }, 500);
     }
-  }, [isOpen, onDrawEnd, navigate]);
+  }, [isOpen, navigate]);
+
 
   useEffect(() => {
     if (selectedBoundary && mapInstance.current) {
@@ -153,96 +164,409 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   }, [selectedBoundary]);
 
+  //********************************************* bus stop view with landmark ************************************
+  useEffect(() => {
+    if (!mapInstance.current) return;
+    vectorSource.current.clear();
 
-//*************************************bus stop view with boundary*************************
-useEffect(() => {
-  if (!mapInstance.current) return;
-  vectorSource.current.clear();
-
-  // If we have a selected bus stop
-  if (selectedBuststop?.parsedLocation) {
-    // Show bus stop marker
-    const [lon, lat] = selectedBuststop.parsedLocation;
-    const coordinates = fromLonLat([lon, lat]);
-    const point = new Point(coordinates);
-    const feature = new ol.Feature(point);
-    feature.setStyle(
-      new Style({
-        image: new Icon({
-          src: busstopimage,
-          scale: 0.1,
-          anchor: [0.5, 1],
-        }),
-      })
-    );
-    vectorSource.current.addFeature(feature);
-
-    const landmark = landmarkList?.find(l => l.id === (selectedBuststop as any).landmark_id);
-    if (landmark?.boundary) {
-      const coords = landmark.boundary.split(',').map(pair  => {
-        const [x, y] = pair.trim().split(' ').map(Number);
-        return fromLonLat([x, y]);
-      });
-      
-      const polygon = new Polygon([coords]);
-      const boundaryFeature = new ol.Feature(polygon);
-      boundaryFeature.setStyle(
+    // If we have a selected bus stop
+    if (selectedBuststop?.parsedLocation) {
+      // Show bus stop marker
+      const [lon, lat] = selectedBuststop.parsedLocation;
+      const coordinates = fromLonLat([lon, lat]);
+      const point = new Point(coordinates);
+      const feature = new ol.Feature(point);
+      feature.setStyle(
         new Style({
-          fill: new Fill({
-            color: "rgba(221, 201, 75, 0.5)",
-          }),
-          stroke: new Stroke({
-            color: "rgb(255, 149, 0) ",
-            width: 2,
+          image: new Icon({
+            src: busstopimage,
+            scale: 0.1,
+            anchor: [0.5, 1],
           }),
         })
       );
-      vectorSource.current.addFeature(boundaryFeature);
-    }
+      vectorSource.current.addFeature(feature);
 
-    // Fit view to show both the bus stop and its landmark
-    const extent = vectorSource.current.getExtent();
-    mapInstance.current.getView().fit(extent, {
-      padding: [50, 50, 50, 50],
-      duration: 1000,
-    });
-  }
+      const landmark = landmarkList?.find(
+        (l) => l.id === (selectedBuststop as any).landmark_id
+      );
+      if (landmark?.boundary) {
+        const coords = landmark.boundary.split(",").map((pair) => {
+          const [x, y] = pair.trim().split(" ").map(Number);
+          return fromLonLat([x, y]);
+        });
 
-  // Show all bus stops if enabled
-  if (showAllBusStops && busStops) {
-    const features: ol.Feature[] = [];
-    busStops.forEach((busStop) => {
-      const coords = parsePointString(busStop.location);
-      if (coords) {
-        const [lon, lat] = coords;
-        const coordinates = fromLonLat([lon, lat]);
-        const point = new Point(coordinates);
-        const feature = new ol.Feature(point);
-        
-        feature.setStyle(
+        const polygon = new Polygon([coords]);
+        const boundaryFeature = new ol.Feature(polygon);
+        boundaryFeature.setStyle(
           new Style({
-            image: new Icon({
-              src: busstopimage,
-              scale: 0.1,
-              anchor: [0.5, 1],
+            fill: new Fill({
+              color: "rgba(221, 201, 75, 0.5)",
+            }),
+            stroke: new Stroke({
+              color: "rgb(255, 149, 0) ",
+              width: 2,
             }),
           })
         );
-        
-        features.push(feature);
+        vectorSource.current.addFeature(boundaryFeature);
       }
-    });
-    vectorSource.current.addFeatures(features);
-    if (features.length > 0) {
+
+      // Fit view to show both the bus stop and its landmark
       const extent = vectorSource.current.getExtent();
       mapInstance.current.getView().fit(extent, {
         padding: [50, 50, 50, 50],
         duration: 1000,
       });
     }
-  }
-}, [selectedBuststop, showAllBusStops, busStops, landmarkList]);
 
+    // Show all bus stops if enabled
+    if (showAllBoundaries && landmarkList) {
+      landmarkList.forEach((landmark) => {
+        if (landmark.boundary) {
+          const coordinates = landmark.boundary
+            .split(",")
+            .map((coord) => coord.trim().split(" ").map(Number))
+            .map((coord) => fromLonLat(coord));
+
+          const polygon = new Polygon([coordinates]);
+          const feature = new ol.Feature(polygon);
+
+          feature.setStyle(
+            new Style({
+              stroke: new Stroke({
+                color: "rgba(0, 0, 255, 0.7)",
+                width: 2,
+              }),
+              fill: new Fill({
+                color: "rgba(0, 0, 255, 0.1)",
+              }),
+            })
+          );
+
+          vectorSource.current.addFeature(feature);
+        }
+      });
+    }
+
+    // Add bus stops if enabled
+    if (showAllBusStops && busStops) {
+      busStops.forEach((busStop) => {
+        const coords = parsePointString(busStop.location);
+        if (coords) {
+          const [lon, lat] = coords;
+          const coordinates = fromLonLat([lon, lat]);
+          const point = new Point(coordinates);
+          const feature = new ol.Feature(point);
+
+          feature.setStyle(
+            new Style({
+              image: new Icon({
+                src: busstopimage,
+                scale: 0.1,
+                anchor: [0.5, 1],
+              }),
+            })
+          );
+
+          vectorSource.current.addFeature(feature);
+        }
+      });
+    }
+
+    // Fit view to show all features if any exist
+    if (vectorSource.current.getFeatures().length > 0) {
+      const extent = vectorSource.current.getExtent();
+      mapInstance.current.getView().fit(extent, {
+        padding: [50, 50, 50, 50],
+        duration: 1000,
+      });
+    }
+  }, [selectedBuststop, showAllBusStops, busStops, landmarkList]);
+
+  //show all boundaries
+  useEffect(() => {
+    if (!mapInstance.current) return;
+
+    vectorSource.current.clear();
+
+    if (selectedBoundary) {
+      const coordinates = selectedBoundary
+        .split(",")
+        .map((coord) => coord.trim().split(" ").map(Number))
+        .map((coord) => fromLonLat(coord));
+
+      const polygon = new Polygon([coordinates]);
+      const feature = new ol.Feature(polygon);
+
+      feature.setStyle(
+        new Style({
+          stroke: new Stroke({
+            color: "rgb(255, 149, 0)",
+            width: 3,
+          }),
+          fill: new Fill({
+            color: "rgba(221, 201, 75, 0.3)",
+          }),
+        })
+      );
+
+      vectorSource.current.addFeature(feature);
+
+      const extent = polygon.getExtent();
+      mapInstance.current.getView().fit(extent, {
+        padding: [50, 50, 50, 50],
+        duration: 1000,
+      });
+    }
+
+    if (showAllBoundaries || !showAllBoundaries) {
+      landmarkFeatures.forEach((f) => vectorSource.current.removeFeature(f));
+      setLandmarkFeatures([]);
+    }
+
+    if (showAllBusStops || !showAllBusStops) {
+      busStopFeatures.forEach((f) => vectorSource.current.removeFeature(f));
+      setBusStopFeatures([]);
+    }
+
+    // Add landmarks if enabled
+    if (showAllBoundaries && landmarkList) {
+      const newLandmarkFeatures = landmarkList
+        .map((landmark) => {
+          if (!landmark.boundary) return null;
+
+          const coordinates = landmark.boundary
+            .split(",")
+            .map((coord) => coord.trim().split(" ").map(Number))
+            .map((coord) => fromLonLat(coord));
+
+          const polygon = new Polygon([coordinates]);
+          const feature = new ol.Feature(polygon);
+
+          feature.setStyle(
+            new Style({
+              stroke: new Stroke({
+                color: "rgba(0, 0, 255, 0.7)",
+                width: 2,
+              }),
+              fill: new Fill({
+                color: "rgba(0, 0, 255, 0.1)",
+              }),
+            })
+          );
+
+          vectorSource.current.addFeature(feature);
+          return feature;
+        })
+        .filter(Boolean) as ol.Feature[];
+
+      setLandmarkFeatures(newLandmarkFeatures);
+    }
+
+    // Add bus stops if enabled
+    if (showAllBusStops && busStops) {
+      const newBusStopFeatures = busStops
+        .map((busStop) => {
+          const coords = parsePointString(busStop.location);
+          if (!coords) return null;
+
+          const [lon, lat] = coords;
+          const coordinates = fromLonLat([lon, lat]);
+          const point = new Point(coordinates);
+          const feature = new ol.Feature(point);
+
+          feature.setStyle(
+            new Style({
+              image: new Icon({
+                src: busstopimage,
+                scale: 0.1,
+                anchor: [0.5, 1],
+              }),
+            })
+          );
+
+          vectorSource.current.addFeature(feature);
+          return feature;
+        })
+        .filter(Boolean) as ol.Feature[];
+
+      setBusStopFeatures(newBusStopFeatures);
+    }
+
+    // Fit view to show all features if any exist
+    if (vectorSource.current.getFeatures().length > 0) {
+      const extent = vectorSource.current.getExtent();
+      mapInstance.current.getView().fit(extent, {
+        padding: [50, 50, 50, 50],
+        duration: 1000,
+      });
+    }
+  }, [showAllBoundaries, landmarkList, selectedBoundary]);
+
+  
+
+  useEffect(() => {
+    if (!mapInstance.current || !selectedLandmark?.boundary) return;
+
+    vectorSource.current.clear();
+    setSelectedPoint(null);
+
+    // Draw the selected landmark boundary
+    const coordinates = selectedLandmark.boundary
+      .split(",")
+      .map((coord) => coord.trim().split(" ").map(Number))
+      .map((coord) => fromLonLat(coord));
+
+    const polygon = new Polygon([coordinates]);
+    const feature = new ol.Feature(polygon);
+
+    feature.setStyle(
+      new Style({
+        fill: new Fill({
+          color: "rgba(221, 201, 75, 0.5)",
+        }),
+        stroke: new Stroke({
+          color: "rgb(255, 149, 0)",
+          width: 2,
+        }),
+      })
+    );
+
+    vectorSource.current.addFeature(feature);
+
+    // Fit view to the landmark
+    const extent = polygon.getExtent();
+    mapInstance.current.getView().fit(extent, {
+      padding: [50, 50, 50, 50],
+      duration: 1000,
+    });
+
+    // Enable drawing mode if onCreateBusStop is provided
+    if (onCreateBusStop) {
+      setDrawingMode(true);
+    }
+
+    return () => {
+      setDrawingMode(false);
+    };
+  }, [selectedLandmark]);
+
+  // Add click handler for selecting points
+  useEffect(() => {
+    if (!mapInstance.current || !drawingMode) return;
+
+    function isPointInPolygon(
+      point: [number, number],
+      polygon: number[][]
+    ): boolean {
+      const x = point[0];
+      const y = point[1];
+
+      let inside = false;
+      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i][0],
+          yi = polygon[i][1];
+        const xj = polygon[j][0],
+          yj = polygon[j][1];
+
+        const intersect =
+          yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+        if (intersect) inside = !inside;
+      }
+
+      return inside;
+    }
+
+    const clickHandler = (evt: ol.MapBrowserEvent<UIEvent>) => {
+      const coordinate = evt.coordinate;
+      const lonLat = toLonLat(coordinate);
+
+      // Check if point is inside the landmark boundary
+      if (selectedLandmark?.boundary) {
+        const boundaryCoords = selectedLandmark.boundary
+          .split(",")
+          .map((coord) => coord.trim().split(" ").map(Number));
+
+        if (isPointInPolygon(lonLat as [number, number], boundaryCoords)) {
+          setSelectedPoint(lonLat as [number, number]);
+
+          // Add point marker
+          vectorSource.current
+            .getFeatures()
+            .filter((f) => f.getGeometry()?.getType() === "Point")
+            .forEach((f) => vectorSource.current.removeFeature(f));
+
+          const point = new Point(coordinate);
+          const pointFeature = new ol.Feature(point);
+          pointFeature.setStyle(
+            new Style({
+              image: new Icon({
+                src: busstopimage,
+                scale: 0.1,
+                anchor: [0.5, 1],
+              }),
+            })
+          );
+          vectorSource.current.addFeature(pointFeature);
+
+          // Immediately call onCreateBusStop with the coordinates
+          if (onCreateBusStop) {
+            onCreateBusStop(
+              `POINT(${lonLat[0].toFixed(7)} ${lonLat[1].toFixed(7)})`
+            );
+          }
+        }
+      }
+    };
+
+    mapInstance.current.on("click", clickHandler);
+    return () => {
+      mapInstance.current?.un("click", clickHandler);
+    };
+  }, [drawingMode, selectedLandmark]);
+  const renderCreateBusStopButton = () => {
+    if (!selectedLandmark || !onCreateBusStop) return null;
+
+    return (
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: 16,
+          right: 16,
+          zIndex: 1,
+          display: "flex",
+          gap: 1,
+        }}
+      >
+        <Button
+          variant="outlined"
+          onClick={() => {
+            setSelectedPoint(null);
+            onLandmarkSelect?.(null);
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          color="primary"
+          disabled={!selectedPoint}
+          onClick={() => {
+            if (selectedPoint) {
+              onCreateBusStop(
+                `POINT(${selectedPoint[0].toFixed(
+                  7
+                )} ${selectedPoint[1].toFixed(7)})`
+              );
+            }
+          }}
+        >
+          Create Bus Stop Here
+        </Button>
+      </Box>
+    );
+  };
 
   const handleSearch = async () => {
     if (!searchQuery || !mapInstance.current) return;
@@ -357,7 +681,7 @@ useEffect(() => {
             </Button>
           </Box>
 
-          {!selectedBuststop &&  (
+          {!selectedBuststop && (
             <Box>
               <Tooltip title="Clear Drawings" placement="bottom">
                 <IconButton color="warning" onClick={clearBoundaries}>
@@ -377,14 +701,39 @@ useEffect(() => {
             <IconButton
               onClick={() => {
                 setShowAllBusStops(!showAllBusStops);
-                if (!showAllBusStops && selectedBoundary) {
-                }
               }}
               sx={{ ml: 1 }}
             >
-              {showAllBusStops ? <DirectionsBusIcon sx={{ color: "blue" }} /> : <DirectionsBusIcon  />}
+              {showAllBusStops ? (
+                <DirectionsBusIcon sx={{ color: "blue" }} />
+              ) : (
+                <DirectionsBusIcon />
+              )}
             </IconButton>
           </Tooltip>
+
+          <Tooltip
+            title={
+              showAllBoundaries
+                ? "Hide all landmarks"
+                : "Click to view all landmarks"
+            }
+            arrow
+          >
+            <IconButton
+              onClick={() => {
+                setShowAllBoundaries(!showAllBoundaries);
+              }}
+              sx={{ ml: 1 }}
+            >
+              {showAllBoundaries ? (
+                <LocationOnIcon sx={{ color: "blue" }} />
+              ) : (
+                <LocationOnIcon />
+              )}
+            </IconButton>
+          </Tooltip>
+
           {/* <Button onClick={handleOpenCreateModal}>add bus stop</Button> */}
         </Box>
       </Box>
@@ -404,7 +753,7 @@ useEffect(() => {
       >
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           <Typography variant="body2">
-            <strong>[{mousePosition?mousePosition:"coordinates"}]</strong>
+            <strong>[{mousePosition ? mousePosition : "coordinates"}]</strong>
           </Typography>
         </Box>
 
@@ -479,6 +828,7 @@ useEffect(() => {
           </Box>
         )}
       </Box>
+      {renderCreateBusStopButton()}
     </Box>
   );
 };

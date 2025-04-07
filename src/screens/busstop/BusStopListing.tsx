@@ -16,16 +16,26 @@ import {
   DialogTitle,
   Typography,
   Chip,
-  Tooltip,
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import WarningIcon from "@mui/icons-material/Warning";
+import LowPriorityIcon from "@mui/icons-material/LowPriority";
+import MediumPriorityIcon from "@mui/icons-material/Height";
+import HighPriorityIcon from "@mui/icons-material/PriorityHigh";
 import BusStopAddForm from "./creationForm";
 import { useDispatch } from "react-redux";
 import MapComponent from "./BusStopMap";
-import { busStopListApi, landmarkListApi,busStopDeleteApi } from "../../slices/appSlice";
+import {
+  busStopListApi,
+  landmarkListApi,
+  busStopDeleteApi,
+} from "../../slices/appSlice";
 import { AppDispatch } from "../../store/Store";
 import VectorSource from "ol/source/Vector";
+import { fromLonLat } from "ol/proj";
+import Polygon from "ol/geom/Polygon";
+import * as ol from "ol";
+import { showInfoToast } from "../../common/toastMessageHelper";
 
 interface BusStop {
   id: number;
@@ -33,39 +43,50 @@ interface BusStop {
   landmark_id: number;
   location: string;
   status: string;
-  parsedLocation?: [number, number];
+  parsedLocation?: [number, number] | null;
 }
+
 interface Landmark {
-    id: number;
-    landmarkName: string;
-    boundary: string;
-    importance: string;
-    status: string;
-  }
+  id: number;
+  landmarkName: string;
+  boundary: string;
+  importance: string;
+  status: string;
+}
 
 const BusStopListing = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [busStopList, setBusStopList] = useState<BusStop[]>([]);
   const [landmarkList, setLandmarkList] = useState<Landmark[]>([]);
   const [selectedBusStop, setSelectedBusStop] = useState<BusStop | null>(null);
+  const [selectedLandmark, setSelectedLandmark] = useState<Landmark | null>(
+    null
+  );
   const [openCreateModal, setOpenCreateModal] = useState(false);
-  const [search, setSearch] = useState({ id: "", name: "", location: "" });
+  const [busStopSearch, setBusStopSearch] = useState({
+    id: "",
+    name: "",
+    location: "",
+    landmarkName: "",
+  });
+  const [landmarkSearch, setLandmarkSearch] = useState({ id: "", name: "" });
   const [page, setPage] = useState(0);
-  const rowsPerPage = 10;
-//   const [loccation, setLoccation] = useState<string>("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [busStopToDelete, setBusStopToDelete] = useState<BusStop | null>(null);
-//   const [openUpdateModal, setOpenUpdateModal] = useState(false);
+  const [showLandmarkTable, setShowLandmarkTable] = useState(false);
   const vectorSource = useRef(new VectorSource());
+  const mapInstance = useRef<ol.Map | null>(null);
+  const [busStopLocation, setBusStopLocation] = useState("");
+  const rowsPerPage = 10;
 
   const parsePointString = (pointString: string): [number, number] | null => {
     if (!pointString) return null;
     const matches = pointString.match(/POINT\(([^)]+)\)/);
     if (!matches) return null;
-    
-    const coords = matches[1].split(' ');
+
+    const coords = matches[1].split(" ");
     if (coords.length !== 2) return null;
-    
+
     return [parseFloat(coords[0]), parseFloat(coords[1])];
   };
 
@@ -75,136 +96,227 @@ const BusStopListing = () => {
     return matches ? matches[1] : "";
   };
 
-  //****************************bus stop listing ********************************
+
+  //*********************************** fetching Bus Stops and landmarks ***************************************
   const fetchBusStop = () => {
     dispatch(busStopListApi())
       .unwrap()
       .then((res: any[]) => {
-        const formattedBusStops = res.map((BusStop: any) => {
-          const coords = parsePointString(BusStop.location);
+        const formattedBusStops = res.map((busStop: any) => {
+          const coords = parsePointString(busStop.location);
           return {
-            id: BusStop.id,
-            name: BusStop.name,
-            landmark_id: BusStop.landmark_id,
-            location: BusStop.location,
-            parsedLocation: coords, 
-            status: BusStop.status === 1 ? "Validating" : "Verified",
+            id: busStop.id,
+            name: busStop.name,
+            landmark_id: busStop.landmark_id,
+            location: busStop.location,
+            parsedLocation: coords,
+            status: busStop.status === 1 ? "Validating" : "Verified",
           };
         });
         setBusStopList(formattedBusStops);
       })
       .catch((err: any) => {
-        console.error("Error fetching accounts", err);
+        console.error("Error fetching bus stops", err);
       });
   };
 
-  //****************************landmark listing ********************************
-    const fetchLandmark = () => {
-      dispatch(landmarkListApi())
-        .unwrap()
-        .then((res: any[]) => {
-          const formattedLandmarks = res.map((landmark: any) => ({
-            id: landmark.id,
-            landmarkName: landmark.name,
-            boundary: extractRawPoints(landmark.boundary),
-            importance:
-              landmark.importance === 1
-                ? "Low"
-                : landmark.importance === 2
-                ? "Medium"
-                : "High",
-            status: landmark.status === 1 ? "Validating" : "Verified",
-          }));
-          setLandmarkList(formattedLandmarks);
-        })
-        .catch((err: any) => {
-          console.error("Error fetching accounts", err);
-        });
-    };
+  const fetchLandmark = () => {
+    dispatch(landmarkListApi())
+      .unwrap()
+      .then((res: any[]) => {
+        const formattedLandmarks = res.map((landmark: any) => ({
+          id: landmark.id,
+          landmarkName: landmark.name,
+          boundary: extractRawPoints(landmark.boundary),
+          importance:
+            landmark.importance === 1
+              ? "Low"
+              : landmark.importance === 2
+              ? "Medium"
+              : "High",
+          status: landmark.status === 1 ? "Validating" : "Verified",
+        }));
+        setLandmarkList(formattedLandmarks);
+      })
+      .catch((err: any) => {
+        console.error("Error fetching landmarks", err);
+      });
+  };
 
   useEffect(() => {
     fetchBusStop();
     fetchLandmark();
   }, []);
+
+
+
   const getLandmarkNameById = (landmarkId: number): string => {
-    const landmark = landmarkList.find(landmark => landmark.id === landmarkId);
+    const landmark = landmarkList.find(
+      (landmark) => landmark.id === landmarkId
+    );
     return landmark ? landmark.landmarkName : "Unknown Landmark";
   };
-//***********************************bus stop delete *****************************
+
+
+
+//************************** Bus Stop Delete function ********************************************************
   const handleBusStopDelete = async () => {
-    if (!busStopToDelete) {
-      console.error("Error: Landmark to delete is missing");
-      return;
-    }
+    if (!busStopToDelete) return;
 
     try {
       const formData = new FormData();
       formData.append("id", String(busStopToDelete.id));
-      const response = await dispatch(busStopDeleteApi(formData)).unwrap();
-      console.log("Landmark deleted:", response);
+      await dispatch(busStopDeleteApi(formData)).unwrap();
       setDeleteConfirmOpen(false);
-      refreshList("refresh");
+      fetchBusStop();
     } catch (error) {
       console.error("Delete error:", error);
     }
   };
 
+  //************************** Bus Stop functions ********************************************************
+      const handleCreateBusStopClick = () => {
+        if (!selectedLandmark) {
+          setBusStopLocation(location.toString());
+          showInfoToast("You should select a landmark first.");
+          return;
+        }
+        setOpenCreateModal(true);
+      };
 
-const handleRowClick = (busStop: BusStop) => {
-  const coordinates = parsePointString(busStop.location);
-  if (coordinates) {
-    setSelectedBusStop({
-      ...busStop,
-      parsedLocation: coordinates 
-    });
-  }
-};
+  const handleRowClick = (busStop: BusStop) => {
+    const coordinates = parsePointString(busStop.location);
+    if (coordinates) {
+      setSelectedBusStop({
+        ...busStop,
+        parsedLocation: coordinates,
+      });
+    }
+  };
 
-const clearBoundaries = () => {
-  vectorSource.current.clear();
-};
+  const handleLandmarkSelect = (landmark: Landmark) => {
+    setSelectedLandmark(landmark);
 
+    if (landmark.boundary) {
+      const coordinates = landmark.boundary
+        .split(",")
+        .map((coord) => coord.trim().split(" ").map(Number))
+        .map((coord) => fromLonLat(coord));
+
+      const polygon = new Polygon([coordinates]);
+      vectorSource.current.clear();
+      vectorSource.current.addFeature(new ol.Feature(polygon));
+
+      if (mapInstance.current) {
+        const extent = polygon.getExtent();
+        mapInstance.current.getView().fit(extent, {
+          padding: [50, 50, 50, 50],
+          duration: 1000,
+        });
+      }
+    }
+  };
+
+  const clearBoundaries = () => {
+    vectorSource.current.clear();
+  };
 
   const handleCloseRowClick = () => {
     setSelectedBusStop(null);
     clearBoundaries();
   };
 
-  const handleSearchChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    column: keyof typeof search
-  ) => {
-    setSearch((prev) => ({
-      ...prev,
-      [column]: (e.target as HTMLInputElement).value,
-    }));
-  };
 
-  const filteredData = busStopList.filter((row) => {
-    const id = row.id ? row.id.toString().toLowerCase() : "";
-    const name = row.name ? row.name.toLowerCase() : "";
-    const location = row.location ? row.location.toLowerCase() : "--";
+  //************************** Common Pagination ********************************************************
 
-    const searchId = search.id ? search.id.toLowerCase() : "";
-    const searchName = search.name ? search.name.toLowerCase() : "";
-    const searchLocation = search.location ? search.location.toLowerCase() : "";
+  const CommonPagination = ({ count }: { count: number }) => (
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "right",
+        alignItems: "right",
+        gap: 1,
+        mt: 1,
+        mr: 20,
+      }}
+    >
+      <Button
+        onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
+        disabled={page === 0}
+        sx={{ padding: "5px 10px", minWidth: 40 }}
+      >
+        &lt;
+      </Button>
+      {Array.from(
+        { length: Math.ceil(count / rowsPerPage) },
+        (_, index) => index
+      )
+        .slice(
+          Math.max(0, page - 1),
+          Math.min(page + 2, Math.ceil(count / rowsPerPage))
+        )
+        .map((pageNumber) => (
+          <Button
+            key={pageNumber}
+            onClick={() => setPage(pageNumber)}
+            sx={{
+              padding: "5px 10px",
+              minWidth: 40,
+              bgcolor:
+                page === pageNumber ? "rgba(21, 101, 192, 0.2)" : "transparent",
+              fontWeight: page === pageNumber ? "bold" : "normal",
+              borderRadius: "5px",
+              transition: "all 0.3s",
+              "&:hover": { bgcolor: "rgba(21, 101, 192, 0.3)" },
+            }}
+          >
+            {pageNumber + 1}
+          </Button>
+        ))}
+      <Button
+        onClick={() => setPage((prev) => prev + 1)}
+        disabled={page >= Math.ceil(count / rowsPerPage) - 1}
+        sx={{ padding: "5px 10px", minWidth: 40 }}
+      >
+        &gt;
+      </Button>
+    </Box>
+  );
+
+
+  //************************** common search function for both tables ********************************************************
+
+  const filteredBusStops = busStopList.filter((row) => {
+    const id = row.id.toString().toLowerCase();
+    const name = row.name.toLowerCase();
+    const landmarkName = getLandmarkNameById(row.landmark_id).toLowerCase();
 
     return (
-      id.includes(searchId) &&
-      name.includes(searchName) &&
-      location.includes(searchLocation)
+      id.includes(busStopSearch.id.toLowerCase()) &&
+      name.includes(busStopSearch.name.toLowerCase()) &&
+      landmarkName.includes(busStopSearch.landmarkName.toLowerCase())
     );
   });
 
-  const handleChangePage = (_event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
+  const filteredLandmarks = landmarkList.filter((landmark) => {
+    const id = landmark.id.toString().toLowerCase();
+    const name = landmark.landmarkName.toLowerCase();
 
-  const refreshList = (value: string) => {
-    if (value === "refresh") {
-      fetchBusStop();
-    }
-  };
+    return (
+      id.includes(landmarkSearch.id.toLowerCase()) &&
+      name.includes(landmarkSearch.name.toLowerCase())
+    );
+  });
+
+  const currentTableData = showLandmarkTable
+    ? filteredLandmarks.slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage
+      )
+    : filteredBusStops.slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage
+      );
 
   return (
     <Box
@@ -216,6 +328,7 @@ const clearBoundaries = () => {
         gap: 2,
       }}
     >
+      {/* Left Panel - Table Section */}
       <Box
         sx={{
           flex: { xs: "0 0 100%", md: "50%" },
@@ -223,232 +336,513 @@ const clearBoundaries = () => {
           transition: "all 0.3s ease",
           overflow: "hidden",
           overflowY: "auto",
+          position: "relative",
+          pt: 6,
         }}
       >
-        <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
-          <Table sx={{ borderCollapse: "collapse", width: "100%" }}>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ width: "20%" }}>
-                  <Box
-                    display="flex"
-                    flexDirection="column"
-                    alignItems="center"
-                  >
-                    <b>ID</b>
-                    <TextField
-                      variant="outlined"
-                      size="small"
-                      placeholder="Search"
-                      value={search.id}
-                      onChange={(e) => handleSearchChange(e, "id")}
-                      fullWidth
-                      sx={{
-                        "& .MuiInputBase-root": { height: 30, padding: "4px" },
-                      }}
-                    />
-                  </Box>
-                </TableCell>
-                <TableCell sx={{ width: "35%" }}>
-                  <Box
-                    display="flex"
-                    flexDirection="column"
-                    alignItems="center"
-                  >
-                    <b>Name</b>
-                    <TextField
-                      variant="outlined"
-                      size="small"
-                      placeholder="Search"
-                      value={search.name}
-                      onChange={(e) => handleSearchChange(e, "name")}
-                      fullWidth
-                      sx={{
-                        "& .MuiInputBase-root": { height: 30, padding: "4px" },
-                      }}
-                    />
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Box display="flex" justifyContent="center">
-                    <b>LandMark Name</b>
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Box display="flex" justifyContent="center">
-                    <b>Status</b>
-                  </Box>
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredData.length > 0 ? (
-                filteredData
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row) => {
-                    const isSelected = selectedBusStop?.id === row.id;
-                    return (
-                     
-                        <TableRow
-                          hover
-                          onClick={() => handleRowClick(row)}
-                          sx={{
-                            cursor:  "pointer",
-                            backgroundColor: isSelected ? "#E3F2FD" : "inherit",
-                            opacity: 1,
-                            "&:hover": {
-                              backgroundColor:  "#E3F2FD",
-                            },
-                          }}
-                        >
-                          <TableCell>{row.id}</TableCell>
-                          <TableCell>{row.name}</TableCell>
-                            <TableCell>{getLandmarkNameById(row.landmark_id)}</TableCell>
-                          <TableCell>
-                            {row.status === "Validating" && (
-                              <Chip
-                                icon={<WarningIcon />}
-                                label="Validating"
-                                color="warning"
-                                size="small"
-                                sx={{
-                                  backgroundColor: isSelected
-                                    ? "#edd18f"
-                                    : "#FFE082",
-                                  color: isSelected ? "#9f3b03" : "#9f3b03",
-                                }}
-                              />
-                            )}
-                            {row.status === "Verified" && (
-                              <Chip
-                                icon={<CheckCircleIcon />}
-                                label="Verified"
-                                color="success"
-                                size="small"
-                                sx={{
-                                  backgroundColor: isSelected
-                                    ? "#A5D6A7"
-                                    : "#E8F5E9",
-                                  color: isSelected ? "#2E7D32" : "#2E7D32",
-                                }}
-                              />
-                            )}
-                          </TableCell>
-                        </TableRow>
-                     
-                    );
-                  })
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    No Bus Stop found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "right",
-            alignItems: "right",
-            gap: 1,
-            mt: 1,
-            mr: 20,
-          }}
-        >
+        {/* Add Bus Stop Button */}
+        <Box sx={{ position: "absolute", top: 16, right: 16, zIndex: 1 }}>
           <Button
-            onClick={() => handleChangePage(null, page - 1)}
-            disabled={page === 0}
-            sx={{ padding: "5px 10px", minWidth: 40 }}
+            variant="contained"
+            color="success"
+            onClick={() => {
+              setShowLandmarkTable(!showLandmarkTable);
+              handleCreateBusStopClick();
+              setPage(0);
+              if (!showLandmarkTable) {
+                setSelectedBusStop(null);
+                clearBoundaries();
+              }
+            }}
           >
-            &lt;
-          </Button>
-          {Array.from(
-            { length: Math.ceil(filteredData.length / rowsPerPage) },
-            (_, index) => index
-          )
-            .slice(
-              Math.max(0, page - 1),
-              Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
-            )
-            .map((pageNumber) => (
-              <Button
-                key={pageNumber}
-                onClick={() => handleChangePage(null, pageNumber)}
-                sx={{
-                  padding: "5px 10px",
-                  minWidth: 40,
-                  bgcolor:
-                    page === pageNumber
-                      ? "rgba(21, 101, 192, 0.2)"
-                      : "transparent",
-                  fontWeight: page === pageNumber ? "bold" : "normal",
-                  borderRadius: "5px",
-                  transition: "all 0.3s",
-                  "&:hover": {
-                    bgcolor: "rgba(21, 101, 192, 0.3)",
-                  },
-                }}
-              >
-                {pageNumber + 1}
-              </Button>
-            ))}
-          <Button
-            onClick={() => handleChangePage(null, page + 1)}
-            disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
-            sx={{ padding: "5px 10px", minWidth: 40 }}
-          >
-            &gt;
+            {showLandmarkTable ? "Back to Bus Stops" : "Add Bus Stop"}
           </Button>
         </Box>
+
+        <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
+          {showLandmarkTable ? (
+            <>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ width: "20%" }}>
+                      <Box
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="center"
+                      >
+                        <b>ID</b>
+                        <TextField
+                          variant="outlined"
+                          size="small"
+                          placeholder="Search"
+                          value={landmarkSearch.id}
+                          onChange={(e) =>
+                            setLandmarkSearch({
+                              ...landmarkSearch,
+                              id: e.target.value,
+                            })
+                          }
+                          fullWidth
+                          sx={{
+                            "& .MuiInputBase-root": {
+                              height: 30,
+                              padding: "4px",
+                            },
+                          }}
+                        />
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ width: "35%" }}>
+                      <Box
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="center"
+                      >
+                        <b>Name</b>
+                        <TextField
+                          variant="outlined"
+                          size="small"
+                          placeholder="Search"
+                          value={landmarkSearch.name}
+                          onChange={(e) =>
+                            setLandmarkSearch({
+                              ...landmarkSearch,
+                              name: e.target.value,
+                            })
+                          }
+                          fullWidth
+                          sx={{
+                            "& .MuiInputBase-root": {
+                              height: 30,
+                              padding: "4px",
+                            },
+                          }}
+                        />
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" justifyContent="center">
+                        <b>Importance</b>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" justifyContent="center">
+                        <b>Status</b>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(currentTableData as Landmark[]).map((landmark) => (
+                    <TableRow
+                      key={landmark.id}
+                      hover
+                      onClick={() => handleLandmarkSelect(landmark)}
+                      sx={{
+                        backgroundColor:
+                          selectedLandmark?.id === landmark.id
+                            ? "#E3F2FD"
+                            : "inherit",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <TableCell>{landmark.id}</TableCell>
+                      <TableCell>{landmark.landmarkName}</TableCell>
+                      <TableCell>
+                        {landmark.importance === "Low" && (
+                          <Chip
+                            icon={<LowPriorityIcon />}
+                            label="Low"
+                            color="info"
+                            size="small"
+                            sx={{
+                              backgroundColor: selectedLandmark?.id
+                                ? "#90CAF9"
+                                : "#E3F2FD",
+                              color: selectedLandmark?.id
+                                ? "#1565C0"
+                                : "#1565C0",
+                            }}
+                          />
+                        )}
+                        {landmark.importance === "Medium" && (
+                          <Chip
+                            icon={<MediumPriorityIcon />}
+                            label="Medium"
+                            color="warning"
+                            size="small"
+                            sx={{
+                              backgroundColor: selectedLandmark?.id
+                                ? "#edd18f"
+                                : "#FFE082",
+                              color: selectedLandmark?.id
+                                ? "#9f3b03"
+                                : "#9f3b03",
+                            }}
+                          />
+                        )}
+                        {landmark.importance === "High" && (
+                          <Chip
+                            icon={<HighPriorityIcon />}
+                            label="High"
+                            color="error"
+                            size="small"
+                            sx={{
+                              backgroundColor: selectedLandmark?.id
+                                ? "#EF9A9A"
+                                : "#FFEBEE",
+                              color: selectedLandmark?.id
+                                ? "#D32F2F"
+                                : "#D32F2F",
+                            }}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {landmark.status === "Validating" && (
+                          <Chip
+                            icon={<WarningIcon />}
+                            label="Validating"
+                            color="warning"
+                            size="small"
+                            sx={{
+                              backgroundColor: selectedLandmark?.id
+                                ? "#edd18f"
+                                : "#FFE082",
+                              color: selectedLandmark?.id
+                                ? "#9f3b03"
+                                : "#9f3b03",
+                            }}
+                          />
+                        )}
+                        {landmark.status === "Verified" && (
+                          <Chip
+                            icon={<CheckCircleIcon />}
+                            label="Verified"
+                            color="success"
+                            size="small"
+                            sx={{
+                              backgroundColor: selectedLandmark?.id
+                                ? "#A5D6A7"
+                                : "#E8F5E9",
+                              color: selectedLandmark?.id
+                                ? "#2E7D32"
+                                : "#2E7D32",
+                            }}
+                          />
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
+          ) : (
+            <>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ width: "20%" }}>
+                      <Box
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="center"
+                      >
+                        <b>ID</b>
+                        <TextField
+                          variant="outlined"
+                          size="small"
+                          placeholder="Search"
+                          value={busStopSearch.id}
+                          onChange={(e) =>
+                            setBusStopSearch({
+                              ...busStopSearch,
+                              id: e.target.value,
+                            })
+                          }
+                          fullWidth
+                          sx={{
+                            "& .MuiInputBase-root": {
+                              height: 30,
+                              padding: "4px",
+                            },
+                          }}
+                        />
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ width: "35%" }}>
+                      <Box
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="center"
+                      >
+                        <b>Name</b>
+                        <TextField
+                          variant="outlined"
+                          size="small"
+                          placeholder="Search"
+                          value={busStopSearch.name}
+                          onChange={(e) =>
+                            setBusStopSearch({
+                              ...busStopSearch,
+                              name: e.target.value,
+                            })
+                          }
+                          fullWidth
+                          sx={{
+                            "& .MuiInputBase-root": {
+                              height: 30,
+                              padding: "4px",
+                            },
+                          }}
+                        />
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ width: "35%" }}>
+                      <Box
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="center"
+                      >
+                        <b>Land Mark Name</b>
+                        <TextField
+                          variant="outlined"
+                          size="small"
+                          placeholder="Search"
+                          value={busStopSearch.landmarkName}
+                          onChange={(e) =>
+                            setBusStopSearch({
+                              ...busStopSearch,
+                              landmarkName: e.target.value,
+                            })
+                          }
+                          fullWidth
+                          sx={{
+                            "& .MuiInputBase-root": {
+                              height: 30,
+                              padding: "4px",
+                            },
+                          }}
+                        />
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" justifyContent="center">
+                        <b>Status</b>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {currentTableData.map((item) => {
+                    if ("landmarkName" in item) {
+                      // Handle Landmark rendering
+                      return (
+                        <TableRow
+                          key={item.id}
+                          hover
+                          onClick={() => handleLandmarkSelect(item)}
+                          sx={{
+                            backgroundColor:
+                              selectedLandmark?.id === item.id
+                                ? "#E3F2FD"
+                                : "inherit",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <TableCell>{item.id}</TableCell>
+                          <TableCell>{item.landmarkName}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={item.importance}
+                              color={
+                                item.importance === "High"
+                                  ? "error"
+                                  : item.importance === "Medium"
+                                  ? "warning"
+                                  : "info"
+                              }
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={item.status}
+                              color={
+                                item.status === "Verified"
+                                  ? "success"
+                                  : "warning"
+                              }
+                              size="small"
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    } else {
+                      // Handle BusStop rendering
+                      const isSelected = selectedBusStop?.id === item.id;
+                      return (
+                        <TableRow
+                          key={item.id}
+                          hover
+                          onClick={() => handleRowClick(item)}
+                          sx={{
+                            cursor: "pointer",
+                            backgroundColor: isSelected ? "#E3F2FD" : "inherit",
+                            "&:hover": { backgroundColor: "#E3F2FD" },
+                          }}
+                        >
+                          <TableCell>{item.id}</TableCell>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>
+                            {getLandmarkNameById(item.landmark_id)}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              icon={
+                                item.status === "Validating" ? (
+                                  <WarningIcon />
+                                ) : (
+                                  <CheckCircleIcon />
+                                )
+                              }
+                              label={item.status}
+                              color={
+                                item.status === "Verified"
+                                  ? "success"
+                                  : "warning"
+                              }
+                              size="small"
+                              sx={{
+                                backgroundColor: isSelected
+                                  ? item.status === "Validating"
+                                    ? "#edd18f"
+                                    : "#A5D6A7"
+                                  : item.status === "Validating"
+                                  ? "#FFE082"
+                                  : "#E8F5E9",
+                                color: isSelected
+                                  ? item.status === "Validating"
+                                    ? "#9f3b03"
+                                    : "#2E7D32"
+                                  : item.status === "Validating"
+                                  ? "#9f3b03"
+                                  : "#2E7D32",
+                              }}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+                  })}
+                </TableBody>
+              </Table>
+            </>
+          )}
+        </TableContainer>
+
+        <CommonPagination
+          count={
+            showLandmarkTable
+              ? filteredLandmarks.length
+              : filteredBusStops.length
+          }
+        />
       </Box>
 
+      {/* Right Panel - Map Section */}
       <Box
         sx={{
           flex: { xs: "0 0 100%", md: "50%" },
           height: "100vh",
           maxWidth: { xs: "100%", md: "50%" },
-          display: "flex",
-          flexDirection: "column",
-          gap: 2,
+          position: "relative",
         }}
       >
-        <Box
-          sx={{
-            height: "calc(100vh - 20px)",
-            borderRadius: 2,
-            overflow: "hidden",
-            boxShadow: 2,
-          }}
-        >
-          <MapComponent
+        <MapComponent
           selectedBuststop={selectedBusStop}
+          selectedLandmark={selectedLandmark}
           vectorSource={vectorSource}
           handleCloseRowClick={handleCloseRowClick}
           busStops={busStopList}
+          landmarkList={landmarkList}
+          onLandmarkSelect={(landmark) => {
+            setSelectedLandmark(landmark);
+            setSelectedBusStop(null);
+          }}
+          onCreateBusStop={(location) => {
+            setBusStopLocation(location);
+            setOpenCreateModal(true);
+          }}
           onDeleteClick={() => {
             setBusStopToDelete(selectedBusStop);
             setDeleteConfirmOpen(true);
           }}
-          landmarkList={landmarkList}
-          />
-        </Box>
+          onUpdateClick={() => {
+            // Add your update logic here if needed
+            console.log("Update clicked");
+          }}
+          clearBoundaries={clearBoundaries}
+          isOpen={true}
+          selectedBoundary={selectedLandmark?.boundary}
+        />
+        {/* Create Bus Stop Button (shown when landmark is selected) */}
+        {selectedLandmark && (
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: 16,
+              right: 16,
+              zIndex: 1,
+              display: "flex",
+              gap: 1,
+            }}
+          >
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setSelectedLandmark(null);
+                clearBoundaries();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => setOpenCreateModal(true)}
+            >
+              Create Bus Stop Here
+            </Button>
+          </Box>
+        )}
       </Box>
 
-      {/* <Dialog
+      {/* Create Bus Stop Dialog */}
+      <Dialog
+        // sx={{ zIndex: 1000 }}
+        fullWidth
         open={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
         maxWidth="sm"
-        fullWidth
       >
         <DialogContent>
+          {selectedLandmark && (
+            <Typography variant="subtitle1" gutterBottom>
+              Selected Landmark: {selectedLandmark.landmarkName}
+            </Typography>
+          )}
           <BusStopAddForm
-            busStop=""
-            onClose={() => setOpenCreateModal(false)}
-            refreshList={(value: any) => refreshList(value)}
+            landmarkId={selectedLandmark?.id || null}
+            location={busStopLocation}
+            onClose={() => {
+              setOpenCreateModal(false);
+              setSelectedLandmark(null);
+              setBusStopLocation("");
+              setShowLandmarkTable(false);
+            }}
+            refreshList={fetchBusStop}
           />
         </DialogContent>
         <DialogActions>
@@ -456,29 +850,9 @@ const clearBoundaries = () => {
             Cancel
           </Button>
         </DialogActions>
-      </Dialog>  */}
+      </Dialog>
 
-       {/* <Dialog
-        open={openUpdateModal}
-        onClose={() => setOpenUpdateModal(false)}
-        maxWidth="sm"
-      >
-        <DialogContent>
-          {selectedLandmark && (
-            <LandmarkUpdateForm
-              onClose={() => setOpenUpdateModal(false)}
-              refreshList={(value: string) => refreshList(value)}
-              landmarkId={selectedLandmark.id}
-            />
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenUpdateModal(false)} color="error">
-            Cancel
-          </Button>
-        </DialogActions>
-      </Dialog> */}
-
+      {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
@@ -486,7 +860,7 @@ const clearBoundaries = () => {
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete this Landmark?
+            Are you sure you want to delete this Bus Stop?
           </Typography>
           {busStopToDelete && (
             <Typography>
@@ -503,7 +877,7 @@ const clearBoundaries = () => {
             Confirm Delete
           </Button>
         </DialogActions>
-      </Dialog> 
+      </Dialog>
     </Box>
   );
 };

@@ -545,7 +545,7 @@ export const busStopCreationApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Role creation failed"
+        error?.response?.data?.message || "Bus stop  creation failed"
       );
     }
   }

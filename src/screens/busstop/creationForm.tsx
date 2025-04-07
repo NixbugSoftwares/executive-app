@@ -21,8 +21,9 @@ interface IBusStopFormInputs {
 
 interface IBusStopCreationFormProps {
   location: string;
+  landmarkId: number | null;
   onClose: () => void;
-  refreshList: (value: string) => void;
+  refreshList: () => void;
 }
 
 const statusOptions =  [
@@ -31,8 +32,10 @@ const statusOptions =  [
 ];
 const BusStopAddForm: React.FC<IBusStopCreationFormProps> = ({
   location,
+  landmarkId,
   onClose,
   refreshList,
+
 }) => {
   const dispatch = useAppDispatch();
 
@@ -42,14 +45,33 @@ const BusStopAddForm: React.FC<IBusStopCreationFormProps> = ({
     setValue,
     formState: { errors },
   } = useForm<IBusStopFormInputs>({
-   
+    defaultValues: {
+      name: '',
+      landmark_id: landmarkId?.toString() || '',
+      location: location || '',
+      status: '1' // default status
+    }
   });
 
   useEffect(() => {
-    setValue("location", `POLYGON((${location}))`);
+    setValue("location", `POINT((${location}))`);
   }, [location, setValue]);
+
+  useEffect(() => {
+    if (location) {
+      setValue("location", location);
+      console.log("Setting location:", location);
+    }
+    if (landmarkId !== null) {
+      setValue("landmark_id", landmarkId.toString());
+    }
+  }, [location, landmarkId, setValue]);
+  console.log("location", location);
+  console.log("landmarkId", landmarkId);
   
-  const handleLandmarkCreation: SubmitHandler<IBusStopFormInputs> = async (data) => {
+
+  
+  const handleBusStopCreation: SubmitHandler<IBusStopFormInputs> = async (data) => {
     try {
       const formData = new FormData();
       formData.append("name", data.name);
@@ -57,23 +79,22 @@ const BusStopAddForm: React.FC<IBusStopCreationFormProps> = ({
       formData.append("location", data.location); 
       formData.append("status", data.status);
   
-   
-  
       const response = await dispatch(busStopCreationApi(formData)).unwrap();
-      console.log("Landmark created successfully:", response);
-      showSuccessToast("Landmark created successfully!");
-      refreshList("refresh");
+      console.log("Bus Stop created successfully:", response);
+      showSuccessToast("Bus Stop created successfully!");
+      refreshList();
       onClose();
     } catch (error) {
-      console.error("Error creating landmark:", error);
+      console.error("Error creating bus stop:", error);
       showErrorToast("Something went wrong. Please try again.");
     }
   };
+  console.log("BusStopAddForm props:", { location, landmarkId });
 
   return (
     <Box
       component="form"
-      onSubmit={handleSubmit(handleLandmarkCreation)}
+      onSubmit={handleSubmit(handleBusStopCreation)}
       sx={{
         display: "flex",
         flexDirection: "column",
@@ -107,23 +128,27 @@ const BusStopAddForm: React.FC<IBusStopCreationFormProps> = ({
         )}
       />
 
-      {/* Boundary Field */}
-      <Controller
-        name="location"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            label="Boundary"
-            variant="outlined"
-            required
-            fullWidth
-            InputProps={{ readOnly: true }}
-            error={!!errors.location}
-            helperText={errors.location?.message}
-            {...field}
-          />
-        )}
+<Controller
+  name="location"
+  control={control}
+  render={({ field }) => {
+    const coords = field.value.replace(/POINT\(|\)/g, '');
+    return (
+      <TextField
+        label="Location Coordinates"
+        variant="outlined"
+        required
+        fullWidth
+        InputProps={{ readOnly: true }}
+        value={coords}
+        error={!!errors.location}
+        helperText={errors.location?.message}
+        onChange={field.onChange}
       />
+    );
+  }}
+/>
+
 
       {/* Status Field */}
       <Controller
