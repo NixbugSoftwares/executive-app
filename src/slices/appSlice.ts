@@ -552,6 +552,31 @@ export const busStopCreationApi = createAsyncThunk(
 );
 
 
+//bus stop updation Api
+export const busStopUpdationApi = createAsyncThunk(
+  "/executive/bus_stop",
+  async (
+    { formData }: { busStopId: number; formData: FormData },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await commonApi.apiCall(
+        "patch",
+        "/executive/bus_stop",
+        formData,
+        true,
+        "application/x-www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data);
+      return rejectWithValue(
+        error?.response?.data?.message || "bus sto update failed"
+      );
+    }
+  }
+);
+
 //delete bus stop API
 export const busStopDeleteApi = createAsyncThunk(
   "/executive/bus_stop",
@@ -568,7 +593,7 @@ export const busStopDeleteApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Account deletion failed"
+        error?.response?.data?.message || "bus stop deletion failed"
       );
     }
   }

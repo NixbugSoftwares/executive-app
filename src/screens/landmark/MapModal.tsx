@@ -21,7 +21,7 @@ const MapModal: React.FC<MapModalProps> = ({
   onClose, 
   initialBoundary, 
   onSave,
-  landmarks = [] // Default empty array
+  landmarks = [] 
 }) => {
   const handleSave = (coordinates: string) => {
     onSave(coordinates);

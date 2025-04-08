@@ -72,7 +72,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   busStops,
   landmarkList,
   selectedLandmark,
-  onLandmarkSelect,
   onCreateBusStop,
 }) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -89,9 +88,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [landmarkFeatures, setLandmarkFeatures] = useState<ol.Feature[]>([]);
   const [busStopFeatures, setBusStopFeatures] = useState<ol.Feature[]>([]);
   const [drawingMode, setDrawingMode] = useState(false);
-  const [selectedPoint, setSelectedPoint] = useState<[number, number] | null>(
-    null
-  );
+  const [selectedPoint, setSelectedPoint] = useState<[number, number] | null>(null);
+  const [updateMode, setUpdateMode] = useState(false);
+
 
   const clearBoundaries = () => {
     vectorSource.current.clear();
@@ -525,48 +524,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       mapInstance.current?.un("click", clickHandler);
     };
   }, [drawingMode, selectedLandmark]);
-  const renderCreateBusStopButton = () => {
-    if (!selectedLandmark || !onCreateBusStop) return null;
-
-    return (
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: 16,
-          right: 16,
-          zIndex: 1,
-          display: "flex",
-          gap: 1,
-        }}
-      >
-        <Button
-          variant="outlined"
-          onClick={() => {
-            setSelectedPoint(null);
-            onLandmarkSelect?.(null);
-          }}
-        >
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          disabled={!selectedPoint}
-          onClick={() => {
-            if (selectedPoint) {
-              onCreateBusStop(
-                `POINT(${selectedPoint[0].toFixed(
-                  7
-                )} ${selectedPoint[1].toFixed(7)})`
-              );
-            }
-          }}
-        >
-          Create Bus Stop Here
-        </Button>
-      </Box>
-    );
-  };
+  
 
   const handleSearch = async () => {
     if (!searchQuery || !mapInstance.current) return;
@@ -758,77 +716,103 @@ const MapComponent: React.FC<MapComponentProps> = ({
         </Box>
 
         {selectedBuststop && (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+    {updateMode ? (
+      <>
+        <Button
+          variant="outlined"
+          color="primary"
+          size="small"
+          onClick={() => {
+            setUpdateMode(false);
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          color="success"
+          size="small"
+          onClick={() => {
+            onUpdateClick?.();
+            setUpdateMode(false);
+          }}
+        >
+          Save
+        </Button>
+      </>
+    ) : (
+      <>
+        <Button
+          variant="outlined"
+          color="primary"
+          size="small"
+          onClick={() => {
+            handleCloseRowClick();
+            clearBoundaries();
+          }}
+        >
+          Back
+        </Button>
+        <Tooltip
+          title={
+            !canManageLandmark
+              ? "You don't have permission, contact the admin"
+              : "click to Update the landmark."
+          }
+          placement="top-end"
+        >
+          <span
+            style={{
+              cursor: !canManageLandmark ? "not-allowed" : "default",
+            }}
+          >
             <Button
-              variant="outlined"
-              color="primary"
+              variant="contained"
+              color="success"
               size="small"
-              onClick={() => {
-                handleCloseRowClick();
-                clearBoundaries();
+              onClick={onUpdateClick}
+              disabled={!canManageLandmark}
+              sx={{
+                "&.Mui-disabled": {
+                  backgroundColor: "#81c784 !important",
+                  color: "#ffffff99",
+                },
               }}
             >
-              Back
+              Update
             </Button>
-            <Tooltip
-              title={
-                !canManageLandmark
-                  ? "You don't have permission, contact the admin"
-                  : "click to Update the landmark."
-              }
-              placement="top-end"
+          </span>
+        </Tooltip>
+        <Tooltip
+          title={
+            !canManageLandmark
+              ? "You don't have permission, contact the admin"
+              : "click to Delete the landmark."
+          }
+          placement="top-end"
+        >
+          <span
+            style={{
+              cursor: !canManageLandmark ? "not-allowed" : "default",
+            }}
+          >
+            <Button
+              variant="contained"
+              size="small"
+              color="error"
+              onClick={onDeleteClick}
+              disabled={!canManageLandmark}
             >
-              <span
-                style={{
-                  cursor: !canManageLandmark ? "not-allowed" : "default",
-                }}
-              >
-                <Button
-                  variant="contained"
-                  color="success"
-                  size="small"
-                  onClick={onUpdateClick}
-                  disabled={!canManageLandmark}
-                  sx={{
-                    "&.Mui-disabled": {
-                      backgroundColor: "#81c784 !important",
-                      color: "#ffffff99",
-                    },
-                  }}
-                >
-                  Update
-                </Button>
-              </span>
-            </Tooltip>
-
-            <Tooltip
-              title={
-                !canManageLandmark
-                  ? "You don't have permission, contact the admin"
-                  : "click to Delete the landmark."
-              }
-              placement="top-end"
-            >
-              <span
-                style={{
-                  cursor: !canManageLandmark ? "not-allowed" : "default",
-                }}
-              >
-                <Button
-                  variant="contained"
-                  size="small"
-                  color="error"
-                  onClick={onDeleteClick}
-                  disabled={!canManageLandmark}
-                >
-                  Delete
-                </Button>
-              </span>
-            </Tooltip>
-          </Box>
-        )}
+              Delete
+            </Button>
+          </span>
+        </Tooltip>
+      </>
+    )}
+  </Box>
+)}
       </Box>
-      {renderCreateBusStopButton()}
     </Box>
   );
 };

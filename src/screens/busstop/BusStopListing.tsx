@@ -36,6 +36,7 @@ import { fromLonLat } from "ol/proj";
 import Polygon from "ol/geom/Polygon";
 import * as ol from "ol";
 import { showInfoToast } from "../../common/toastMessageHelper";
+import BusStopUpdateForm from "./updationForm";
 
 interface BusStop {
   id: number;
@@ -72,6 +73,7 @@ const BusStopListing = () => {
   const [landmarkSearch, setLandmarkSearch] = useState({ id: "", name: "" });
   const [page, setPage] = useState(0);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [openUpdateModal, setOpenUpdateModal] = useState(false);
   const [busStopToDelete, setBusStopToDelete] = useState<BusStop | null>(null);
   const [showLandmarkTable, setShowLandmarkTable] = useState(false);
   const vectorSource = useRef(new VectorSource());
@@ -317,6 +319,12 @@ const BusStopListing = () => {
         page * rowsPerPage,
         page * rowsPerPage + rowsPerPage
       );
+
+      const refreshList = (value: string) => {
+        if (value === "refresh") {
+          fetchLandmark();
+        }
+      };
 
   return (
     <Box
@@ -779,10 +787,7 @@ const BusStopListing = () => {
             setBusStopToDelete(selectedBusStop);
             setDeleteConfirmOpen(true);
           }}
-          onUpdateClick={() => {
-            // Add your update logic here if needed
-            console.log("Update clicked");
-          }}
+          onUpdateClick={() => setOpenUpdateModal(true)}
           clearBoundaries={clearBoundaries}
           isOpen={true}
           selectedBoundary={selectedLandmark?.boundary}
@@ -847,6 +852,28 @@ const BusStopListing = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenCreateModal(false)} color="error">
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      
+      <Dialog
+        open={openUpdateModal}
+        onClose={() => setOpenUpdateModal(false)}
+        maxWidth="sm"
+      >
+        <DialogContent>
+          {selectedBusStop && (
+            <BusStopUpdateForm
+              onClose={() => setOpenUpdateModal(false)}
+              refreshList={(value: string) => refreshList(value)}
+              busStopId={selectedBusStop.id}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenUpdateModal(false)} color="error">
             Cancel
           </Button>
         </DialogActions>
