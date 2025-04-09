@@ -78,7 +78,7 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
       try {
         setLoading(true);
         const busStops = await dispatch(busStopListApi()).unwrap();
-        setAllBusStops(busStops); // Store all landmarks
+        setAllBusStops(busStops); // Store all bus stops
         
         const busStop = busStops.find((r: any) => r.id === busStopId);
         console.log("Landmark Data:", busStop);
@@ -110,7 +110,7 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
       const formData = new FormData();
       formData.append("id", busStopId.toString());
       formData.append("name", data.name);
-      formData.append("boundary", data.location || updatedLocation);
+      formData.append("location", data.location || updatedLocation);
       formData.append("status", data.status);
 
       const response = await dispatch(busStopUpdationApi({ busStopId, formData })).unwrap();

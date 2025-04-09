@@ -60,6 +60,7 @@ interface MapComponentProps {
   clearBoundaries: () => void;
   isOpen?: boolean;
   selectedBoundary?: string;
+  refreshMap?: () => void;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
@@ -88,13 +89,32 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [landmarkFeatures, setLandmarkFeatures] = useState<ol.Feature[]>([]);
   const [busStopFeatures, setBusStopFeatures] = useState<ol.Feature[]>([]);
   const [drawingMode, setDrawingMode] = useState(false);
-  const [selectedPoint, setSelectedPoint] = useState<[number, number] | null>(null);
+  const [_selectedPoint, setSelectedPoint] = useState<[number, number] | null>(
+    null
+  );
   const [updateMode, setUpdateMode] = useState(false);
 
+  const refreshMap = () => {
+    // Clear all features with a slight delay for better UX
+    setTimeout(() => {
+      vectorSource.current.clear();
+      setShowAllBusStops(false);
+      setShowAllBoundaries(false);
+    }, 300); // Small delay to allow animation to start first
 
-  const clearBoundaries = () => {
-    vectorSource.current.clear();
-    setShowAllBusStops(false);
+    if (mapInstance.current) {
+      // Animate the view back to default position
+      mapInstance.current.getView().animate({
+        center: fromLonLat([76.9366, 8.5241]),
+        zoom: 10,
+        duration: 1000, // 1 second animation
+      });
+    }
+
+    // Optional: Force a redraw if needed
+    setTimeout(() => {
+      mapInstance.current?.render();
+    }, 1100); // Slightly after the animation completes
   };
 
   const parsePointString = (pointString: string): [number, number] | null => {
@@ -142,7 +162,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       }, 500);
     }
   }, [isOpen, navigate]);
-
 
   useEffect(() => {
     if (selectedBoundary && mapInstance.current) {
@@ -403,8 +422,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   }, [showAllBoundaries, landmarkList, selectedBoundary]);
 
-  
-
   useEffect(() => {
     if (!mapInstance.current || !selectedLandmark?.boundary) return;
 
@@ -524,7 +541,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       mapInstance.current?.un("click", clickHandler);
     };
   }, [drawingMode, selectedLandmark]);
-  
 
   const handleSearch = async () => {
     if (!searchQuery || !mapInstance.current) return;
@@ -627,6 +643,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
               placeholder="Search Location (e.g., India)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSearch();
+                }
+              }}
               fullWidth
             />
             <Button
@@ -639,15 +660,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
             </Button>
           </Box>
 
-          {!selectedBuststop && (
-            <Box>
-              <Tooltip title="Clear Drawings" placement="bottom">
-                <IconButton color="warning" onClick={clearBoundaries}>
-                  <Refresh />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          )}
           <Tooltip
             title={
               showAllBusStops
@@ -660,7 +672,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
               onClick={() => {
                 setShowAllBusStops(!showAllBusStops);
               }}
-              sx={{ ml: 1 }}
+              // sx={{ ml: 1 }}
             >
               {showAllBusStops ? (
                 <DirectionsBusIcon sx={{ color: "blue" }} />
@@ -682,7 +694,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
               onClick={() => {
                 setShowAllBoundaries(!showAllBoundaries);
               }}
-              sx={{ ml: 1 }}
+              // sx={{ ml: 1 }}
             >
               {showAllBoundaries ? (
                 <LocationOnIcon sx={{ color: "blue" }} />
@@ -691,8 +703,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
               )}
             </IconButton>
           </Tooltip>
-
-          {/* <Button onClick={handleOpenCreateModal}>add bus stop</Button> */}
+          {!selectedBuststop && (
+            <Box>
+              <Tooltip title="Refresh Map" placement="bottom">
+                <IconButton color="warning" onClick={refreshMap}>
+                  <Refresh />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
         </Box>
       </Box>
 
@@ -716,102 +735,102 @@ const MapComponent: React.FC<MapComponentProps> = ({
         </Box>
 
         {selectedBuststop && (
-  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-    {updateMode ? (
-      <>
-        <Button
-          variant="outlined"
-          color="primary"
-          size="small"
-          onClick={() => {
-            setUpdateMode(false);
-          }}
-        >
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          color="success"
-          size="small"
-          onClick={() => {
-            onUpdateClick?.();
-            setUpdateMode(false);
-          }}
-        >
-          Save
-        </Button>
-      </>
-    ) : (
-      <>
-        <Button
-          variant="outlined"
-          color="primary"
-          size="small"
-          onClick={() => {
-            handleCloseRowClick();
-            clearBoundaries();
-          }}
-        >
-          Back
-        </Button>
-        <Tooltip
-          title={
-            !canManageLandmark
-              ? "You don't have permission, contact the admin"
-              : "click to Update the landmark."
-          }
-          placement="top-end"
-        >
-          <span
-            style={{
-              cursor: !canManageLandmark ? "not-allowed" : "default",
-            }}
-          >
-            <Button
-              variant="contained"
-              color="success"
-              size="small"
-              onClick={onUpdateClick}
-              disabled={!canManageLandmark}
-              sx={{
-                "&.Mui-disabled": {
-                  backgroundColor: "#81c784 !important",
-                  color: "#ffffff99",
-                },
-              }}
-            >
-              Update
-            </Button>
-          </span>
-        </Tooltip>
-        <Tooltip
-          title={
-            !canManageLandmark
-              ? "You don't have permission, contact the admin"
-              : "click to Delete the landmark."
-          }
-          placement="top-end"
-        >
-          <span
-            style={{
-              cursor: !canManageLandmark ? "not-allowed" : "default",
-            }}
-          >
-            <Button
-              variant="contained"
-              size="small"
-              color="error"
-              onClick={onDeleteClick}
-              disabled={!canManageLandmark}
-            >
-              Delete
-            </Button>
-          </span>
-        </Tooltip>
-      </>
-    )}
-  </Box>
-)}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {updateMode ? (
+              <>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  size="small"
+                  onClick={() => {
+                    setUpdateMode(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  color="success"
+                  size="small"
+                  onClick={() => {
+                    onUpdateClick?.();
+                    setUpdateMode(false);
+                  }}
+                >
+                  Save
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  size="small"
+                  onClick={() => {
+                    handleCloseRowClick();
+                    refreshMap();
+                  }}
+                >
+                  Back
+                </Button>
+                <Tooltip
+                  title={
+                    !canManageLandmark
+                      ? "You don't have permission, contact the admin"
+                      : "click to Update the landmark."
+                  }
+                  placement="top-end"
+                >
+                  <span
+                    style={{
+                      cursor: !canManageLandmark ? "not-allowed" : "default",
+                    }}
+                  >
+                    <Button
+                      variant="contained"
+                      color="success"
+                      size="small"
+                      onClick={onUpdateClick}
+                      disabled={!canManageLandmark}
+                      sx={{
+                        "&.Mui-disabled": {
+                          backgroundColor: "#81c784 !important",
+                          color: "#ffffff99",
+                        },
+                      }}
+                    >
+                      Update
+                    </Button>
+                  </span>
+                </Tooltip>
+                <Tooltip
+                  title={
+                    !canManageLandmark
+                      ? "You don't have permission, contact the admin"
+                      : "click to Delete the landmark."
+                  }
+                  placement="top-end"
+                >
+                  <span
+                    style={{
+                      cursor: !canManageLandmark ? "not-allowed" : "default",
+                    }}
+                  >
+                    <Button
+                      variant="contained"
+                      size="small"
+                      color="error"
+                      onClick={onDeleteClick}
+                      disabled={!canManageLandmark}
+                    >
+                      Delete
+                    </Button>
+                  </span>
+                </Tooltip>
+              </>
+            )}
+          </Box>
+        )}
       </Box>
     </Box>
   );

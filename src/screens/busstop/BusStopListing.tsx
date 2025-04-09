@@ -16,6 +16,7 @@ import {
   DialogTitle,
   Typography,
   Chip,
+  Tooltip
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import WarningIcon from "@mui/icons-material/Warning";
@@ -37,6 +38,7 @@ import Polygon from "ol/geom/Polygon";
 import * as ol from "ol";
 import { showInfoToast } from "../../common/toastMessageHelper";
 import BusStopUpdateForm from "./updationForm";
+import localStorageHelper from "../../utils/localStorageHelper";
 
 interface BusStop {
   id: number;
@@ -81,6 +83,9 @@ const BusStopListing = () => {
   const [busStopLocation, setBusStopLocation] = useState("");
   const rowsPerPage = 10;
 
+   const roleDetails = localStorageHelper.getItem("@roleDetails");
+  const canManageLandmark = roleDetails?.manage_landmark || false;
+
   const parsePointString = (pointString: string): [number, number] | null => {
     if (!pointString) return null;
     const matches = pointString.match(/POINT\(([^)]+)\)/);
@@ -97,7 +102,6 @@ const BusStopListing = () => {
     const matches = polygonString.match(/\(\((.*?)\)\)/);
     return matches ? matches[1] : "";
   };
-
 
   //*********************************** fetching Bus Stops and landmarks ***************************************
   const fetchBusStop = () => {
@@ -150,8 +154,6 @@ const BusStopListing = () => {
     fetchLandmark();
   }, []);
 
-
-
   const getLandmarkNameById = (landmarkId: number): string => {
     const landmark = landmarkList.find(
       (landmark) => landmark.id === landmarkId
@@ -159,9 +161,7 @@ const BusStopListing = () => {
     return landmark ? landmark.landmarkName : "Unknown Landmark";
   };
 
-
-
-//************************** Bus Stop Delete function ********************************************************
+  //************************** Bus Stop Delete function ********************************************************
   const handleBusStopDelete = async () => {
     if (!busStopToDelete) return;
 
@@ -177,14 +177,13 @@ const BusStopListing = () => {
   };
 
   //************************** Bus Stop functions ********************************************************
-      const handleCreateBusStopClick = () => {
-        if (!selectedLandmark) {
-          setBusStopLocation(location.toString());
-          showInfoToast("You should select a landmark first.");
-          return;
-        }
-        setOpenCreateModal(true);
-      };
+  const handleCreateBusStopClick = () => {
+    if (!selectedLandmark) {
+      // setBusStopLocation(location.toString());
+      showInfoToast("You should select a landmark first.");
+      return;
+    }
+  };
 
   const handleRowClick = (busStop: BusStop) => {
     const coordinates = parsePointString(busStop.location);
@@ -227,7 +226,6 @@ const BusStopListing = () => {
     setSelectedBusStop(null);
     clearBoundaries();
   };
-
 
   //************************** Common Pagination ********************************************************
 
@@ -285,7 +283,6 @@ const BusStopListing = () => {
     </Box>
   );
 
-
   //************************** common search function for both tables ********************************************************
 
   const filteredBusStops = busStopList.filter((row) => {
@@ -320,11 +317,14 @@ const BusStopListing = () => {
         page * rowsPerPage + rowsPerPage
       );
 
-      const refreshList = (value: string) => {
-        if (value === "refresh") {
-          fetchLandmark();
-        }
-      };
+  const refreshList = (value: string) => {
+    if (value === "refresh") {
+      fetchBusStop(); // Always refresh bus stops
+      if (showLandmarkTable) {
+        fetchLandmark(); // Only refresh landmarks if we're showing that table
+      }
+    }
+  };
 
   return (
     <Box
@@ -339,8 +339,8 @@ const BusStopListing = () => {
       {/* Left Panel - Table Section */}
       <Box
         sx={{
-          flex: { xs: "0 0 100%", md: "50%" },
-          maxWidth: { xs: "100%", md: "50%" },
+          flex: { xs: "0 0 100%", md: "60%" },
+          maxWidth: { xs: "100%", md: "60%" },
           transition: "all 0.3s ease",
           overflow: "hidden",
           overflowY: "auto",
@@ -350,21 +350,44 @@ const BusStopListing = () => {
       >
         {/* Add Bus Stop Button */}
         <Box sx={{ position: "absolute", top: 16, right: 16, zIndex: 1 }}>
-          <Button
-            variant="contained"
-            color="success"
-            onClick={() => {
-              setShowLandmarkTable(!showLandmarkTable);
-              handleCreateBusStopClick();
-              setPage(0);
-              if (!showLandmarkTable) {
-                setSelectedBusStop(null);
-                clearBoundaries();
-              }
-            }}
-          >
-            {showLandmarkTable ? "Back to Bus Stops" : "Add Bus Stop"}
-          </Button>
+        <Tooltip 
+  title={!canManageLandmark ? "You don't have permission, contact admin" : "Click to switch tables"} 
+  arrow
+>
+  <Button
+    variant="contained"
+    color={showLandmarkTable ? "secondary" : "primary"}
+    onClick={() => {
+      setShowLandmarkTable(!showLandmarkTable);
+      setPage(0);
+      if (!showLandmarkTable) {
+        setSelectedBusStop(null);
+        clearBoundaries();
+        handleCreateBusStopClick();
+      }
+    }}
+    sx={{
+      ...(!canManageLandmark && {
+        backgroundColor: "#6c87#6c87b7 !importantb7 ",
+        color: "white",
+                "&.Mui-disabled": {
+                  backgroundColor: "#6c87b7 !important",
+                  color: "#ffffff99",
+                },
+      }),
+      ...(canManageLandmark && !showLandmarkTable && {
+        backgroundColor: "#3f51b5", 
+      }),
+      ...(canManageLandmark && showLandmarkTable && {
+        // Secondary button styling will be applied by the color="secondary" prop
+      })
+    }}
+    disabled={!canManageLandmark}
+  >
+    {showLandmarkTable ? "Back to Bus Stops" : "Add Bus Stop"}
+  </Button>
+</Tooltip>
+          
         </Box>
 
         <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
@@ -407,7 +430,7 @@ const BusStopListing = () => {
                         flexDirection="column"
                         alignItems="center"
                       >
-                        <b>Name</b>
+                        <b>Land Mark Name</b>
                         <TextField
                           variant="outlined"
                           size="small"
@@ -449,7 +472,7 @@ const BusStopListing = () => {
                       onClick={() => handleLandmarkSelect(landmark)}
                       sx={{
                         backgroundColor:
-                          selectedLandmark?.id === landmark.id
+                        selectedLandmark?.id === landmark.id
                             ? "#E3F2FD"
                             : "inherit",
                         cursor: "pointer",
@@ -465,10 +488,10 @@ const BusStopListing = () => {
                             color="info"
                             size="small"
                             sx={{
-                              backgroundColor: selectedLandmark?.id
+                              backgroundColor:  selectedLandmark?.id === landmark.id
                                 ? "#90CAF9"
                                 : "#E3F2FD",
-                              color: selectedLandmark?.id
+                              color:  selectedLandmark?.id === landmark.id
                                 ? "#1565C0"
                                 : "#1565C0",
                             }}
@@ -481,10 +504,10 @@ const BusStopListing = () => {
                             color="warning"
                             size="small"
                             sx={{
-                              backgroundColor: selectedLandmark?.id
+                              backgroundColor:  selectedLandmark?.id === landmark.id
                                 ? "#edd18f"
                                 : "#FFE082",
-                              color: selectedLandmark?.id
+                              color:  selectedLandmark?.id === landmark.id
                                 ? "#9f3b03"
                                 : "#9f3b03",
                             }}
@@ -497,10 +520,10 @@ const BusStopListing = () => {
                             color="error"
                             size="small"
                             sx={{
-                              backgroundColor: selectedLandmark?.id
+                              backgroundColor: selectedLandmark?.id === landmark.id
                                 ? "#EF9A9A"
                                 : "#FFEBEE",
-                              color: selectedLandmark?.id
+                                color: selectedLandmark?.id === landmark.id
                                 ? "#D32F2F"
                                 : "#D32F2F",
                             }}
@@ -515,10 +538,10 @@ const BusStopListing = () => {
                             color="warning"
                             size="small"
                             sx={{
-                              backgroundColor: selectedLandmark?.id
+                              backgroundColor:  selectedLandmark?.id === landmark.id
                                 ? "#edd18f"
                                 : "#FFE082",
-                              color: selectedLandmark?.id
+                              color:  selectedLandmark?.id === landmark.id
                                 ? "#9f3b03"
                                 : "#9f3b03",
                             }}
@@ -531,10 +554,10 @@ const BusStopListing = () => {
                             color="success"
                             size="small"
                             sx={{
-                              backgroundColor: selectedLandmark?.id
+                              backgroundColor:  selectedLandmark?.id === landmark.id
                                 ? "#A5D6A7"
                                 : "#E8F5E9",
-                              color: selectedLandmark?.id
+                              color:  selectedLandmark?.id === landmark.id
                                 ? "#2E7D32"
                                 : "#2E7D32",
                             }}
@@ -762,9 +785,9 @@ const BusStopListing = () => {
       {/* Right Panel - Map Section */}
       <Box
         sx={{
-          flex: { xs: "0 0 100%", md: "50%" },
+          flex: { xs: "0 0 100%", md: "40%" },
           height: "100vh",
-          maxWidth: { xs: "100%", md: "50%" },
+          maxWidth: { xs: "100%", md: "40%" },
           position: "relative",
         }}
       >
@@ -792,36 +815,6 @@ const BusStopListing = () => {
           isOpen={true}
           selectedBoundary={selectedLandmark?.boundary}
         />
-        {/* Create Bus Stop Button (shown when landmark is selected) */}
-        {selectedLandmark && (
-          <Box
-            sx={{
-              position: "absolute",
-              bottom: 16,
-              right: 16,
-              zIndex: 1,
-              display: "flex",
-              gap: 1,
-            }}
-          >
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setSelectedLandmark(null);
-                clearBoundaries();
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => setOpenCreateModal(true)}
-            >
-              Create Bus Stop Here
-            </Button>
-          </Box>
-        )}
       </Box>
 
       {/* Create Bus Stop Dialog */}
@@ -847,7 +840,7 @@ const BusStopListing = () => {
               setBusStopLocation("");
               setShowLandmarkTable(false);
             }}
-            refreshList={fetchBusStop}
+            refreshList={(value: any) => refreshList(value)}
           />
         </DialogContent>
         <DialogActions>
@@ -857,7 +850,6 @@ const BusStopListing = () => {
         </DialogActions>
       </Dialog>
 
-      
       <Dialog
         open={openUpdateModal}
         onClose={() => setOpenUpdateModal(false)}
@@ -869,6 +861,7 @@ const BusStopListing = () => {
               onClose={() => setOpenUpdateModal(false)}
               refreshList={(value: string) => refreshList(value)}
               busStopId={selectedBusStop.id}
+              
             />
           )}
         </DialogContent>

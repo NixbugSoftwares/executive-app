@@ -4,33 +4,37 @@ import View from "ol/View";
 import TileLayer from "ol/layer/Tile";
 import VectorLayer from "ol/layer/Vector";
 import { OSM, XYZ } from "ol/source";
-import { Point } from "ol/geom";
+import { Point, Polygon } from "ol/geom";
 import { fromLonLat, toLonLat } from "ol/proj";
 import { Vector as VectorSource } from "ol/source";
 import { Feature } from "ol";
-import { Style, Icon } from "ol/style";
+import { Style, Icon, Fill, Stroke } from "ol/style";
 import {
   Box,
   Button,
   FormControl,
-  IconButton,
   InputLabel,
   MenuItem,
   Select,
   TextField,
-  Tooltip,
   Typography,
 } from "@mui/material";
-import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
-import { Refresh } from "@mui/icons-material";
 import busstopimage from "../../assets/png/busstopimage.png";
 import { showErrorToast } from "../../common/toastMessageHelper";
-
 interface BusStop {
   id: number;
   name: string;
   location: string;
   status?: string;
+  landmark_id?: number;
+}
+
+interface Landmark {
+  id: number;
+  landmarkName: string;
+  boundary: string;
+  importance: string;
+  status: string;
 }
 
 interface BusStopUpdateMapProps {
@@ -38,6 +42,7 @@ interface BusStopUpdateMapProps {
   onSave: (coordinates: string) => void;
   onClose: () => void;
   busStops: BusStop[];
+  landmarks: Landmark[];
 }
 
 const BusStopUpdateMap: React.FC<BusStopUpdateMapProps> = ({
@@ -45,17 +50,18 @@ const BusStopUpdateMap: React.FC<BusStopUpdateMapProps> = ({
   onSave,
   onClose,
   busStops,
+  landmarks,
 }) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const vectorSource = useRef(new VectorSource());
-  const busStopsSource = useRef(new VectorSource());
   const mapInstance = useRef<Map | null>(null);
   const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">("osm");
   const [mousePosition, setMousePosition] = useState<string>("");
   const [selectedPoint, setSelectedPoint] = useState<[number, number] | null>(null);
-  const [showAllBusStops, setShowAllBusStops] = useState(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectionMode, setSelectionMode] = useState(false);
 
+  
   // Parse WKT POINT string to coordinates
   const parsePointString = (pointString: string): [number, number] | null => {
     if (!pointString) return null;
@@ -76,16 +82,6 @@ const BusStopUpdateMap: React.FC<BusStopUpdateMapProps> = ({
       controls: [],
       layers: [
         new TileLayer({ source: new OSM() }),
-        new VectorLayer({ 
-          source: busStopsSource.current,
-          style: new Style({
-            image: new Icon({
-              src: busstopimage,
-              scale: 0.1,
-              anchor: [0.5, 1],
-            }),
-          }),
-        }),
         new VectorLayer({ source: vectorSource.current }),
       ],
       target: mapRef.current,
@@ -102,28 +98,6 @@ const BusStopUpdateMap: React.FC<BusStopUpdateMapProps> = ({
       setMousePosition(`${coords[0].toFixed(7)}, ${coords[1].toFixed(7)}`);
     });
 
-    map.on("click", (event) => {
-      const coords = toLonLat(event.coordinate);
-      setSelectedPoint([coords[0], coords[1]]);
-      
-      // Clear previous point
-      vectorSource.current.clear();
-      
-      // Add new point marker
-      const point = new Point(event.coordinate);
-      const feature = new Feature(point);
-      feature.setStyle(
-        new Style({
-          image: new Icon({
-            src: busstopimage,
-            scale: 0.15,
-            anchor: [0.5, 1],
-          }),
-        })
-      );
-      vectorSource.current.addFeature(feature);
-    });
-
     mapInstance.current = map;
 
     return () => {
@@ -131,12 +105,12 @@ const BusStopUpdateMap: React.FC<BusStopUpdateMapProps> = ({
     };
   }, []);
 
-  // Load initial location and bus stops
+  // Load initial location and landmark
   useEffect(() => {
     if (!mapInstance.current) return;
 
     vectorSource.current.clear();
-    busStopsSource.current.clear();
+    setSelectedPoint(null);
 
     // Load initial bus stop location if provided
     if (initialLocation) {
@@ -162,31 +136,106 @@ const BusStopUpdateMap: React.FC<BusStopUpdateMapProps> = ({
           center: coordinates,
           zoom: 16,
         });
+
+        // Find the bus stop to get its landmark
+        const busStop = busStops.find(bs => bs.location === initialLocation);
+        if (busStop?.landmark_id) {
+          const landmark = landmarks.find(l => l.id === busStop.landmark_id);
+          if (landmark?.boundary) {
+            const boundaryCoords = landmark.boundary
+              .split(",")
+              .map(coord => coord.trim().split(" ").map(Number))
+              .map(coord => fromLonLat(coord));
+        
+            const polygon = new Polygon([boundaryCoords]);
+            const boundaryFeature = new Feature(polygon);
+            boundaryFeature.setStyle(
+              new Style({
+                fill: new Fill({
+                  color: "rgba(221, 201, 75, 0.5)",
+                }),
+                stroke: new Stroke({
+                  color: "rgb(255, 149, 0)",
+                  width: 2,
+                }),
+              })
+            );
+            vectorSource.current.addFeature(boundaryFeature);
+          }
+        }
       }
     }
+  }, [initialLocation, busStops, landmarks]);
+  console.log("Bus Stop Coordinates:>>>>>>>>", initialLocation);
+  console.log("Bus Stop Coordinates:>>>>>>>>", busStops);
+  console.log("landmark:>>>>>>>>", landmarks);
+   
+  
 
-    // Load other bus stops if enabled
-    if (showAllBusStops) {
-      busStops.forEach((busStop) => {
-        const coords = parsePointString(busStop.location);
-        if (coords) {
-          const [lon, lat] = coords;
-          const coordinates = fromLonLat([lon, lat]);
-          const point = new Point(coordinates);
-          const feature = new Feature(point);
-          busStopsSource.current.addFeature(feature);
+  // Handle click events when in selection mode
+  useEffect(() => {
+    if (!mapInstance.current || !selectionMode) return;
+
+    const clickHandler = (event: any) => {
+      const coordinate = event.coordinate;
+      const lonLat = toLonLat(coordinate);
+      setSelectedPoint([lonLat[0], lonLat[1]]);
+
+      // Clear previous point and add new one
+      vectorSource.current.clear();
+
+      // Add the landmark boundary back
+      const busStop = busStops.find(bs => bs.location === initialLocation);
+      if (busStop?.landmark_id) {
+        const landmark = landmarks.find(l => l.id === busStop.landmark_id);
+        if (landmark?.boundary) {
+          const boundaryCoords = landmark.boundary
+            .split(",")
+            .map(coord => coord.trim().split(" ").map(Number))
+            .map(coord => fromLonLat(coord));
+
+          const polygon = new Polygon([boundaryCoords]);
+          const boundaryFeature = new Feature(polygon);
+          boundaryFeature.setStyle(
+            new Style({
+              fill: new Fill({
+                color: "rgba(221, 201, 75, 0.5)",
+              }),
+              stroke: new Stroke({
+                color: "rgb(255, 149, 0)",
+                width: 2,
+              }),
+            })
+          );
+          vectorSource.current.addFeature(boundaryFeature);
         }
-      });
-    }
-  }, [initialLocation, busStops, showAllBusStops]);
+      }
 
-  const handleConfirm = () => {
-    if (selectedPoint) {
-      const [lon, lat] = selectedPoint;
-      onSave(`POINT(${lon.toFixed(7)} ${lat.toFixed(7)})`);
-      onClose();
-    }
-  };
+      // Add new point marker
+      const point = new Point(coordinate);
+      const pointFeature = new Feature(point);
+      pointFeature.setStyle(
+        new Style({
+          image: new Icon({
+            src: busstopimage,
+            scale: 0.15,
+            anchor: [0.5, 1],
+          }),
+        })
+      );
+      vectorSource.current.addFeature(pointFeature);
+
+      // Immediately update the location
+      onSave(`POINT(${lonLat[0].toFixed(7)} ${lonLat[1].toFixed(7)})`);
+    };
+
+    mapInstance.current.on('click', clickHandler);
+    return () => {
+      mapInstance.current?.un('click', clickHandler);
+    };
+  }, [selectionMode, initialLocation, busStops, landmarks, onSave]);
+
+
 
   const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
     if (!mapInstance.current) return;
@@ -301,18 +350,7 @@ const BusStopUpdateMap: React.FC<BusStopUpdateMapProps> = ({
           </Button>
         </Box>
 
-        <Tooltip
-          title={showAllBusStops ? "Hide bus stops" : "Show all bus stops"}
-          arrow
-        >
-          <IconButton onClick={() => setShowAllBusStops(!showAllBusStops)}>
-            {showAllBusStops ? (
-              <DirectionsBusIcon color="primary" />
-            ) : (
-              <DirectionsBusIcon />
-            )}
-          </IconButton>
-        </Tooltip>
+        
       </Box>
 
       {/* Map Container */}
@@ -349,27 +387,18 @@ const BusStopUpdateMap: React.FC<BusStopUpdateMapProps> = ({
         </Typography>
 
         <Box sx={{ display: "flex", gap: 1 }}>
-          <Tooltip title="Clear selection" arrow>
-            <IconButton
-              onClick={() => {
-                vectorSource.current.clear();
-                setSelectedPoint(null);
-              }}
-            >
-              <Refresh />
-            </IconButton>
-          </Tooltip>
-          <Button variant="outlined" onClick={onClose}>
+        <Button
+          variant="contained"
+          color={selectionMode ? "secondary" : "primary"}
+          onClick={() => setSelectionMode(!selectionMode)}
+          sx={{ ml: 1 }}
+        >
+          {selectionMode ? "Cancel Selection" : "Select Bus Stop"}
+        </Button>
+          <Button variant="outlined" color="error" onClick={onClose}>
             Cancel
           </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleConfirm}
-            disabled={!selectedPoint}
-          >
-            Confirm Location
-          </Button>
+          
         </Box>
       </Box>
     </Box>

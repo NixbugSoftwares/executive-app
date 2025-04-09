@@ -23,7 +23,7 @@ interface IBusStopCreationFormProps {
   location: string;
   landmarkId: number | null;
   onClose: () => void;
-  refreshList: () => void;
+  refreshList: (value: string) => void;
 }
 
 const statusOptions =  [
@@ -75,14 +75,13 @@ const BusStopAddForm: React.FC<IBusStopCreationFormProps> = ({
     try {
       const formData = new FormData();
       formData.append("name", data.name);
-        formData.append("landmark_id", data.landmark_id);
+      formData.append("landmark_id", data.landmark_id);
       formData.append("location", data.location); 
       formData.append("status", data.status);
   
-      const response = await dispatch(busStopCreationApi(formData)).unwrap();
-      console.log("Bus Stop created successfully:", response);
+      await dispatch(busStopCreationApi(formData)).unwrap();
       showSuccessToast("Bus Stop created successfully!");
-      refreshList();
+      refreshList("refresh");
       onClose();
     } catch (error) {
       console.error("Error creating bus stop:", error);
