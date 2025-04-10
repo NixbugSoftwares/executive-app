@@ -63,7 +63,7 @@ interface AccountCardProps {
 }
 
 const loggedInUser = localStorageHelper.getItem("@user");
-const userId = loggedInUser?.executive_id; 
+const userId = loggedInUser?.executive_id;
 
 const AccountDetailsCard: React.FC<AccountCardProps> = ({
   account,
@@ -77,6 +77,12 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const dispatch = useAppDispatch();
   const isLoggedInUser = account.id === userId;
+
+
+  const handleCloseModal = () => {
+    setUpdateFormOpen(false);
+  };
+
 
   const handleAccountDelete = async () => {
     if (!account.id) {
@@ -102,9 +108,24 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
 
   return (
     <>
-      <Card sx={{ maxWidth: 450, width: "100%", margin: "auto", boxShadow: 3, p: 2 }}>
+      <Card
+        sx={{
+          maxWidth: 450,
+          width: "100%",
+          margin: "auto",
+          boxShadow: 3,
+          p: 2,
+        }}
+      >
         {/* User Avatar & Info */}
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
           <Avatar sx={{ width: 80, height: 80, bgcolor: "darkblue" }}>
             <UserIcon fontSize="large" />
           </Avatar>
@@ -121,7 +142,10 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <PhoneIcon color="action" sx={{ mr: 1 }} />
             {account.phoneNumber ? (
-              <a href={`tel:${account.phoneNumber.replace("tel:", "")}`} style={{ textDecoration: "none" }}>
+              <a
+                href={`tel:${account.phoneNumber.replace("tel:", "")}`}
+                style={{ textDecoration: "none" }}
+              >
                 <Typography variant="body2" color="primary">
                   {account.phoneNumber.replace("tel:", "")}
                 </Typography>
@@ -136,7 +160,10 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <EmailIcon color="action" sx={{ mr: 1 }} />
             {account.email ? (
-              <a href={`mailto:${account.email}`} style={{ textDecoration: "none" }}>
+              <a
+                href={`mailto:${account.email}`}
+                style={{ textDecoration: "none" }}
+              >
                 <Typography variant="body2" color="primary">
                   {account.email}
                 </Typography>
@@ -165,23 +192,29 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
             {account.status === "Active" ? (
               <>
                 <ToggleOnIcon sx={{ color: "green", fontSize: 30 }} />
-                <Typography sx={{ color: "green", fontWeight: "bold" }}>Active</Typography>
+                <Typography sx={{ color: "green", fontWeight: "bold" }}>
+                  Active
+                </Typography>
               </>
             ) : (
               <>
                 <ToggleOffIcon sx={{ color: "#d93550", fontSize: 30 }} />
-                <Typography sx={{ color: "#d93550", fontWeight: "bold" }}>Suspended</Typography>
+                <Typography sx={{ color: "#d93550", fontWeight: "bold" }}>
+                  Suspended
+                </Typography>
               </>
             )}
           </Box>
         </Card>
 
         {/* Action Buttons */}
-          <CardActions sx={{
+        <CardActions
+          sx={{
             justifyContent: isLoggedInUser ? "center" : "space-between",
             alignItems: "center",
             mt: 2,
-          }}>
+          }}
+        >
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button
               variant="outlined"
@@ -195,40 +228,56 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
 
             {/* Update Button with Tooltip */}
             <Tooltip
-              title={!canManageExecutive ? "You don't have permission, contact the admin" : ""}
+              title={
+                !canManageExecutive
+                  ? "You don't have permission, contact the admin"
+                  : ""
+              }
               arrow
               placement="top-start"
             >
-              <span style={{ cursor: !canManageExecutive ? "not-allowed" : "default" }}>
-              <Button
-                variant="contained"
-                color="success"
-                size="small"
-                onClick={() => {
-                  setUpdateFormOpen(true);
-                }}
-                startIcon={<EditIcon />}
-                disabled={!canManageExecutive}
-                sx={{
-                  "&.Mui-disabled": {
-                    backgroundColor: "#81c784 !important",
-                    color: "#ffffff99",
-                  },
+              <span
+                style={{
+                  cursor: !canManageExecutive ? "not-allowed" : "default",
                 }}
               >
-                Update
-              </Button>
+                <Button
+                  variant="contained"
+                  color="success"
+                  size="small"
+                  onClick={() => {
+                    setUpdateFormOpen(true);
+                  }}
+                  startIcon={<EditIcon />}
+                  disabled={!canManageExecutive}
+                  sx={{
+                    "&.Mui-disabled": {
+                      backgroundColor: "#81c784 !important",
+                      color: "#ffffff99",
+                    },
+                  }}
+                >
+                  Update
+                </Button>
               </span>
             </Tooltip>
 
             {/* Delete Button (Hidden for Logged-in User) */}
             {!isLoggedInUser && (
               <Tooltip
-                title={!canManageExecutive ? "You don't have permission, contact the admin" : ""}
+                title={
+                  !canManageExecutive
+                    ? "You don't have permission, contact the admin"
+                    : ""
+                }
                 arrow
                 placement="top-start"
               >
-                <span style={{ cursor: !canManageExecutive ? "not-allowed" : "default" }}>
+                <span
+                  style={{
+                    cursor: !canManageExecutive ? "not-allowed" : "default",
+                  }}
+                >
                   <Button
                     variant="contained"
                     color="error"
@@ -253,13 +302,18 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
       </Card>
 
       {/* Delete Confirmation Modal */}
-      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+      >
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
-          <DialogContentText>Are you sure you want to delete this account?</DialogContentText>
+          <DialogContentText>
+            Are you sure you want to delete this account?
+          </DialogContentText>
           <Typography>
-            <b>ID:</b> {account.id}, <b>Username:</b> {account.username}, <b>Full Name:</b>{" "}
-            {account.fullName}
+            <b>ID:</b> {account.id}, <b>Username:</b> {account.username},{" "}
+            <b>Full Name:</b> {account.fullName}
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -273,16 +327,26 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
       </Dialog>
 
       {/* Update Form Modal */}
-      <Dialog open={updateFormOpen} onClose={() => setUpdateFormOpen(false)} maxWidth="xs" fullWidth>
-  <DialogContent>
-    <AccountUpdateForm
-      refreshList={(value: any) => refreshList(value)}
-      accountId={account.id}
-      onClose={() => setUpdateFormOpen(false)}
-      onCloseDetailCard={onCloseDetailCard}
-    />
-  </DialogContent>
-</Dialog>
+      <Dialog
+        open={updateFormOpen}
+        onClose={() => setUpdateFormOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogContent>
+          <AccountUpdateForm
+            refreshList={(value: any) => refreshList(value)}
+            accountId={account.id}
+            onClose={() => setUpdateFormOpen(false)}
+            onCloseDetailCard={onCloseDetailCard}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseModal} color="error">
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

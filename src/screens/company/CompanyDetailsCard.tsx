@@ -70,6 +70,12 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
     "Received company in details card>>>>>>>>>>>>>>>>>>>>>:",
     company
   );
+
+  const handleCloseModal = () => {
+    setUpdateFormOpen(false);
+  };
+
+
   const extractCoordinates = (location: string) => {
     if (!location) return null;
 
@@ -388,6 +394,11 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
             handleCloseDetailCard={handleCloseDetailCard}
           />
         </DialogContent>
+        <DialogActions>
+                  <Button onClick={handleCloseModal} color="error">
+                    Cancel
+                  </Button>
+                </DialogActions>
       </Dialog>
     </>
   );

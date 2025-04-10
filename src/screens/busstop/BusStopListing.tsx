@@ -608,7 +608,7 @@ const BusStopListing = () => {
                         flexDirection="column"
                         alignItems="center"
                       >
-                        <b>Name</b>
+                        <b> Bus Stop Name</b>
                         <TextField
                           variant="outlined"
                           size="small"

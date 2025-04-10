@@ -59,6 +59,11 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
   const [acknowledgedWarning, setAcknowledgedWarning] = useState(false);
   const dispatch = useAppDispatch();
 
+  const handleCloseModal = () => {
+    setUpdateFormOpen(false);
+  };
+  
+
   const handleRoleDelete = async () => {
     console.log("Deleting role...id----------------", role.id);
 
@@ -229,6 +234,11 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
             handleCloseDetailCard={handleCloseDetailCard}
           />
         </DialogContent>
+        <DialogActions>
+                  <Button onClick={handleCloseModal} color="error">
+                    Cancel
+                  </Button>
+                </DialogActions>
       </Dialog>
     </>
   );

@@ -98,6 +98,10 @@ const CompanyListingTable = () => {
     navigate("/executive/company");
   };
 
+  const handleCloseModal = () => {
+    setOpenCreateModal(false);
+  };
+
   const handleSearchChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
     column: keyof typeof search
@@ -131,10 +135,6 @@ const CompanyListingTable = () => {
     newPage: number
   ) => {
     setPage(newPage);
-  };
-
-  const handleCloseModal = () => {
-    setOpenCreateModal(false);
   };
 
   const refreshList = (value: string) => {

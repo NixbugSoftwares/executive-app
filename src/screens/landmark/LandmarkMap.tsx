@@ -20,8 +20,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { useNavigate } from "react-router-dom";
 import * as ol from "ol";
 import localStorageHelper from "../../utils/localStorageHelper";
@@ -434,6 +433,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
               placeholder="Search Location (e.g., India)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSearch();
+                }
+              }}
               fullWidth
             />
             <Button
@@ -492,19 +496,21 @@ const MapComponent: React.FC<MapComponentProps> = ({
             title={
               showAllBoundaries
                 ? "Hide all landmarks"
-                : "Click to Show all landmarks"
+                : "Click to view all landmarks"
             }
             arrow
           >
             <IconButton
               onClick={() => {
                 setShowAllBoundaries(!showAllBoundaries);
-                if (!showAllBoundaries && selectedBoundary) {
-                }
               }}
-              sx={{ ml: 1 }}
+              // sx={{ ml: 1 }}
             >
-              {showAllBoundaries ? <VisibilityOffIcon /> : <VisibilityIcon />}
+              {showAllBoundaries ? (
+                <LocationOnIcon sx={{ color: "blue" }} />
+              ) : (
+                <LocationOnIcon />
+              )}
             </IconButton>
           </Tooltip>
         </Box>
@@ -525,7 +531,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       >
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           <Typography variant="body2">
-            <strong>[{mousePosition?mousePosition:"coordinates"}]</strong>
+            <strong>[{mousePosition ? mousePosition : "coordinates"}]</strong>
           </Typography>
           {isDrawing && (
             <Typography variant="body2">

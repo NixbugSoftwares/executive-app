@@ -224,32 +224,7 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({ onClose, ref
             size="small"
           />
 
-          {/* Gender Selection */}
-          <Controller
-            name="gender"
-            control={control}
-            render={({ field }) => (
-              <TextField margin="normal" fullWidth select label="Gender" {...field} error={!!errors.gender} size="small">
-                {genderOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            )}
-          />
-
-          <TextField
-            margin="normal"
-            fullWidth
-            label="Designation"
-            {...register("designation")}
-            error={!!errors.designation}
-            helperText={errors.designation?.message}
-            size="small"
-          />
-
-          {/* Role Selection (Required) */}
+          
           <Controller
             name="role"
             control={control}
@@ -275,7 +250,29 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({ onClose, ref
             )}
           />
 
-        
+          <TextField
+            margin="normal"
+            fullWidth
+            label="Designation"
+            {...register("designation")}
+            error={!!errors.designation}
+            helperText={errors.designation?.message}
+            size="small"
+          />
+
+            <Controller
+            name="gender"
+            control={control}
+            render={({ field }) => (
+              <TextField margin="normal" fullWidth select label="Gender" {...field} error={!!errors.gender} size="small">
+                {genderOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
           <Button
             type="submit"
             fullWidth
