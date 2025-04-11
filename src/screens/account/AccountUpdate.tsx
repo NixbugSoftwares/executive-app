@@ -187,7 +187,6 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
               throw new Error("Role assignment update failed");
             }
           } else {
-            // If no roleAssignmentId, create a new mapping
             const createResponse = await dispatch(
               roleAssignApi({
                 executive_id: accountId,
@@ -201,7 +200,6 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
           }
         } catch (error) {
           console.error("Error during role assignment handling:", error);
-          // Try to create new mapping if update failed
           try {
             const createResponse = await dispatch(
               roleAssignApi({

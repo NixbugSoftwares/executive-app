@@ -82,6 +82,7 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
       setDeleteConfirmOpen(false);
       localStorageHelper.removeStoredItem(`role_${role.id}`);
       onDelete(role.id);
+      handleCloseDetailCard(); 
       showSuccessToast("Role deleted successfully!");
       refreshList('refresh');
     } catch (error) {

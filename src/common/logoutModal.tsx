@@ -4,7 +4,7 @@ import { useAppDispatch } from "../store/Hooks";
 import { logoutApi } from "../slices/appSlice";
 import localStorageHelper from "../utils/localStorageHelper";
 import commonHelper from "../utils/commonHelper";
-
+import { toast } from "react-toastify";
 const style = {
   position: "absolute",
   top: "50%",
@@ -29,17 +29,22 @@ const LogoutConfirmationModal: React.FC<LogoutConfirmationModalProps> = ({
   const dispatch = useAppDispatch();
 
   const handleLogout = async () => {
-    console.log("Attempting to logout...");
     try {
-      console.log("Dispatching logoutApi...");
-      const response = await dispatch(logoutApi({})).unwrap();
-      console.log("Logout response:", response);
-
-      localStorageHelper.clearStorage();
-      commonHelper.logout();
+      // Attempt proper logout if possible
+      await dispatch(logoutApi({})).unwrap();
     } catch (error) {
-      console.error("Logout Error:", error);
+      console.log("Logout API failed, proceeding with cleanup...", error);
     }
+    
+    // Always perform these actions
+    localStorageHelper.clearStorage();
+    commonHelper.logout();
+    
+    toast.success("You have been logged out", { autoClose: 1000 });
+    
+    setTimeout(() => {
+      window.location.href = '/login';
+    }, 1500);
   };
 
   return (

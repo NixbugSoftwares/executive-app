@@ -78,12 +78,8 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
 
   const extractCoordinates = (location: string) => {
     if (!location) return null;
-
-    // Updated regex to handle format without spaces: POINT(lon lat)
     const regex = /POINT\(([\d.]+) ([\d.]+)\)/;
     const match = location.match(regex);
-
-    console.log("Regex match result:", match); // Debugging
 
     if (match) {
       return {
@@ -109,6 +105,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
       localStorageHelper.removeStoredItem(`company_${company.id}`);
       onDelete(company.id);
       showSuccessToast("Company deleted successfully!");
+      handleCloseDetailCard();
       refreshList("refresh");
     } catch (error) {
       console.error("Delete error:", error);

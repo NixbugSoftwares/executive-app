@@ -29,6 +29,7 @@ import { useAppDispatch } from "../../store/Hooks";
 import { accountDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import AccountUpdateForm from "./AccountUpdate";
+import { showSuccessToast } from "../../common/toastMessageHelper";
 
 interface AccountCardProps {
   account: {
@@ -100,7 +101,9 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
       setDeleteConfirmOpen(false);
       localStorageHelper.removeStoredItem(`account_${account.id}`);
       onDelete(account.id);
+      onCloseDetailCard();
       refreshList("refresh");
+      showSuccessToast("Account deleted successfully!");
     } catch (error) {
       console.error("Delete error:", error);
     }
