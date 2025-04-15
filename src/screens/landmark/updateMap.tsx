@@ -11,8 +11,7 @@ import { Vector as VectorSource } from "ol/source";
 import { Feature } from "ol";
 import { Style, Stroke, Fill } from "ol/style";
 import { Button, Box, FormControl, InputLabel, MenuItem, Select, TextField, Typography, IconButton, Tooltip } from "@mui/material";
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { Coordinate } from "ol/coordinate";
 import { getArea } from "ol/sphere";
 import { showErrorToast } from "../../common/toastMessageHelper";
@@ -256,32 +255,33 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
     mapInstance.current.addInteraction(draw);
   };
 
-  // Check for overlaps with other landmarks (excluding the one being updated)
+  
   const checkForOverlaps = (newPolygon: Polygon): boolean => {
     if (!landmarks || landmarks.length === 0) return false;
-
+  
     const newCoords = newPolygon.getCoordinates()[0];
-
+  
     for (const landmark of landmarks) {
       // Skip the landmark we're currently updating
       if (!landmark.boundary || landmark.boundary === initialBoundary) continue;
-
+  
       try {
-        const existingCoords = landmark.boundary
-          .split(",")
-          .map((coord) => coord.trim().split(" ").map(Number))
-          .map((coord) => fromLonLat(coord));
-
+        // Extract coordinates from WKT format
+        const coordinatesString = landmark.boundary
+          .replace(/POLYGON\s*\(\(/, '')
+          .replace(/\)\)$/, '')
+          .split(',')
+          .map((coord) => coord.trim().split(/\s+/).map(Number));
+        const existingCoords = coordinatesString.map((coord) => fromLonLat(coord));
         const existingPolygon = new Polygon([existingCoords]);
-
-        // Check if any point of new polygon is inside existing polygon
+        if (newPolygon.intersectsExtent(existingPolygon.getExtent())) {
+          return true;
+        }
         for (const coord of newCoords) {
           if (existingPolygon.intersectsCoordinate(coord)) {
             return true;
           }
         }
-
-        // Check if any point of existing polygon is inside new polygon
         for (const coord of existingPolygon.getCoordinates()[0]) {
           if (newPolygon.intersectsCoordinate(coord)) {
             return true;
@@ -291,7 +291,6 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
         console.error("Error checking overlap with landmark", landmark.id, error);
       }
     }
-
     return false;
   };
 
@@ -447,18 +446,27 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
         </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-        <Tooltip title={showAllBoundaries ? "Hide all boundaries" : "Click to Show all boundaries"} arrow>
-      <IconButton
-        onClick={() => {
-          setShowAllBoundaries(!showAllBoundaries);
-          if (!showAllBoundaries ) {
-          }
-        }}
-        sx={{ ml: 1 }}
-      >
-        {showAllBoundaries ? < VisibilityOffIcon/> : < VisibilityIcon/>}
-      </IconButton>
-    </Tooltip>
+        <Tooltip
+            title={
+              showAllBoundaries
+                ? "Hide all landmarks"
+                : "Click to view all landmarks"
+            }
+            arrow
+          >
+            <IconButton
+              onClick={() => {
+                setShowAllBoundaries(!showAllBoundaries);
+              }}
+              // sx={{ ml: 1 }}
+            >
+              {showAllBoundaries ? (
+                <LocationOnIcon sx={{ color: "blue" }} />
+              ) : (
+                <LocationOnIcon />
+              )}
+            </IconButton>
+          </Tooltip>
 
           <Button
             variant="contained"
