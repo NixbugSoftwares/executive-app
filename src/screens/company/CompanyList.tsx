@@ -22,6 +22,7 @@ import type { AppDispatch } from "../../store/Store";
 import localStorageHelper from "../../utils/localStorageHelper";
 import CompanyDetailsCard from "./CompanyDetailsCard";
 import CompanyCreationForm from "./CompanyCreationForm";
+import { showWarningToast } from "../../common/toastMessageHelper";
 
 interface Company {
   id: number;
@@ -76,11 +77,10 @@ const CompanyListingTable = () => {
             : "Suspended",
         }));
         setCompanyList(formattedAccounts);
-        console.log("Company list:", formattedAccounts);
         
       })
       .catch((err: any) => {
-        console.error("Error fetching companies", err);
+        showWarningToast("Error fetching companies:"+ err);
       });
   };
 

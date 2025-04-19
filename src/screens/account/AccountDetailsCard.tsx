@@ -29,7 +29,10 @@ import { useAppDispatch } from "../../store/Hooks";
 import { accountDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import AccountUpdateForm from "./AccountUpdate";
-import { showSuccessToast } from "../../common/toastMessageHelper";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/toastMessageHelper";
 
 interface AccountCardProps {
   account: {
@@ -42,18 +45,6 @@ interface AccountCardProps {
     email: string;
     phoneNumber: string;
     status: string;
-  };
-  role?: {
-    name: string;
-    manage_company?: boolean;
-    manage_duty?: boolean;
-    manage_executive?: boolean;
-    manage_landmark?: boolean;
-    manage_role?: boolean;
-    manage_route?: boolean;
-    manage_schedule?: boolean;
-    manage_service?: boolean;
-    manage_vendor?: boolean;
   };
   onUpdate: () => void;
   onDelete: (id: number) => void;
@@ -79,33 +70,23 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
   const dispatch = useAppDispatch();
   const isLoggedInUser = account.id === userId;
 
-
   const handleCloseModal = () => {
     setUpdateFormOpen(false);
   };
 
-
   const handleAccountDelete = async () => {
-    if (!account.id) {
-      console.error("Error: Account ID is missing");
-      return;
-    }
-
     try {
       const formData = new FormData();
       formData.append("id", String(account.id));
-
-      const response = await dispatch(accountDeleteApi(formData)).unwrap();
-      console.log("Account deleted:", response);
-
+      await dispatch(accountDeleteApi(formData)).unwrap();
       setDeleteConfirmOpen(false);
       localStorageHelper.removeStoredItem(`account_${account.id}`);
       onDelete(account.id);
       onCloseDetailCard();
       refreshList("refresh");
       showSuccessToast("Account deleted successfully!");
-    } catch (error) {
-      console.error("Delete error:", error);
+    } catch (error: any) {
+      showErrorToast(error);
     }
   };
 

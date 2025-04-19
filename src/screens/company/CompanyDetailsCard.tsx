@@ -66,15 +66,10 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const dispatch = useAppDispatch();
-  console.log(
-    "Received company in details card>>>>>>>>>>>>>>>>>>>>>:",
-    company
-  );
 
   const handleCloseModal = () => {
     setUpdateFormOpen(false);
   };
-
 
   const extractCoordinates = (location: string) => {
     if (!location) return null;
@@ -92,15 +87,14 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
   const coordinates = extractCoordinates(company.location);
   const handleCompanyDelete = async () => {
     if (!company.id) {
-      console.error("Error: Account ID is missing");
+      showErrorToast("Error: Account ID is missing");
       return;
     }
 
     try {
       const formData = new FormData();
       formData.append("id", String(company.id));
-      const response = await dispatch(companyDeleteApi(formData)).unwrap();
-      console.log("Account deleted:", response);
+      await dispatch(companyDeleteApi(formData)).unwrap();
       setDeleteConfirmOpen(false);
       localStorageHelper.removeStoredItem(`company_${company.id}`);
       onDelete(company.id);
@@ -108,7 +102,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
       handleCloseDetailCard();
       refreshList("refresh");
     } catch (error) {
-      console.error("Delete error:", error);
+      showErrorToast("Delete error: " + error);
       showErrorToast("Failed to delete company. Please try again.");
     }
   };
@@ -273,7 +267,6 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
                   color="success"
                   size="small"
                   onClick={() => {
-                    console.log("Update button clicked"); // Debugging
                     setUpdateFormOpen(true);
                   }}
                   startIcon={<EditIcon />}
@@ -392,10 +385,10 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
           />
         </DialogContent>
         <DialogActions>
-                  <Button onClick={handleCloseModal} color="error">
-                    Cancel
-                  </Button>
-                </DialogActions>
+          <Button onClick={handleCloseModal} color="error">
+            Cancel
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   );

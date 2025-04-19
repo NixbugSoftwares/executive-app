@@ -10,16 +10,12 @@ import {
 import { useAppDispatch } from "../../store/Hooks";
 import { landmarkUpdationApi, landmarkListApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
-import MapModal from "./MapModal";
-import { showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
-
-interface Landmark {
-  id: number;
-  name: string;
-  boundary: string;
-  status: string;
-  importance: string;
-}
+import MapModal from "./LandmarkMapModal";
+import {
+  showSuccessToast,
+  showErrorToast,
+} from "../../common/toastMessageHelper";
+import { Landmark } from "../../types/type";
 
 interface ILandmarkFormInputs {
   name: string;
@@ -54,7 +50,9 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  const [landmarkData, setLandmarkData] = useState<ILandmarkFormInputs | null>(null);
+  const [landmarkData, setLandmarkData] = useState<ILandmarkFormInputs | null>(
+    null
+  );
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [updatedBoundary, setUpdatedBoundary] = useState(boundary || "");
   const [allLandmarks, setAllLandmarks] = useState<Landmark[]>([]);
@@ -83,9 +81,8 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
         setLoading(true);
         const landmarks = await dispatch(landmarkListApi()).unwrap();
         setAllLandmarks(landmarks); // Store all landmarks
-        
+
         const landmark = landmarks.find((r: any) => r.id === landmarkId);
-        console.log("Landmark Data:", landmark);
 
         if (landmark) {
           setLandmarkData(landmark);
@@ -98,8 +95,7 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
           setUpdatedBoundary(boundary || landmark.boundary);
         }
       } catch (error) {
-        console.error("Error fetching landmark data:", error);
-        showErrorToast("Failed to fetch landmark data. Please try again.");
+        showErrorToast("Error fetching landmark data:" + error);
       } finally {
         setLoading(false);
       }
@@ -108,7 +104,9 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
     fetchLandmarkData();
   }, [landmarkId, dispatch, reset, boundary]);
 
-  const handleLandmarkUpdate: SubmitHandler<ILandmarkFormInputs> = async (data) => {
+  const handleLandmarkUpdate: SubmitHandler<ILandmarkFormInputs> = async (
+    data
+  ) => {
     try {
       setLoading(true);
 
@@ -119,14 +117,12 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       formData.append("status", data.status);
       formData.append("importance", data.importance);
 
-      const response = await dispatch(landmarkUpdationApi({ landmarkId, formData })).unwrap();
-      console.log("Landmark updated successfully:", response);
-      
+      await dispatch(landmarkUpdationApi({ landmarkId, formData })).unwrap();
+
       showSuccessToast("Landmark updated successfully!");
       refreshList("refresh");
       onClose();
     } catch (error) {
-      console.error("Error updating landmark:", error);
       showErrorToast("Failed to update landmark. Please try again.");
     } finally {
       setLoading(false);

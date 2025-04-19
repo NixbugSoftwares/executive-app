@@ -11,7 +11,10 @@ import { useAppDispatch } from "../../store/Hooks";
 import { busStopUpdationApi, busStopListApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import MapModal from "./BUsStopMapModal";
-import { showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
+import {
+  showSuccessToast,
+  showErrorToast,
+} from "../../common/toastMessageHelper";
 
 interface BusStop {
   id: number;
@@ -19,9 +22,6 @@ interface BusStop {
   location: string;
   status: string;
 }
-
-
-
 
 interface IBusStopFormInputs {
   name: string;
@@ -41,16 +41,17 @@ const statusOptions = [
   { label: "VERIFIED", value: "2" },
 ];
 
-
 const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
   onClose,
   refreshList,
   busStopId,
-  location,  
+  location,
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  const [landmarkData, setLandmarkData] = useState<IBusStopFormInputs | null>(null);
+  const [landmarkData, setLandmarkData] = useState<IBusStopFormInputs | null>(
+    null
+  );
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [updatedLocation, setUpdatedLocation] = useState(location || "");
   const [allBusStops, setAllBusStops] = useState<BusStop[]>([]);
@@ -79,9 +80,8 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
         setLoading(true);
         const busStops = await dispatch(busStopListApi()).unwrap();
         setAllBusStops(busStops); // Store all bus stops
-        
+
         const busStop = busStops.find((r: any) => r.id === busStopId);
-        console.log("Landmark Data:", busStop);
 
         if (busStop) {
           setLandmarkData(busStop);
@@ -93,8 +93,7 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
           setUpdatedLocation(location || busStop.location);
         }
       } catch (error) {
-        console.error("Error fetching bus stop data:", error);
-        showErrorToast("Failed to fetch bus stop data. Please try again.");
+        showErrorToast("Error fetching bus stop data: " + error);
       } finally {
         setLoading(false);
       }
@@ -103,7 +102,9 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
     fetchBusStopData();
   }, [busStopId, dispatch, reset, location]);
 
-  const handleLandmarkUpdate: SubmitHandler<IBusStopFormInputs> = async (data) => {
+  const handleLandmarkUpdate: SubmitHandler<IBusStopFormInputs> = async (
+    data
+  ) => {
     try {
       setLoading(true);
 
@@ -112,15 +113,12 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
       formData.append("name", data.name);
       formData.append("location", data.location || updatedLocation);
       formData.append("status", data.status);
+      await dispatch(busStopUpdationApi({ busStopId, formData })).unwrap();
 
-      const response = await dispatch(busStopUpdationApi({ busStopId, formData })).unwrap();
-      console.log("Bus Stop updated successfully:", response);
-      
       showSuccessToast("Bus Stop updated successfully!");
       refreshList("refresh");
       onClose();
-    } catch (error) {
-      console.error("Error updating Bus Stop:", error);
+    } catch {
       showErrorToast("Failed to update Bus Stop. Please try again.");
     } finally {
       setLoading(false);
@@ -172,11 +170,11 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
       />
 
       <MapModal
-       open={mapModalOpen}
-       onClose={() => setMapModalOpen(false)}
-       initialLocation={updatedLocation}
-       onSave={handleSaveBoundary}
-       busStops={allBusStops}
+        open={mapModalOpen}
+        onClose={() => setMapModalOpen(false)}
+        initialLocation={updatedLocation}
+        onSave={handleSaveBoundary}
+        busStops={allBusStops}
       />
 
       <Controller
@@ -211,7 +209,7 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
         {loading ? (
           <CircularProgress size={24} sx={{ color: "white" }} />
         ) : (
-          "Update Bus Stop"
+        "Update Bus Stop"
         )}
       </Button>
     </Box>

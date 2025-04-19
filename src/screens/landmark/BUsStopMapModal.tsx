@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import {} from "react";
 import { Dialog, DialogContent } from "@mui/material";
-import BusStopUpdateMap from "./updatemap";
+import BusStopUpdateMap from "./BusStopUpdatemap";
 import { landmarkListApi } from "../../slices/appSlice";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../../store/Store";
+import { showWarningToast } from "../../common/toastMessageHelper";
 interface BusStop {
   id: number;
   name: string;
@@ -19,7 +20,6 @@ interface Landmark {
   importance: string;
   status: string;
 }
-
 
 interface BusStopMapModalProps {
   open: boolean;
@@ -36,17 +36,16 @@ const BusStopMapModal: React.FC<BusStopMapModalProps> = ({
   onSave,
   busStops = [],
 }) => {
-
   const dispatch = useDispatch<AppDispatch>();
-const [landmark, setLandmark] = useState<Landmark[]>([]);
- 
-const extractRawPoints = (polygonString: string): string => {
-  if (!polygonString) return "";
-  const matches = polygonString.match(/\(\((.*?)\)\)/);
-  return matches ? matches[1] : "";
-};
+  const [landmark, setLandmark] = useState<Landmark[]>([]);
 
-const fetchLandmark = () => {
+  const extractRawPoints = (polygonString: string): string => {
+    if (!polygonString) return "";
+    const matches = polygonString.match(/\(\((.*?)\)\)/);
+    return matches ? matches[1] : "";
+  };
+
+  const fetchLandmark = () => {
     dispatch(landmarkListApi())
       .unwrap()
       .then((res: any[]) => {
@@ -65,14 +64,13 @@ const fetchLandmark = () => {
         setLandmark(formattedLandmarks);
       })
       .catch((err: any) => {
-        console.error("Error fetching landmarks", err);
+        showWarningToast("Error fetching landmarks: " + err);
       });
   };
 
   useEffect(() => {
     fetchLandmark();
   }, []);
-
 
   return (
     <Dialog
@@ -91,8 +89,8 @@ const fetchLandmark = () => {
           initialLocation={initialLocation}
           onSave={onSave}
           onClose={onClose}
-          busStops={busStops} 
-          landmarks={landmark} // Pass the fetched landmarks to the map component 
+          busStops={busStops}
+          landmarks={landmark}
         />
       </DialogContent>
     </Dialog>

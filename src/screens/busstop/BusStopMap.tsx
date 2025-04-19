@@ -542,6 +542,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
     };
   }, [drawingMode, selectedLandmark]);
 
+
+  
+
   const handleSearch = async () => {
     if (!searchQuery || !mapInstance.current) return;
 

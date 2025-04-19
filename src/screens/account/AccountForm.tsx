@@ -2,12 +2,30 @@ import React, { useEffect, useState } from "react";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { accountFormSchema } from "../auth/validations/authValidation";
-import { Box, TextField, InputAdornment, IconButton, Button, Typography, Container, CssBaseline, CircularProgress, MenuItem } from "@mui/material";
+import {
+  Box,
+  TextField,
+  InputAdornment,
+  IconButton,
+  Button,
+  Typography,
+  Container,
+  CssBaseline,
+  CircularProgress,
+  MenuItem,
+} from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { useAppDispatch } from "../../store/Hooks";
-import { accountCreationApi, roleListApi, roleAssignApi } from "../../slices/appSlice";
-import {  showSuccessToast } from "../../common/toastMessageHelper";
+import {
+  accountCreationApi,
+  roleListApi,
+  roleAssignApi,
+} from "../../slices/appSlice";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/toastMessageHelper";
 // Account creation form interface
 interface IAccountFormInputs {
   username: string;
@@ -17,13 +35,13 @@ interface IAccountFormInputs {
   email?: string;
   gender?: number;
   designation?: string;
-  role: number; 
-  roleAssignmentId?: number; 
+  role: number;
+  roleAssignmentId?: number;
 }
 
 interface IAccountCreationFormProps {
   onClose: () => void;
-  refreshList: (value:any)=>void
+  refreshList: (value: any) => void;
 }
 
 // Gender options mapping
@@ -34,12 +52,14 @@ const genderOptions = [
   { label: "Other", value: 4 },
 ];
 
-
-
-const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({ onClose, refreshList}) => {
+const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
+  onClose,
+  refreshList,
+}) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -49,41 +69,40 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({ onClose, ref
   } = useForm<IAccountFormInputs>({
     resolver: yupResolver(accountFormSchema),
     defaultValues: {
-      gender: 4, 
+      gender: 4,
     },
   });
 
-  // Fetch roles on mount
+  // Fetch roles
   useEffect(() => {
     dispatch(roleListApi())
       .unwrap()
       .then((res: any[]) => {
         setRoles(res.map((role) => ({ id: role.id, name: role.name })));
-        console.log("Roles>>>>>>>>>>>>>>>>>>>:", res);
       })
-      
-      
+
       .catch((err: any) => {
-        console.error("Error fetching roles:", err);
+        showErrorToast(err);
       });
   }, [dispatch]);
 
-  const [showPassword, setShowPassword] = useState(false);
   const handleTogglePassword = () => {
     setShowPassword((prev) => !prev);
   };
 
-  // Handle Account Creation & Role Assignment 
-  const handleAccountCreation: SubmitHandler<IAccountFormInputs> = async (data) => {
+  // Handle Account Creation & Role Assignment
+  const handleAccountCreation: SubmitHandler<IAccountFormInputs> = async (
+    data
+  ) => {
     try {
       setLoading(true);
-  
+
       // Prepare form data for account creation
       const formData = new FormData();
       formData.append("username", data.username);
       formData.append("password", data.password);
       formData.append("gender", data.gender?.toString() || "");
-  
+
       if (data.fullName) {
         formData.append("full_name", data.fullName);
       }
@@ -96,38 +115,31 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({ onClose, ref
       if (data.designation) {
         formData.append("designation", data.designation);
       }
-  
-      // Step 1: Create account
-      const accountResponse = await dispatch(accountCreationApi(formData)).unwrap();
-  
+
+      //  Create account
+      const accountResponse = await dispatch(
+        accountCreationApi(formData)
+      ).unwrap();
       if (accountResponse?.id) {
-        // Step 2: Assign role to the created account
+        // Assign role to the created account
         const roleResponse = await dispatch(
-          roleAssignApi({ executive_id: accountResponse.id, role_id: data.role })
+          roleAssignApi({
+            executive_id: accountResponse.id,
+            role_id: data.role,
+          })
         ).unwrap();
-  
+
         if (roleResponse?.id && roleResponse?.role_id) {
-          // Store the role assignment ID in the account object or state
-          const updatedAccount = {
-            ...accountResponse,
-            roleAssignmentId: roleResponse.id, // Store the role assignment ID
-          };
-  
-          console.log("Role Assignment ID:", updatedAccount);
-  
           showSuccessToast("Account and role assigned successfully!");
-          refreshList('refresh');
+          refreshList("refresh");
           onClose();
         } else {
-          console.error("Role assignment failed:", roleResponse);
           throw new Error("Account created, but role assignment failed!");
         }
       } else {
-        console.error("Unexpected account creation response:", accountResponse);
         throw new Error("Account creation failed!");
       }
     } catch (error: any) {
-      console.error("Error during account creation:", error);
       throw error;
     } finally {
       setLoading(false);
@@ -137,11 +149,23 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({ onClose, ref
   return (
     <Container component="main" maxWidth="xs">
       <CssBaseline />
-      <Box sx={{ marginTop: 8, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <Box
+        sx={{
+          marginTop: 8,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
         <Typography component="h1" variant="h5">
           Account Creation
         </Typography>
-        <Box component="form" noValidate sx={{ mt: 1 }} onSubmit={handleSubmit(handleAccountCreation)}>
+        <Box
+          component="form"
+          noValidate
+          sx={{ mt: 1 }}
+          onSubmit={handleSubmit(handleAccountCreation)}
+        >
           <TextField
             margin="normal"
             required
@@ -168,7 +192,7 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({ onClose, ref
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton onClick={handleTogglePassword} edge="end">
-                    {showPassword ? <Visibility /> : < VisibilityOff />}
+                    {showPassword ? <Visibility /> : <VisibilityOff />}
                   </IconButton>
                 </InputAdornment>
               ),
@@ -212,7 +236,6 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({ onClose, ref
             )}
           />
 
-
           <TextField
             margin="normal"
             fullWidth
@@ -224,7 +247,6 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({ onClose, ref
             size="small"
           />
 
-          
           <Controller
             name="role"
             control={control}
@@ -260,11 +282,19 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({ onClose, ref
             size="small"
           />
 
-            <Controller
+          <Controller
             name="gender"
             control={control}
             render={({ field }) => (
-              <TextField margin="normal" fullWidth select label="Gender" {...field} error={!!errors.gender} size="small">
+              <TextField
+                margin="normal"
+                fullWidth
+                select
+                label="Gender"
+                {...field}
+                error={!!errors.gender}
+                size="small"
+              >
                 {genderOptions.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
@@ -281,7 +311,11 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({ onClose, ref
             sx={{ mt: 3, mb: 2, bgcolor: "darkblue" }}
             disabled={loading}
           >
-            {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Create Account"}
+            {loading ? (
+              <CircularProgress size={24} sx={{ color: "white" }} />
+            ) : (
+              "Create Account"
+            )}
           </Button>
         </Box>
       </Box>

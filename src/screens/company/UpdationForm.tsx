@@ -79,12 +79,10 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
       const data = await response.json();
       return data.display_name || "Unknown Location";
     } catch (error) {
-      console.error("Error fetching location name:", error);
+      showErrorToast("Error fetching location name:" + error);
       return "Unknown Location";
     }
   };
-
-  console.log("fetching company location:", fetchLocationName);
 
   // Fetch company data
   useEffect(() => {
@@ -135,7 +133,7 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
         }
       })
       .catch((err: any) => {
-        console.error("Error fetching company data:", err);
+        showErrorToast("Error fetching company data:" + err);
       });
   }, [companyId, dispatch, reset]);
 
@@ -150,8 +148,6 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
     setValue("longitude", location.lng);
     setLocationName(location.name);
   };
-  console.log("locationName:", locationName);
-  console.log("companyData:", companyData);
 
   // Handle Account Update
   const handleAccountUpdate: SubmitHandler<ICompanyFormInputs> = async (
@@ -178,18 +174,14 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
       if (data.company_type)
         formData.append("type", data.company_type.toString());
 
-      console.log("Form Data:", formData);
+      await dispatch(companyUpdationApi({ companyId, formData })).unwrap();
 
-      const updateResponse = await dispatch(
-        companyUpdationApi({ companyId, formData })
-      ).unwrap();
-      console.log("Company updated:", updateResponse);
       showSuccessToast("Company updated successfully!");
       refreshList("refresh");
       handleCloseDetailCard();
       onClose();
     } catch (error) {
-      console.error("Error updating company:", error);
+      showErrorToast("Error updating company:" + error);
       showErrorToast("Failed to update company. Please try again.");
     } finally {
       setLoading(false);

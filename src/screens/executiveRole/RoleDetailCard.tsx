@@ -1,33 +1,36 @@
 import React, { useState } from "react";
-import { 
-  Card, 
-  CardContent, 
-  CardActions, 
-  Typography, 
-  Button, 
-  Box, 
-  Dialog, 
-  DialogActions, 
-  DialogContent, 
-  DialogTitle, 
-  Avatar, 
-  Chip, 
+import {
+  Card,
+  CardContent,
+  CardActions,
+  Typography,
+  Button,
+  Box,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Avatar,
+  Chip,
   Tooltip,
   Checkbox,
   FormControlLabel,
-  Alert
+  Alert,
 } from "@mui/material";
 import { Diversity3 as Diversity3Icon } from "@mui/icons-material";
 import { useAppDispatch } from "../../store/Hooks";
 import { roleDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import RoleUpdateForm from "./RoleUpdate";
-import { showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
+import {
+  showSuccessToast,
+  showErrorToast,
+} from "../../common/toastMessageHelper";
 
 interface RoleCardProps {
   role: {
     id: number;
-    name: string; 
+    name: string;
     manageExecutive?: boolean;
     manageRole?: boolean;
     manageLandmark?: boolean;
@@ -38,21 +41,21 @@ interface RoleCardProps {
     manageService?: boolean;
     manageDuty?: boolean;
   };
-  onBack: () => void; 
-  onUpdate: (id: number) => void; 
-  onDelete: (id: number) => void; 
+  onBack: () => void;
+  onUpdate: (id: number) => void;
+  onDelete: (id: number) => void;
   refreshList: (value: any) => void;
   canManageRole: boolean;
   handleCloseDetailCard: () => void;
 }
 
-const RoleDetailsCard: React.FC<RoleCardProps> = ({ 
-  role, 
-  onBack, 
-  onDelete, 
+const RoleDetailsCard: React.FC<RoleCardProps> = ({
+  role,
+  onBack,
+  onDelete,
   refreshList,
-  canManageRole, 
-  handleCloseDetailCard 
+  canManageRole,
+  handleCloseDetailCard,
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
@@ -62,47 +65,49 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
   const handleCloseModal = () => {
     setUpdateFormOpen(false);
   };
-  
 
   const handleRoleDelete = async () => {
-    console.log("Deleting role...id----------------", role.id);
-
     if (!role.id) {
-      console.error("Error: role ID is missing");
+      showErrorToast("Error: role ID is missing");
       return;
     }
 
     try {
-      console.log("Deleting role with ID================>:", role.id);
       const formData = new FormData();
-      formData.append("id", String(role.id)); 
-
-      const response = await dispatch(roleDeleteApi(formData)).unwrap();
-      console.log("Account deleted:", response);
+      formData.append("id", String(role.id));
+      await dispatch(roleDeleteApi(formData)).unwrap();
       setDeleteConfirmOpen(false);
       localStorageHelper.removeStoredItem(`role_${role.id}`);
       onDelete(role.id);
-      handleCloseDetailCard(); 
+      handleCloseDetailCard();
       showSuccessToast("Role deleted successfully!");
-      refreshList('refresh');
+      refreshList("refresh");
     } catch (error) {
       showErrorToast("Failed to delete role. Please try again.");
     } finally {
-      setAcknowledgedWarning(false); // Reset acknowledgment for next time
+      setAcknowledgedWarning(false);
     }
   };
 
   return (
     <>
       {/* Role Details Card */}
-      <Card sx={{ maxWidth: 420, margin: 2, boxShadow: 4, borderRadius: 3, p: 1 }}>
-        
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
+      <Card
+        sx={{ maxWidth: 420, margin: 2, boxShadow: 4, borderRadius: 3, p: 1 }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
           <Avatar sx={{ bgcolor: "primary.main", width: 56, height: 56 }}>
             <Diversity3Icon fontSize="large" />
           </Avatar>
           <Typography variant="h6" sx={{ mt: 1, fontWeight: "bold" }}>
-            {role.name} 
+            {role.name}
           </Typography>
         </Box>
 
@@ -113,29 +118,76 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {/* List all permissions */}
-            <Chip label={`Manage Executive: ${role.manageExecutive ? "Yes" : "No"}`} color={role.manageExecutive ? "success" : "error"} variant="outlined" />
-            <Chip label={`Manage Role: ${role.manageRole ? "Yes" : "No"}`} color={role.manageRole ? "success" : "error"} variant="outlined" />
-            <Chip label={`Manage Landmark: ${role.manageLandmark ? "Yes" : "No"}`} color={role.manageLandmark ? "success" : "error"} variant="outlined" />
-            <Chip label={`Manage Company: ${role.manageCompany ? "Yes" : "No"}`} color={role.manageCompany ? "success" : "error"} variant="outlined" />
-            <Chip label={`Manage Vendor: ${role.manageVendor ? "Yes" : "No"}`} color={role.manageVendor ? "success" : "error"} variant="outlined" />
-            <Chip label={`Manage Route: ${role.manageRoute ? "Yes" : "No"}`} color={role.manageRoute ? "success" : "error"} variant="outlined" />
-            <Chip label={`Manage Schedule: ${role.manageSchedule ? "Yes" : "No"}`} color={role.manageSchedule ? "success" : "error"} variant="outlined" />
-            <Chip label={`Manage Service: ${role.manageService ? "Yes" : "No"}`} color={role.manageService ? "success" : "error"} variant="outlined" />
-            <Chip label={`Manage Duty: ${role.manageDuty ? "Yes" : "No"}`} color={role.manageDuty ? "success" : "error"} variant="outlined" />
+            <Chip
+              label={`Manage Executive: ${role.manageExecutive ? "Yes" : "No"}`}
+              color={role.manageExecutive ? "success" : "error"}
+              variant="outlined"
+            />
+            <Chip
+              label={`Manage Role: ${role.manageRole ? "Yes" : "No"}`}
+              color={role.manageRole ? "success" : "error"}
+              variant="outlined"
+            />
+            <Chip
+              label={`Manage Landmark: ${role.manageLandmark ? "Yes" : "No"}`}
+              color={role.manageLandmark ? "success" : "error"}
+              variant="outlined"
+            />
+            <Chip
+              label={`Manage Company: ${role.manageCompany ? "Yes" : "No"}`}
+              color={role.manageCompany ? "success" : "error"}
+              variant="outlined"
+            />
+            <Chip
+              label={`Manage Vendor: ${role.manageVendor ? "Yes" : "No"}`}
+              color={role.manageVendor ? "success" : "error"}
+              variant="outlined"
+            />
+            <Chip
+              label={`Manage Route: ${role.manageRoute ? "Yes" : "No"}`}
+              color={role.manageRoute ? "success" : "error"}
+              variant="outlined"
+            />
+            <Chip
+              label={`Manage Schedule: ${role.manageSchedule ? "Yes" : "No"}`}
+              color={role.manageSchedule ? "success" : "error"}
+              variant="outlined"
+            />
+            <Chip
+              label={`Manage Service: ${role.manageService ? "Yes" : "No"}`}
+              color={role.manageService ? "success" : "error"}
+              variant="outlined"
+            />
+            <Chip
+              label={`Manage Duty: ${role.manageDuty ? "Yes" : "No"}`}
+              color={role.manageDuty ? "success" : "error"}
+              variant="outlined"
+            />
           </Box>
         </CardContent>
 
         {/* Action Buttons */}
         <CardActions sx={{ justifyContent: "space-between", gap: 1 }}>
-          <Button size="small" variant="contained" color="primary" onClick={onBack}>
+          <Button
+            size="small"
+            variant="contained"
+            color="primary"
+            onClick={onBack}
+          >
             Back
           </Button>
-          <Tooltip 
-            title={!canManageRole ? "You don't have permission, contact the admin" : ""}
+          <Tooltip
+            title={
+              !canManageRole
+                ? "You don't have permission, contact the admin"
+                : ""
+            }
             arrow
             placement="top-start"
           >
-            <span style={{ cursor: !canManageRole ? "not-allowed" : "default" }}> 
+            <span
+              style={{ cursor: !canManageRole ? "not-allowed" : "default" }}
+            >
               <Button
                 variant="contained"
                 color="success"
@@ -143,10 +195,10 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
                 onClick={() => setUpdateFormOpen(true)}
                 disabled={!canManageRole}
                 sx={{
-                  "&.Mui-disabled": { 
-                    backgroundColor: "#81c784 !important", 
-                    color: "#ffffff99", 
-                  }
+                  "&.Mui-disabled": {
+                    backgroundColor: "#81c784 !important",
+                    color: "#ffffff99",
+                  },
                 }}
               >
                 Update
@@ -155,12 +207,18 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
           </Tooltip>
 
           {/* Delete Button with Tooltip */}
-          <Tooltip 
-            title={!canManageRole ? "You don't have permission, contact the admin" : ""}
+          <Tooltip
+            title={
+              !canManageRole
+                ? "You don't have permission, contact the admin"
+                : ""
+            }
             arrow
             placement="top-start"
           >
-            <span style={{ cursor: !canManageRole ? "not-allowed" : "default" }}> 
+            <span
+              style={{ cursor: !canManageRole ? "not-allowed" : "default" }}
+            >
               <Button
                 variant="contained"
                 color="error"
@@ -168,10 +226,10 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
                 onClick={() => setDeleteConfirmOpen(true)}
                 disabled={!canManageRole}
                 sx={{
-                  "&.Mui-disabled": { 
-                    backgroundColor: "#e57373 !important", 
-                    color: "#ffffff99", 
-                  }
+                  "&.Mui-disabled": {
+                    backgroundColor: "#e57373 !important",
+                    color: "#ffffff99",
+                  },
                 }}
               >
                 Delete
@@ -182,21 +240,25 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
       </Card>
 
       {/* Delete Confirmation Modal */}
-      <Dialog open={deleteConfirmOpen} onClose={() => {
-        setDeleteConfirmOpen(false);
-        setAcknowledgedWarning(false); // Reset when dialog closes
-      }}>
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setAcknowledgedWarning(false); // Reset when dialog closes
+        }}
+      >
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <Alert severity="warning" sx={{ mb: 2 }}>
-            <strong>Warning:</strong> This role might be assigned to executives. 
-            Deleting it will remove all associated permissions from those accounts.
+            <strong>Warning:</strong> This role might be assigned to executives.
+            Deleting it will remove all associated permissions from those
+            accounts.
           </Alert>
-          
+
           <Typography gutterBottom>
             <b>ID:</b> {role.id}, <b>Role Name:</b> {role.name}
           </Typography>
-          
+
           <FormControlLabel
             control={
               <Checkbox
@@ -209,14 +271,17 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => {
-            setDeleteConfirmOpen(false);
-            setAcknowledgedWarning(false);
-          }} color="primary">
+          <Button
+            onClick={() => {
+              setDeleteConfirmOpen(false);
+              setAcknowledgedWarning(false);
+            }}
+            color="primary"
+          >
             Cancel
           </Button>
-          <Button 
-            onClick={handleRoleDelete} 
+          <Button
+            onClick={handleRoleDelete}
             color="error"
             disabled={!acknowledgedWarning}
           >
@@ -226,20 +291,25 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
       </Dialog>
 
       {/* Update Form Modal */}
-      <Dialog open={updateFormOpen} onClose={() => setUpdateFormOpen(false)} maxWidth="xs" fullWidth>
+      <Dialog
+        open={updateFormOpen}
+        onClose={() => setUpdateFormOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
         <DialogContent>
           <RoleUpdateForm
             refreshList={(value: any) => refreshList(value)}
-            roleId={role.id} 
-            onClose={() => setUpdateFormOpen(false)} 
+            roleId={role.id}
+            onClose={() => setUpdateFormOpen(false)}
             handleCloseDetailCard={handleCloseDetailCard}
           />
         </DialogContent>
         <DialogActions>
-                  <Button onClick={handleCloseModal} color="error">
-                    Cancel
-                  </Button>
-                </DialogActions>
+          <Button onClick={handleCloseModal} color="error">
+            Cancel
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   );

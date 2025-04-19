@@ -16,7 +16,7 @@ import {
   DialogTitle,
   Typography,
   Chip,
-  Tooltip
+  Tooltip,
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import WarningIcon from "@mui/icons-material/Warning";
@@ -83,7 +83,7 @@ const BusStopListing = () => {
   const [busStopLocation, setBusStopLocation] = useState("");
   const rowsPerPage = 10;
 
-   const roleDetails = localStorageHelper.getItem("@roleDetails");
+  const roleDetails = localStorageHelper.getItem("@roleDetails");
   const canManageLandmark = roleDetails?.manage_landmark || false;
 
   const parsePointString = (pointString: string): [number, number] | null => {
@@ -349,46 +349,52 @@ const BusStopListing = () => {
         }}
       >
         {/* Add Bus Stop Button */}
-        <Box sx={{ position: "absolute", top: 16, right: 16, zIndex: 1 }}>
-        <Tooltip 
-  title={!canManageLandmark ? "You don't have permission, contact admin" : "Click to switch tables"} 
-  arrow
->
-  <Button
-    variant="contained"
-    color={showLandmarkTable ? "secondary" : "primary"}
-    onClick={() => {
-      setShowLandmarkTable(!showLandmarkTable);
-      setPage(0);
-      if (!showLandmarkTable) {
-        setSelectedBusStop(null);
-        clearBoundaries();
-        handleCreateBusStopClick();
-      }
-    }}
-    sx={{
-      ...(!canManageLandmark && {
-        backgroundColor: "#6c87#6c87b7 !importantb7 ",
-        color: "white",
-                "&.Mui-disabled": {
-                  backgroundColor: "#6c87b7 !important",
-                  color: "#ffffff99",
-                },
-      }),
-      ...(canManageLandmark && !showLandmarkTable && {
-        backgroundColor: "#3f51b5", 
-      }),
-      ...(canManageLandmark && showLandmarkTable && {
-        // Secondary button styling will be applied by the color="secondary" prop
-      })
-    }}
-    disabled={!canManageLandmark}
-  >
-    {showLandmarkTable ? "Back to Bus Stops" : "Add Bus Stop"}
-  </Button>
-</Tooltip>
-          
-        </Box>
+        {/* <Box sx={{ position: "absolute", top: 16, right: 16, zIndex: 1 }}>
+          <Tooltip
+            title={
+              !canManageLandmark
+                ? "You don't have permission, contact admin"
+                : "Click to switch tables"
+            }
+            arrow
+          >
+            <Button
+              variant="contained"
+              color={showLandmarkTable ? "secondary" : "primary"}
+              onClick={() => {
+                setShowLandmarkTable(!showLandmarkTable);
+                setPage(0);
+                if (!showLandmarkTable) {
+                  setSelectedBusStop(null);
+                  clearBoundaries();
+                  handleCreateBusStopClick();
+                }
+              }}
+              sx={{
+                ...(!canManageLandmark && {
+                  backgroundColor: "#6c87#6c87b7 !importantb7 ",
+                  color: "white",
+                  "&.Mui-disabled": {
+                    backgroundColor: "#6c87b7 !important",
+                    color: "#ffffff99",
+                  },
+                }),
+                ...(canManageLandmark &&
+                  !showLandmarkTable && {
+                    backgroundColor: "#3f51b5",
+                  }),
+                ...(canManageLandmark &&
+                  showLandmarkTable &&
+                  {
+                    // Secondary button styling will be applied by the color="secondary" prop
+                  }),
+              }}
+              disabled={!canManageLandmark}
+            >
+              {showLandmarkTable ? "Back to Bus Stops" : "Add Bus Stop"}
+            </Button>
+          </Tooltip>
+        </Box> */}
 
         <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
           {showLandmarkTable ? (
@@ -472,7 +478,7 @@ const BusStopListing = () => {
                       onClick={() => handleLandmarkSelect(landmark)}
                       sx={{
                         backgroundColor:
-                        selectedLandmark?.id === landmark.id
+                          selectedLandmark?.id === landmark.id
                             ? "#E3F2FD"
                             : "inherit",
                         cursor: "pointer",
@@ -488,12 +494,14 @@ const BusStopListing = () => {
                             color="info"
                             size="small"
                             sx={{
-                              backgroundColor:  selectedLandmark?.id === landmark.id
-                                ? "#90CAF9"
-                                : "#E3F2FD",
-                              color:  selectedLandmark?.id === landmark.id
-                                ? "#1565C0"
-                                : "#1565C0",
+                              backgroundColor:
+                                selectedLandmark?.id === landmark.id
+                                  ? "#90CAF9"
+                                  : "#E3F2FD",
+                              color:
+                                selectedLandmark?.id === landmark.id
+                                  ? "#1565C0"
+                                  : "#1565C0",
                             }}
                           />
                         )}
@@ -504,12 +512,14 @@ const BusStopListing = () => {
                             color="warning"
                             size="small"
                             sx={{
-                              backgroundColor:  selectedLandmark?.id === landmark.id
-                                ? "#edd18f"
-                                : "#FFE082",
-                              color:  selectedLandmark?.id === landmark.id
-                                ? "#9f3b03"
-                                : "#9f3b03",
+                              backgroundColor:
+                                selectedLandmark?.id === landmark.id
+                                  ? "#edd18f"
+                                  : "#FFE082",
+                              color:
+                                selectedLandmark?.id === landmark.id
+                                  ? "#9f3b03"
+                                  : "#9f3b03",
                             }}
                           />
                         )}
@@ -520,12 +530,14 @@ const BusStopListing = () => {
                             color="error"
                             size="small"
                             sx={{
-                              backgroundColor: selectedLandmark?.id === landmark.id
-                                ? "#EF9A9A"
-                                : "#FFEBEE",
-                                color: selectedLandmark?.id === landmark.id
-                                ? "#D32F2F"
-                                : "#D32F2F",
+                              backgroundColor:
+                                selectedLandmark?.id === landmark.id
+                                  ? "#EF9A9A"
+                                  : "#FFEBEE",
+                              color:
+                                selectedLandmark?.id === landmark.id
+                                  ? "#D32F2F"
+                                  : "#D32F2F",
                             }}
                           />
                         )}
@@ -538,12 +550,14 @@ const BusStopListing = () => {
                             color="warning"
                             size="small"
                             sx={{
-                              backgroundColor:  selectedLandmark?.id === landmark.id
-                                ? "#edd18f"
-                                : "#FFE082",
-                              color:  selectedLandmark?.id === landmark.id
-                                ? "#9f3b03"
-                                : "#9f3b03",
+                              backgroundColor:
+                                selectedLandmark?.id === landmark.id
+                                  ? "#edd18f"
+                                  : "#FFE082",
+                              color:
+                                selectedLandmark?.id === landmark.id
+                                  ? "#9f3b03"
+                                  : "#9f3b03",
                             }}
                           />
                         )}
@@ -554,12 +568,14 @@ const BusStopListing = () => {
                             color="success"
                             size="small"
                             sx={{
-                              backgroundColor:  selectedLandmark?.id === landmark.id
-                                ? "#A5D6A7"
-                                : "#E8F5E9",
-                              color:  selectedLandmark?.id === landmark.id
-                                ? "#2E7D32"
-                                : "#2E7D32",
+                              backgroundColor:
+                                selectedLandmark?.id === landmark.id
+                                  ? "#A5D6A7"
+                                  : "#E8F5E9",
+                              color:
+                                selectedLandmark?.id === landmark.id
+                                  ? "#2E7D32"
+                                  : "#2E7D32",
                             }}
                           />
                         )}
@@ -861,7 +877,6 @@ const BusStopListing = () => {
               onClose={() => setOpenUpdateModal(false)}
               refreshList={(value: string) => refreshList(value)}
               busStopId={selectedBusStop.id}
-              
             />
           )}
         </DialogContent>

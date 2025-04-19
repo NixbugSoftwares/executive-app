@@ -17,7 +17,7 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
-import ErrorIcon  from '@mui/icons-material/Error';
+import ErrorIcon from "@mui/icons-material/Error";
 import { SelectChangeEvent } from "@mui/material";
 import { useDispatch } from "react-redux";
 import { accountListApi } from "../../slices/appSlice";
@@ -25,6 +25,7 @@ import AccountDetailsCard from "./AccountDetailsCard";
 import AccountCreationForm from "./AccountForm";
 import type { AppDispatch } from "../../store/Store";
 import localStorageHelper from "../../utils/localStorageHelper";
+import { showErrorToast } from "../../common/toastMessageHelper";
 
 interface Account {
   id: number;
@@ -40,10 +41,8 @@ interface Account {
 
 const AccountListingTable = () => {
   const dispatch = useDispatch<AppDispatch>();
-
   const [accountList, setAccountList] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
-
   const [search, setSearch] = useState({
     id: "",
     fullName: "",
@@ -55,9 +54,7 @@ const AccountListingTable = () => {
 
   const [page, setPage] = useState(0);
   const rowsPerPage = selectedAccount ? 10 : 10;
-
   const [openCreateModal, setOpenCreateModal] = useState(false);
-
   const roleDetails = localStorageHelper.getItem("@roleDetails");
   const canManageExecutive = roleDetails?.manage_executive || false;
 
@@ -66,9 +63,6 @@ const AccountListingTable = () => {
     dispatch(accountListApi())
       .unwrap()
       .then((res: any[]) => {
-        console.log("API Response:", res);
-
-        // Transform API data to match expected structure
         const formattedAccounts = res.map((account: any) => ({
           id: account.id,
           fullName: account.full_name,
@@ -87,15 +81,10 @@ const AccountListingTable = () => {
           phoneNumber: account.phone_number ?? "",
           status: account.status === 1 ? "Active" : "Suspended",
         }));
-
-        console.log(
-          "Formatted Accounts>>>>>>>>>>>>>>>>>>>>:",
-          formattedAccounts
-        );
         setAccountList(formattedAccounts);
       })
-      .catch((err: any) => {
-        console.error("Error fetching accounts", err);
+      .catch(() => {
+        showErrorToast("Failed to fetch account list. Please try again.");
       });
   };
 
@@ -103,13 +92,12 @@ const AccountListingTable = () => {
     fetchAccounts();
     refreshList;
   }, []);
-
   const handleRowClick = (account: Account) => {
     setSelectedAccount(account);
   };
 
   const handleCloseDetailCard = () => {
-    setSelectedAccount(null); 
+    setSelectedAccount(null);
   };
 
   const handleSearchChange = (
@@ -155,7 +143,6 @@ const AccountListingTable = () => {
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      console.log("Account list refreshed...");
       fetchAccounts();
     }
   };
@@ -171,15 +158,17 @@ const AccountListingTable = () => {
       }}
     >
       <Box
-       sx={{
-        flex: selectedAccount ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
-        maxWidth: selectedAccount ? { xs: "100%", md: "65%" } : "100%",
-        transition: "all 0.3s ease",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden", 
-      }}
+        sx={{
+          flex: selectedAccount
+            ? { xs: "0 0 100%", md: "0 0 65%" }
+            : "0 0 100%",
+          maxWidth: selectedAccount ? { xs: "100%", md: "65%" } : "100%",
+          transition: "all 0.3s ease",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
       >
         <Tooltip
           title={
@@ -216,11 +205,13 @@ const AccountListingTable = () => {
           </span>
         </Tooltip>
 
-        <TableContainer  sx={{
-          flex: 1,
-    maxHeight: "calc(100vh - 100px)", 
-    overflowY: "hidden",
-  }} >
+        <TableContainer
+          sx={{
+            flex: 1,
+            maxHeight: "calc(100vh - 100px)",
+            overflowY: "hidden",
+          }}
+        >
           <Table>
             <TableHead>
               <TableRow>
@@ -462,8 +453,11 @@ const AccountListingTable = () => {
                           {row.fullName ? (
                             row.fullName
                           ) : (
-                            <Tooltip title=" Full Name not added yet" placement="bottom">
-                              <ErrorIcon  sx={{ color: "#737d72 " }} />
+                            <Tooltip
+                              title=" Full Name not added yet"
+                              placement="bottom"
+                            >
+                              <ErrorIcon sx={{ color: "#737d72 " }} />
                             </Tooltip>
                           )}
                         </TableCell>
@@ -471,8 +465,11 @@ const AccountListingTable = () => {
                           {row.designation ? (
                             row.designation
                           ) : (
-                            <Tooltip title=" Designation not added yet" placement="bottom">
-                              <ErrorIcon  sx={{ color: "#737d72 " }} />
+                            <Tooltip
+                              title=" Designation not added yet"
+                              placement="bottom"
+                            >
+                              <ErrorIcon sx={{ color: "#737d72 " }} />
                             </Tooltip>
                           )}
                         </TableCell>
@@ -480,8 +477,11 @@ const AccountListingTable = () => {
                           {row.phoneNumber ? (
                             row.phoneNumber.replace("tel:", "")
                           ) : (
-                            <Tooltip title=" Phone Number not added yet" placement="bottom">
-                              <ErrorIcon  sx={{ color: "#737d72" }} />
+                            <Tooltip
+                              title=" Phone Number not added yet"
+                              placement="bottom"
+                            >
+                              <ErrorIcon sx={{ color: "#737d72" }} />
                             </Tooltip>
                           )}
                         </TableCell>
@@ -489,8 +489,11 @@ const AccountListingTable = () => {
                           {row.email ? (
                             row.email
                           ) : (
-                            <Tooltip title=" Email not added yet" placement="bottom">
-                              <ErrorIcon  sx={{ color: "#737d72 " }} />
+                            <Tooltip
+                              title=" Email not added yet"
+                              placement="bottom"
+                            >
+                              <ErrorIcon sx={{ color: "#737d72 " }} />
                             </Tooltip>
                           )}
                         </TableCell>
@@ -511,65 +514,65 @@ const AccountListingTable = () => {
 
         {/* Pagination */}
         <Box
-  sx={{
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 1,
-    mt: 2,
-    position: "sticky",
-    bottom: 0,
-    backgroundColor: "white",
-    zIndex: 1,
-    p: 1,
-    borderTop: "1px solid #e0e0e0",
-  }}
->
-  <Button
-    onClick={() => handleChangePage(null, page - 1)}
-    disabled={page === 0}
-    sx={{ padding: "5px 10px", minWidth: 40 }}
-  >
-    &lt;
-  </Button>
-  {Array.from(
-    { length: Math.ceil(filteredData.length / rowsPerPage) },
-    (_, index) => index
-  )
-    .slice(
-      Math.max(0, page - 1),
-      Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
-    )
-    .map((pageNumber) => (
-      <Button
-        key={pageNumber}
-        onClick={() => handleChangePage(null, pageNumber)}
-        sx={{
-          padding: "5px 10px",
-          minWidth: 40,
-          bgcolor:
-            page === pageNumber
-              ? "rgba(21, 101, 192, 0.2)"
-              : "transparent",
-          fontWeight: page === pageNumber ? "bold" : "normal",
-          borderRadius: "5px",
-          transition: "all 0.3s",
-          "&:hover": {
-            bgcolor: "rgba(21, 101, 192, 0.3)",
-          },
-        }}
-      >
-        {pageNumber + 1}
-      </Button>
-    ))}
-  <Button
-    onClick={() => handleChangePage(null, page + 1)}
-    disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
-    sx={{ padding: "5px 10px", minWidth: 40 }}
-  >
-    &gt;
-  </Button>
-</Box>
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 1,
+            mt: 2,
+            position: "sticky",
+            bottom: 0,
+            backgroundColor: "white",
+            zIndex: 1,
+            p: 1,
+            borderTop: "1px solid #e0e0e0",
+          }}
+        >
+          <Button
+            onClick={() => handleChangePage(null, page - 1)}
+            disabled={page === 0}
+            sx={{ padding: "5px 10px", minWidth: 40 }}
+          >
+            &lt;
+          </Button>
+          {Array.from(
+            { length: Math.ceil(filteredData.length / rowsPerPage) },
+            (_, index) => index
+          )
+            .slice(
+              Math.max(0, page - 1),
+              Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
+            )
+            .map((pageNumber) => (
+              <Button
+                key={pageNumber}
+                onClick={() => handleChangePage(null, pageNumber)}
+                sx={{
+                  padding: "5px 10px",
+                  minWidth: 40,
+                  bgcolor:
+                    page === pageNumber
+                      ? "rgba(21, 101, 192, 0.2)"
+                      : "transparent",
+                  fontWeight: page === pageNumber ? "bold" : "normal",
+                  borderRadius: "5px",
+                  transition: "all 0.3s",
+                  "&:hover": {
+                    bgcolor: "rgba(21, 101, 192, 0.3)",
+                  },
+                }}
+              >
+                {pageNumber + 1}
+              </Button>
+            ))}
+          <Button
+            onClick={() => handleChangePage(null, page + 1)}
+            disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
+            sx={{ padding: "5px 10px", minWidth: 40 }}
+          >
+            &gt;
+          </Button>
+        </Box>
       </Box>
 
       {/* Right Side - Account Details Card */}
@@ -594,7 +597,7 @@ const AccountListingTable = () => {
             onBack={() => setSelectedAccount(null)}
             refreshList={(value: any) => refreshList(value)}
             canManageExecutive={canManageExecutive}
-            onCloseDetailCard={handleCloseDetailCard} 
+            onCloseDetailCard={handleCloseDetailCard}
           />
         </Box>
       )}

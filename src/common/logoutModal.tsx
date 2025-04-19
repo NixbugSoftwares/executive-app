@@ -30,7 +30,6 @@ const LogoutConfirmationModal: React.FC<LogoutConfirmationModalProps> = ({
 
   const handleLogout = async () => {
     try {
-      // Attempt proper logout if possible
       await dispatch(logoutApi({})).unwrap();
     } catch (error) {
       console.log("Logout API failed, proceeding with cleanup...", error);

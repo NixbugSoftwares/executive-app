@@ -24,6 +24,7 @@ import {
   operatorRoleListApi,
   operatorRoleAssignApi,
 } from "../../slices/appSlice";
+import { showErrorToast } from "../../common/toastMessageHelper";
 
 interface IAccountFormInputs {
   username: string;
@@ -57,22 +58,14 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  const [companies, setCompanies] = useState<{ id: number; name: string }[]>(
-    []
-  );
-  const [roles, setRoles] = useState<
-    { id: number; name: string; company_id: number }[]
-  >([]);
-  const [filteredRoles, setFilteredRoles] = useState<
-    { id: number; name: string; company_id: number }[]
-  >([]);
+  const [companies, setCompanies] = useState<{ id: number; name: string }[]>([]);
+  const [roles, setRoles] = useState<{ id: number; name: string; company_id: number }[]>([]);
+  const [filteredRoles, setFilteredRoles] = useState<{ id: number; name: string; company_id: number }[]>([]);
   const [showPassword, setShowPassword] = useState(false);
-
   // Filter companies based on defaultCompanyId
   const filteredCompanies = defaultCompanyId
     ? companies.filter((company) => company.id === defaultCompanyId)
     : companies;
-
   const {
     register,
     handleSubmit,
@@ -101,7 +94,7 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
         setRoles(rolesWithCompany);
       })
       .catch((err: any) => {
-        console.error("Error fetching roles:", err);
+        showErrorToast(err);
       });
   }, [dispatch]);
 
@@ -116,7 +109,7 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
         setCompanies(companyList);
       })
       .catch((err: any) => {
-        console.error("Error fetching company:", err);
+        showErrorToast(err);
       });
   }, [dispatch]);
 
@@ -176,9 +169,8 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
       } else {
         alert("Account creation failed!");
       }
-    } catch (error) {
-      console.error("Error during account creation:", error);
-      alert("Something went wrong. Please try again.");
+    } catch (error: any) {
+      showErrorToast(error);
     } finally {
       setLoading(false);
     }
