@@ -18,20 +18,31 @@ import {
 import Feature from "ol/Feature";
 import Point from "ol/geom/Point";
 import { Style, Icon } from "ol/style";
+import { showErrorToast } from "../../common/toastMessageHelper";
 
 interface MapComponentProps {
-  onSelectLocation?: (coordinates: { lat: number; lng: number; name: string }) => void;
+  onSelectLocation?: (coordinates: {
+    lat: number;
+    lng: number;
+    name: string;
+  }) => void;
   isOpen: boolean;
   initialCoordinates?: { lat: number; lng: number };
 }
 
-const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen, initialCoordinates }) => {
+const MapComponent: React.FC<MapComponentProps> = ({
+  onSelectLocation,
+  isOpen,
+  initialCoordinates,
+}) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<Map | null>(null);
   const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">("osm");
   const [mousePosition, setMousePosition] = useState<string>("");
   const [isMarkingEnabled, setIsMarkingEnabled] = useState<boolean>(false);
-  const [markerLayer, setMarkerLayer] = useState<VectorLayer<VectorSource<Feature<Point>>> | null>(null);
+  const [markerLayer, setMarkerLayer] = useState<VectorLayer<
+    VectorSource<Feature<Point>>
+  > | null>(null);
   const [locationName, setLocationName] = useState<string>("");
 
   // Fetch location name from coordinates
@@ -43,7 +54,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen, i
       const data = await response.json();
       return data.display_name || "Unknown Location";
     } catch (error) {
-      console.error("Error fetching location name:", error);
+      showErrorToast("Error fetching location name: " + error);
       return "Unknown Location";
     }
   };
@@ -78,7 +89,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen, i
     // Add a marker for initialCoordinates and fetch location name
     if (initialCoordinates && mapInstance.current) {
       const marker = new Feature({
-        geometry: new Point(fromLonLat([initialCoordinates.lng, initialCoordinates.lat])),
+        geometry: new Point(
+          fromLonLat([initialCoordinates.lng, initialCoordinates.lat])
+        ),
       });
 
       const markerSource = new VectorSource({
@@ -103,9 +116,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen, i
       setMarkerLayer(newMarkerLayer);
 
       // Fetch and set the location name
-      fetchLocationName(initialCoordinates.lat, initialCoordinates.lng).then((name) => {
-        setLocationName(name);
-      });
+      fetchLocationName(initialCoordinates.lat, initialCoordinates.lng).then(
+        (name) => {
+          setLocationName(name);
+        }
+      );
     }
 
     // Update map size when modal is opened
@@ -166,7 +181,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen, i
   // Handle location search
   const handleSearch = async () => {
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}`
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+        locationName
+      )}`
     );
     const data = await response.json();
     if (data.length > 0) {
@@ -258,7 +275,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ onSelectLocation, isOpen, i
             <InputLabel>Map Type</InputLabel>
             <Select
               value={mapType}
-              onChange={(e) => changeMapType(e.target.value as "osm" | "satellite" | "hybrid")}
+              onChange={(e) =>
+                changeMapType(e.target.value as "osm" | "satellite" | "hybrid")
+              }
               label="Map Type"
             >
               <MenuItem value="osm">OSM</MenuItem>

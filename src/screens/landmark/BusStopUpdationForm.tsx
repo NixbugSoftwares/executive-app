@@ -8,27 +8,32 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
-import { landmarkUpdationApi, landmarkListApi } from "../../slices/appSlice";
+import { busStopUpdationApi, busStopListApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
-import MapModal from "./LandmarkMapModal";
+import MapModal from "./BUsStopMapModal";
 import {
   showSuccessToast,
   showErrorToast,
 } from "../../common/toastMessageHelper";
-import { Landmark } from "../../types/type";
 
-interface ILandmarkFormInputs {
+interface BusStop {
+  id: number;
   name: string;
-  boundary: string;
+  location: string;
   status: string;
-  importance: string;
 }
 
-interface ILandmarkUpdateFormProps {
+interface IBusStopFormInputs {
+  name: string;
+  location: string;
+  status: string;
+}
+
+interface IBusStopUpdateFormProps {
   onClose: () => void;
   refreshList: (value: string) => void;
-  landmarkId: number;
-  boundary?: string;
+  busStopId: number;
+  location?: string;
 }
 
 const statusOptions = [
@@ -36,26 +41,20 @@ const statusOptions = [
   { label: "VERIFIED", value: "2" },
 ];
 
-const importanceOptions = [
-  { label: "LOW", value: 1 },
-  { label: "MEDIUM", value: 2 },
-  { label: "HIGH", value: 3 },
-];
-
-const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
+const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
   onClose,
   refreshList,
-  landmarkId,
-  boundary,
+  busStopId,
+  location,
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  const [landmarkData, setLandmarkData] = useState<ILandmarkFormInputs | null>(
+  const [landmarkData, setLandmarkData] = useState<IBusStopFormInputs | null>(
     null
   );
   const [mapModalOpen, setMapModalOpen] = useState(false);
-  const [updatedBoundary, setUpdatedBoundary] = useState(boundary || "");
-  const [allLandmarks, setAllLandmarks] = useState<Landmark[]>([]);
+  const [updatedLocation, setUpdatedLocation] = useState(location || "");
+  const [allBusStops, setAllBusStops] = useState<BusStop[]>([]);
 
   const {
     register,
@@ -63,67 +62,64 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
     control,
     reset,
     formState: { errors },
-  } = useForm<ILandmarkFormInputs>({
+  } = useForm<IBusStopFormInputs>({
     defaultValues: {
-      boundary: boundary || "",
+      location: location || "",
     },
   });
 
   const handleSaveBoundary = (coordinates: string) => {
-    setUpdatedBoundary(coordinates);
+    setUpdatedLocation(coordinates);
     setMapModalOpen(false);
   };
 
   // Fetch landmark data on mount
   useEffect(() => {
-    const fetchLandmarkData = async () => {
+    const fetchBusStopData = async () => {
       try {
         setLoading(true);
-        const landmarks = await dispatch(landmarkListApi()).unwrap();
-        setAllLandmarks(landmarks); // Store all landmarks
+        const busStops = await dispatch(busStopListApi()).unwrap();
+        setAllBusStops(busStops); // Store all bus stops
 
-        const landmark = landmarks.find((r: any) => r.id === landmarkId);
+        const busStop = busStops.find((r: any) => r.id === busStopId);
 
-        if (landmark) {
-          setLandmarkData(landmark);
+        if (busStop) {
+          setLandmarkData(busStop);
           reset({
-            name: landmark.name,
-            boundary: boundary || landmark.boundary,
-            status: landmark.status,
-            importance: landmark.importance,
+            name: busStop.name,
+            location: location || busStop.location,
+            status: busStop.status,
           });
-          setUpdatedBoundary(boundary || landmark.boundary);
+          setUpdatedLocation(location || busStop.location);
         }
       } catch (error) {
-        showErrorToast("Error fetching landmark data:" + error);
+        showErrorToast("Error fetching bus stop data: " + error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchLandmarkData();
-  }, [landmarkId, dispatch, reset, boundary]);
+    fetchBusStopData();
+  }, [busStopId, dispatch, reset, location]);
 
-  const handleLandmarkUpdate: SubmitHandler<ILandmarkFormInputs> = async (
+  const handleLandmarkUpdate: SubmitHandler<IBusStopFormInputs> = async (
     data
   ) => {
     try {
       setLoading(true);
 
       const formData = new FormData();
-      formData.append("id", landmarkId.toString());
+      formData.append("id", busStopId.toString());
       formData.append("name", data.name);
-      formData.append("boundary", data.boundary || updatedBoundary);
+      formData.append("location", data.location || updatedLocation);
       formData.append("status", data.status);
-      formData.append("importance", data.importance);
+      await dispatch(busStopUpdationApi({ busStopId, formData })).unwrap();
 
-      await dispatch(landmarkUpdationApi({ landmarkId, formData })).unwrap();
-
-      showSuccessToast("Landmark updated successfully!");
+      showSuccessToast("Bus Stop updated successfully!");
       refreshList("refresh");
       onClose();
-    } catch (error) {
-      showErrorToast("Failed to update landmark. Please try again.");
+    } catch {
+      showErrorToast("Failed to update Bus Stop. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -151,7 +147,7 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       }}
     >
       <Typography variant="h6" align="center" gutterBottom>
-        Update Landmark
+        Update Bus Stop
       </Typography>
 
       <TextField
@@ -165,9 +161,9 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       />
 
       <TextField
-        label="Boundary"
-        {...register("boundary", { required: "Boundary is required" })}
-        value={updatedBoundary}
+        label="Location"
+        {...register("location", { required: "Boundary is required" })}
+        value={updatedLocation}
         InputProps={{ readOnly: true }}
         onClick={() => setMapModalOpen(true)}
         fullWidth
@@ -176,9 +172,9 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       <MapModal
         open={mapModalOpen}
         onClose={() => setMapModalOpen(false)}
-        initialBoundary={updatedBoundary}
+        initialLocation={updatedLocation}
         onSave={handleSaveBoundary}
-        landmarks={allLandmarks}
+        busStops={allBusStops}
       />
 
       <Controller
@@ -203,28 +199,6 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
         )}
       />
 
-      <Controller
-        name="importance"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            margin="normal"
-            fullWidth
-            select
-            label="Importance"
-            {...field}
-            error={!!errors.importance}
-            size="small"
-          >
-            {importanceOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
-        )}
-      />
-
       <Button
         type="submit"
         variant="contained"
@@ -235,11 +209,11 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
         {loading ? (
           <CircularProgress size={24} sx={{ color: "white" }} />
         ) : (
-          "Update Landmark"
+        "Update Bus Stop"
         )}
       </Button>
     </Box>
   );
 };
 
-export default LandmarkUpdateForm;
+export default BusStopUpdateForm;

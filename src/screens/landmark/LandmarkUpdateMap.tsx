@@ -10,9 +10,19 @@ import { fromLonLat, toLonLat } from "ol/proj";
 import { Vector as VectorSource } from "ol/source";
 import { Feature } from "ol";
 import { Style, Stroke, Fill } from "ol/style";
-import { Button, Box, FormControl, InputLabel, MenuItem, Select, TextField, Typography, IconButton, Tooltip } from "@mui/material";
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import {
+  Button,
+  Box,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { Coordinate } from "ol/coordinate";
 import { getArea } from "ol/sphere";
 import { showErrorToast } from "../../common/toastMessageHelper";
@@ -29,7 +39,12 @@ interface MapComponentProps {
   landmarks?: Landmark[];
 }
 
-const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSave, onClose, landmarks = [] }) => {
+const UpdateMapComponent: React.FC<MapComponentProps> = ({
+  initialBoundary,
+  onSave,
+  onClose,
+  landmarks = [],
+}) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const vectorSource = useRef(new VectorSource());
   const initialVectorSource = useRef(new VectorSource());
@@ -37,7 +52,9 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
   const mapInstance = useRef<Map | null>(null);
   const drawInteraction = useRef<Draw | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [updatedCoordinates, setUpdatedCoordinates] = useState<string | null>(null);
+  const [updatedCoordinates, setUpdatedCoordinates] = useState<string | null>(
+    null
+  );
   const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">("osm");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showAllBoundaries, setShowAllBoundaries] = useState(false);
@@ -51,7 +68,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
       controls: [],
       layers: [
         new TileLayer({ source: new OSM() }),
-        new VectorLayer({ 
+        new VectorLayer({
           source: boundariesSource.current,
           zIndex: 1,
           style: new Style({
@@ -62,9 +79,9 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
             fill: new Fill({
               color: "rgba(0, 0, 255, 0.1)",
             }),
-          })
+          }),
         }),
-        new VectorLayer({ 
+        new VectorLayer({
           source: initialVectorSource.current,
           zIndex: 2,
           style: new Style({
@@ -75,11 +92,11 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
             fill: new Fill({
               color: "rgba(221, 201, 75, 0.3)",
             }),
-          })
+          }),
         }),
-        new VectorLayer({ 
+        new VectorLayer({
           source: vectorSource.current,
-          zIndex: 3
+          zIndex: 3,
         }),
       ],
       target: mapRef.current,
@@ -97,9 +114,9 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
     if (initialBoundary) {
       try {
         const coordinatesString = initialBoundary
-          .replace(/POLYGON\s*\(\(/, '')
-          .replace(/\)\)$/, '')
-          .split(',')
+          .replace(/POLYGON\s*\(\(/, "")
+          .replace(/\)\)$/, "")
+          .split(",")
           .map((coord) => coord.trim().split(/\s+/).map(Number));
 
         const coordinates = coordinatesString.map((coord) => fromLonLat(coord));
@@ -114,7 +131,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
           });
         }
       } catch (error) {
-        console.error("Error parsing initialBoundary:", error);
+        showErrorToast("Error parsing initialBoundary:" + error);
       }
     }
 
@@ -132,24 +149,26 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
         if (landmark.boundary) {
           try {
             const coordinatesString = landmark.boundary
-              .replace(/POLYGON\s*\(\(/, '')
-              .replace(/\)\)$/, '')
-              .split(',')
+              .replace(/POLYGON\s*\(\(/, "")
+              .replace(/\)\)$/, "")
+              .split(",")
               .map((coord) => coord.trim().split(/\s+/).map(Number));
 
-            const coordinates = coordinatesString.map((coord) => fromLonLat(coord));
-            
+            const coordinates = coordinatesString.map((coord) =>
+              fromLonLat(coord)
+            );
+
             if (coordinates.length >= 3) {
               const polygon = new Polygon([coordinates]);
               const feature = new Feature(polygon);
-              
+
               // Skip styling for the initial boundary (it's already styled in initialVectorSource)
               if (landmark.boundary !== initialBoundary) {
                 boundariesSource.current.addFeature(feature);
               }
             }
           } catch (error) {
-            console.error("Error parsing landmark boundary:", error);
+            showErrorToast("Error parsing landmark boundary:" + error);
           }
         }
       });
@@ -158,7 +177,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
 
   const startDrawing = () => {
     if (!mapInstance.current) return;
-    
+
     vectorSource.current.clear();
     setIsDrawing(true);
     setUpdatedCoordinates(null);
@@ -202,7 +221,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
           width: 2,
         }),
         fill: new Fill({
-          color: "rgba(94, 105, 223, 0.35)", 
+          color: "rgba(94, 105, 223, 0.35)",
         }),
       }),
     });
@@ -230,7 +249,9 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
 
       // Check for overlaps with other landmarks (excluding the one being updated)
       if (checkForOverlaps(polygon)) {
-        showErrorToast("Boundary overlaps with an existing landmark. Please choose a different area.");
+        showErrorToast(
+          "Boundary overlaps with an existing landmark. Please choose a different area."
+        );
         vectorSource.current.clear();
         setDrawingArea("");
         return;
@@ -251,12 +272,11 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
     if (drawInteraction.current) {
       mapInstance.current.removeInteraction(drawInteraction.current);
     }
-    
+
     drawInteraction.current = draw;
     mapInstance.current.addInteraction(draw);
   };
 
-  // Check for overlaps with other landmarks (excluding the one being updated)
   const checkForOverlaps = (newPolygon: Polygon): boolean => {
     if (!landmarks || landmarks.length === 0) return false;
 
@@ -267,31 +287,35 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
       if (!landmark.boundary || landmark.boundary === initialBoundary) continue;
 
       try {
-        const existingCoords = landmark.boundary
+        // Extract coordinates from WKT format
+        const coordinatesString = landmark.boundary
+          .replace(/POLYGON\s*\(\(/, "")
+          .replace(/\)\)$/, "")
           .split(",")
-          .map((coord) => coord.trim().split(" ").map(Number))
-          .map((coord) => fromLonLat(coord));
-
+          .map((coord) => coord.trim().split(/\s+/).map(Number));
+        const existingCoords = coordinatesString.map((coord) =>
+          fromLonLat(coord)
+        );
         const existingPolygon = new Polygon([existingCoords]);
-
-        // Check if any point of new polygon is inside existing polygon
+        if (newPolygon.intersectsExtent(existingPolygon.getExtent())) {
+          return true;
+        }
         for (const coord of newCoords) {
           if (existingPolygon.intersectsCoordinate(coord)) {
             return true;
           }
         }
-
-        // Check if any point of existing polygon is inside new polygon
         for (const coord of existingPolygon.getCoordinates()[0]) {
           if (newPolygon.intersectsCoordinate(coord)) {
             return true;
           }
         }
       } catch (error) {
-        console.error("Error checking overlap with landmark", landmark.id, error);
+        showErrorToast(
+          "Error checking overlap with landmark " + landmark.id + ": " + error
+        );
       }
     }
-
     return false;
   };
 
@@ -303,15 +327,15 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
       onClose();
     }
   };
-  
+
   const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
     if (!mapInstance.current) return;
-  
+
     const baseLayer = mapInstance.current
       .getLayers()
       .getArray()
       .find((layer) => layer instanceof TileLayer) as TileLayer;
-  
+
     if (baseLayer) {
       switch (type) {
         case "osm":
@@ -341,10 +365,10 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
       setMapType(type);
     }
   };
-  
+
   const handleSearch = async () => {
     if (!searchQuery || !mapInstance.current) return;
-  
+
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
@@ -352,11 +376,11 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
         )}`
       );
       const data = await response.json();
-  
+
       if (data.length > 0) {
         const { lat, lon } = data[0];
         const coordinates = fromLonLat([parseFloat(lon), parseFloat(lat)]);
-  
+
         mapInstance.current.getView().animate({
           center: coordinates,
           zoom: 14,
@@ -365,7 +389,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
         alert("Location not found. Please try a different query.");
       }
     } catch (error) {
-      console.error("Geocoding error:", error);
+      showErrorToast("Geocoding error: " + error);
       alert("Error searching for location. Please try again.");
     }
   };
@@ -388,7 +412,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
             <MenuItem value="hybrid">Hybrid</MenuItem>
           </Select>
         </FormControl>
-    
+
         <TextField
           variant="outlined"
           size="small"
@@ -397,7 +421,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
           onChange={(e) => setSearchQuery(e.target.value)}
           sx={{ flex: 1 }}
         />
-    
+
         <Button
           size="small"
           variant="contained"
@@ -407,7 +431,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
           Search
         </Button>
       </Box>
-    
+
       <Box
         ref={mapRef}
         sx={{
@@ -419,7 +443,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
           boxShadow: 3,
         }}
       />
-    
+
       <Box
         sx={{
           display: "flex",
@@ -447,18 +471,27 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({ initialBoundary, onSa
         </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-        <Tooltip title={showAllBoundaries ? "Hide all boundaries" : "Click to Show all boundaries"} arrow>
-      <IconButton
-        onClick={() => {
-          setShowAllBoundaries(!showAllBoundaries);
-          if (!showAllBoundaries ) {
-          }
-        }}
-        sx={{ ml: 1 }}
-      >
-        {showAllBoundaries ? < VisibilityOffIcon/> : < VisibilityIcon/>}
-      </IconButton>
-    </Tooltip>
+          <Tooltip
+            title={
+              showAllBoundaries
+                ? "Hide all landmarks"
+                : "Click to view all landmarks"
+            }
+            arrow
+          >
+            <IconButton
+              onClick={() => {
+                setShowAllBoundaries(!showAllBoundaries);
+              }}
+              // sx={{ ml: 1 }}
+            >
+              {showAllBoundaries ? (
+                <LocationOnIcon sx={{ color: "blue" }} />
+              ) : (
+                <LocationOnIcon />
+              )}
+            </IconButton>
+          </Tooltip>
 
           <Button
             variant="contained"

@@ -76,7 +76,7 @@ const Sidebar: React.FC = () => {
           },
           { label: "Role", path: "/executive/role", icon: <Diversity3Icon /> },
           {
-            label: "Land mark",
+            label: "Landmark",
             path: "/executive/landmark",
             icon: <RoomIcon />,
           },
@@ -337,6 +337,13 @@ const Sidebar: React.FC = () => {
             </Collapse>
           </List>
         </Box>
+        <Typography
+          variant="caption"
+          sx={{ textAlign: "center", mb: 1, color: "text.secondary" }}
+        >
+          &copy; {new Date().getFullYear()} EnteBus. All rights reserved.
+          Version 0.1.0
+        </Typography>
       </Drawer>
 
       <LogoutConfirmationModal

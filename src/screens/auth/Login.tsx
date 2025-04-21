@@ -22,8 +22,15 @@ import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { useAppDispatch, useAppSelector } from "../../store/Hooks";
 import { LoginApi, selectAuth } from "../../slices/authSlice";
 import { User } from "../../types/type";
-import { userLoggedIn, fetchRoleMappingApi, roleListApi } from "../../slices/appSlice";
-import { showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
+import {
+  userLoggedIn,
+  fetchRoleMappingApi,
+  roleListApi,
+} from "../../slices/appSlice";
+import {
+  showSuccessToast,
+  showErrorToast,
+} from "../../common/toastMessageHelper";
 // Login form interface
 interface ILoginFormInputs {
   username: string;
@@ -53,13 +60,11 @@ const LoginPage: React.FC = () => {
       const formData = new FormData();
       formData.append("username", data.username);
       formData.append("password", data.password);
-  
       const response = await dispatch(LoginApi(formData)).unwrap();
       if (response?.access_token) {
         const expiresAt = Date.now() + response.expires_in * 1000;
         localStorage.setItem("@token", response.access_token);
         localStorage.setItem("@token_expires", expiresAt.toString());
-  
         const user: User = {
           executive_id: response.executive_id,
         };
@@ -68,9 +73,11 @@ const LoginPage: React.FC = () => {
         }
         localStorage.setItem("@user", JSON.stringify(user));
         dispatch(userLoggedIn(user));
-  
+
         // Fetch Role Mapping API
-        const roleResponse = await dispatch(fetchRoleMappingApi(response.executive_id)).unwrap();
+        const roleResponse = await dispatch(
+          fetchRoleMappingApi(response.executive_id)
+        ).unwrap();
         const assignedRole: any = {
           id: roleResponse?.id,
           userId: roleResponse?.executive_id,
@@ -79,17 +86,17 @@ const LoginPage: React.FC = () => {
         // Store role_id in localStorage
         localStorage.setItem("@assignedRole", JSON.stringify(assignedRole));
         const roleListingResponse = await dispatch(roleListApi()).unwrap();
-        const userRoleDetails = roleListingResponse.find((role: { id: any; }) => role.id === assignedRole.roleId);
+        const userRoleDetails = roleListingResponse.find(
+          (role: { id: any }) => role.id === assignedRole.roleId
+        );
         if (userRoleDetails) {
           localStorage.setItem("@roleDetails", JSON.stringify(userRoleDetails));
         } else {
-          console.error("Role not found for the given roleId");
           showErrorToast("Role not found for the given roleId");
         }
       }
     } catch (error: any) {
-      console.error("Login Error:", error);
-      showErrorToast(error.message );
+      showErrorToast(error.message);
     }
   };
   return (
@@ -104,7 +111,13 @@ const LoginPage: React.FC = () => {
         }}
       >
         <Card sx={{ width: "100%", p: 3, boxShadow: 3 }}>
-          <CardContent sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <CardContent
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
             <Avatar sx={{ m: 1, bgcolor: "darkblue" }}>
               <LockOutlinedIcon />
             </Avatar>

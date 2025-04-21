@@ -1,24 +1,22 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Box, TextField, Button, Typography, MenuItem } from "@mui/material";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { useAppDispatch } from "../../store/Hooks";
-import { landmarkCreationApi } from "../../slices/appSlice";
-import { yupResolver } from "@hookform/resolvers/yup";
-import { landMarkAddSchema } from "../auth/validations/authValidation";
+import { busStopCreationApi } from "../../slices/appSlice";
 import {
   showSuccessToast,
   showErrorToast,
 } from "../../common/toastMessageHelper";
-
-interface ILandmarkFormInputs {
+interface IBusStopFormInputs {
   name: string;
-  boundary: string;
+  landmark_id: string;
+  location: string;
   status: string;
-  importance: string;
 }
 
-interface ILandmarkCreationFormProps {
-  boundary: string;
+interface IBusStopCreationFormProps {
+  landmarkId: number | null;
+  location: string;
   onClose: () => void;
   refreshList: (value: string) => void;
 }
@@ -27,14 +25,9 @@ const statusOptions = [
   { label: "VALIDATING", value: "1" },
   { label: "VERIFIED", value: "2" },
 ];
-
-const importanceOptions = [
-  { label: "LOW", value: 1 },
-  { label: "MEDIUM", value: 2 },
-  { label: "HIGH", value: 3 },
-];
-const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
-  boundary,
+const BusStopAddForm: React.FC<IBusStopCreationFormProps> = ({
+  location,
+  landmarkId,
   onClose,
   refreshList,
 }) => {
@@ -43,37 +36,32 @@ const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
   const {
     control,
     handleSubmit,
-    setValue,
     formState: { errors },
-  } = useForm<ILandmarkFormInputs>({
-    resolver: yupResolver(landMarkAddSchema),
+  } = useForm<IBusStopFormInputs>({
     defaultValues: {
       name: "",
-      boundary: boundary,
-      status: "1",
-      importance: "1",
+      landmark_id: landmarkId?.toString() || "",
+      location: location || "",
+      status: "1", // default status
     },
   });
 
-  useEffect(() => {
-    setValue("boundary", `POLYGON((${boundary}))`);
-  }, [boundary, setValue]);
-
-  const handleLandmarkCreation: SubmitHandler<ILandmarkFormInputs> = async (
+  const handleBusStopCreation: SubmitHandler<IBusStopFormInputs> = async (
     data
   ) => {
     try {
       const formData = new FormData();
       formData.append("name", data.name);
-      formData.append("boundary", data.boundary);
+      formData.append("landmark_id", data.landmark_id);
+      formData.append("location", `POINT(${location})`);
       formData.append("status", data.status);
-      formData.append("importance", data.importance);
 
-      await dispatch(landmarkCreationApi(formData)).unwrap();
-      showSuccessToast("Landmark created successfully!");
+      await dispatch(busStopCreationApi(formData)).unwrap();
+      showSuccessToast("Bus Stop created successfully!");
       refreshList("refresh");
       onClose();
-    } catch {
+    } catch (error: any) {
+      showErrorToast(error);
       showErrorToast("Something went wrong. Please try again.");
     }
   };
@@ -81,7 +69,7 @@ const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
   return (
     <Box
       component="form"
-      onSubmit={handleSubmit(handleLandmarkCreation)}
+      onSubmit={handleSubmit(handleBusStopCreation)}
       sx={{
         display: "flex",
         flexDirection: "column",
@@ -96,7 +84,7 @@ const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
       }}
     >
       <Typography variant="h6" align="center" gutterBottom>
-        Landmark Creation Form
+        Bus Stop Creation Form
       </Typography>
 
       {/* Name Field */}
@@ -115,22 +103,25 @@ const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
         )}
       />
 
-      {/* Boundary Field */}
       <Controller
-        name="boundary"
+        name="location"
         control={control}
-        render={({ field }) => (
-          <TextField
-            label="Boundary"
-            variant="outlined"
-            required
-            fullWidth
-            InputProps={{ readOnly: true }}
-            error={!!errors.boundary}
-            helperText={errors.boundary?.message}
-            {...field}
-          />
-        )}
+        render={({ field }) => {
+          const coords = field.value.replace(/POINT\(|\)/g, "");
+          return (
+            <TextField
+              label="Location Coordinates"
+              variant="outlined"
+              required
+              fullWidth
+              InputProps={{ readOnly: true }}
+              value={coords}
+              error={!!errors.location}
+              helperText={errors.location?.message}
+              onChange={field.onChange}
+            />
+          );
+        }}
       />
 
       {/* Status Field */}
@@ -155,34 +146,11 @@ const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
           </TextField>
         )}
       />
-
-      {/* Importance Field */}
-      <Controller
-        name="importance"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            margin="normal"
-            fullWidth
-            select
-            label="Importance"
-            {...field}
-            error={!!errors.importance}
-            size="small"
-          >
-            {importanceOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
-        )}
-      />
       <Button type="submit" variant="contained" color="success" fullWidth>
-        Add Landmark
+        Add Bus Stop
       </Button>
     </Box>
   );
 };
 
-export default LandmarkAddForm;
+export default BusStopAddForm;

@@ -11,11 +11,11 @@ interface IAccountFormInputs {
   registrationNumber: string;
   name: string;
   capacity: number;
-  model: string;
   manufactured_on: string;
   insurance_upto?: string | null;
   pollution_upto?: string | null;
   fitness_upto?: string | null;
+  road_tax_upto?: string | null;
 }
 
 interface IOperatorCreationFormProps {
@@ -23,6 +23,7 @@ interface IOperatorCreationFormProps {
   refreshList: (value: any) => void;
   defaultCompanyId?: number;
 }
+
 
 const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, refreshList, defaultCompanyId }) => {
   const dispatch = useAppDispatch();
@@ -76,22 +77,21 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, refres
       formData.append("registration_number", data.registrationNumber);
       formData.append("name", data.name);
       formData.append("capacity", data.capacity.toString());
-      formData.append("model", data.model);
       formData.append("manufactured_on", formatDateToUTC(data.manufactured_on) || "");
       if (data.insurance_upto) formData.append("insurance_upto", formatDateToUTC(data.insurance_upto) || "");
       if (data.pollution_upto) formData.append("pollution_upto", formatDateToUTC(data.pollution_upto) || "");
       if (data.fitness_upto) formData.append("fitness_upto", formatDateToUTC(data.fitness_upto) || "");
-  
+      if (data.road_tax_upto ) formData.append("road_tax_upto ", formatDateToUTC(data.road_tax_upto ) || "");
       console.log("FormData being sent:", {
         company_id: data.companyId,
         registration_number: data.registrationNumber,
         name: data.name,
         capacity: data.capacity,
-        model: data.model,
         manufactured_on: formatDateToUTC(data.manufactured_on),
         insurance_upto: formatDateToUTC(data.insurance_upto??null),
         pollution_upto: formatDateToUTC(data.pollution_upto??null),
         fitness_upto: formatDateToUTC(data.fitness_upto??null),
+        road_tax_upto: formatDateToUTC(data.road_tax_upto??null),
       });
   
       const response = await dispatch(busCreationApi(formData)).unwrap();
@@ -176,16 +176,7 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, refres
             helperText={errors.capacity?.message}
             size="small"
           />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Model"
-            {...register("model")}
-            error={!!errors.model}
-            helperText={errors.model?.message}
-            size="small"
-          />
+          
           <TextField
             margin="normal"
             required
@@ -231,6 +222,18 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, refres
             helperText={errors.fitness_upto?.message}
             size="small"
           />
+          <TextField
+            margin="normal"
+            fullWidth
+            label="Road Tax Upto"
+            type="date"
+            InputLabelProps={{ shrink: true }}
+            {...register("road_tax_upto")}
+            error={!!errors.road_tax_upto}
+            helperText={errors.road_tax_upto?.message}
+            size="small"
+          />
+
           <Button
             type="submit"
             fullWidth

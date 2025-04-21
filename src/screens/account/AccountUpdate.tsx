@@ -21,10 +21,14 @@ import {
   roleAssignUpdateApi,
   accountListApi,
   fetchRoleMappingApi,
-  roleAssignApi
-  } from "../../slices/appSlice";
+  roleAssignApi,
+} from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
-import { showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
+import {
+  showSuccessToast,
+  showErrorToast,
+  showWarningToast,
+} from "../../common/toastMessageHelper";
 
 // Account update form interface
 interface IAccountFormInputs {
@@ -57,7 +61,7 @@ const genderOptions = [
 
 const statusOptions = [
   { label: "Active", value: 1 },
-  { label: "suspended", value: 2 },
+  { label: "Suspended", value: 2 },
 ];
 const loggedInUser = localStorageHelper.getItem("@user");
 const userId = loggedInUser?.executive_id;
@@ -66,15 +70,16 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
   accountId,
   onClose,
   refreshList,
-  onCloseDetailCard
+  onCloseDetailCard,
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
   const isLoggedInUser = accountId === userId;
-  const [accountData, setAccountData] = useState<IAccountFormInputs | null>(null);
+  const [accountData, setAccountData] = useState<IAccountFormInputs | null>(
+    null
+  );
   const [roleMappingError, setRoleMappingError] = useState(false);
-
   const {
     register,
     handleSubmit,
@@ -82,7 +87,6 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
     reset,
     formState: { errors },
   } = useForm<IAccountFormInputs>({});
-
   const [showPassword, setShowPassword] = useState(false);
   const handleTogglePassword = () => {
     setShowPassword((prev) => !prev);
@@ -90,14 +94,13 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
 
   // Fetch roles and account data
   useEffect(() => {
-    // Fetch roles first
     dispatch(roleListApi())
       .unwrap()
       .then((res: any[]) => {
         setRoles(res.map((role) => ({ id: role.id, name: role.name })));
       })
       .catch((err: any) => {
-        console.error("Error fetching roles:", err);
+        showErrorToast(err);
       });
 
     // Then fetch account data
@@ -129,8 +132,8 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
               accountFormData.role = roleMapping.role_id;
               accountFormData.roleAssignmentId = roleMapping.id;
             }
-          } catch (error) {
-            console.log("No role mapping found, will create new one if needed");
+          } catch (error: any) {
+            showErrorToast(error);
             setRoleMappingError(true);
           }
 
@@ -139,12 +142,14 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
         }
       })
       .catch((err: any) => {
-        console.error("Error fetching account data:", err);
+        showErrorToast(err);
       });
   }, [accountId, dispatch, reset]);
 
   // Handle Account Update & Role Assignment Update/Creation
-  const handleAccountUpdate: SubmitHandler<IAccountFormInputs> = async (data) => {
+  const handleAccountUpdate: SubmitHandler<IAccountFormInputs> = async (
+    data
+  ) => {
     try {
       setLoading(true);
 
@@ -154,7 +159,8 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       if (data.password) formData.append("password", data.password);
       formData.append("gender", data.gender?.toString() || "");
       if (data.fullName) formData.append("full_name", data.fullName);
-      if (data.phoneNumber) formData.append("phone_number", `+91${data.phoneNumber}`);
+      if (data.phoneNumber)
+        formData.append("phone_number", `+91${data.phoneNumber}`);
       if (data.email) formData.append("email_id", data.email);
       if (data.designation) formData.append("designation", data.designation);
       if (data.status) formData.append("status", data.status.toString());
@@ -183,11 +189,9 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             ).unwrap();
 
             if (!roleUpdateResponse || !roleUpdateResponse.id) {
-              console.log("Role assignment update failed, trying to create new mapping");
               throw new Error("Role assignment update failed");
             }
           } else {
-            // If no roleAssignmentId, create a new mapping
             const createResponse = await dispatch(
               roleAssignApi({
                 executive_id: accountId,
@@ -196,12 +200,12 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             ).unwrap();
 
             if (!createResponse || !createResponse.id) {
-              showErrorToast("Account updated, but role assignment creation failed!");
+              showErrorToast(
+                "Account updated, but role assignment creation failed!"
+              );
             }
           }
         } catch (error) {
-          console.error("Error during role assignment handling:", error);
-          // Try to create new mapping if update failed
           try {
             const createResponse = await dispatch(
               roleAssignApi({
@@ -211,15 +215,16 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             ).unwrap();
 
             if (!createResponse || !createResponse.id) {
-              showErrorToast("Account updated, but role assignment creation failed!");
+              showErrorToast(
+                "Account updated, but role assignment creation failed!"
+              );
             }
           } catch (createError) {
-            console.error("Error creating new role mapping:", createError);
             showErrorToast("Account updated, but role assignment failed!");
           }
         }
       } else {
-        console.warn("No role selected. Skipping role assignment.");
+        showWarningToast("No role selected. Skipping role assignment.");
       }
 
       showSuccessToast("Account Updated successfully!");
@@ -418,7 +423,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton onClick={handleTogglePassword} edge="end">
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                    {showPassword ? <Visibility /> : <VisibilityOff />}
                   </IconButton>
                 </InputAdornment>
               ),

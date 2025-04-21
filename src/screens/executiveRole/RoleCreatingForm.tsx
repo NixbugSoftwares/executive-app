@@ -5,7 +5,10 @@ import { roleCreationApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { roleCreationSchema } from "../auth/validations/authValidation";
-import {  showSuccessToast, showErrorToast } from "../../common/toastMessageHelper";
+import {
+  showSuccessToast,
+  showErrorToast,
+} from "../../common/toastMessageHelper";
 type RoleFormValues = {
   name: string;
   manageExecutive?: boolean;
@@ -21,10 +24,13 @@ type RoleFormValues = {
 
 interface IRoleCreationFormProps {
   onClose: () => void;
-  refreshList: (value:any)=>void
+  refreshList: (value: any) => void;
 }
 
-const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({ onClose, refreshList }) => {
+const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
+  onClose,
+  refreshList,
+}) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
 
@@ -65,7 +71,6 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({ onClose, refreshLi
       formData.append("manage_duty", String(data.manageDuty));
 
       const response = await dispatch(roleCreationApi(formData)).unwrap();
-      console.log("Role created>>>>>>>>>>>>>>>>>>>>:", response);
       if (response?.id) {
         showSuccessToast("Role created successfully!");
         refreshList("refresh");
@@ -73,8 +78,8 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({ onClose, refreshLi
       } else {
         showErrorToast("Role creation failed. Please try again.");
       }
-    } catch (error) {
-      console.error("Error creating role:", error);
+    } catch (error: any) {
+      showErrorToast(error);
       showErrorToast("Failed to create role. Please try again.");
     } finally {
       setLoading(false);
@@ -108,34 +113,52 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({ onClose, refreshLi
         helperText={errors.name?.message}
         variant="outlined"
         size="small"
-       
       />
 
       {/*  Permission Toggles */}
-      {([
-        "manageExecutive",
-        "manageRole",
-        "manageLandmark",
-        "manageCompany",
-        "manageVendor",
-        "manageRoute",
-        "manageSchedule",
-        "manageService",
-        "manageDuty",
-      ] as (keyof RoleFormValues)[]).map((field) => (
-        <Box key={field} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      {(
+        [
+          "manageExecutive",
+          "manageRole",
+          "manageLandmark",
+          "manageCompany",
+          "manageVendor",
+          "manageRoute",
+          "manageSchedule",
+          "manageService",
+          "manageDuty",
+        ] as (keyof RoleFormValues)[]
+      ).map((field) => (
+        <Box
+          key={field}
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <Typography>{field.replace("manage", "Manage ")}</Typography>
           <Controller
             name={field}
             control={control}
             render={({ field: { value, onChange } }) => (
-              <Switch checked={!!value} onChange={(e) => onChange(e.target.checked)} color="success" />
+              <Switch
+                checked={!!value}
+                onChange={(e) => onChange(e.target.checked)}
+                color="success"
+              />
             )}
           />
         </Box>
       ))}
 
-      <Button type="submit" variant="contained" color="primary" fullWidth disabled={loading}>
+      <Button
+        type="submit"
+        variant="contained"
+        color="primary"
+        fullWidth
+        disabled={loading}
+      >
         {loading ? "Creating..." : "Create Role"}
       </Button>
     </Box>

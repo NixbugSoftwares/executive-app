@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import moment from "moment";
 import localStorageHelper from "./localStorageHelper";
 
+
 export const base_URL = "http://192.168.0.134:8080"; //base URL
 
 //******************************************************Token **************************************** */
@@ -67,7 +68,11 @@ const handleResponse = async (response: any) => {
 //******************************************************  errorResponse handler  **************************************** */
 const handleErrorResponse = (errorResponse: any) => {
   if (!errorResponse) {
-    // Handle network errors (e.g., ERR_CONNECTION_REFUSED)
+    toast.error("Network error. Please check your connection.");
+    throw new Error("Network error");
+  }
+
+  if (!errorResponse.status) {
     toast.error("Network error. Please check your connection.");
     throw new Error("Network error");
   }
@@ -85,6 +90,7 @@ const handleErrorResponse = (errorResponse: any) => {
   } else if (status === 401) {
     toast.error(errorMessage);
     throw new Error(errorMessage);
+
   } else if (status === 409) {
     toast.error(errorMessage);
     throw new Error(errorMessage);

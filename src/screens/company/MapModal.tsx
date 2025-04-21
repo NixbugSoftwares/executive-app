@@ -1,16 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Box, Typography, Button } from "@mui/material";
 import MapComponent from "./map";
+import { showErrorToast } from "../../common/toastMessageHelper";
 
 interface MapModalProps {
   open: boolean;
   onClose: () => void;
-  onSelectLocation: (location: { name: string; lat: number; lng: number }) => void;
+  onSelectLocation: (location: {
+    name: string;
+    lat: number;
+    lng: number;
+  }) => void;
   initialCoordinates?: { lat: number; lng: number }; // Add initialCoordinates prop
 }
 
-const MapModal: React.FC<MapModalProps> = ({ open, onClose, onSelectLocation, initialCoordinates }) => {
-  const [selectedLocation, setSelectedLocation] = useState<{ name: string; lat: number; lng: number } | null>(null);
+const MapModal: React.FC<MapModalProps> = ({
+  open,
+  onClose,
+  onSelectLocation,
+  initialCoordinates,
+}) => {
+  const [selectedLocation, setSelectedLocation] = useState<{
+    name: string;
+    lat: number;
+    lng: number;
+  } | null>(null);
 
   // Fetch location name when initialCoordinates changes
   useEffect(() => {
@@ -23,7 +37,7 @@ const MapModal: React.FC<MapModalProps> = ({ open, onClose, onSelectLocation, in
           const data = await response.json();
           setSelectedLocation({ name: data.display_name, lat, lng });
         } catch (error) {
-          console.error("Error fetching location name:", error);
+          showErrorToast("Error fetching location name:" + error);
         }
       };
 
@@ -31,8 +45,16 @@ const MapModal: React.FC<MapModalProps> = ({ open, onClose, onSelectLocation, in
     }
   }, [open, initialCoordinates]);
 
-  const handleLocationSelect = (coordinates: { lat: number; lng: number; name: string }) => {
-    setSelectedLocation({ name: coordinates.name, lat: coordinates.lat, lng: coordinates.lng });
+  const handleLocationSelect = (coordinates: {
+    lat: number;
+    lng: number;
+    name: string;
+  }) => {
+    setSelectedLocation({
+      name: coordinates.name,
+      lat: coordinates.lat,
+      lng: coordinates.lng,
+    });
   };
 
   const handleConfirm = () => {
@@ -65,7 +87,7 @@ const MapModal: React.FC<MapModalProps> = ({ open, onClose, onSelectLocation, in
           <MapComponent
             onSelectLocation={handleLocationSelect}
             isOpen={open}
-            initialCoordinates={initialCoordinates} 
+            initialCoordinates={initialCoordinates}
           />
         </Box>
         <Button

@@ -20,8 +20,9 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
 } from "@mui/icons-material";
-import ToggleOnIcon from "@mui/icons-material/ToggleOn";
-import ToggleOffIcon from "@mui/icons-material/ToggleOff";
+import VerifiedIcon from "@mui/icons-material/Verified";
+import NewReleasesIcon from "@mui/icons-material/NewReleases";
+import BlockIcon from "@mui/icons-material/Block";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import BusinessIcon from "@mui/icons-material/Business";
 import { useAppDispatch } from "../../store/Hooks";
@@ -66,9 +67,15 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const dispatch = useAppDispatch();
 
+  const handleCloseModal = () => {
+    setUpdateFormOpen(false);
+  };
+
   const extractCoordinates = (location: string) => {
-    const regex = /POINT \(([\d.]+) ([\d.]+)\)/;
+    if (!location) return null;
+    const regex = /POINT\(([\d.]+) ([\d.]+)\)/;
     const match = location.match(regex);
+
     if (match) {
       return {
         longitude: parseFloat(match[1]),
@@ -80,22 +87,22 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
   const coordinates = extractCoordinates(company.location);
   const handleCompanyDelete = async () => {
     if (!company.id) {
-      console.error("Error: Account ID is missing");
+      showErrorToast("Error: Account ID is missing");
       return;
     }
 
     try {
       const formData = new FormData();
       formData.append("id", String(company.id));
-      const response = await dispatch(companyDeleteApi(formData)).unwrap();
-      console.log("Account deleted:", response);
+      await dispatch(companyDeleteApi(formData)).unwrap();
       setDeleteConfirmOpen(false);
       localStorageHelper.removeStoredItem(`company_${company.id}`);
       onDelete(company.id);
       showSuccessToast("Company deleted successfully!");
+      handleCloseDetailCard();
       refreshList("refresh");
     } catch (error) {
-      console.error("Delete error:", error);
+      showErrorToast("Delete error: " + error);
       showErrorToast("Failed to delete company. Please try again.");
     }
   };
@@ -147,7 +154,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <LocationOnIcon color="action" sx={{ mr: 1 }} />
-            {coordinates && (
+            {company.location ? (
               <Typography
                 variant="body2"
                 color="primary"
@@ -155,8 +162,12 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
                 style={{ cursor: "pointer" }}
               >
                 <b>
-                  <u> Location </u>
+                  <u>View on Map</u>
                 </b>
+              </Typography>
+            ) : (
+              <Typography variant="body2" color="textSecondary">
+                Location not available
               </Typography>
             )}
           </Box>
@@ -198,18 +209,25 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
           </Box>
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1, gap: 1 }}>
-            {company.status === "Active" ? (
+            {company.status === "Validating" ? (
               <>
-                <ToggleOnIcon sx={{ color: "green", fontSize: 30 }} />
+                <NewReleasesIcon sx={{ color: "#FFA500", fontSize: 30 }} />
+                <Typography sx={{ color: "#FFA500", fontWeight: "bold" }}>
+                  VALIDATING
+                </Typography>
+              </>
+            ) : company.status === "Verified" ? (
+              <>
+                <VerifiedIcon sx={{ color: "green", fontSize: 30 }} />
                 <Typography sx={{ color: "green", fontWeight: "bold" }}>
-                  Active
+                  VERIFIED
                 </Typography>
               </>
             ) : (
               <>
-                <ToggleOffIcon sx={{ color: "#d93550", fontSize: 30 }} />
+                <BlockIcon sx={{ color: "#d93550", fontSize: 30 }} />
                 <Typography sx={{ color: "#d93550", fontWeight: "bold" }}>
-                  Suspended
+                  SUSPENDED
                 </Typography>
               </>
             )}
@@ -249,7 +267,6 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
                   color="success"
                   size="small"
                   onClick={() => {
-                    console.log("Update button clicked"); // Debugging
                     setUpdateFormOpen(true);
                   }}
                   startIcon={<EditIcon />}
@@ -367,6 +384,11 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
             handleCloseDetailCard={handleCloseDetailCard}
           />
         </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseModal} color="error">
+            Cancel
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   );

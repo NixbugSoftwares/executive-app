@@ -494,6 +494,113 @@ export const landmarkDeleteApi = createAsyncThunk(
   }
 );
 
+//*************************************************** Bus Stop APIS ********************************************************************* */
+
+//bus stop list API
+export const busStopListApi = createAsyncThunk(
+  "/executive/bus_stop",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "/executive/bus_stop",
+        {},
+        true,
+        "application/json"
+      );
+      console.log("Full API Response==================>", response);
+
+      // Check if response is directly an array
+      if (Array.isArray(response)) {
+        return response;
+      }
+
+      // Check if response.data exists
+      if (!response || !response.data) {
+        throw new Error("Invalid response format");
+      }
+
+      return response.data; // Ensure correct return
+    } catch (error: any) {
+      console.log("Error fetching bus stops =====================>", error);
+      return rejectWithValue(
+        error?.response?.data?.message || "Failed to fetch bus stops"
+      );
+    }
+  }
+);
+
+//bus stop create api
+export const busStopCreationApi = createAsyncThunk(
+  "/executive/bus_stop",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "post",
+        "/executive/bus_stop",
+        data,
+        true,
+        "application/www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message || "Bus stop  creation failed"
+      );
+    }
+  }
+);
+
+
+//bus stop updation Api
+export const busStopUpdationApi = createAsyncThunk(
+  "/executive/bus_stop",
+  async (
+    { formData }: { busStopId: number; formData: FormData },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await commonApi.apiCall(
+        "patch",
+        "/executive/bus_stop",
+        formData,
+        true,
+        "application/x-www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data);
+      return rejectWithValue(
+        error?.response?.data?.message || "bus sto update failed"
+      );
+    }
+  }
+);
+
+//delete bus stop API
+export const busStopDeleteApi = createAsyncThunk(
+  "/executive/bus_stop",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "delete",
+        "/executive/bus_stop",
+        data,
+        true,
+        "application/x-www-form-urlencoded"
+      );
+
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message || "bus stop deletion failed"
+      );
+    }
+  }
+);
+
+
+
 //*************************************************** company APIS ********************************************************************* */
 
 //company list API

@@ -15,10 +15,25 @@ export const loginSchema = yup.object().shape({
 
 export const accountFormSchema = yup.object().shape({
   username: yup
-    .string()
-    .required("Username is required")
-    .matches(/^[A-Za-z][A-Za-z0-9@._-]{3,31}$/, "Invalid username format"),
-
+  .string()
+  .required("Username is required")
+  .min(4, "Username must be at least 4 characters long")
+  .max(32, "Username cannot exceed 32 characters")
+  .test(
+    'starts-with-letter',
+    'Username must start with a letter (a-z or A-Z)',
+    (value) => /^[A-Za-z]/.test(value)
+  )
+  .test(
+    'valid-characters',
+    'Username can only contain letters, numbers, hyphens (-), periods (.), underscores (_), and @ symbols',
+    (value) => /^[A-Za-z][A-Za-z0-9@._-]*$/.test(value)
+  )
+  .test(
+    'no-consecutive-specials',
+    'Username cannot have consecutive special characters',
+    (value) => !/([@._-]{2,})/.test(value)
+  ),
   password: yup
     .string()
     .required("Password is required")
@@ -30,8 +45,19 @@ export const accountFormSchema = yup.object().shape({
   fullName: yup
   .string()
   .optional()
-  .matches(/^[A-Za-z]+(?: [A-Za-z]+)*$|^$/, "Invalid full name format")
-  .max(32, "Full name cannot exceed 32 characters"),
+  .test({
+    name: 'fullNameValidation',
+    message: (params) => {
+      const value = params.value;
+      if (/[0-9]/.test(value)) return 'Numbers are not allowed in the full name';
+      if (/[^A-Za-z ]/.test(value)) return 'Special characters are not allowed';
+      if (!/[A-Za-z]$/.test(value)) return 'Full name must end with a letter';
+      if (!/^[A-Za-z]+(?: [A-Za-z]+)*$/.test(value)) return 'Full name should consist of letters separated by single spaces';
+      return 'Invalid full name format';
+    },
+    test: (value) => !value || /^[A-Za-z]+(?: [A-Za-z]+)*$/.test(value)
+  })
+  .max(32, 'Full name cannot exceed 32 characters'),
 
   phoneNumber: yup
   .string()
@@ -48,13 +74,26 @@ export const accountFormSchema = yup.object().shape({
   gender: yup
     .number(),
 
-  designation: yup
+    designation: yup
     .string()
     .trim()
+    .optional()
     .max(32, "Designation cannot exceed 32 characters")
-    .matches(/^[a-zA-Z\s\-\_\(\)]*|^$/, "Invalid designation format")
-    .optional(),
-
+    .test(
+      "allowed-characters",
+      "Designation can only contain letters, spaces, hyphens (-), underscores (_), and brackets ( )",
+      (value) => !value || /^[A-Za-z\s\-_()]*$/.test(value)
+    )
+    .test(
+      "no-leading-trailing-spaces",
+      "Designation should not start or end with a space",
+      (value) => !value || !/^\s|\s$/.test(value)
+    )
+    .test(
+      "no-consecutive-spaces-or-specials",
+      "Designation cannot have consecutive spaces or special characters",
+      (value) => !value || !/([\s\-_()]{2,})/.test(value)
+    ),
   role: yup
   .number()
   .required(), 
@@ -116,7 +155,9 @@ export const accountUpdationFormSchema = yup.object().shape({
 
 //*********************************************************Role creating validation schema********************************************** 
 export const roleCreationSchema = yup.object().shape({
-  name: yup.string().required("Role name is required"),
+  name: yup.string().required("Role name is required")
+  .min(4, "landmark name must be at least 4 characters")
+  .max(32, "landmark name cannot exceed 32 characters"),
   manageExecutive: yup.boolean(),
   manageRole: yup.boolean(),
   manageLandmark: yup.boolean(),
@@ -133,8 +174,12 @@ export const roleCreationSchema = yup.object().shape({
 //*********************************************************landmark creating validation schema********************************************** 
 
 export const landMarkAddSchema = yup.object().shape({
-  name: yup.string().required("landmark name  is required"),
-  boundary: yup.string().required("Boundary is required")
+  name: yup.string().required("landmark name  is required")
+  .min(4, "landmark name must be at least 4 characters")
+  .max(32, "landmark name cannot exceed 32 characters"),
+  boundary: yup.string().required("Boundary is required"),
+  status: yup.string().required("Status is required"),
+  importance: yup.string().required("Importance is required"),
 })
 
 
@@ -175,6 +220,11 @@ export const companyCreationSchema = yup.object().shape({
     .max(254, "Email cannot exceed 254 characters")
     .matches(/^(?!.*\.\.)[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+)*@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}|^$/, "Invalid email format")
     .optional(),
+
+
+    company_type: yup
+    .string()
+    .required(),
 
 })
 
@@ -247,9 +297,9 @@ export const busCreationSchema = yup.object().shape({
   registrationNumber: yup.string().min(4).max(16).required("Registration number is required"),
   name: yup.string().min(4).max(64).required("Bus name is required"),
   capacity: yup.number().min(1).max(120).required("Capacity is required"),
-  model: yup.string().min(4).max(32).required("Model is required"),
   manufactured_on: yup.string().required("Manufacture date is required"),
   insurance_upto: yup.string().nullable(),
   pollution_upto: yup.string().nullable(),
   fitness_upto: yup.string().nullable(),
+  road_tax_upto: yup.string().nullable(),
 });
