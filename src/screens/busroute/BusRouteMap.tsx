@@ -4,13 +4,17 @@ import View from "ol/View";
 import TileLayer from "ol/layer/Tile";
 import VectorLayer from "ol/layer/Vector";
 import { OSM, XYZ } from "ol/source";
-import { Select as _OlSelect } from "ol/interaction";
+import { Select as OlSelect } from "ol/interaction";
 import { Polygon } from "ol/geom";
 import { fromLonLat, toLonLat } from "ol/proj";
 import { Vector as VectorSource } from "ol/source";
 import {
   Box,
   Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   FormControl,
   IconButton,
   InputLabel,
@@ -26,13 +30,32 @@ import { showErrorToast } from "../../common/toastMessageHelper";
 import { landmarkListApi } from "../../slices/appSlice";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../../store/Store";
-import * as ol from "ol";
 import { Style, Stroke, Fill } from "ol/style";
 import { Coordinate } from "ol/coordinate";
+import Feature from "ol/Feature";
 
+interface Landmark {
+  id: string;
+  name: string;
+  boundary: string;
+  importance: string;
+  status: string;
+}
 
+interface SelectedLandmark {
+  id: string;
+  name: string;
+  sequenceId: number;
+  arrivalTime: string;
+  departureTime: string;
+}
 
-const MapComponent: React.FC = () => {
+interface MapComponentProps {
+  onAddLandmark: (landmark: SelectedLandmark) => void;
+  isSelecting: boolean;
+}
+
+const MapComponent: React.FC<MapComponentProps> = ({ onAddLandmark, isSelecting }) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const vectorSource = useRef(new VectorSource());
   const mapInstance = useRef<Map | null>(null);
@@ -40,8 +63,11 @@ const MapComponent: React.FC = () => {
   const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">("osm");
   const [mousePosition, setMousePosition] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [landmarks, setLandmarks] = useState<any[]>([]);
+  const [landmarks, setLandmarks] = useState<Landmark[]>([]);
   const [showAllBoundaries, setShowAllBoundaries] = useState(false);
+  const [selectedLandmark, setSelectedLandmark] =
+    useState<SelectedLandmark | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Initialize the map
   const initializeMap = () => {
@@ -64,7 +90,7 @@ const MapComponent: React.FC = () => {
 
     map.on("pointermove", (event) => {
       const coords = toLonLat(event.coordinate);
-      setMousePosition(`${coords[0].toFixed(7)},${coords[1].toFixed(7)} `);
+      setMousePosition(`${coords[0].toFixed(7)}, ${coords[1].toFixed(7)}`);
     });
 
     return map;
@@ -77,14 +103,46 @@ const MapComponent: React.FC = () => {
     fetchLandmark();
   }, []);
 
-//**************************************landmark fetch ***************************
-  // Extract raw points from polygon string
-  const extractRawPoints = (polygonString: string): string => {
-    if (!polygonString) return "";
-    const matches = polygonString.match(/\(\((.*?)\)\)/);
-    return matches ? matches[1] : "";
-  };
+  // Set up landmark selection interaction
+  useEffect(() => {
+    if (!mapInstance.current) return;
 
+    const layers = mapInstance.current.getLayers().getArray();
+    const vectorLayer = layers[1] instanceof VectorLayer ? layers[1] : null;
+
+    if (!vectorLayer) return;
+
+    const selectInteraction = new OlSelect({
+      layers: [vectorLayer],
+    });
+
+    selectInteraction.on("select", (e) => {
+      const selectedFeature = e.selected[0];
+      if (selectedFeature) {
+        const landmarkId = selectedFeature.get("id");
+        const landmark = landmarks.find((lm) => lm.id === landmarkId);
+
+        if (landmark) {
+          setSelectedLandmark({
+            id: landmark.id,
+            name: landmark.name,
+            sequenceId: 0, // This will be updated in the parent component
+            arrivalTime: "",
+            departureTime: "",
+          });
+          setIsModalOpen(true);
+        }
+      }
+    });
+
+    mapInstance.current.addInteraction(selectInteraction);
+
+    return () => {
+      mapInstance.current?.removeInteraction(selectInteraction);
+    };
+  }, [landmarks]);
+
+  // Fetch landmarks
   const fetchLandmark = () => {
     dispatch(landmarkListApi())
       .unwrap()
@@ -108,12 +166,18 @@ const MapComponent: React.FC = () => {
       });
   };
 
+  const extractRawPoints = (polygonString: string): string => {
+    if (!polygonString) return "";
+    const matches = polygonString.match(/\(\((.*?)\)\)/);
+    return matches ? matches[1] : "";
+  };
+
   // Show/hide all landmarks
   useEffect(() => {
     if (!mapInstance.current) return;
 
     vectorSource.current.clear();
-    const features: ol.Feature[] = [];
+    const features: Feature[] = [];
 
     if (showAllBoundaries && landmarks) {
       landmarks.forEach((landmark) => {
@@ -125,8 +189,8 @@ const MapComponent: React.FC = () => {
               .map((coord: Coordinate) => fromLonLat(coord));
 
             const polygon = new Polygon([coordinates]);
-            const feature = new ol.Feature(polygon);
-
+            const feature = new Feature(polygon);
+            feature.set("id", landmark.id);
             feature.setStyle(
               new Style({
                 stroke: new Stroke({
@@ -138,7 +202,6 @@ const MapComponent: React.FC = () => {
                 }),
               })
             );
-
             features.push(feature);
           } catch (error) {
             console.error(`Error processing landmark ${landmark.id}:`, error);
@@ -146,10 +209,9 @@ const MapComponent: React.FC = () => {
         }
       });
     }
+
     if (features.length > 0) {
       vectorSource.current.addFeatures(features);
-      
-      // Fit view to show all features
       const extent = vectorSource.current.getExtent();
       if (extent[0] !== Infinity) {
         mapInstance.current.getView().fit(extent, {
@@ -160,7 +222,12 @@ const MapComponent: React.FC = () => {
     }
   }, [showAllBoundaries, landmarks]);
 
-  //*********************************Search location********************************
+ 
+
+
+
+
+  // Handle search
   const handleSearch = async () => {
     if (!searchQuery || !mapInstance.current) return;
 
@@ -175,20 +242,19 @@ const MapComponent: React.FC = () => {
       if (data.length > 0) {
         const { lat, lon } = data[0];
         const coordinates = fromLonLat([parseFloat(lon), parseFloat(lat)]);
-
         mapInstance.current.getView().animate({
           center: coordinates,
           zoom: 14,
         });
       } else {
-        showErrorToast("Location not found. Please try a different query.");
+        showErrorToast("Location not found.");
       }
     } catch (error: any) {
       showErrorToast(error);
     }
   };
 
-  // **********************Change map type************************************
+  // Change map type
   const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
     if (!mapInstance.current) return;
 
@@ -227,6 +293,14 @@ const MapComponent: React.FC = () => {
     }
   };
 
+  // Handle landmark addition
+  const handleAddLandmark = () => {
+    if (selectedLandmark?.arrivalTime && selectedLandmark.departureTime) {
+      onAddLandmark(selectedLandmark);
+      setIsModalOpen(false);
+    }
+  };
+
   return (
     <Box height="100%">
       <Box
@@ -261,43 +335,25 @@ const MapComponent: React.FC = () => {
             <TextField
               variant="outlined"
               size="small"
-              placeholder="Search Location (e.g., India)"
+              placeholder="Search Location"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleSearch();
-                }
-              }}
-              fullWidth
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             />
-            <Button
-              size="small"
-              variant="contained"
-              sx={{ backgroundColor: "green" }}
-              onClick={handleSearch}
-            >
+            <Button variant="contained" onClick={handleSearch}>
               Search
             </Button>
           </Box>
+
           <Tooltip
-            title={
-              showAllBoundaries
-                ? "Hide all landmarks"
-                : "Click to view all landmarks"
-            }
-            arrow
+            title={showAllBoundaries ? "Hide landmarks" : "Show landmarks"}
           >
             <IconButton
-              onClick={() => {
-                setShowAllBoundaries(!showAllBoundaries);
-              }}
+              onClick={() => setShowAllBoundaries(!showAllBoundaries)}
             >
-              {showAllBoundaries ? (
-                <LocationOnIcon sx={{ color: "blue" }} />
-              ) : (
-                <LocationOnIcon />
-              )}
+              <LocationOnIcon
+                sx={{ color: showAllBoundaries ? "blue" : undefined }}
+              />
             </IconButton>
           </Tooltip>
         </Box>
@@ -306,9 +362,75 @@ const MapComponent: React.FC = () => {
       <Box ref={mapRef} width="100%" height="calc(100% - 128px)" flex={1} />
       <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
         <Typography variant="body2">
-          <strong>[{mousePosition ? mousePosition : "coordinates"}]</strong>
+          <strong>[{mousePosition || "coordinates"}]</strong>
         </Typography>
+        {isSelecting && (
+        <div style={{
+          position: "absolute",
+          top: 10,
+          left: 10,
+          backgroundColor: "white",
+          padding: 8,
+          borderRadius: 4,
+          zIndex: 1000
+        }}>
+          <Typography variant="body2" color="primary">
+            Click on the map to add landmarks
+          </Typography>
+        </div>
+      )}
       </Box>
+
+      {/* Landmark Modal */}
+      <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <DialogTitle>Add Landmark to Route</DialogTitle>
+        <DialogContent>
+          <Typography>Landmark: {selectedLandmark?.name}</Typography>
+          <Typography>ID: {selectedLandmark?.id}</Typography>
+
+          <TextField
+            label="Arrival Time"
+            type="datetime-local" // Changed from "time" to "datetime-local"
+            fullWidth
+            margin="normal"
+            value={selectedLandmark?.arrivalTime || ""}
+            onChange={(e) =>
+              setSelectedLandmark({
+                ...selectedLandmark!,
+                arrivalTime: e.target.value,
+              })
+            }
+            InputLabelProps={{ shrink: true }}
+          />
+
+          <TextField
+            label="Departure Time"
+            type="datetime-local" // Changed from "time" to "datetime-local"
+            fullWidth
+            margin="normal"
+            value={selectedLandmark?.departureTime || ""}
+            onChange={(e) =>
+              setSelectedLandmark({
+                ...selectedLandmark!,
+                departureTime: e.target.value,
+              })
+            }
+            InputLabelProps={{ shrink: true }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleAddLandmark}
+            color="primary"
+            disabled={
+              !selectedLandmark?.arrivalTime || !selectedLandmark?.departureTime
+            }
+          >
+            Add
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

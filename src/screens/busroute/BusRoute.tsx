@@ -1,8 +1,7 @@
 import React from 'react'
 import { Sidebar } from "../../common";
 import { Box } from '@mui/material';
-import BusRouteListingPage from './BusRouteListingPage';
-
+import BusRouteListing from './BusRouteListingpage';
 const BusRoutePage: React.FC = () => {
   return (
     <Box
@@ -16,7 +15,7 @@ const BusRoutePage: React.FC = () => {
       <Box
       sx={{ width: "100%", p: 3 }}
       >
-      <BusRouteListingPage />
+      <BusRouteListing/>
       </Box>
       
 
