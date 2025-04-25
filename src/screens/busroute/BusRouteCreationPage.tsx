@@ -24,15 +24,14 @@ import {
   showSuccessToast,
 } from "../../common/toastMessageHelper";
 
-
 interface BusRouteCreationProps {
   companyId: number | null;
   landmarks: SelectedLandmark[];
   onLandmarkRemove: (id: string) => void;
   onSuccess: () => void;
   onCancel: () => void;
+  onClearRoute?: () => void;
 }
-
 
 interface SelectedLandmark {
   id: string;
@@ -41,7 +40,6 @@ interface SelectedLandmark {
   arrivalTime: string;
   departureTime: string;
 }
-
 
 interface BusRouteFormInputs {
   name: string;
@@ -52,7 +50,8 @@ const BusRouteCreation = ({
   landmarks,
   onLandmarkRemove,
   onSuccess,
-  onCancel
+  onCancel,
+  onClearRoute
 }: BusRouteCreationProps) => {
   const dispatch = useAppDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,7 +62,6 @@ const BusRouteCreation = ({
     reset,
     formState: { errors },
   } = useForm<BusRouteFormInputs>();
-
 
   const handleRouteCreation: SubmitHandler<BusRouteFormInputs> = async (data) => {
     if (!companyId) {
@@ -116,6 +114,9 @@ const BusRouteCreation = ({
       showSuccessToast("Route and landmarks created successfully");
       reset(); 
       onSuccess();
+      if (onClearRoute) {
+        onClearRoute();
+      }
   
     } catch (error: unknown) {
       console.error("Error in route creation process:", error);
@@ -177,14 +178,37 @@ const BusRouteCreation = ({
           size="small"
         />
 
-<Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
-        Route Landmarks
-      </Typography>
+        <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
+          Route Landmarks
+        </Typography>
 
-      <List sx={{ width: "100%", maxHeight: 400, overflow: "auto" }}>
-        {landmarks.map((landmark, index) => (
-          <Box key={`${landmark.id}-${index}`}>
-            <ListItem sx={{
+        {landmarks.length === 0 ? (
+          <Box
+            sx={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              textAlign: "center",
+              p: 4,
+              backgroundColor: "action.hover",
+              borderRadius: 1,
+              my: 2,
+            }}
+          >
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+              No landmarks selected yet
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Please select landmarks from the map to create your route
+            </Typography>
+          </Box>
+        ) : (
+          <List sx={{ width: "100%", maxHeight: 400, overflow: "auto", flex: 1 }}>
+            {landmarks.map((landmark, index) => (
+              <Box key={`${landmark.id}-${index}`}>
+                <ListItem sx={{
                   display: "flex",
                   alignItems: "center",
                   py: 2,
@@ -192,56 +216,55 @@ const BusRouteCreation = ({
                     index % 2 === 0 ? "action.hover" : "background.paper",
                   borderRadius: 1,
                 }}>
-              <Chip label={landmark.sequenceId} color="primary"
-                  sx={{ mr: 2, minWidth: 32 }}/>
-              <ListItemText
-                primary={landmark.name}
-                secondary={`Arrival: ${landmark.arrivalTime} | Departure: ${landmark.departureTime}`}
-              />
-              <IconButton
-                onClick={() => onLandmarkRemove(landmark.id)}
-                aria-label="delete"
-                color="error"
-                size="small"
-              >
-                <DeleteIcon />
-              </IconButton>
-            </ListItem>
-            {index < landmarks.length - 1 && (
-                <Divider
-                  component="li"
-                  sx={{
-                    borderLeftWidth: 2,
-                    borderLeftStyle: "dashed",
-                    borderColor: "divider",
-                    height: 20,
-                    ml: 3.5,
-                    listStyle: "none",
-                  }}
-                />
-              )}
-          </Box>
-        ))}
-      </List>
+                  <Chip label={landmark.sequenceId} color="primary"
+                      sx={{ mr: 2, minWidth: 32 }}/>
+                  <ListItemText
+                    primary={landmark.name}
+                    secondary={`Arrival: ${landmark.arrivalTime} | Departure: ${landmark.departureTime}`}
+                  />
+                  <IconButton
+                    onClick={() => onLandmarkRemove(landmark.id)}
+                    aria-label="delete"
+                    color="error"
+                    size="small"
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </ListItem>
+                {index < landmarks.length - 1 && (
+                  <Divider
+                    component="li"
+                    sx={{
+                      borderLeftWidth: 2,
+                      borderLeftStyle: "dashed",
+                      borderColor: "divider",
+                      height: 20,
+                      ml: 3.5,
+                      listStyle: "none",
+                    }}
+                  />
+                )}
+              </Box>
+            ))}
+          </List>
+        )}
 
-        
-
-      <Stack direction="row" spacing={2} sx={{ mt: 2, justifyContent: "flex-end" }}>
-        <Button variant="outlined" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          variant="contained"
-          color="primary"
-          disabled={landmarks.length === 0 || isSubmitting}
-          onClick={handleSubmit(handleRouteCreation)}
-        >
-          {isSubmitting ? "Saving..." : "Save Route"}
-        </Button>
-      </Stack>
+        <Box sx={{ mt: "auto", pt: 2 }}>
+          <Stack direction="row" spacing={2} justifyContent="flex-end">
+            <Button variant="outlined" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={landmarks.length === 0 || isSubmitting}
+            >
+              {isSubmitting ? "Saving..." : "Save Route"}
+            </Button>
+          </Stack>
+        </Box>
       </Box>
-
     </Box>
   );
 };

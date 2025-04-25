@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Table,
   TableBody,
@@ -16,16 +16,22 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  Typography,
+  Tooltip,
+  IconButton,
 } from "@mui/material";
 import { Delete } from "@mui/icons-material";
 import { useDispatch } from "react-redux";
-import { busRouteListApi,routeDeleteApi } from "../../slices/appSlice";
+import { busRouteListApi, routeDeleteApi } from "../../slices/appSlice";
 import { AppDispatch } from "../../store/Store";
 import { useParams, useLocation } from "react-router-dom";
 import MapComponent from "./BusRouteMap";
 import BusRouteCreation from "./BusRouteCreationPage";
-import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/toastMessageHelper";
+import localStorageHelper from "../../utils/localStorageHelper";
+import BusRouteDetailsPage from "./BusRouteDetails";
 
 interface Route {
   id: number;
@@ -52,10 +58,14 @@ const BusRouteListing = () => {
   const [routeList, setRouteList] = useState<Route[]>([]);
   const [search, setSearch] = useState({ id: "", name: "", location: "" });
   const [landmarks, setLandmarks] = useState<SelectedLandmark[]>([]);
-  const [routeToDelete, setRouteToDelete]= useState<Route|null> (null)
+  const [routeToDelete, setRouteToDelete] = useState<Route | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [selectedRoute, setSelectedRoute] = useState<{id: number, name: string} | null>(null);
   const [page, setPage] = useState(0);
   const rowsPerPage = 10;
+  const roleDetails = localStorageHelper.getItem("@roleDetails");
+  const canManageRoutes = roleDetails?.manage_route || false;
+  const mapRef = useRef<{clearRoutePath: () => void}>(null);
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -81,7 +91,7 @@ const BusRouteListing = () => {
         setRouteList(formattedRoutes);
       })
       .catch((err: any) => {
-        console.error("Error fetching accounts", err);
+        console.error("Error fetching routes", err);
       });
   };
 
@@ -116,14 +126,14 @@ const BusRouteListing = () => {
   const toggleCreationForm = () => {
     setShowCreationForm(!showCreationForm);
     if (showCreationForm) {
-      setLandmarks([]); // Clear landmarks when canceling
+      setLandmarks([]);
     }
   };
 
   const handleRouteCreated = () => {
-    setShowCreationForm(false);
+    setShowCreationForm(true);
     setLandmarks([]);
-    fetchRoute(); 
+    fetchRoute();
   };
 
   const handleAddLandmark = (newLandmark: SelectedLandmark) => {
@@ -144,29 +154,27 @@ const BusRouteListing = () => {
     setLandmarks(updatedLandmarks);
   };
 
+  const handleDeleteClick = (route: Route) => {
+    setRouteToDelete(route);
+    setDeleteConfirmOpen(true);
+  };
 
+  const handleRouteDelete = async () => {
+    if (!routeToDelete) return;
 
-    const handleDeleteClick=(route:Route)=>{
-        setRouteToDelete(route)
-        setDeleteConfirmOpen(true)
+    try {
+      const formData = new FormData();
+      formData.append("id", routeToDelete.id.toString());
+      await dispatch(routeDeleteApi(formData)).unwrap();
+      showSuccessToast("Route deleted successfully");
+      fetchRoute();
+    } catch (error) {
+      showErrorToast("Failed to delete route");
+    } finally {
+      setDeleteConfirmOpen(false);
+      setRouteToDelete(null);
     }
-
-    const handleRouteDelete = async () => {
-        if (!routeToDelete) return;
-        
-        try {
-          const formData = new FormData();
-          formData.append("id", routeToDelete.id.toString());
-          await dispatch(routeDeleteApi(formData)).unwrap();
-          showSuccessToast("Route deleted successfully");
-          fetchRoute(); 
-        } catch (error) {
-          showErrorToast("Failed to delete route");
-        } finally {
-          setDeleteConfirmOpen(false);
-          setRouteToDelete(null);
-        }
-      };
+  };
 
   return (
     <Box
@@ -178,7 +186,7 @@ const BusRouteListing = () => {
         gap: 2,
       }}
     >
-      {/* Left Side: Table or Creation Form */}
+      {/* Left Side: Table or Creation Form or Details */}
       <Box
         sx={{
           flex: { xs: "0 0 100%", md: "50%" },
@@ -188,44 +196,76 @@ const BusRouteListing = () => {
           overflowY: "auto",
         }}
       >
-
-        {showCreationForm ? (
+        {selectedRoute ? (
+          <BusRouteDetailsPage 
+            routeId={selectedRoute.id} 
+            routeName={selectedRoute.name}
+            onBack={() => setSelectedRoute(null)}
+          />
+        ) : showCreationForm ? (
           <>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-              <Button 
-                onClick={toggleCreationForm} 
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+              <Button
+                onClick={toggleCreationForm}
                 variant="outlined"
-                sx={{ ml: 'auto' }}
+                sx={{ ml: "auto" }}
               >
                 Back to Routes
               </Button>
             </Box>
-            <BusRouteCreation 
+            <BusRouteCreation
               companyId={filterCompanyId}
               landmarks={landmarks}
               onLandmarkRemove={handleRemoveLandmark}
               onSuccess={handleRouteCreated}
               onCancel={toggleCreationForm}
+              onClearRoute={() => mapRef.current?.clearRoutePath()}
             />
           </>
         ) : (
           <>
-            <Stack 
-              direction="row" 
-              justifyContent="space-between" 
+            <Stack
+              direction="row"
+              justifyContent="right"
               alignItems="center"
               sx={{ mb: 2 }}
             >
-              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                Bus Routes
-              </Typography>
-              <Button 
-                onClick={toggleCreationForm} 
-                variant="contained" 
-                color="primary"
+              <Tooltip
+                title={
+                  !canManageRoutes
+                    ? "You don't have permission, contact the admin"
+                    : "click to open the route creation form"
+                }
+                placement="top-end"
               >
-                Add New Route
-              </Button>
+                <span
+                  style={{
+                    cursor: !canManageRoutes ? "not-allowed" : "default",
+                  }}
+                >
+                  <Button
+                    sx={{
+                      ml: "auto",
+                      mr: 2,
+                      mb: 2,
+                      display: "block",
+                      backgroundColor: !canManageRoutes
+                        ? "#6c87b7 !important"
+                        : "#3f51b5",
+                      color: "white",
+                      "&.Mui-disabled": {
+                        backgroundColor: "#6c87b7 !important",
+                        color: "#ffffff99",
+                      },
+                    }}
+                    variant="contained"
+                    onClick={toggleCreationForm}
+                    disabled={!canManageRoutes}
+                  >
+                    Create Routes
+                  </Button>
+                </span>
+              </Tooltip>
             </Stack>
 
             <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
@@ -233,7 +273,11 @@ const BusRouteListing = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell sx={{ width: "20%" }}>
-                      <Box display="flex" flexDirection="column" alignItems="center">
+                      <Box
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="center"
+                      >
                         <b>ID</b>
                         <TextField
                           variant="outlined"
@@ -243,13 +287,20 @@ const BusRouteListing = () => {
                           onChange={(e) => handleSearchChange(e, "id")}
                           fullWidth
                           sx={{
-                            "& .MuiInputBase-root": { height: 30, padding: "4px" },
+                            "& .MuiInputBase-root": {
+                              height: 30,
+                              padding: "4px",
+                            },
                           }}
                         />
                       </Box>
                     </TableCell>
                     <TableCell sx={{ width: "60%" }}>
-                      <Box display="flex" flexDirection="column" alignItems="center">
+                      <Box
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="center"
+                      >
                         <b>Name</b>
                         <TextField
                           variant="outlined"
@@ -259,12 +310,15 @@ const BusRouteListing = () => {
                           onChange={(e) => handleSearchChange(e, "name")}
                           fullWidth
                           sx={{
-                            "& .MuiInputBase-root": { height: 30, padding: "4px" },
+                            "& .MuiInputBase-root": {
+                              height: 30,
+                              padding: "4px",
+                            },
                           }}
                         />
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ width: "20%", textAlign: 'center' }}>
+                    <TableCell sx={{ width: "20%", textAlign: "center" }}>
                       <b>Actions</b>
                     </TableCell>
                   </TableRow>
@@ -272,21 +326,32 @@ const BusRouteListing = () => {
                 <TableBody>
                   {filteredData.length > 0 ? (
                     filteredData
-                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                      .slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
+                      )
                       .map((row) => (
-                        <TableRow key={row.id}>
+                        <TableRow key={row.id}
+                        hover
+                        >
                           <TableCell>{row.id}</TableCell>
-                          <TableCell>{row.name}</TableCell>
-                          <TableCell sx={{ textAlign: 'center' }}>
-                            
-                            <Button 
-                              variant="outlined" 
+                          <TableCell 
+                            sx={{ 
+                              cursor: "pointer",
+                              
+                            }}
+                            onClick={() => setSelectedRoute({ id: row.id, name: row.name })}
+                          >
+                            {row.name}
+                          </TableCell>
+                          <TableCell sx={{ textAlign: "center" }}>
+                            <IconButton
                               color="error"
-                              onClick={() => handleDeleteClick(row)}
                               size="small"
-                            >    <Delete  />
-                              Delete
-                            </Button>
+                              onClick={() => handleDeleteClick(row)}
+                            >
+                              <Delete sx={{ fontSize: 20 }} />
+                            </IconButton>
                           </TableCell>
                         </TableRow>
                       ))
@@ -325,7 +390,10 @@ const BusRouteListing = () => {
               )
                 .slice(
                   Math.max(0, page - 1),
-                  Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
+                  Math.min(
+                    page + 2,
+                    Math.ceil(filteredData.length / rowsPerPage)
+                  )
                 )
                 .map((pageNumber) => (
                   <Button
@@ -351,7 +419,9 @@ const BusRouteListing = () => {
                 ))}
               <Button
                 onClick={() => handleChangePage(null, page + 1)}
-                disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
+                disabled={
+                  page >= Math.ceil(filteredData.length / rowsPerPage) - 1
+                }
                 sx={{ padding: "5px 10px", minWidth: 40 }}
               >
                 &gt;
@@ -372,40 +442,35 @@ const BusRouteListing = () => {
           gap: 2,
         }}
       >
-        <MapComponent 
-          onAddLandmark={handleAddLandmark} 
+        <MapComponent
+          onAddLandmark={handleAddLandmark}
           isSelecting={showCreationForm}
+          ref={mapRef}
         />
       </Box>
 
       <Dialog
-  open={deleteConfirmOpen}
-  onClose={() => setDeleteConfirmOpen(false)}
-  aria-labelledby="alert-dialog-title"
-  aria-describedby="alert-dialog-description"
->
-  <DialogTitle id="alert-dialog-title">
-    Confirm Route Deletion
-  </DialogTitle>
-  <DialogContent>
-    <DialogContentText id="alert-dialog-description">
-      Are you sure you want to delete the route "{routeToDelete?.name}"?
-      This action cannot be undone.
-    </DialogContentText>
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
-    <Button 
-      onClick={handleRouteDelete} 
-      color="error"
-      autoFocus
-    >
-      Delete
-    </Button>
-  </DialogActions>
-</Dialog>
-
-
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          Confirm Route Deletion
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Are you sure you want to delete the route "{routeToDelete?.name}"?
+            This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
+          <Button onClick={handleRouteDelete} color="error" autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

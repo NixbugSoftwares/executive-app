@@ -19,7 +19,6 @@ interface AppState {
   accounts: any[];
   list: [];
   error: null;
-  roles: any[];
 }
 
 // Define the initial state
@@ -35,7 +34,6 @@ const initialState: AppState = {
   accounts: [],
   list: [],
   error: null,
-  roles: [],
 };
 
 //Logout API
@@ -1256,7 +1254,7 @@ export const routeDeleteApi = createAsyncThunk(
 );
 
 
-//route-landmark Api
+//route-landmark Delete Api
 export const routeLandmarkDeleteApi = createAsyncThunk(
   "/executive/company/route/landmark",
   async (data: FormData, { rejectWithValue }) => {
@@ -1279,6 +1277,55 @@ export const routeLandmarkDeleteApi = createAsyncThunk(
 );
 
 
+//route update Api
+export const routeUpdationApi = createAsyncThunk(
+  "/executive/company/route",
+  async (
+    { formData }: { routeId: number; formData: FormData },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await commonApi.apiCall(
+        "patch",
+        "/executive/company/route",
+        formData,
+        true,
+        "application/x-www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data); // Log the full error response
+      return rejectWithValue(
+        error?.response?.data?.message || "route update failed"
+      );
+    }
+  }
+);
+
+//route-landmark update Api
+export const routeLandmarkUpdationApi = createAsyncThunk(
+  "/executive/company/route/landmark",
+  async (
+    { formData }: { routeLandmarkId: number; formData: FormData },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await commonApi.apiCall(
+        "patch",
+        "/executive/company/route/landmark",
+        formData,
+        true,
+        "application/x-www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data); // Log the full error response
+      return rejectWithValue(
+        error?.response?.data?.message || "Route-landmark update failed"
+      );
+    }
+  }
+);
 
 
 
@@ -1310,13 +1357,10 @@ export const appSlice = createSlice({
     setLoginCreds: (state, action) => {
       state.logincreds = action.payload;
     },
-    // setRole: (state, action) => {
-    //   state.accounts = action.payload;
-    // },
+    
   },
 });
 
-// Action creators are generated for each case reducer function
 export const {
   userLoggedIn,
   userLoggedOut,
