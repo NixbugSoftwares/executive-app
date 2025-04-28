@@ -153,11 +153,12 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
       ))}
 
       <Button
-        type="submit"
-        variant="contained"
-        color="primary"
-        fullWidth
-        disabled={loading}
+       type="submit"
+       fullWidth
+       color="primary"
+       variant="contained"
+       sx={{ mt: 3, mb: 2, bgcolor: "darkblue" }}
+       disabled={loading}
       >
         {loading ? "Creating..." : "Create Role"}
       </Button>

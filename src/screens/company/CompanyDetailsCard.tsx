@@ -44,6 +44,7 @@ interface companyCardProps {
     address: string;
     email: string;
     status: string;
+    companyType: string;
   };
 
   onUpdate: () => void;
@@ -231,6 +232,37 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
                 </Typography>
               </>
             )}
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1, gap: 1 }}>
+            <BusinessIcon
+              color="action"
+              fontSize="small"
+              sx={{
+                color:
+                  company.companyType === "Government"
+                    ? "#1976d2"
+                    : company.companyType === "Private"
+                    ? "#4caf50"
+                    : "inherit",
+              }}
+            />
+            <Typography
+              variant="body2"
+              sx={{
+                color:
+                  company.companyType === "Government"
+                    ? "#1976d2"
+                    : company.companyType === "Private"
+                    ? "#4caf50"
+                    : "textSecondary",
+                fontWeight: "bold",
+              }}
+            >
+              {company.companyType
+                ? company.companyType.charAt(0).toUpperCase() +
+                  company.companyType.slice(1).toLowerCase()
+                : "Not specified"} Company
+            </Typography>
           </Box>
         </Card>
 

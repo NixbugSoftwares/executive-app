@@ -38,7 +38,7 @@ const RoleListingTable = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [roleList, setRoleList] = useState<Role[]>([]);
   const [companyList, setCompanyList] = useState<Company[]>([]);
-  const [selectRole, setSelectedRole] = useState<Role | null>(null);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [search, setSearch] = useState({ id: "", Rolename: "", companyName: "" });
   const [filterCompanyId, setFilterCompanyId] = useState<number | null>(companyId ? parseInt(companyId) : null);
@@ -118,7 +118,7 @@ const RoleListingTable = () => {
   );
 
   const [page, setPage] = useState(0);
-  const rowsPerPage = selectRole ? 7 : 6;
+  const rowsPerPage = selectedRole ? 7 : 6;
 
   const handleChangePage = (
     _event: React.MouseEvent<HTMLButtonElement> | null,
@@ -143,6 +143,9 @@ const RoleListingTable = () => {
   const handleCloseModal = () => {
     setOpenCreateModal(false);
   };
+  const handleCloseDetailCard = () => {
+    setSelectedRole(null);
+  };
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
@@ -163,8 +166,8 @@ const RoleListingTable = () => {
       {/* Table Section */}
       <Box
         sx={{
-          flex: selectRole ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
-          maxWidth: selectRole ? { xs: "100%", md: "65%" } : "100%",
+          flex: selectedRole ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
+          maxWidth: selectedRole ? { xs: "100%", md: "65%" } : "100%",
           transition: "all 0.3s ease",
           overflowX: "auto",
           overflowY: "auto",
@@ -199,10 +202,16 @@ const RoleListingTable = () => {
             <span style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}>
               <Button
                 sx={{
-                  backgroundColor: !canManageCompany ? "#6c87b7" : "#187b48",
+                  ml: "auto",
+                  mr: 2,
+                  mb: 2,
+                  display: "block",
+                  backgroundColor: !canManageCompany
+                    ? "#6c87b7 !important"
+                    : "#3f51b5",
                   color: "white",
                   "&.Mui-disabled": {
-                    backgroundColor: "#6c87b7",
+                    backgroundColor: "#6c87b7 !important",
                     color: "#ffffff99",
                   },
                 }}
@@ -231,8 +240,14 @@ const RoleListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
+                        textAlign: "center",
+                        fontSize: selectedRole ? "0.8rem" : "1rem",
+                      },
+                      "& .MuiInputBase-input": {
+                        textAlign: "center",
+                        fontSize: selectedRole ? "0.8rem" : "1rem",
                       },
                     }}
                   />
@@ -249,8 +264,14 @@ const RoleListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
+                        textAlign: "center",
+                        fontSize: selectedRole ? "0.8rem" : "1rem",
+                      },
+                      "& .MuiInputBase-input": {
+                        textAlign: "center",
+                        fontSize: selectedRole ? "0.8rem" : "1rem",
                       },
                     }}
                   />
@@ -269,7 +290,7 @@ const RoleListingTable = () => {
                 filteredData
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((row) => {
-                    const isSelected = selectRole?.id === row.id;
+                    const isSelected = selectedRole?.id === row.id;
                     return (
                       <TableRow
                         key={row.id}
@@ -373,7 +394,7 @@ const RoleListingTable = () => {
       </Box>
 
       {/* Role Details Card */}
-      {selectRole && (
+      {selectedRole && (
         <Box
           sx={{
             flex: { xs: "0 0 100%", md: "0 0 35%" },
@@ -384,12 +405,13 @@ const RoleListingTable = () => {
           }}
         >
           <RoleDetailsCard
-            role={selectRole}
+            role={selectedRole}
             onUpdate={() => {}}
             onDelete={() => {}}
             onBack={() => setSelectedRole(null)}
             refreshList={refreshList}
             canManageCompany={canManageCompany}
+            handleCloseDetailCard={handleCloseDetailCard}
           />
         </Box>
       )}

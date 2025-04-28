@@ -7,7 +7,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   TextField,
   Box,
   Button,
@@ -171,6 +170,9 @@ const BusListingTable = () => {
   const handleCloseModal = () => {
     setOpenCreateModal(false);
   };
+  const handleCloseDetailCard = () => {
+    setSelectedBus(null);
+  };
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
@@ -236,9 +238,13 @@ const BusListingTable = () => {
             >
               <Button
                 sx={{
+                  ml: "auto",
+                  mr: 2,
+                  mb: 2,
+                  display: "block",
                   backgroundColor: !canManageCompany
                     ? "#6c87b7 !important"
-                    : "#187b48",
+                    : "#3f51b5",
                   color: "white",
                   "&.Mui-disabled": {
                     backgroundColor: "#6c87b7 !important",
@@ -249,14 +255,18 @@ const BusListingTable = () => {
                 onClick={() => setOpenCreateModal(true)}
                 disabled={!canManageCompany}
               >
-                Add Bus
+                Add New Bus
               </Button>
             </span>
           </Tooltip>
         </Box>
 
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 600 }}>
+        <TableContainer sx={{
+            flex: 1,
+            maxHeight: "calc(100vh - 100px)",
+            overflowY: "hidden",
+          }}>
+          <Table >
             <TableHead>
               <TableRow>
                 <TableCell>
@@ -276,9 +286,8 @@ const BusListingTable = () => {
                     value={search.id}
                     onChange={(e) => handleSearchChange(e, "id")}
                     sx={{
-                      width: 80,
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedBus ? "0.8rem" : "1rem",
@@ -311,7 +320,7 @@ const BusListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedBus ? "0.8rem" : "1rem",
@@ -346,7 +355,7 @@ const BusListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedBus ? "0.8rem" : "1rem",
@@ -376,9 +385,8 @@ const BusListingTable = () => {
                     value={search.capacity}
                     onChange={(e) => handleSearchChange(e, "capacity")}
                     sx={{
-                      width: "100%",
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedBus ? "0.8rem" : "1rem",
@@ -391,37 +399,7 @@ const BusListingTable = () => {
                   />
                 </TableCell>
 
-                <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedBus ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    Model
-                  </b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.model}
-                    onChange={(e) => handleSearchChange(e, "model")}
-                    sx={{
-                      width: "100%",
-                      "& .MuiInputBase-root": {
-                        height: 30,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedBus ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedBus ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
+                
               </TableRow>
             </TableHead>
 
@@ -440,37 +418,36 @@ const BusListingTable = () => {
                     const isSelected = selectedBus?.id === row.id;
                     return (
                       <TableRow
-                        key={row.id}
-                        hover
-                        onClick={() => handleRowClick(row)}
-                        sx={{
-                          cursor: "pointer",
+                      key={row.id}
+                      hover
+                      onClick={() => handleRowClick(row)}
+                      sx={{
+                        cursor: "pointer",
+                        backgroundColor: isSelected
+                          ? "#E3F2FD !important"
+                          : "inherit",
+                        color: isSelected ? "black" : "black",
+                        "&:hover": {
                           backgroundColor: isSelected
-                            ? "#1565C0 !important"
-                            : "inherit",
-                          color: isSelected ? "white !important" : "inherit",
-                          "&:hover": {
-                            backgroundColor: isSelected
-                              ? "#1565C0 !important"
-                              : "#E3F2FD",
-                          },
-                          "& td": {
-                            color: isSelected ? "white !important" : "inherit",
-                          },
-                        }}
+                            ? "#E3F2FD !important"
+                            : "#E3F2FD",
+                        },
+                        "& td": {
+                          color: isSelected ? "black !important" : "black",
+                        },
+                      }}
                       >
                         <TableCell>{row.id}</TableCell>
                         <TableCell>{row.name}</TableCell>
                         <TableCell>{row.registrationNumber}</TableCell>
                         <TableCell>{row.capacity}</TableCell>
-                        <TableCell>{row.model}</TableCell>
                       </TableRow>
                     );
                   })
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} align="center">
-                    No accounts found.
+                    No Bus found.
                   </TableCell>
                 </TableRow>
               )}
@@ -480,60 +457,65 @@ const BusListingTable = () => {
 
         {/* Pagination */}
         <Box
-          sx={{
-            display: "flex",
-            justifyContent: "right",
-            alignItems: "right",
-            gap: 1,
-            mt: 1,
-            mr: 20,
-          }}
-        >
-          <Button
-            onClick={() => handleChangePage(null, page - 1)}
-            disabled={page === 0}
-            sx={{ padding: "5px 10px", minWidth: 40 }}
-          >
-            &lt;
-          </Button>
-          {Array.from(
-            { length: Math.ceil(filteredData.length / rowsPerPage) },
-            (_, index) => index
-          )
-            .slice(
-              Math.max(0, page - 1),
-              Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
-            )
-            .map((pageNumber) => (
-              <Button
-                key={pageNumber}
-                onClick={() => handleChangePage(null, pageNumber)}
-                sx={{
-                  padding: "5px 10px",
-                  minWidth: 40,
-                  bgcolor:
-                    page === pageNumber
-                      ? "rgba(21, 101, 192, 0.2)"
-                      : "transparent",
-                  fontWeight: page === pageNumber ? "bold" : "normal",
-                  borderRadius: "5px",
-                  transition: "all 0.3s",
-                  "&:hover": {
-                    bgcolor: "rgba(21, 101, 192, 0.3)",
-                  },
-                }}
-              >
-                {pageNumber + 1}
-              </Button>
-            ))}
-          <Button
-            onClick={() => handleChangePage(null, page + 1)}
-            disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
-            sx={{ padding: "5px 10px", minWidth: 40 }}
-          >
-            &gt;
-          </Button>
-        </Box>
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 1,
+                    mt: 2,
+                    position: "sticky",
+                    bottom: 0,
+                    backgroundColor: "white",
+                    zIndex: 1,
+                    p: 1,
+                    borderTop: "1px solid #e0e0e0",
+                  }}
+                >
+                  <Button
+                    onClick={() => handleChangePage(null, page - 1)}
+                    disabled={page === 0}
+                    sx={{ padding: "5px 10px", minWidth: 40 }}
+                  >
+                    &lt;
+                  </Button>
+                  {Array.from(
+                    { length: Math.ceil(filteredData.length / rowsPerPage) },
+                    (_, index) => index
+                  )
+                    .slice(
+                      Math.max(0, page - 1),
+                      Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
+                    )
+                    .map((pageNumber) => (
+                      <Button
+                        key={pageNumber}
+                        onClick={() => handleChangePage(null, pageNumber)}
+                        sx={{
+                          padding: "5px 10px",
+                          minWidth: 40,
+                          bgcolor:
+                            page === pageNumber
+                              ? "rgba(21, 101, 192, 0.2)"
+                              : "transparent",
+                          fontWeight: page === pageNumber ? "bold" : "normal",
+                          borderRadius: "5px",
+                          transition: "all 0.3s",
+                          "&:hover": {
+                            bgcolor: "rgba(21, 101, 192, 0.3)",
+                          },
+                        }}
+                      >
+                        {pageNumber + 1}
+                      </Button>
+                    ))}
+                  <Button
+                    onClick={() => handleChangePage(null, page + 1)}
+                    disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
+                    sx={{ padding: "5px 10px", minWidth: 40 }}
+                  >
+                    &gt;
+                  </Button>
+                </Box>
       </Box>
 
       {/* Right Side - Account Details Card */}
@@ -558,6 +540,7 @@ const BusListingTable = () => {
             onBack={() => setSelectedBus(null)}
             refreshList={(value: any) => refreshList(value)}
             canManageCompany={canManageCompany}
+            onCloseDetailCard={handleCloseDetailCard}
           />
         </Box>
       )}

@@ -39,6 +39,7 @@ interface BusCardProps {
   onDelete: (id: number) => void;
   onBack: () => void;
   canManageCompany: boolean;
+  onCloseDetailCard: () => void;
 }
 
 const BusDetailsCard: React.FC<BusCardProps> = ({
@@ -47,6 +48,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
   onDelete,
   onBack,
   canManageCompany,
+  onCloseDetailCard
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
@@ -108,9 +110,6 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             </Typography>
             <Typography variant="body2" color="textSecondary">
                 <b>Capacity:</b> {bus.capacity}
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-                <b>Model:</b> {bus.model}
             </Typography>
             <Typography variant="body2" color="textSecondary">
                 <b>Manufactured:</b> {formatUTCDateToLocal(bus.manufactured_on)}
@@ -215,6 +214,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             refreshList={(value: any) => refreshList(value)}
             busId={bus.id}
             onClose={() => setUpdateFormOpen(false)}
+            onCloseDetailCard={onCloseDetailCard}
           />
         </DialogContent>
       </Dialog>

@@ -30,6 +30,7 @@ interface ICompanyFormInputs {
   latitude?: number;
   longitude?: number;
   company_type: string;
+  status: string;
 }
 
 interface ICompanyCreationFormProps {
@@ -41,6 +42,11 @@ const TypeOptions = [
   { label: "Privet", value: 1 },
   { label: "Government", value: 2 },
 ];
+const statusOptions=[
+  {label:"Validating",value:1},
+  {label:"Verified",value:2},
+  {label:"Suspended",value:3},
+]
 
 const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
   onClose,
@@ -60,6 +66,7 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
     resolver: yupResolver(companyCreationSchema),
     defaultValues: {
       company_type: "1",
+      status: "1",
     },
   });
 
@@ -228,6 +235,27 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
               </TextField>
             )}
           />
+          <Controller
+            name="status"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                margin="normal"
+                fullWidth
+                select
+                label="status"
+                {...field}
+                error={!!errors.status}
+                size="small"
+              >
+                {statusOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
 
           <Button
             type="submit"
@@ -240,7 +268,7 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
             {loading ? (
               <CircularProgress size={24} sx={{ color: "white" }} />
             ) : (
-              "Create Account"
+              "Create Company"
             )}
           </Button>
         </Box>

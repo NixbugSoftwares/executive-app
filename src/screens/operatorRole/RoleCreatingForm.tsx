@@ -5,6 +5,7 @@ import { operatorRoleCreationApi, companyListApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { operatorRoleCreationSchema } from "../auth/validations/authValidation";
+import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
 
 type RoleFormValues = {
   name: string;
@@ -82,15 +83,15 @@ useEffect(() => {
 
       const response = await dispatch(operatorRoleCreationApi(formData)).unwrap();
       if (response?.id) {
-        alert("Role created successfully!");
+        showSuccessToast("Role created successfully!");
         refreshList("refresh");
         onClose();
       } else {
-        alert("Role creation failed. Please try again.");
+        showErrorToast("Role creation failed. Please try again.");
       }
     } catch (error) {
       console.error("Error creating role:", error);
-      alert("Failed to create role. Please try again.");
+      showErrorToast("Failed to create role. Please try again.");
     } finally {
       setLoading(false);
     }

@@ -159,7 +159,7 @@ const LandmarkListing = () => {
       setDeleteConfirmOpen(false);
       fetchLandmark();
       setExpandedRow(null);
-      setSelectedLandmark(null); 
+      setSelectedLandmark(null);
     } catch (error: any) {
       showErrorToast(error);
     }
@@ -271,8 +271,7 @@ const LandmarkListing = () => {
           <Table sx={{ borderCollapse: "collapse", width: "100%" }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ width: "10%" }}></TableCell>
-                <TableCell sx={{ width: "15%" }}>
+                <TableCell colSpan={2} sx={{ width: "20%" }}>
                   <Box
                     display="flex"
                     flexDirection="column"
@@ -287,7 +286,7 @@ const LandmarkListing = () => {
                       onChange={(e) => handleSearchChange(e, "id")}
                       fullWidth
                       sx={{
-                        "& .MuiInputBase-root": { height: 30, padding: "4px" },
+                        "& .MuiInputBase-root": { height: 40, padding: "4px" },
                       }}
                     />
                   </Box>
@@ -307,7 +306,7 @@ const LandmarkListing = () => {
                       onChange={(e) => handleSearchChange(e, "name")}
                       fullWidth
                       sx={{
-                        "& .MuiInputBase-root": { height: 30, padding: "4px" },
+                        "& .MuiInputBase-root": { height: 40, padding: "4px" },
                       }}
                     />
                   </Box>
@@ -620,11 +619,16 @@ const LandmarkListing = () => {
         <Box
           sx={{
             display: "flex",
-            justifyContent: "right",
-            alignItems: "right",
+            justifyContent: "center",
+            alignItems: "center",
             gap: 1,
-            mt: 1,
-            mr: 20,
+            mt: 2,
+            position: "sticky",
+            bottom: 0,
+            backgroundColor: "white",
+            zIndex: 1,
+            p: 1,
+            borderTop: "1px solid #e0e0e0",
           }}
         >
           <Button

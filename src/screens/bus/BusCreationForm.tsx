@@ -5,6 +5,7 @@ import { busCreationSchema } from "../auth/validations/authValidation";
 import { Box, TextField, Button, Typography, Container, CssBaseline, CircularProgress, Autocomplete } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
 import { busCreationApi, companyListApi } from "../../slices/appSlice";
+import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
 
 interface IAccountFormInputs {
   companyId: number;
@@ -96,15 +97,14 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({ onClose, refres
   
       const response = await dispatch(busCreationApi(formData)).unwrap();
       if (response?.id) {
-        alert("Bus created successfully!");
+        showSuccessToast("Bus created successfully!");
         refreshList("refresh");
         onClose();
       } else {
-        alert("Bus creation failed. Please try again.");
+        showErrorToast("Bus creation failed. Please try again.");
       }
     } catch (error) {
-      console.error("Error during Bus creation:", error);
-      alert("Something went wrong. Please try again.");
+      showErrorToast("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

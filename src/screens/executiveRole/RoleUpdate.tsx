@@ -130,12 +130,14 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
 
   return (
     <Box component="form" onSubmit={handleSubmit(handleRoleUpdate)}>
-      <Typography variant="h5" align="center" gutterBottom>
-        Update Role
-      </Typography>
-
-      <Typography variant="body1" gutterBottom>
-        <b>Name:</b> {roleData?.name}
+      
+      <Typography variant="body1" align="center" gutterBottom sx={{
+    fontWeight: "bold",
+    color: "black",
+    
+    letterSpacing: 1,
+  }}>
+        <b>Role Name:</b> {roleData?.name}
       </Typography>
 
       {(

@@ -39,6 +39,7 @@ interface SelectedLandmark {
   sequenceId: number;
   arrivalTime: string;
   departureTime: string;
+  distance_from_start?: number;
 }
 
 interface BusRouteFormInputs {
@@ -51,7 +52,7 @@ const BusRouteCreation = ({
   onLandmarkRemove,
   onSuccess,
   onCancel,
-  onClearRoute
+  onClearRoute,
 }: BusRouteCreationProps) => {
   const dispatch = useAppDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,66 +64,74 @@ const BusRouteCreation = ({
     formState: { errors },
   } = useForm<BusRouteFormInputs>();
 
-  const handleRouteCreation: SubmitHandler<BusRouteFormInputs> = async (data) => {
+  const handleRouteCreation: SubmitHandler<BusRouteFormInputs> = async (
+    data
+  ) => {
     if (!companyId) {
       showErrorToast("Company ID is missing");
       return;
     }
-  
+
     setIsSubmitting(true);
-  
+
     try {
       // Step 1: Create the route first
       const routeFormData = new FormData();
       routeFormData.append("company_id", companyId.toString());
       routeFormData.append("name", data.name);
-  
+
       console.log("=== ROUTE CREATION DATA ===");
       console.log("Company ID:", companyId);
       console.log("Route Name:", data.name);
-  
-      const routeResponse = await dispatch(routeCreationApi(routeFormData)).unwrap();
+
+      const routeResponse = await dispatch(
+        routeCreationApi(routeFormData)
+      ).unwrap();
       const routeId = routeResponse.id;
       console.log("Route created successfully. Route ID:", routeId);
-  
+
       // Step 2: Add all landmarks to the route
       const landmarkPromises = landmarks.map((landmark) => {
         const landmarkFormData = new FormData();
         landmarkFormData.append("route_id", routeId.toString());
         landmarkFormData.append("landmark_id", landmark.id);
-        landmarkFormData.append("sequence_id", landmark.sequenceId.toString());
-  
+        landmarkFormData.append(
+          "distance_from_start",
+          landmark.distance_from_start?.toString() || "0"
+        );
         const formatDateTime = (datetimeStr: string) => {
           if (datetimeStr.includes("T")) {
-            return datetimeStr.length === 16 ? `${datetimeStr}:00` : datetimeStr;
+            return datetimeStr.length === 16
+              ? `${datetimeStr}:00`
+              : datetimeStr;
           }
           return `${new Date().toISOString().split("T")[0]}T${datetimeStr}:00`;
         };
-        
+
         const arrivalDateTime = formatDateTime(landmark.arrivalTime);
         const departureDateTime = formatDateTime(landmark.departureTime);
-  
-        landmarkFormData.append("arrival_time", arrivalDateTime);
+
         landmarkFormData.append("departure_time", departureDateTime);
-  
+        landmarkFormData.append("arrival_time", arrivalDateTime);
+
         return dispatch(routeLandmarkCreationApi(landmarkFormData)).unwrap();
       });
-  
+
       await Promise.all(landmarkPromises);
-  
+
       // Show success message
       showSuccessToast("Route and landmarks created successfully");
-      reset(); 
+      reset();
       onSuccess();
       if (onClearRoute) {
         onClearRoute();
       }
-  
     } catch (error: unknown) {
       console.error("Error in route creation process:", error);
-  
+
       if (error instanceof Error) {
-        const errorMsg = error.message || "Failed to create route and landmarks";
+        const errorMsg =
+          error.message || "Failed to create route and landmarks";
         showErrorToast(errorMsg);
       } else {
         showErrorToast("An unexpected error occurred");
@@ -205,22 +214,40 @@ const BusRouteCreation = ({
             </Typography>
           </Box>
         ) : (
-          <List sx={{ width: "100%", maxHeight: 400, overflow: "auto", flex: 1 }}>
+          <List
+            sx={{ width: "100%", maxHeight: 400, overflow: "auto", flex: 1 }}
+          >
             {landmarks.map((landmark, index) => (
               <Box key={`${landmark.id}-${index}`}>
-                <ListItem sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  py: 2,
-                  backgroundColor:
-                    index % 2 === 0 ? "action.hover" : "background.paper",
-                  borderRadius: 1,
-                }}>
-                  <Chip label={landmark.sequenceId} color="primary"
-                      sx={{ mr: 2, minWidth: 32 }}/>
+                <ListItem
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    py: 2,
+                    backgroundColor:
+                      index % 2 === 0 ? "action.hover" : "background.paper",
+                    borderRadius: 1,
+                  }}
+                >
+                  <Chip
+                    label={landmark.sequenceId}
+                    color="primary"
+                    sx={{ mr: 2, minWidth: 32 }}
+                  />
                   <ListItemText
                     primary={landmark.name}
-                    secondary={`Arrival: ${landmark.arrivalTime} | Departure: ${landmark.departureTime}`}
+                    secondary={
+                      <>
+                        <span>Departure: {landmark.departureTime}</span>
+                        <span> | Arrival: {landmark.arrivalTime}</span>
+                        {landmark.distance_from_start !== undefined && (
+                          <span>
+                            {" "}
+                            | Distance: {landmark.distance_from_start}m
+                          </span>
+                        )}
+                      </>
+                    }
                   />
                   <IconButton
                     onClick={() => onLandmarkRemove(landmark.id)}

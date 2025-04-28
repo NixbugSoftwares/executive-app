@@ -33,6 +33,7 @@ interface OperatorCardProps {
   onBack: () => void;
   refreshList: (value: any) => void;
   canManageCompany: boolean;
+  oncloseDetailCard: () => void
 }
 
 const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
@@ -41,6 +42,7 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
   onDelete,
   onBack,
   canManageCompany,
+  oncloseDetailCard
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
@@ -87,6 +89,19 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
 
         {/* User Contact Info */}
         <Card sx={{ p: 2, bgcolor: "grey.100", mb: 2 }}>
+
+        <Box sx={{ display: "flex", alignItems: "center", mb: 1 }} >
+            <b>Full name:</b>
+            {operator.fullName ? (
+                <Typography variant="body2" color="textSecondary">
+                  {operator.fullName}
+                </Typography>
+            ) : (
+              <Typography variant="body2" color="textSecondary">
+                Not added yet
+              </Typography>
+            )}
+          </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <Typography variant="body2" color="textSecondary">
@@ -251,7 +266,7 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
             refreshList={(value: any) => refreshList(value)}
             operatorId={operator.id}
             onClose={() => setUpdateFormOpen(false)}
-            
+            onCloseDetailCard={oncloseDetailCard}
           />
         </DialogContent>
       </Dialog>

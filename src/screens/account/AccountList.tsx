@@ -428,6 +428,7 @@ const AccountListingTable = () => {
                   .map((row) => {
                     const isSelected = selectedAccount?.id === row.id;
                     return (
+                      
                       <TableRow
                         key={row.id}
                         hover

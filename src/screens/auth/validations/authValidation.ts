@@ -226,6 +226,11 @@ export const companyCreationSchema = yup.object().shape({
     .string()
     .required(),
 
+    status: yup
+    .string()
+    .required(),
+
+
 })
 
 

@@ -3,7 +3,7 @@ import { TextField, Button, Box, Typography, Switch, CircularProgress } from "@m
 import { useAppDispatch } from "../../store/Hooks";
 import { operatorRoleUpdationApi, operatorRoleListApi } from "../../slices/appSlice"; 
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
-
+import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
 type RoleFormValues = {
   id: number; 
   name: string;
@@ -19,17 +19,18 @@ interface IRoleUpdateFormProps {
   onClose: () => void; 
   refreshList: (value: any) => void; 
   roleId: number; 
+  handleCloseDetailCard: () => void
 }
 
 const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
   onClose,
   refreshList,
   roleId,
+  handleCloseDetailCard
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [roleData, setRoleData] = useState<RoleFormValues | null>(null); 
-
   const {
     register,
     handleSubmit,
@@ -84,7 +85,7 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
   const handleRoleUpdate: SubmitHandler<RoleFormValues> = async (data) => {
     try {
       setLoading(true);
-
+  
       const formData = new URLSearchParams();
       formData.append("id", roleId.toString()); 
       formData.append("name", data.name);
@@ -94,16 +95,17 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
       formData.append("manage_role", String(data.manage_role));
       formData.append("manage_operator", String(data.manage_operator));
       formData.append("manage_company", String(data.manage_company));
-
-      //  update API
-      const response = await dispatch(operatorRoleUpdationApi({roleId, formData })).unwrap();
-      console.log("Role updated:", response);
-      alert("Role updated successfully!");
-      refreshList("refresh"); 
-      onClose(); 
+  
+      // Update API
+      await dispatch(operatorRoleUpdationApi({ roleId, formData })).unwrap();
+      
+      showSuccessToast("Role updated successfully!");
+      refreshList("refresh");
+      handleCloseDetailCard();
+      onClose();
     } catch (error) {
-      console.error("Error updating role:", error);
-      alert("Failed to update role. Please try again.");
+      console.error("Update error:", error);
+      showErrorToast("Failed to update role. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -164,3 +166,4 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
 };
 
 export default RoleUpdateForm;
+

@@ -51,6 +51,7 @@ interface SelectedLandmark {
   sequenceId: number;
   arrivalTime: string;
   departureTime: string;
+  distance_from_start: number;
 }
 
 interface MapComponentProps {
@@ -131,14 +132,15 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
         if (selectedFeature) {
           const landmarkId = selectedFeature.get("id");
           const landmark = landmarks.find((lm) => lm.id === landmarkId);
-
+      
           if (landmark) {
             setSelectedLandmark({
               id: landmark.id,
               name: landmark.name,
-              sequenceId: 0, 
+              sequenceId: landmarks.length + 1, // This sets the correct sequenceId
               arrivalTime: "",
               departureTime: "",
+              distance_from_start: landmarks.length === 0 ? 0 : 0, // Set to 0 for first landmark
             });
             setIsModalOpen(true);
           }
@@ -337,7 +339,6 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
   
     const geometry = feature.getGeometry();
     if (geometry instanceof Polygon) {
-      // Get the center of the polygon instead of a random coordinate
       const center = getCenter(geometry.getExtent());
       routeCoordsRef.current.push(center);
   
@@ -345,7 +346,6 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
       routePathSource.current.clear();
       
       if (routeCoordsRef.current.length > 1) {
-        // Add the main line connecting all points
         const routeFeature = new Feature({
           geometry: new LineString(routeCoordsRef.current),
         });
@@ -377,7 +377,7 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
               offsetY: -20,
             }),
             image: new Circle({
-              radius: 8,
+              radius: 5,
               fill: new Fill({ color: 'rgba(128, 0, 117, 0.9)' }),
               stroke: new Stroke({ color: 'white', width: 2 }),
             }),
@@ -390,12 +390,32 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
 
   // Handle landmark addition
   const handleAddLandmark = () => {
-    if (selectedLandmark?.arrivalTime && selectedLandmark.departureTime) {
-      onAddLandmark(selectedLandmark);
-      highlightSelectedLandmark(selectedLandmark.id);
-      updateRoutePath(selectedLandmark); 
-      setIsModalOpen(false);
+    if (!selectedLandmark?.departureTime || !selectedLandmark?.arrivalTime) {
+      showErrorToast("Both departure and arrival times are required");
+      return;
     }
+  
+    // Convert times to Date objects for comparison
+    const departure = new Date(selectedLandmark.departureTime);
+    const arrival = new Date(selectedLandmark.arrivalTime);
+  
+    if (departure >= arrival) {
+      showErrorToast("Departure time must be earlier than arrival time");
+      return;
+    }
+    const isFirstLandmark = landmarks.length === 0;
+    const landmarkWithDistance = {
+      ...selectedLandmark,
+      distance_from_start: isFirstLandmark ? 0 : selectedLandmark.distance_from_start || 0,
+      sequenceId: landmarks.length + 1
+    };
+    
+    onAddLandmark(landmarkWithDistance);
+    highlightSelectedLandmark(selectedLandmark.id);
+    updateRoutePath(selectedLandmark);
+    
+    // Close the modal and time pickers
+    setIsModalOpen(false);
   };
 
   // Toggle landmark adding mode
@@ -408,7 +428,6 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
       setShowAllBoundaries(true);
     }
   };
-
   const clearRoutePath = () => {
     routeCoordsRef.current = []; 
     routePathSource.current.clear();
@@ -508,39 +527,65 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
       <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <DialogTitle>Add Landmark to Route</DialogTitle>
         <DialogContent>
-          <Typography>Landmark: {selectedLandmark?.name}</Typography>
-          <Typography>ID: {selectedLandmark?.id}</Typography>
+  <Typography>Landmark: {selectedLandmark?.name}</Typography>
+  <Typography>ID: {selectedLandmark?.id}</Typography>
 
-          <TextField
-            label="Arrival Time"
-            type="datetime-local"
-            fullWidth
-            margin="normal"
-            value={selectedLandmark?.arrivalTime || ""}
-            onChange={(e) =>
-              setSelectedLandmark({
-                ...selectedLandmark!,
-                arrivalTime: e.target.value,
-              })
-            }
-            InputLabelProps={{ shrink: true }}
-          />
+  <TextField
+  label="Departure Time"
+  type="datetime-local"
+  fullWidth
+  margin="normal"
+  value={selectedLandmark?.departureTime || ""}
+  onChange={(e) => {
+    setSelectedLandmark({
+      ...selectedLandmark!,
+      departureTime: e.target.value,
+    });
+    // This will close the picker after selection
+    (document.activeElement as HTMLElement | null)?.blur();
+  }}
+  InputLabelProps={{ shrink: true }} // Additional close handler
+/>
 
-          <TextField
-            label="Departure Time"
-            type="datetime-local"
-            fullWidth
-            margin="normal"
-            value={selectedLandmark?.departureTime || ""}
-            onChange={(e) =>
-              setSelectedLandmark({
-                ...selectedLandmark!,
-                departureTime: e.target.value,
-              })
-            }
-            InputLabelProps={{ shrink: true }}
-          />
-        </DialogContent>
+<TextField
+  label="Arrival Time"
+  type="datetime-local"
+  fullWidth
+  margin="normal"
+  value={selectedLandmark?.arrivalTime || ""}
+  onChange={(e) => {
+    setSelectedLandmark({
+      ...selectedLandmark!,
+      arrivalTime: e.target.value,
+    });
+    // This will close the picker after selection
+    (document.activeElement as HTMLElement | null)?.blur();
+
+  }}
+  InputLabelProps={{ shrink: true }} // Additional close handler
+/>
+
+<TextField
+  label="Distance from Start (meters)"
+  fullWidth
+  margin="normal"
+  value={selectedLandmark?.sequenceId === 1 ? 0 : selectedLandmark?.distance_from_start || ''}
+  onChange={(e) => {
+    if (selectedLandmark?.sequenceId !== 1) {
+      setSelectedLandmark({
+        ...selectedLandmark!,
+        distance_from_start: parseInt(e.target.value) || 0,
+      });
+    }
+  }}
+  disabled={selectedLandmark?.sequenceId === 1}
+  placeholder={selectedLandmark?.sequenceId === 1 ? "" : "Enter distance in meters"}
+  InputLabelProps={{ shrink: true }}
+  inputProps={{
+    min: 0
+  }}
+/>
+</DialogContent>
         <DialogActions>
           <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
           <Button

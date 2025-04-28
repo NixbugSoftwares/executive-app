@@ -17,16 +17,22 @@ import {
   Select,
   MenuItem,
   Typography,
+  DialogTitle,
+  DialogActions,
 } from "@mui/material";
-import ErrorIcon  from '@mui/icons-material/Error';
+import ErrorIcon from "@mui/icons-material/Error";
 import { SelectChangeEvent } from "@mui/material";
 import { useDispatch } from "react-redux";
-import { operatorListApi, companyListApi } from "../../slices/appSlice";
+import {
+  operatorListApi,
+  companyListApi,
+  operatorRoleListApi,
+} from "../../slices/appSlice";
 import type { AppDispatch } from "../../store/Store";
 import localStorageHelper from "../../utils/localStorageHelper";
 import OperatorDetailsCard from "./OperatorDetails";
 import OperatorCreationForm from "./OperatorCreationForm";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
 
 interface Operator {
   id: number;
@@ -52,9 +58,15 @@ const OperatorListingTable = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [operatorList, setOperatorList] = useState<Operator[]>([]);
   const [companyList, setCompanyList] = useState<Company[]>([]);
-  const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
-  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(companyId ? parseInt(companyId) : null);
-
+  const [selectedOperator, setSelectedOperator] = useState<Operator | null>(
+    null
+  );
+  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(
+    companyId ? parseInt(companyId) : null
+  );
+  const [openNoRolesModal, setOpenNoRolesModal] = useState(false);
+  const [_rolesExist, setRolesExist] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -92,7 +104,7 @@ const OperatorListingTable = () => {
           id: operator.id,
           companyId: operator.company_id,
           companyName: operator.company_name,
-          fullName: operator.full_name ,
+          fullName: operator.full_name,
           username: operator.username,
           password: "",
           gender:
@@ -103,7 +115,7 @@ const OperatorListingTable = () => {
               : operator.gender === 3
               ? "Transgender"
               : "Other",
-          email: operator.email_id ,
+          email: operator.email_id,
           phoneNumber: operator.phone_number || "",
           status: operator.status === 1 ? "Active" : "Suspended",
         }));
@@ -128,6 +140,24 @@ const OperatorListingTable = () => {
       })
       .catch((err: any) => {
         console.error("Error fetching companies", err);
+      });
+  };
+  const checkRolesExist = () => {
+    if (!filterCompanyId) return false;
+
+    dispatch(operatorRoleListApi(filterCompanyId))
+      .unwrap()
+      .then((res: any[]) => {
+        setRolesExist(res.length > 0);
+        if (res.length === 0) {
+          setOpenNoRolesModal(true);
+        } else {
+          setOpenCreateModal(true);
+        }
+      })
+      .catch(() => {
+        setRolesExist(false);
+        setOpenNoRolesModal(true);
       });
   };
 
@@ -188,32 +218,77 @@ const OperatorListingTable = () => {
       fetchAccounts();
     }
   };
+  
+  const handleCloseDetailCard = () => {
+    setSelectedOperator(null);
+  };
 
   const handleRowClick = (account: Operator) => {
     const companyName = getCompanyName(account.companyId);
     setSelectedOperator({ ...account, companyName: companyName });
   };
+  const handleAddOperatorClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!canManageCompany) return;
+
+    if (filterCompanyId) {
+      checkRolesExist();
+    } else {
+      // If no company is selected, just open the create modal
+      setOpenCreateModal(true);
+    }
+  };
+  const NoRolesDialog = (
+    <Dialog open={openNoRolesModal} onClose={() => setOpenNoRolesModal(false)}>
+      <DialogTitle>No Roles Found</DialogTitle>
+      <DialogContent>
+        <Typography variant="body1" gutterBottom>
+          You need to create at least one role before adding operators.
+        </Typography>
+        <Typography variant="body2">
+          Please create roles for this company first.
+        </Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setOpenNoRolesModal(false)} color="primary">
+          Cancel
+        </Button>
+        <Button
+          onClick={() => {
+            setOpenNoRolesModal(false);
+            navigate(`/executive/company/role/${filterCompanyId}`);
+          }}
+          color="primary"
+          variant="contained"
+        >
+          Go to Roles
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 
   return (
     <Box
-    sx={{
-      display: "flex",
-      flexDirection: { xs: "column", md: "row" },
-      width: "100%",
-      height: "100vh",
-      gap: 2,
-    }}
+      sx={{
+        display: "flex",
+        flexDirection: { xs: "column", md: "row" },
+        width: "100%",
+        height: "100vh",
+        gap: 2,
+      }}
     >
       <Box
-       sx={{
-        flex: selectedOperator ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
-        maxWidth: selectedOperator ? { xs: "100%", md: "65%" } : "100%",
-        transition: "all 0.3s ease",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden", 
-      }}
+        sx={{
+          flex: selectedOperator
+            ? { xs: "0 0 100%", md: "0 0 65%" }
+            : "0 0 100%",
+          maxWidth: selectedOperator ? { xs: "100%", md: "65%" } : "100%",
+          transition: "all 0.3s ease",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
       >
         <Box
           sx={{
@@ -248,18 +323,21 @@ const OperatorListingTable = () => {
             >
               <Button
                 sx={{
-                  backgroundColor: !canManageCompany ? "#6c87b7" : "#187b48",
+                  ml: "auto",
+                  mr: 2,
+                  mb: 2,
+                  display: "block",
+                  backgroundColor: !canManageCompany
+                    ? "#6c87b7 !important"
+                    : "#3f51b5",
                   color: "white",
                   "&.Mui-disabled": {
-                    backgroundColor: "#6c87b7",
+                    backgroundColor: "#6c87b7 !important",
                     color: "#ffffff99",
                   },
                 }}
                 variant="contained"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenCreateModal(true);
-                }}
+                onClick={handleAddOperatorClick}
                 disabled={!canManageCompany}
               >
                 Add Operator
@@ -366,8 +444,11 @@ const OperatorListingTable = () => {
                           {row.fullName ? (
                             row.fullName
                           ) : (
-                            <Tooltip title=" Full Name not added yet" placement="bottom">
-                              <ErrorIcon  sx={{ color: "#737d72 " }} />
+                            <Tooltip
+                              title=" Full Name not added yet"
+                              placement="bottom"
+                            >
+                              <ErrorIcon sx={{ color: "#737d72 " }} />
                             </Tooltip>
                           )}
                         </TableCell>
@@ -375,8 +456,11 @@ const OperatorListingTable = () => {
                           {row.phoneNumber ? (
                             row.phoneNumber.replace("tel:", "")
                           ) : (
-                            <Tooltip title=" Phone Number not added yet" placement="bottom">
-                              <ErrorIcon  sx={{ color: "#737d72" }} />
+                            <Tooltip
+                              title=" Phone Number not added yet"
+                              placement="bottom"
+                            >
+                              <ErrorIcon sx={{ color: "#737d72" }} />
                             </Tooltip>
                           )}
                         </TableCell>
@@ -384,8 +468,11 @@ const OperatorListingTable = () => {
                           {row.email ? (
                             row.email
                           ) : (
-                            <Tooltip title=" Email not added yet" placement="bottom">
-                              <ErrorIcon  sx={{ color: "#737d72 " }} />
+                            <Tooltip
+                              title=" Email not added yet"
+                              placement="bottom"
+                            >
+                              <ErrorIcon sx={{ color: "#737d72 " }} />
                             </Tooltip>
                           )}
                         </TableCell>
@@ -489,6 +576,7 @@ const OperatorListingTable = () => {
             onBack={() => setSelectedOperator(null)}
             refreshList={refreshList}
             canManageCompany={canManageCompany}
+            oncloseDetailCard={handleCloseDetailCard}
           />
         </Box>
       )}
@@ -508,6 +596,7 @@ const OperatorListingTable = () => {
           />
         </DialogContent>
       </Dialog>
+      {NoRolesDialog}
     </Box>
   );
 };

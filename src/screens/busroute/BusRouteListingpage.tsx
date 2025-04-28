@@ -66,7 +66,7 @@ const BusRouteListing = () => {
   const roleDetails = localStorageHelper.getItem("@roleDetails");
   const canManageRoutes = roleDetails?.manage_route || false;
   const mapRef = useRef<{clearRoutePath: () => void}>(null);
-
+  
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const urlCompanyId = companyId || queryParams.get("companyId");

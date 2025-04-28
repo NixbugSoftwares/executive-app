@@ -19,6 +19,7 @@ import Feature from "ol/Feature";
 import Point from "ol/geom/Point";
 import { Style, Icon } from "ol/style";
 import { showErrorToast } from "../../common/toastMessageHelper";
+import companyLocation from "../../assets/png/companyLocation.png";
 
 interface MapComponentProps {
   onSelectLocation?: (coordinates: {
@@ -102,7 +103,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         source: markerSource,
         style: new Style({
           image: new Icon({
-            src: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+            src: companyLocation,
             scale: 1,
           }),
         }),
@@ -157,7 +158,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         source: markerSource,
         style: new Style({
           image: new Icon({
-            src: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+            src: companyLocation,
             scale: 1,
           }),
         }),
@@ -204,7 +205,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         source: markerSource,
         style: new Style({
           image: new Icon({
-            src: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+            src: companyLocation,
             scale: 1,
           }),
         }),
