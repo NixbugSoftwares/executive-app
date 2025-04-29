@@ -395,7 +395,6 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
       return;
     }
   
-    // Convert times to Date objects for comparison
     const departure = new Date(selectedLandmark.departureTime);
     const arrival = new Date(selectedLandmark.arrivalTime);
   
@@ -403,10 +402,15 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
       showErrorToast("Departure time must be earlier than arrival time");
       return;
     }
-    const isFirstLandmark = landmarks.length === 0;
+  
+    // Force distance to 0 for first landmark
+    const distance = selectedLandmark.sequenceId === 1 
+      ? 0 
+      : selectedLandmark.distance_from_start || 0;
+  
     const landmarkWithDistance = {
       ...selectedLandmark,
-      distance_from_start: isFirstLandmark ? 0 : selectedLandmark.distance_from_start || 0,
+      distance_from_start: distance,
       sequenceId: landmarks.length + 1
     };
     
@@ -414,7 +418,6 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
     highlightSelectedLandmark(selectedLandmark.id);
     updateRoutePath(selectedLandmark);
     
-    // Close the modal and time pickers
     setIsModalOpen(false);
   };
 
@@ -569,8 +572,13 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
   label="Distance from Start (meters)"
   fullWidth
   margin="normal"
-  value={selectedLandmark?.sequenceId === 1 ? 0 : selectedLandmark?.distance_from_start || ''}
+  value={
+    selectedLandmark?.sequenceId === 1 
+      ? 0 
+      : selectedLandmark?.distance_from_start || ''
+  }
   onChange={(e) => {
+    // Only allow changes if it's not the first landmark
     if (selectedLandmark?.sequenceId !== 1) {
       setSelectedLandmark({
         ...selectedLandmark!,
@@ -579,10 +587,11 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
     }
   }}
   disabled={selectedLandmark?.sequenceId === 1}
-  placeholder={selectedLandmark?.sequenceId === 1 ? "" : "Enter distance in meters"}
+  type="number"
   InputLabelProps={{ shrink: true }}
   inputProps={{
-    min: 0
+    min: 0,
+    step: 1
   }}
 />
 </DialogContent>
