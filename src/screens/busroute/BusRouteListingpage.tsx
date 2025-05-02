@@ -21,7 +21,7 @@ import {
 } from "@mui/material";
 import { Delete } from "@mui/icons-material";
 import { useDispatch } from "react-redux";
-import { busRouteListApi, routeDeleteApi } from "../../slices/appSlice";
+import { busRouteLandmarkListApi, busRouteListApi, routeDeleteApi } from "../../slices/appSlice";
 import { AppDispatch } from "../../store/Store";
 import { useParams, useLocation } from "react-router-dom";
 import MapComponent from "./BusRouteMap";
@@ -32,20 +32,13 @@ import {
 } from "../../common/toastMessageHelper";
 import localStorageHelper from "../../utils/localStorageHelper";
 import BusRouteDetailsPage from "./BusRouteDetails";
-
+import { SelectedLandmark, RouteLandmark } from '../../types/type';
 interface Route {
   id: number;
   companyId: number;
   name: string;
 }
 
-interface SelectedLandmark {
-  id: string;
-  name: string;
-  sequenceId: number;
-  arrivalTime: string;
-  departureTime: string;
-}
 
 const BusRouteListing = () => {
   const { companyId } = useParams();
@@ -66,7 +59,9 @@ const BusRouteListing = () => {
   const roleDetails = localStorageHelper.getItem("@roleDetails");
   const canManageRoutes = roleDetails?.manage_route || false;
   const mapRef = useRef<{clearRoutePath: () => void}>(null);
-  
+  const [_selectedRouteLandmarks, setSelectedRouteLandmarks] = useState<RouteLandmark[]>([]);
+  const [mapLandmarks, setMapLandmarks] = useState<SelectedLandmark[]>([]);
+
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const urlCompanyId = companyId || queryParams.get("companyId");
@@ -97,6 +92,43 @@ const BusRouteListing = () => {
 
   useEffect(() => {
     fetchRoute();
+  }, []);
+
+  useEffect(() => {
+    const fetchRouteLandmarks = async () => {
+      if (selectedRoute) {
+        try {
+          const response = await dispatch(
+            busRouteLandmarkListApi(selectedRoute.id)
+          ).unwrap();
+          
+          const processed = response.map((lm: any) => ({
+            id: lm.landmark_id,
+            name: lm.name,
+            sequenceId: lm.sequence_id,
+            arrivalTime: lm.arrival_time,
+            departureTime: lm.departure_time,
+            distance_from_start: lm.distance_from_start ?? 0 
+          }));
+          
+          setSelectedRouteLandmarks(processed);
+          setMapLandmarks(processed);
+        } catch (error) {
+          showErrorToast("Failed to load route landmarks");
+        }
+      }
+    };
+  
+    fetchRouteLandmarks();
+  }, [selectedRoute]);
+
+  useEffect(() => {
+    return () => {
+      setMapLandmarks([]);
+      if (mapRef.current) {
+        mapRef.current.clearRoutePath();
+      }
+    };
   }, []);
 
   const handleSearchChange = (
@@ -144,7 +176,7 @@ const BusRouteListing = () => {
     setLandmarks([...landmarks, updatedLandmark]);
   };
 
-  const handleRemoveLandmark = (id: string) => {
+  const handleRemoveLandmark = (id: number) => {
     const updatedLandmarks = landmarks
       .filter((landmark) => landmark.id !== id)
       .map((landmark, index) => ({
@@ -197,11 +229,19 @@ const BusRouteListing = () => {
         }}
       >
         {selectedRoute ? (
-          <BusRouteDetailsPage 
-            routeId={selectedRoute.id} 
-            routeName={selectedRoute.name}
-            onBack={() => setSelectedRoute(null)}
-          />
+          // In BusRouteListing component
+<BusRouteDetailsPage 
+  routeId={selectedRoute.id} 
+  routeName={selectedRoute.name}
+  onBack={() => {
+    setSelectedRoute(null);
+    setMapLandmarks([]); 
+    if (mapRef.current) {
+      mapRef.current.clearRoutePath(); // Clear the map when going back
+    }
+  }}
+  onLandmarksUpdate={setMapLandmarks}
+/>
         ) : showCreationForm ? (
           <>
             <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
@@ -288,7 +328,7 @@ const BusRouteListing = () => {
                           fullWidth
                           sx={{
                             "& .MuiInputBase-root": {
-                              height: 30,
+                              height: 40,
                               padding: "4px",
                             },
                           }}
@@ -311,7 +351,7 @@ const BusRouteListing = () => {
                           fullWidth
                           sx={{
                             "& .MuiInputBase-root": {
-                              height: 30,
+                              height: 40,
                               padding: "4px",
                             },
                           }}
@@ -446,6 +486,8 @@ const BusRouteListing = () => {
           onAddLandmark={handleAddLandmark}
           isSelecting={showCreationForm}
           ref={mapRef}
+          landmarks={mapLandmarks}
+          mode={selectedRoute ? 'view' : 'create'}
         />
       </Box>
 

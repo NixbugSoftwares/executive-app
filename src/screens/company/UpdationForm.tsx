@@ -21,7 +21,7 @@ interface ICompanyFormInputs {
   name: string;
   address: string;
   location: string;
-  owner_name: string;
+  contact_person: string;
   phone_number: string;
   email?: string;
   status?: number;
@@ -105,7 +105,7 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
             name: company.name,
             address: company.address,
             location: company.location,
-            owner_name: company.owner_name,
+            contact_person: company.contact_person,
             phone_number: company.phone_number
               ? company.phone_number.replace(/\D/g, "").replace(/^91/, "")
               : "",
@@ -120,7 +120,7 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
             name: company.name,
             address: company.address,
             location: company.location,
-            owner_name: company.owner_name,
+            contact_person: company.contact_person,
             phone_number: company.phone_number
               ? company.phone_number.replace(/\D/g, "").replace(/^91/, "")
               : "",
@@ -166,7 +166,7 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
           `POINT (${data.longitude} ${data.latitude})`
         );
       }
-      if (data.owner_name) formData.append("owner_name", data.owner_name);
+      if (data.contact_person) formData.append("owner_name", data.contact_person);
       if (data.phone_number)
         formData.append("phone_number", `+91${data.phone_number}`);
       if (data.email) formData.append("email_id", data.email);
@@ -249,9 +249,9 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
             required
             fullWidth
             label="Owner Name"
-            {...register("owner_name")}
-            error={!!errors.owner_name}
-            helperText={errors.owner_name?.message}
+            {...register("contact_person")}
+            error={!!errors.contact_person}
+            helperText={errors.contact_person?.message}
             size="small"
           />
           <Controller

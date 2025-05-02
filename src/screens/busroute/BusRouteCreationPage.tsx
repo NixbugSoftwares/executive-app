@@ -23,24 +23,17 @@ import {
   showErrorToast,
   showSuccessToast,
 } from "../../common/toastMessageHelper";
-
+import { SelectedLandmark } from "../../types/type";
 interface BusRouteCreationProps {
   companyId: number | null;
   landmarks: SelectedLandmark[];
-  onLandmarkRemove: (id: string) => void;
+  onLandmarkRemove: (id: number) => void;
   onSuccess: () => void;
   onCancel: () => void;
   onClearRoute?: () => void;
 }
 
-interface SelectedLandmark {
-  id: string;
-  name: string;
-  sequenceId: number;
-  arrivalTime: string;
-  departureTime: string;
-  distance_from_start?: number;
-}
+
 
 interface BusRouteFormInputs {
   name: string;
@@ -94,7 +87,7 @@ const BusRouteCreation = ({
       const landmarkPromises = landmarks.map((landmark) => {
         const landmarkFormData = new FormData();
         landmarkFormData.append("route_id", routeId.toString());
-        landmarkFormData.append("landmark_id", landmark.id);
+        landmarkFormData.append("landmark_id", landmark.id.toString());
         landmarkFormData.append(
           "distance_from_start",
           landmark.distance_from_start?.toString() || "0"

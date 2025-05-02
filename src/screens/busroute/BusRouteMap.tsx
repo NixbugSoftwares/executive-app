@@ -26,7 +26,7 @@ import {
   Typography,
 } from "@mui/material";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
-import AddLocationAltIcon from "@mui/icons-material/AddLocationAlt";
+import { Refresh } from "@mui/icons-material";
 import { showErrorToast } from "../../common/toastMessageHelper";
 import { landmarkListApi } from "../../slices/appSlice";
 import { useDispatch } from "react-redux";
@@ -37,30 +37,20 @@ import Feature from "ol/Feature";
 import Point from "ol/geom/Point";
 import { getCenter } from "ol/extent";
 import Text from 'ol/style/Text';
-interface Landmark {
-  id: string;
-  name: string;
-  boundary: string;
-  importance: string;
-  status: string;
-}
+import { Landmark,SelectedLandmark } from "../../types/type";
 
-interface SelectedLandmark {
-  id: string;
-  name: string;
-  sequenceId: number;
-  arrivalTime: string;
-  departureTime: string;
-  distance_from_start: number;
-}
+
 
 interface MapComponentProps {
   onAddLandmark: (landmark: SelectedLandmark) => void;
   isSelecting: boolean;
   onClearRoute?: () => void;
+  landmarks: SelectedLandmark[];
+  mode: 'create' | 'view';
 }
 
-const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapComponentProps, ref) => {
+const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting,landmarks: propLandmarks,
+  mode }: MapComponentProps, ref) => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const vectorSource = useRef(new VectorSource());
   const mapInstance = useRef<Map | null>(null);
@@ -78,38 +68,45 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
   const routeCoordsRef = useRef<Coordinate[]>([]);
   // Initialize the map
   const initializeMap = () => {
-    if (!mapRef.current) return null;
+      if (!mapRef.current) return null;
+  
+      const map = new Map({
+        controls: [],
+        layers: [
+          new TileLayer({ source: new OSM() }),
+          new VectorLayer({ source: vectorSource.current }),
+          new VectorLayer({ source: routePathSource.current }),
+        ],
+        target: mapRef.current,
+        view: new View({
+          center: fromLonLat([76.9366, 8.5241]),
+          zoom: 10,
+          minZoom: 3,
+          maxZoom: 18,
+        }),
+      });
+  
+      map.on("pointermove", (event) => {
+        const coords = toLonLat(event.coordinate);
+        setMousePosition(`${coords[0].toFixed(7)}, ${coords[1].toFixed(7)}`);
+      });
+  
+      return map;
+    };
 
-    const map = new Map({
-      controls: [],
-      layers: [
-        new TileLayer({ source: new OSM() }),
-        new VectorLayer({ source: vectorSource.current }),
-        new VectorLayer({ source: routePathSource.current }),
-      ],
-      target: mapRef.current,
-      view: new View({
-        center: fromLonLat([76.9366, 8.5241]),
-        zoom: 10,
-        minZoom: 3,
-        maxZoom: 18,
-      }),
-    });
-
-    map.on("pointermove", (event) => {
-      const coords = toLonLat(event.coordinate);
-      setMousePosition(`${coords[0].toFixed(7)}, ${coords[1].toFixed(7)}`);
-    });
-
-    return map;
-  };
 
   useEffect(() => {
-    if (!mapInstance.current) {
-      mapInstance.current = initializeMap();
-    }
-    fetchLandmark();
-  }, []);
+      if (!mapInstance.current) {
+        mapInstance.current = initializeMap();
+      }
+      fetchLandmark();
+    }, []);
+
+    useEffect(() => {
+      if (mode === 'view') {
+        handleViewModeLandmarks();
+      }
+    }, [propLandmarks, mode]);
 
   useEffect(() => {
     if (!mapInstance.current) return;
@@ -164,6 +161,90 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
     };
   }, [isAddingLandmark, landmarks]);
 
+
+  const handleViewModeLandmarks = () => {
+    vectorSource.current.clear();
+    routePathSource.current.clear();
+    routeCoordsRef.current = [];
+  
+    if (!propLandmarks || propLandmarks.length === 0) {
+      return;
+    }
+  
+    // Sort landmarks by distance_from_start
+    const sortedLandmarks = [...propLandmarks].sort(
+      (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
+    );
+  
+    sortedLandmarks.forEach((landmark, index) => {
+      const lm = landmarks.find((l) => l.id === landmark.id);
+      if (lm?.boundary) {
+        try {
+          const coordinates = lm.boundary
+            .split(",")
+            .map((coord: string) => coord.trim().split(" ").map(Number))
+            .map((coord: Coordinate) => fromLonLat(coord));
+  
+          const polygon = new Polygon([coordinates]);
+          const feature = new Feature(polygon);
+          feature.set("id", lm.id);
+  
+          feature.setStyle(
+            new Style({
+              stroke: new Stroke({
+                color: "rgba(255, 165, 0, 0.7)",
+                width: 2,
+              }),
+              fill: new Fill({
+                color: "rgba(255, 165, 0, 0.1)",
+              }),
+              text: new Text({
+                text: (index + 1).toString(),
+                font: "bold 14px Arial",
+                fill: new Fill({ color: "#fff" }),
+                stroke: new Stroke({ color: "#000", width: 3 }),
+                offsetY: -20,
+              }),
+            })
+          );
+  
+          vectorSource.current.addFeature(feature);
+  
+          const center = getCenter(polygon.getExtent());
+          routeCoordsRef.current.push(center);
+        } catch (error) {
+          console.error("Error processing landmark boundary:", error);
+        }
+      }
+    });
+  
+    if (routeCoordsRef.current.length > 1) {
+      const routeFeature = new Feature({
+        geometry: new LineString(routeCoordsRef.current),
+      });
+  
+      routeFeature.setStyle(
+        new Style({
+          stroke: new Stroke({
+            color: "rgba(218, 29, 16, 0.7)",
+            width: 3,
+          }),
+        })
+      );
+  
+      routePathSource.current.addFeature(routeFeature);
+    }
+  
+    if (routeCoordsRef.current.length > 0 && mapInstance.current) {
+      const extent = vectorSource.current.getExtent();
+      mapInstance.current.getView().fit(extent, {
+        padding: [50, 50, 50, 50],
+        duration: 1000,
+      });
+    }
+  };
+
+    
   // Fetch landmarks
   const fetchLandmark = () => {
     dispatch(landmarkListApi())
@@ -415,7 +496,7 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
     };
     
     onAddLandmark(landmarkWithDistance);
-    highlightSelectedLandmark(selectedLandmark.id);
+    highlightSelectedLandmark(selectedLandmark.id.toString());
     updateRoutePath(selectedLandmark);
     
     setIsModalOpen(false);
@@ -432,27 +513,39 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
     }
   };
   const clearRoutePath = () => {
-    routeCoordsRef.current = []; 
-    routePathSource.current.clear();
-    const features = vectorSource.current.getFeatures();
-    features.forEach(feature => {
-      feature.setStyle(
-        new Style({
-          stroke: new Stroke({
-            color: "rgba(0, 0, 255, 0.7)",
-            width: 2,
-          }),
-          fill: new Fill({
-            color: "rgba(0, 0, 255, 0.1)",
-          }),
-        })
-      );
-    });
+    routeCoordsRef.current = [];
+    routePathSource.current.clear(); // Clear route paths
+    vectorSource.current.clear(); // Clear all landmarks and features
+    setShowAllBoundaries(false); // Hide boundaries if they are visible
+    if (mapInstance.current) {
+      mapInstance.current.getView().setZoom(10); // Reset zoom level
+      mapInstance.current.getView().setCenter(fromLonLat([76.9366, 8.5241])); // Reset center
+    }
   };
   
   React.useImperativeHandle(ref, () => ({
     clearRoutePath
   }));
+
+
+   const refreshMap = () => {
+      setTimeout(() => {
+        vectorSource.current.clear();
+        setShowAllBoundaries(false);
+        
+      }, 300); 
+  
+      if (mapInstance.current) {
+        mapInstance.current.getView().animate({
+          center: fromLonLat([76.9366, 8.5241]),
+          zoom: 10,
+          duration: 1000, 
+        });
+      }
+      setTimeout(() => {
+        mapInstance.current?.render();
+      }, 1100); 
+    };
 
   return (
     <Box height="100%">
@@ -498,7 +591,6 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
           <Button
             variant="contained"
             color={isAddingLandmark ? "secondary" : "primary"}
-            startIcon={<AddLocationAltIcon />}
             onClick={toggleAddLandmarkMode}
           >
             {isAddingLandmark ? "Cancel " : "Select Landmark"}
@@ -516,6 +608,13 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting }: MapCompon
               />
             </IconButton>
           </Tooltip>
+          <Box>
+                        <Tooltip title="Refresh Map" placement="bottom">
+                          <IconButton color="warning" onClick={refreshMap}>
+                            <Refresh />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
         </Box>
       </Box>
 
