@@ -25,7 +25,7 @@ import {
   routeLandmarkDeleteApi,
   routeLandmarkUpdationApi,
   routeUpdationApi,
-  routeLandmarkCreationApi
+  routeLandmarkCreationApi,
 } from "../../slices/appSlice";
 import { useAppDispatch } from "../../store/Hooks";
 import {
@@ -34,12 +34,17 @@ import {
 } from "../../common/toastMessageHelper";
 import { Landmark, RouteLandmark, SelectedLandmark } from "../../types/type";
 
-
 interface BusRouteDetailsProps {
   routeId: number;
   routeName: string;
   onBack: () => void;
   onLandmarksUpdate: (landmarks: any[]) => void;
+  onEnableAddLandmark: () => void; // Callback to enable Add Landmark mode
+  onNewLandmarkAdded: (landmark: SelectedLandmark) => void; // Callback for new landmarks
+  isEditing?: boolean;
+  onCancelEdit: () => void;
+  newLandmarks: SelectedLandmark[];
+  setNewLandmarks: React.Dispatch<React.SetStateAction<SelectedLandmark[]>>;
 }
 
 const BusRouteDetailsPage = ({
@@ -47,12 +52,18 @@ const BusRouteDetailsPage = ({
   routeName,
   onBack,
   onLandmarksUpdate,
+  onEnableAddLandmark,
+  onNewLandmarkAdded,
+  onCancelEdit,
+  newLandmarks,
+  setNewLandmarks,
+
 }: BusRouteDetailsProps) => {
   const dispatch = useAppDispatch();
   const [routeLandmarks, setRouteLandmarks] = useState<RouteLandmark[]>([]);
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [routeLandmarkToDelete, setRouteLandmarkToDelete] = 
+  const [routeLandmarkToDelete, setRouteLandmarkToDelete] =
     useState<RouteLandmark | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -60,73 +71,72 @@ const BusRouteDetailsPage = ({
     null
   );
   const [updatedRouteName, setUpdatedRouteName] = useState(routeName);
-  const [isAddingNewLandmark, setIsAddingNewLandmark] = useState(false);
-  const [newLandmarks, setNewLandmarks] = useState<SelectedLandmark[]>([]);
-  const [selectedLandmark, setSelectedLandmark] = useState<SelectedLandmark | null>(null);
+  const [selectedLandmark, setSelectedLandmark] =
+    useState<SelectedLandmark | null>(null);
 
-  
   const fetchRouteLandmarks = async () => {
-  setIsLoading(true);
-  try {
-    const response = await dispatch(
-      busRouteLandmarkListApi(routeId)
-    ).unwrap();
+    setIsLoading(true);
+    try {
+      const response = await dispatch(
+        busRouteLandmarkListApi(routeId)
+      ).unwrap();
 
-    const processedLandmarks = processLandmarks(response);
-    const sortedLandmarks = processedLandmarks.sort(
-      (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
-    ); // Sort by distance
-    setRouteLandmarks(sortedLandmarks);
-    updateParentMapLandmarks(sortedLandmarks);
-  } catch (error) {
-    showErrorToast("Failed to fetch route landmarks");
-  } finally {
-    setIsLoading(false);
-  }
-};
+      const processedLandmarks = processLandmarks(response);
+      const sortedLandmarks = processedLandmarks.sort(
+        (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
+      ); 
+      setRouteLandmarks(sortedLandmarks);
+      updateParentMapLandmarks(sortedLandmarks);
+    } catch (error) {
+      showErrorToast("Failed to fetch route landmarks");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const updateParentMapLandmarks = (landmarks: RouteLandmark[]) => {
-    const mapLandmarks = landmarks.map(lm => ({
+    const mapLandmarks = landmarks.map((lm) => ({
       id: lm.landmark_id,
       name: lm.name,
       sequenceId: lm.sequence_id || 0,
       arrivalTime: lm.arrival_time,
       departureTime: lm.departure_time,
-      distance_from_start: lm.distance_from_start || 0
+      distance_from_start: lm.distance_from_start || 0,
     }));
-    
+
     onLandmarksUpdate(mapLandmarks);
   };
-  
- 
-  
+
   const handleAddNewLandmark = (landmark: SelectedLandmark) => {
     setNewLandmarks([...newLandmarks, landmark]);
+    onNewLandmarkAdded(landmark); // Send new landmark to the map
   };
-  
+
   const handleSaveNewLandmarks = async () => {
     try {
       const creationPromises = newLandmarks.map(async (landmark) => {
         const formData = new FormData();
         formData.append("route_id", routeId.toString());
         formData.append("landmark_id", landmark.id.toString());
-        formData.append("arrival_time", landmark.arrivalTime);
+        formData.append("sequence_id", landmark.sequenceId.toString()); // Add sequence_id
         formData.append("departure_time", landmark.departureTime);
-        formData.append("distance_from_start", landmark.distance_from_start.toString());
-        
+        formData.append("arrival_time", landmark.arrivalTime);
+        formData.append(
+          "distance_from_start",
+          landmark.distance_from_start.toString()
+        );
+
         await dispatch(routeLandmarkCreationApi(formData)).unwrap();
       });
-  
+
       await Promise.all(creationPromises);
       showSuccessToast("New landmarks added successfully");
+      setNewLandmarks([]); 
       fetchRouteLandmarks();
-      setNewLandmarks([]);
-      setIsAddingNewLandmark(false);
     } catch (error) {
       showErrorToast("Failed to add new landmarks");
     }
   };
-
 
   const fetchLandmark = () => {
     dispatch(landmarkListApi())
@@ -191,9 +201,12 @@ const BusRouteDetailsPage = ({
   };
 
   const handleEditRoute = () => {
-    setEditMode(!editMode);
     if (editMode) {
-      setUpdatedRouteName(routeName);
+      setEditMode(false);
+      onCancelEdit();
+    } else {
+      setEditMode(true);
+      onEnableAddLandmark();
     }
   };
 
@@ -266,7 +279,9 @@ const BusRouteDetailsPage = ({
   };
 
   return (
-    <Box sx={{ p: 3, display: "flex", flexDirection: "column", height: "100%" }}>
+    <Box
+      sx={{ p: 3, display: "flex", flexDirection: "column", height: "100%" }}
+    >
       <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
         <Button variant="contained" onClick={onBack}>
           Back to Routes
@@ -277,10 +292,24 @@ const BusRouteDetailsPage = ({
         >
           {editMode ? "Cancel Edit" : "Edit Route"}
         </Button>
+        {editMode && (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSaveNewLandmarks}
+            disabled={newLandmarks.length === 0}
+          >
+            Save Changes
+          </Button>
+        )}
       </Stack>
 
       <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+        >
           {editMode ? (
             <Stack direction="row" alignItems="center" spacing={2}>
               <TextField
@@ -316,28 +345,8 @@ const BusRouteDetailsPage = ({
           <Typography variant="h6" sx={{ mb: 2 }}>
             Route Landmarks
           </Typography>
-          {editMode && (
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-        <Button
-          variant="contained"
-          color="primary"
-        >
-          {isAddingNewLandmark ? "Cancel Add Landmark" : "Add Landmark"}
-        </Button>
-        {isAddingNewLandmark && (
-          <Button
-            variant="contained"
-            color="success"
-            onClick={handleSaveNewLandmarks}
-            disabled={newLandmarks.length === 0}
-          >
-            Save New Landmarks
-          </Button>
-        )}
-      </Stack>
-    )}
-           <List sx={{ width: "100%" }}>
-           {routeLandmarks.map((landmark, index) => (
+          <List sx={{ width: "100%" }}>
+            {routeLandmarks.map((landmark, index) => (
               <Box key={landmark.id}>
                 <ListItem
                   sx={{
@@ -412,31 +421,41 @@ const BusRouteDetailsPage = ({
               </Box>
             ))}
             {newLandmarks.map((landmark, index) => (
-        <Box key={`new-${landmark.id}-${index}`}>
-          <ListItem sx={{ backgroundColor: '#e3f2fd' }}>
-            <Chip label={routeLandmarks.length + index + 1} color="primary" />
-            <ListItemText
-              primary={landmark.name}
-              secondary={
-                <>
-                  <span>Arrival: {landmark.arrivalTime}</span>
-                  <span style={{ margin: "0 8px" }}>|</span>
-                  <span>Departure: {landmark.departureTime}</span>
-                  <span style={{ margin: "0 8px" }}>|</span>
-                  <span>Distance: {landmark.distance_from_start}m</span>
-                </>
-              }
-            />
-            <IconButton
-              color="error"
-              onClick={() => setNewLandmarks(newLandmarks.filter((_, i) => i !== index))}
-            >
-              <Delete />
-            </IconButton>
-          </ListItem>
-          <Divider component="li" sx={{ borderLeftWidth: 2, borderLeftStyle: "dashed" }} />
-        </Box>
-      ))}
+              <Box key={`new-${landmark.id}-${index}`}>
+                <ListItem sx={{ backgroundColor: "#e3f2fd" }}>
+                  <Chip
+                    label={routeLandmarks.length + index + 1}
+                    color="primary"
+                  />
+                  <ListItemText
+                    primary={landmark.name}
+                    secondary={
+                      <>
+                        <span>Arrival: {landmark.arrivalTime}</span>
+                        <span style={{ margin: "0 8px" }}>|</span>
+                        <span>Departure: {landmark.departureTime}</span>
+                        <span style={{ margin: "0 8px" }}>|</span>
+                        <span>Distance: {landmark.distance_from_start}m</span>
+                      </>
+                    }
+                  />
+                  <IconButton
+                    color="error"
+                    onClick={() =>
+                      setNewLandmarks(
+                        newLandmarks.filter((_, i) => i !== index)
+                      )
+                    }
+                  >
+                    <Delete />
+                  </IconButton>
+                </ListItem>
+                <Divider
+                  component="li"
+                  sx={{ borderLeftWidth: 2, borderLeftStyle: "dashed" }}
+                />
+              </Box>
+            ))}
           </List>
         </Paper>
       )}
@@ -448,7 +467,8 @@ const BusRouteDetailsPage = ({
         <DialogTitle>Confirm Landmark Removal</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Remove "{getLandmarkName(routeLandmarkToDelete?.landmark_id || "")}"?
+            Remove "{getLandmarkName(routeLandmarkToDelete?.landmark_id || "")}
+            "?
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -520,11 +540,14 @@ const BusRouteDetailsPage = ({
         <DialogActions>
           <Button onClick={() => setEditingLandmark(null)}>Cancel</Button>
           <Button
-            onClick={() => editingLandmark && handleLandmarkUpdate({
-              arrival_time: editingLandmark.arrival_time,
-              departure_time: editingLandmark.departure_time,
-              distance_from_start: editingLandmark.distance_from_start,
-            })}
+            onClick={() =>
+              editingLandmark &&
+              handleLandmarkUpdate({
+                arrival_time: editingLandmark.arrival_time,
+                departure_time: editingLandmark.departure_time,
+                distance_from_start: editingLandmark.distance_from_start,
+              })
+            }
             color="primary"
           >
             Save
@@ -533,58 +556,68 @@ const BusRouteDetailsPage = ({
       </Dialog>
 
       {selectedLandmark && (
-  <Dialog open={!!selectedLandmark} onClose={() => setSelectedLandmark(null)}>
-    <DialogTitle>Add Landmark Details</DialogTitle>
-    <DialogContent>
-      <TextField
-        label="Arrival Time"
-        type="datetime-local"
-        fullWidth
-        margin="normal"
-        value={selectedLandmark.arrivalTime}
-        onChange={(e) => setSelectedLandmark({
-          ...selectedLandmark,
-          arrivalTime: e.target.value
-        })}
-        InputLabelProps={{ shrink: true }}
-      />
-      <TextField
-        label="Departure Time"
-        type="datetime-local"
-        fullWidth
-        margin="normal"
-        value={selectedLandmark.departureTime}
-        onChange={(e) => setSelectedLandmark({
-          ...selectedLandmark,
-          departureTime: e.target.value
-        })}
-        InputLabelProps={{ shrink: true }}
-      />
-      <TextField
-        label="Distance from Start (m)"
-        type="number"
-        fullWidth
-        margin="normal"
-        value={selectedLandmark.distance_from_start}
-        onChange={(e) => setSelectedLandmark({
-          ...selectedLandmark,
-          distance_from_start: Number(e.target.value)
-        })}
-      />
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={() => setSelectedLandmark(null)}>Cancel</Button>
-      <Button onClick={() => {
-        handleAddNewLandmark(selectedLandmark);
-        setSelectedLandmark(null);
-      }} color="primary">
-        Add
-      </Button>
-    </DialogActions>
-  </Dialog>
-)}
-
-
+        <><Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSaveNewLandmarks}
+            disabled={newLandmarks.length === 0}
+          >
+            Save New Landmarks
+          </Button>
+        </Stack><Dialog
+          open={!!selectedLandmark}
+          onClose={() => setSelectedLandmark(null)}
+        >
+            <DialogTitle>Add Landmark Details</DialogTitle>
+            <DialogContent>
+              <TextField
+                label="Arrival Time"
+                type="datetime-local"
+                fullWidth
+                margin="normal"
+                value={selectedLandmark.arrivalTime}
+                onChange={(e) => setSelectedLandmark({
+                  ...selectedLandmark,
+                  arrivalTime: e.target.value,
+                })}
+                InputLabelProps={{ shrink: true }} />
+              <TextField
+                label="Departure Time"
+                type="datetime-local"
+                fullWidth
+                margin="normal"
+                value={selectedLandmark.departureTime}
+                onChange={(e) => setSelectedLandmark({
+                  ...selectedLandmark,
+                  departureTime: e.target.value,
+                })}
+                InputLabelProps={{ shrink: true }} />
+              <TextField
+                label="Distance from Start (m)"
+                type="number"
+                fullWidth
+                margin="normal"
+                value={selectedLandmark.distance_from_start}
+                onChange={(e) => setSelectedLandmark({
+                  ...selectedLandmark,
+                  distance_from_start: Number(e.target.value),
+                })} />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setSelectedLandmark(null)}>Cancel</Button>
+              <Button
+                onClick={() => {
+                  handleAddNewLandmark(selectedLandmark);
+                  setSelectedLandmark(null);
+                } }
+                color="primary"
+              >
+                Add
+              </Button>
+            </DialogActions>
+          </Dialog></>
+      )}
     </Box>
   );
 };

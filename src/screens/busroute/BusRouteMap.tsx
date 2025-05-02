@@ -31,45 +31,56 @@ import { showErrorToast } from "../../common/toastMessageHelper";
 import { landmarkListApi } from "../../slices/appSlice";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../../store/Store";
-import { Style, Stroke, Fill, Circle} from "ol/style";
+import { Style, Stroke, Fill, Circle } from "ol/style";
 import { Coordinate } from "ol/coordinate";
 import Feature from "ol/Feature";
 import Point from "ol/geom/Point";
 import { getCenter } from "ol/extent";
-import Text from 'ol/style/Text';
-import { Landmark,SelectedLandmark } from "../../types/type";
-
-
+import Text from "ol/style/Text";
+import { Landmark, SelectedLandmark } from "../../types/type";
 
 interface MapComponentProps {
   onAddLandmark: (landmark: SelectedLandmark) => void;
   isSelecting: boolean;
   onClearRoute?: () => void;
   landmarks: SelectedLandmark[];
-  mode: 'create' | 'view';
+  mode: "create" | "view";
+  isEditing?: boolean;
 }
 
-const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting,landmarks: propLandmarks,
-  mode }: MapComponentProps, ref) => {
-  const mapRef = useRef<HTMLDivElement | null>(null);
-  const vectorSource = useRef(new VectorSource());
-  const mapInstance = useRef<Map | null>(null);
-  const dispatch = useDispatch<AppDispatch>();
-  const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">("osm");
-  const [mousePosition, setMousePosition] = useState<string>("");
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [landmarks, setLandmarks] = useState<Landmark[]>([]);
-  const [showAllBoundaries, setShowAllBoundaries] = useState(false);
-  const [selectedLandmark, setSelectedLandmark] = useState<SelectedLandmark | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isAddingLandmark, setIsAddingLandmark] = useState(false);
-  const selectInteractionRef = useRef<OlSelect | null>(null);
-  const routePathSource = useRef(new VectorSource());
-  const routeCoordsRef = useRef<Coordinate[]>([]);
-  // Initialize the map
-  const initializeMap = () => {
+const MapComponent = React.forwardRef(
+  (
+    {
+      onAddLandmark,
+      isSelecting,
+      landmarks: propLandmarks,
+      mode,
+      isEditing,
+    }: MapComponentProps,
+    ref
+  ) => {
+    const mapRef = useRef<HTMLDivElement | null>(null);
+    const vectorSource = useRef(new VectorSource());
+    const mapInstance = useRef<Map | null>(null);
+    const dispatch = useDispatch<AppDispatch>();
+    const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">(
+      "osm"
+    );
+    const [mousePosition, setMousePosition] = useState<string>("");
+    const [searchQuery, setSearchQuery] = useState<string>("");
+    const [landmarks, setLandmarks] = useState<Landmark[]>([]);
+    const [showAllBoundaries, setShowAllBoundaries] = useState(false);
+    const [selectedLandmark, setSelectedLandmark] =
+      useState<SelectedLandmark | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isAddingLandmark, setIsAddingLandmark] = useState(false);
+    const selectInteractionRef = useRef<OlSelect | null>(null);
+    const routePathSource = useRef(new VectorSource());
+    const routeCoordsRef = useRef<Coordinate[]>([]);
+    // Initialize the map
+    const initializeMap = () => {
       if (!mapRef.current) return null;
-  
+
       const map = new Map({
         controls: [],
         layers: [
@@ -85,17 +96,16 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting,landmarks: p
           maxZoom: 18,
         }),
       });
-  
+
       map.on("pointermove", (event) => {
         const coords = toLonLat(event.coordinate);
         setMousePosition(`${coords[0].toFixed(7)}, ${coords[1].toFixed(7)}`);
       });
-  
+
       return map;
     };
 
-
-  useEffect(() => {
+    useEffect(() => {
       if (!mapInstance.current) {
         mapInstance.current = initializeMap();
       }
@@ -103,612 +113,625 @@ const MapComponent = React.forwardRef(({ onAddLandmark, isSelecting,landmarks: p
     }, []);
 
     useEffect(() => {
-      if (mode === 'view') {
+      if (mode === "view") {
         handleViewModeLandmarks();
       }
     }, [propLandmarks, mode]);
 
-  useEffect(() => {
-    if (!mapInstance.current) return;
-
-    const layers = mapInstance.current.getLayers().getArray();
-    const vectorLayer = layers[1] instanceof VectorLayer ? layers[1] : null;
-
-    if (!vectorLayer) return;
-
-    if (isAddingLandmark) {
-      if (selectInteractionRef.current) {
-        mapInstance.current.removeInteraction(selectInteractionRef.current);
+    useEffect(() => {
+      if (isEditing !== undefined) {
+        setIsAddingLandmark(isEditing);
+        setShowAllBoundaries(isEditing);
       }
-      const selectInteraction = new OlSelect({
-        layers: [vectorLayer],
-      });
+    }, [isEditing]);
 
-      selectInteraction.on("select", (e) => {
-        const selectedFeature = e.selected[0];
-        if (selectedFeature) {
-          const landmarkId = selectedFeature.get("id");
-          const landmark = landmarks.find((lm) => lm.id === landmarkId);
-      
-          if (landmark) {
-            setSelectedLandmark({
-              id: landmark.id,
-              name: landmark.name,
-              sequenceId: landmarks.length + 1, // This sets the correct sequenceId
-              arrivalTime: "",
-              departureTime: "",
-              distance_from_start: landmarks.length === 0 ? 0 : 0, // Set to 0 for first landmark
-            });
-            setIsModalOpen(true);
+    useEffect(() => {
+      if (!mapInstance.current) return;
+
+      const layers = mapInstance.current.getLayers().getArray();
+      const vectorLayer = layers[1] instanceof VectorLayer ? layers[1] : null;
+
+      if (!vectorLayer) return;
+
+      if (isAddingLandmark) {
+        if (selectInteractionRef.current) {
+          mapInstance.current.removeInteraction(selectInteractionRef.current);
+        }
+        const selectInteraction = new OlSelect({
+          layers: [vectorLayer],
+        });
+
+        selectInteraction.on("select", (e) => {
+          const selectedFeature = e.selected[0];
+          if (selectedFeature) {
+            const landmarkId = selectedFeature.get("id");
+            const landmark = landmarks.find((lm) => lm.id === landmarkId);
+
+            if (landmark) {
+              setSelectedLandmark({
+                id: landmark.id,
+                name: landmark.name,
+                sequenceId: landmarks.length + 1, // This sets the correct sequenceId
+                arrivalTime: "",
+                departureTime: "",
+                distance_from_start: landmarks.length === 0 ? 0 : 0, // Set to 0 for first landmark
+              });
+              setIsModalOpen(true);
+            }
           }
-        }
-        selectInteraction.getFeatures().clear();
-      });
+          selectInteraction.getFeatures().clear();
+        });
 
-      mapInstance.current.addInteraction(selectInteraction);
-      selectInteractionRef.current = selectInteraction;
-    } else {
-      if (selectInteractionRef.current) {
-        mapInstance.current.removeInteraction(selectInteractionRef.current);
-        selectInteractionRef.current = null;
-      }
-    }
-
-    return () => {
-      if (selectInteractionRef.current) {
-        mapInstance.current?.removeInteraction(selectInteractionRef.current);
-      }
-    };
-  }, [isAddingLandmark, landmarks]);
-
-
-  const handleViewModeLandmarks = () => {
-    vectorSource.current.clear();
-    routePathSource.current.clear();
-    routeCoordsRef.current = [];
-  
-    if (!propLandmarks || propLandmarks.length === 0) {
-      return;
-    }
-  
-    // Sort landmarks by distance_from_start
-    const sortedLandmarks = [...propLandmarks].sort(
-      (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
-    );
-  
-    sortedLandmarks.forEach((landmark, index) => {
-      const lm = landmarks.find((l) => l.id === landmark.id);
-      if (lm?.boundary) {
-        try {
-          const coordinates = lm.boundary
-            .split(",")
-            .map((coord: string) => coord.trim().split(" ").map(Number))
-            .map((coord: Coordinate) => fromLonLat(coord));
-  
-          const polygon = new Polygon([coordinates]);
-          const feature = new Feature(polygon);
-          feature.set("id", lm.id);
-  
-          feature.setStyle(
-            new Style({
-              stroke: new Stroke({
-                color: "rgba(255, 165, 0, 0.7)",
-                width: 2,
-              }),
-              fill: new Fill({
-                color: "rgba(255, 165, 0, 0.1)",
-              }),
-              text: new Text({
-                text: (index + 1).toString(),
-                font: "bold 14px Arial",
-                fill: new Fill({ color: "#fff" }),
-                stroke: new Stroke({ color: "#000", width: 3 }),
-                offsetY: -20,
-              }),
-            })
-          );
-  
-          vectorSource.current.addFeature(feature);
-  
-          const center = getCenter(polygon.getExtent());
-          routeCoordsRef.current.push(center);
-        } catch (error) {
-          console.error("Error processing landmark boundary:", error);
+        mapInstance.current.addInteraction(selectInteraction);
+        selectInteractionRef.current = selectInteraction;
+      } else {
+        if (selectInteractionRef.current) {
+          mapInstance.current.removeInteraction(selectInteractionRef.current);
+          selectInteractionRef.current = null;
         }
       }
-    });
-  
-    if (routeCoordsRef.current.length > 1) {
-      const routeFeature = new Feature({
-        geometry: new LineString(routeCoordsRef.current),
-      });
-  
-      routeFeature.setStyle(
-        new Style({
-          stroke: new Stroke({
-            color: "rgba(218, 29, 16, 0.7)",
-            width: 3,
-          }),
-        })
+
+      return () => {
+        if (selectInteractionRef.current) {
+          mapInstance.current?.removeInteraction(selectInteractionRef.current);
+        }
+      };
+    }, [isAddingLandmark, landmarks]);
+
+    const handleViewModeLandmarks = () => {
+      vectorSource.current.clear();
+      routePathSource.current.clear();
+      routeCoordsRef.current = [];
+
+      if (!propLandmarks || propLandmarks.length === 0) {
+        return;
+      }
+
+      // Sort landmarks by distance_from_start
+      const sortedLandmarks = [...propLandmarks].sort(
+        (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
       );
-  
-      routePathSource.current.addFeature(routeFeature);
-    }
-  
-    if (routeCoordsRef.current.length > 0 && mapInstance.current) {
-      const extent = vectorSource.current.getExtent();
-      mapInstance.current.getView().fit(extent, {
-        padding: [50, 50, 50, 50],
-        duration: 1000,
-      });
-    }
-  };
 
-    
-  // Fetch landmarks
-  const fetchLandmark = () => {
-    dispatch(landmarkListApi())
-      .unwrap()
-      .then((res: any[]) => {
-        const formattedLandmarks = res.map((landmark: any) => ({
-          id: landmark.id,
-          name: landmark.name,
-          boundary: extractRawPoints(landmark.boundary),
-          importance:
-            landmark.importance === 1
-              ? "Low"
-              : landmark.importance === 2
-              ? "Medium"
-              : "High",
-          status: landmark.status === 1 ? "Validating" : "Verified",
-        }));
-        setLandmarks(formattedLandmarks);
-      })
-      .catch((err: any) => {
-        showErrorToast(err);
-      });
-  };
-
-  const extractRawPoints = (polygonString: string): string => {
-    if (!polygonString) return "";
-    const matches = polygonString.match(/\(\((.*?)\)\)/);
-    return matches ? matches[1] : "";
-  };
-
-  useEffect(() => {
-    if (!mapInstance.current) return;
-
-    vectorSource.current.clear();
-    const features: Feature[] = [];
-
-    if (showAllBoundaries && landmarks) {
-      landmarks.forEach((landmark) => {
-        if (landmark.boundary) {
+      sortedLandmarks.forEach((landmark, index) => {
+        const lm = landmarks.find((l) => l.id === landmark.id);
+        if (lm?.boundary) {
           try {
-            const coordinates = landmark.boundary
+            const coordinates = lm.boundary
               .split(",")
               .map((coord: string) => coord.trim().split(" ").map(Number))
               .map((coord: Coordinate) => fromLonLat(coord));
 
             const polygon = new Polygon([coordinates]);
             const feature = new Feature(polygon);
-            feature.set("id", landmark.id);
+            feature.set("id", lm.id);
+
             feature.setStyle(
               new Style({
                 stroke: new Stroke({
-                  color: "rgba(0, 0, 255, 0.7)",
+                  color: "rgba(255, 165, 0, 0.7)",
                   width: 2,
                 }),
                 fill: new Fill({
-                  color: "rgba(0, 0, 255, 0.1)",
+                  color: "rgba(255, 165, 0, 0.1)",
+                }),
+                text: new Text({
+                  text: (index + 1).toString(),
+                  font: "bold 14px Arial",
+                  fill: new Fill({ color: "#fff" }),
+                  stroke: new Stroke({ color: "#000", width: 3 }),
+                  offsetY: -20,
                 }),
               })
             );
-            features.push(feature);
+
+            vectorSource.current.addFeature(feature);
+
+            const center = getCenter(polygon.getExtent());
+            routeCoordsRef.current.push(center);
           } catch (error) {
-            console.error(`Error processing landmark ${landmark.id}:`, error);
+            console.error("Error processing landmark boundary:", error);
           }
         }
       });
-    }
 
-    if (features.length > 0) {
-      vectorSource.current.addFeatures(features);
-      const extent = vectorSource.current.getExtent();
-      if (extent[0] !== Infinity) {
+      if (routeCoordsRef.current.length > 1) {
+        const routeFeature = new Feature({
+          geometry: new LineString(routeCoordsRef.current),
+        });
+
+        routeFeature.setStyle(
+          new Style({
+            stroke: new Stroke({
+              color: "rgba(218, 29, 16, 0.7)",
+              width: 3,
+            }),
+          })
+        );
+
+        routePathSource.current.addFeature(routeFeature);
+      }
+
+      if (routeCoordsRef.current.length > 0 && mapInstance.current) {
+        const extent = vectorSource.current.getExtent();
         mapInstance.current.getView().fit(extent, {
           padding: [50, 50, 50, 50],
           duration: 1000,
         });
       }
-    }
-  }, [showAllBoundaries, landmarks]);
+    };
 
-  // Handle search
-  const handleSearch = async () => {
-    if (!searchQuery || !mapInstance.current) return;
-
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          searchQuery
-        )}`
-      );
-      const data = await response.json();
-
-      if (data.length > 0) {
-        const { lat, lon } = data[0];
-        const coordinates = fromLonLat([parseFloat(lon), parseFloat(lat)]);
-        mapInstance.current.getView().animate({
-          center: coordinates,
-          zoom: 14,
-        });
-      } else {
-        showErrorToast("Location not found.");
-      }
-    } catch (error: any) {
-      showErrorToast(error);
-    }
-  };
-
-  // Change map type
-  const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
-    if (!mapInstance.current) return;
-
-    const baseLayer = mapInstance.current
-      .getLayers()
-      .getArray()
-      .find((layer) => layer instanceof TileLayer) as TileLayer;
-
-    if (baseLayer) {
-      switch (type) {
-        case "osm":
-          baseLayer.setSource(new OSM());
-          break;
-        case "satellite":
-          baseLayer.setSource(
-            new XYZ({
-              url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-            })
-          );
-          break;
-        case "hybrid":
-          baseLayer.setSource(
-            new XYZ({
-              url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-            })
-          );
-          const labelLayer = new TileLayer({
-            source: new XYZ({
-              url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-            }),
-          });
-          mapInstance.current.addLayer(labelLayer);
-          break;
-      }
-      setMapType(type);
-    }
-  };
-
-
-  const highlightSelectedLandmark = (landmarkId: string) => {
-    const feature = vectorSource.current
-      .getFeatures()
-      .find((f) => f.get("id") === landmarkId);
-  
-    if (feature) {
-      feature.setStyle(
-        new Style({
-          stroke: new Stroke({
-            color: "rgba(255, 0, 0, 1)", 
-            width: 3,
-          }),
-          fill: new Fill({
-            color: "rgba(255, 0, 0, 0.2)", 
-          }),
+    // Fetch landmarks
+    const fetchLandmark = () => {
+      dispatch(landmarkListApi())
+        .unwrap()
+        .then((res: any[]) => {
+          const formattedLandmarks = res.map((landmark: any) => ({
+            id: landmark.id,
+            name: landmark.name,
+            boundary: extractRawPoints(landmark.boundary),
+            importance:
+              landmark.importance === 1
+                ? "Low"
+                : landmark.importance === 2
+                ? "Medium"
+                : "High",
+            status: landmark.status === 1 ? "Validating" : "Verified",
+          }));
+          setLandmarks(formattedLandmarks);
         })
-      );
-    }
-  };
-
-  const updateRoutePath = (landmark: SelectedLandmark) => {
-    const feature = vectorSource.current
-      .getFeatures()
-      .find((f) => f.get("id") === landmark.id);
-  
-    if (!feature) return;
-  
-    const geometry = feature.getGeometry();
-    if (geometry instanceof Polygon) {
-      const center = getCenter(geometry.getExtent());
-      routeCoordsRef.current.push(center);
-  
-      // Clear previous features
-      routePathSource.current.clear();
-      
-      if (routeCoordsRef.current.length > 1) {
-        const routeFeature = new Feature({
-          geometry: new LineString(routeCoordsRef.current),
+        .catch((err: any) => {
+          showErrorToast(err);
         });
-  
-        routeFeature.setStyle(
+    };
+
+    const extractRawPoints = (polygonString: string): string => {
+      if (!polygonString) return "";
+      const matches = polygonString.match(/\(\((.*?)\)\)/);
+      return matches ? matches[1] : "";
+    };
+
+    useEffect(() => {
+      if (!mapInstance.current) return;
+
+      vectorSource.current.clear();
+      const features: Feature[] = [];
+
+      if (showAllBoundaries && landmarks) {
+        landmarks.forEach((landmark) => {
+          if (landmark.boundary) {
+            try {
+              const coordinates = landmark.boundary
+                .split(",")
+                .map((coord: string) => coord.trim().split(" ").map(Number))
+                .map((coord: Coordinate) => fromLonLat(coord));
+
+              const polygon = new Polygon([coordinates]);
+              const feature = new Feature(polygon);
+              feature.set("id", landmark.id);
+              feature.setStyle(
+                new Style({
+                  stroke: new Stroke({
+                    color: "rgba(0, 0, 255, 0.7)",
+                    width: 2,
+                  }),
+                  fill: new Fill({
+                    color: "rgba(0, 0, 255, 0.1)",
+                  }),
+                })
+              );
+              features.push(feature);
+            } catch (error) {
+              console.error(`Error processing landmark ${landmark.id}:`, error);
+            }
+          }
+        });
+      }
+
+      if (features.length > 0) {
+        vectorSource.current.addFeatures(features);
+        const extent = vectorSource.current.getExtent();
+        if (extent[0] !== Infinity) {
+          mapInstance.current.getView().fit(extent, {
+            padding: [50, 50, 50, 50],
+            duration: 1000,
+          });
+        }
+      }
+    }, [showAllBoundaries, landmarks]);
+
+    // Handle search
+    const handleSearch = async () => {
+      if (!searchQuery || !mapInstance.current) return;
+
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+            searchQuery
+          )}`
+        );
+        const data = await response.json();
+
+        if (data.length > 0) {
+          const { lat, lon } = data[0];
+          const coordinates = fromLonLat([parseFloat(lon), parseFloat(lat)]);
+          mapInstance.current.getView().animate({
+            center: coordinates,
+            zoom: 14,
+          });
+        } else {
+          showErrorToast("Location not found.");
+        }
+      } catch (error: any) {
+        showErrorToast(error);
+      }
+    };
+
+    // Change map type
+    const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
+      if (!mapInstance.current) return;
+
+      const baseLayer = mapInstance.current
+        .getLayers()
+        .getArray()
+        .find((layer) => layer instanceof TileLayer) as TileLayer;
+
+      if (baseLayer) {
+        switch (type) {
+          case "osm":
+            baseLayer.setSource(new OSM());
+            break;
+          case "satellite":
+            baseLayer.setSource(
+              new XYZ({
+                url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+              })
+            );
+            break;
+          case "hybrid":
+            baseLayer.setSource(
+              new XYZ({
+                url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+              })
+            );
+            const labelLayer = new TileLayer({
+              source: new XYZ({
+                url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+              }),
+            });
+            mapInstance.current.addLayer(labelLayer);
+            break;
+        }
+        setMapType(type);
+      }
+    };
+
+    const highlightSelectedLandmark = (landmarkId: string) => {
+      const feature = vectorSource.current
+        .getFeatures()
+        .find((f) => f.get("id") === landmarkId);
+
+      if (feature) {
+        feature.setStyle(
           new Style({
             stroke: new Stroke({
-              color: "rgba(128, 0, 117, 0.9)",
-              width: 2,
+              color: "rgba(255, 0, 0, 1)",
+              width: 3,
+            }),
+            fill: new Fill({
+              color: "rgba(255, 0, 0, 0.2)",
             }),
           })
         );
-        routePathSource.current.addFeature(routeFeature);
       }
-  
-      // Add sequence numbers to landmarks
-      routeCoordsRef.current.forEach((coord, index) => {
-        const numberFeature = new Feature({
-          geometry: new Point(coord),
-        });
-  
-        numberFeature.setStyle(
-          new Style({
-            text: new Text({
-              text: (index + 1).toString(),
-              font: 'bold 14px Arial',
-              fill: new Fill({ color: 'white' }),
-              stroke: new Stroke({ color: 'black', width: 2 }),
-              offsetY: -20,
-            }),
-            image: new Circle({
-              radius: 5,
-              fill: new Fill({ color: 'rgba(128, 0, 117, 0.9)' }),
-              stroke: new Stroke({ color: 'white', width: 2 }),
-            }),
-          })
-        );
-        routePathSource.current.addFeature(numberFeature);
-      });
-    }
-  };
-
-  // Handle landmark addition
-  const handleAddLandmark = () => {
-    if (!selectedLandmark?.departureTime || !selectedLandmark?.arrivalTime) {
-      showErrorToast("Both departure and arrival times are required");
-      return;
-    }
-  
-    const departure = new Date(selectedLandmark.departureTime);
-    const arrival = new Date(selectedLandmark.arrivalTime);
-  
-    if (departure >= arrival) {
-      showErrorToast("Departure time must be earlier than arrival time");
-      return;
-    }
-  
-    // Force distance to 0 for first landmark
-    const distance = selectedLandmark.sequenceId === 1 
-      ? 0 
-      : selectedLandmark.distance_from_start || 0;
-  
-    const landmarkWithDistance = {
-      ...selectedLandmark,
-      distance_from_start: distance,
-      sequenceId: landmarks.length + 1
     };
-    
-    onAddLandmark(landmarkWithDistance);
-    highlightSelectedLandmark(selectedLandmark.id.toString());
-    updateRoutePath(selectedLandmark);
-    
-    setIsModalOpen(false);
-  };
 
-  // Toggle landmark adding mode
-  const toggleAddLandmarkMode = () => {
-    const newAddingState = !isAddingLandmark;
-    setIsAddingLandmark(newAddingState);
-    
-    // Automatically show boundaries when entering add mode
-    if (newAddingState) {
-      setShowAllBoundaries(true);
-    }
-  };
-  const clearRoutePath = () => {
-    routeCoordsRef.current = [];
-    routePathSource.current.clear(); // Clear route paths
-    vectorSource.current.clear(); // Clear all landmarks and features
-    setShowAllBoundaries(false); // Hide boundaries if they are visible
-    if (mapInstance.current) {
-      mapInstance.current.getView().setZoom(10); // Reset zoom level
-      mapInstance.current.getView().setCenter(fromLonLat([76.9366, 8.5241])); // Reset center
-    }
-  };
-  
-  React.useImperativeHandle(ref, () => ({
-    clearRoutePath
-  }));
+    const updateRoutePath = (landmark: SelectedLandmark) => {
+      const feature = vectorSource.current
+        .getFeatures()
+        .find((f) => f.get("id") === landmark.id);
 
+      if (!feature) return;
 
-   const refreshMap = () => {
+      const geometry = feature.getGeometry();
+      if (geometry instanceof Polygon) {
+        const center = getCenter(geometry.getExtent());
+        routeCoordsRef.current.push(center);
+
+        // Clear previous features
+        routePathSource.current.clear();
+
+        if (routeCoordsRef.current.length > 1) {
+          const routeFeature = new Feature({
+            geometry: new LineString(routeCoordsRef.current),
+          });
+
+          routeFeature.setStyle(
+            new Style({
+              stroke: new Stroke({
+                color: "rgba(128, 0, 117, 0.9)",
+                width: 2,
+              }),
+            })
+          );
+          routePathSource.current.addFeature(routeFeature);
+        }
+
+        // Add sequence numbers to landmarks
+        routeCoordsRef.current.forEach((coord, index) => {
+          const numberFeature = new Feature({
+            geometry: new Point(coord),
+          });
+
+          numberFeature.setStyle(
+            new Style({
+              text: new Text({
+                text: (index + 1).toString(),
+                font: "bold 14px Arial",
+                fill: new Fill({ color: "white" }),
+                stroke: new Stroke({ color: "black", width: 2 }),
+                offsetY: -20,
+              }),
+              image: new Circle({
+                radius: 5,
+                fill: new Fill({ color: "rgba(128, 0, 117, 0.9)" }),
+                stroke: new Stroke({ color: "white", width: 2 }),
+              }),
+            })
+          );
+          routePathSource.current.addFeature(numberFeature);
+        });
+      }
+    };
+
+    // Handle landmark addition
+    const handleAddLandmark = () => {
+      if (!selectedLandmark?.departureTime || !selectedLandmark?.arrivalTime) {
+        showErrorToast("Both departure and arrival times are required");
+        return;
+      }
+
+      const departure = new Date(selectedLandmark.departureTime);
+      const arrival = new Date(selectedLandmark.arrivalTime);
+
+      if (departure >= arrival) {
+        showErrorToast("Departure time must be earlier than arrival time");
+        return;
+      }
+
+      // Force distance to 0 for first landmark
+      const distance =
+        selectedLandmark.sequenceId === 1
+          ? 0
+          : selectedLandmark.distance_from_start || 0;
+
+      const landmarkWithDistance = {
+        ...selectedLandmark,
+        distance_from_start: distance,
+        sequenceId: landmarks.length + 1,
+      };
+
+      onAddLandmark(landmarkWithDistance);
+      highlightSelectedLandmark(selectedLandmark.id.toString());
+      updateRoutePath(selectedLandmark);
+
+      setIsModalOpen(false);
+    };
+
+    // Toggle landmark adding mode
+    const toggleAddLandmarkMode = () => {
+      const newAddingState = !isAddingLandmark;
+      setIsAddingLandmark(newAddingState);
+
+      if (newAddingState) {
+        setShowAllBoundaries(true); // Show boundaries when adding landmarks
+      }
+    };
+
+    React.useImperativeHandle(ref, () => ({
+      clearRoutePath,
+      toggleAddLandmarkMode, // Expose the toggle method
+    }));
+
+    const clearRoutePath = () => {
+      routeCoordsRef.current = [];
+      routePathSource.current.clear();
+      vectorSource.current.clear();
+      setShowAllBoundaries(false);
+      if (mapInstance.current) {
+        mapInstance.current.getView().setZoom(10); // Reset zoom level
+        mapInstance.current.getView().setCenter(fromLonLat([76.9366, 8.5241])); // Reset center
+      }
+    };
+
+    React.useImperativeHandle(ref, () => ({
+      clearRoutePath,
+    }));
+
+    const refreshMap = () => {
       setTimeout(() => {
         vectorSource.current.clear();
         setShowAllBoundaries(false);
-        
-      }, 300); 
-  
+      }, 300);
+
       if (mapInstance.current) {
         mapInstance.current.getView().animate({
           center: fromLonLat([76.9366, 8.5241]),
           zoom: 10,
-          duration: 1000, 
+          duration: 1000,
         });
       }
       setTimeout(() => {
         mapInstance.current?.render();
-      }, 1100); 
+      }, 1100);
     };
 
-  return (
-    <Box height="100%">
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: 1,
-          backgroundColor: "#f5f5f5",
-          borderRadius: 1,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <FormControl variant="outlined" size="small">
-            <InputLabel>Map Type</InputLabel>
-            <Select
-              value={mapType}
-              onChange={(
-                e: SelectChangeEvent<"osm" | "satellite" | "hybrid">
-              ) =>
-                changeMapType(e.target.value as "osm" | "satellite" | "hybrid")
-              }
-              label="Map Type"
-            >
-              <MenuItem value="osm">OSM</MenuItem>
-              <MenuItem value="satellite">Satellite</MenuItem>
-              <MenuItem value="hybrid">Hybrid</MenuItem>
-            </Select>
-          </FormControl>
-
+    return (
+      <Box height="100%">
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: 1,
+            backgroundColor: "#f5f5f5",
+            borderRadius: 1,
+            gap: 1, // Add gap between elements
+            flexWrap: "wrap", // Allow wrapping on small screens
+          }}
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <TextField
-              variant="outlined"
-              size="small"
-              placeholder="Search Location"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            />
-          </Box>
-          {isSelecting && (
-          <Button
-            variant="contained"
-            color={isAddingLandmark ? "secondary" : "primary"}
-            onClick={toggleAddLandmarkMode}
-          >
-            {isAddingLandmark ? "Cancel " : "Select Landmark"}
-          </Button>
-        )}
+            <FormControl variant="outlined" size="small">
+              <InputLabel>Map Type</InputLabel>
+              <Select
+                value={mapType}
+                onChange={(
+                  e: SelectChangeEvent<"osm" | "satellite" | "hybrid">
+                ) =>
+                  changeMapType(
+                    e.target.value as "osm" | "satellite" | "hybrid"
+                  )
+                }
+                label="Map Type"
+              >
+                <MenuItem value="osm">OSM</MenuItem>
+                <MenuItem value="satellite">Satellite</MenuItem>
+                <MenuItem value="hybrid">Hybrid</MenuItem>
+              </Select>
+            </FormControl>
 
-          <Tooltip
-            title={showAllBoundaries ? "Hide landmarks" : "Show landmarks"}
-          >
-            <IconButton
-              onClick={() => setShowAllBoundaries(!showAllBoundaries)}
-            >
-              <LocationOnIcon
-                sx={{ color: showAllBoundaries ? "blue" : undefined }}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Search Location"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
-            </IconButton>
-          </Tooltip>
-          <Box>
-                        <Tooltip title="Refresh Map" placement="bottom">
-                          <IconButton color="warning" onClick={refreshMap}>
-                            <Refresh />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
+            </Box>
+            {isSelecting && (
+              <Button
+                variant="contained"
+                color={isAddingLandmark ? "secondary" : "primary"}
+                onClick={toggleAddLandmarkMode}
+              >
+                {isAddingLandmark ? "Cancel " : "Select Landmark"}
+              </Button>
+            )}
+
+            <Tooltip
+              title={showAllBoundaries ? "Hide landmarks" : "Show landmarks"}
+            >
+              <IconButton
+                onClick={() => setShowAllBoundaries(!showAllBoundaries)}
+              >
+                <LocationOnIcon
+                  sx={{ color: showAllBoundaries ? "blue" : undefined }}
+                />
+              </IconButton>
+            </Tooltip>
+            <Box>
+              <Tooltip title="Refresh Map" placement="bottom">
+                <IconButton color="warning" onClick={refreshMap}>
+                  <Refresh />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
         </Box>
+
+        <Box ref={mapRef} width="100%" height="calc(100% - 128px)" flex={1} />
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          <Typography variant="body2">
+            <strong>[{mousePosition || "coordinates"}]</strong>
+          </Typography>
+        </Box>
+
+        {/* Landmark Modal */}
+        <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)}>
+          <DialogTitle>Add Landmark to Route</DialogTitle>
+          <DialogContent>
+            <Typography>Landmark: {selectedLandmark?.name}</Typography>
+            <Typography>ID: {selectedLandmark?.id}</Typography>
+
+            <TextField
+              label="Departure Time"
+              type="datetime-local"
+              fullWidth
+              margin="normal"
+              value={selectedLandmark?.departureTime || ""}
+              onChange={(e) => {
+                setSelectedLandmark({
+                  ...selectedLandmark!,
+                  departureTime: e.target.value,
+                });
+                // This will close the picker after selection
+                (document.activeElement as HTMLElement | null)?.blur();
+              }}
+              InputLabelProps={{ shrink: true }} // Additional close handler
+            />
+
+            <TextField
+              label="Arrival Time"
+              type="datetime-local"
+              fullWidth
+              margin="normal"
+              value={selectedLandmark?.arrivalTime || ""}
+              onChange={(e) => {
+                setSelectedLandmark({
+                  ...selectedLandmark!,
+                  arrivalTime: e.target.value,
+                });
+                // This will close the picker after selection
+                (document.activeElement as HTMLElement | null)?.blur();
+              }}
+              InputLabelProps={{ shrink: true }} // Additional close handler
+            />
+
+            <TextField
+              label="Distance from Start (meters)"
+              fullWidth
+              margin="normal"
+              value={
+                selectedLandmark?.sequenceId === 1
+                  ? 0
+                  : selectedLandmark?.distance_from_start || ""
+              }
+              onChange={(e) => {
+                // Only allow changes if it's not the first landmark
+                if (selectedLandmark?.sequenceId !== 1) {
+                  setSelectedLandmark({
+                    ...selectedLandmark!,
+                    distance_from_start: parseInt(e.target.value) || 0,
+                  });
+                }
+              }}
+              disabled={selectedLandmark?.sequenceId === 1}
+              type="number"
+              InputLabelProps={{ shrink: true }}
+              inputProps={{
+                min: 0,
+                step: 1,
+              }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button
+              onClick={handleAddLandmark}
+              color="primary"
+              disabled={
+                !selectedLandmark?.arrivalTime ||
+                !selectedLandmark?.departureTime
+              }
+            >
+              Add
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
-
-      <Box ref={mapRef} width="100%" height="calc(100% - 128px)" flex={1} />
-      <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-        <Typography variant="body2">
-          <strong>[{mousePosition || "coordinates"}]</strong>
-        </Typography>
-      </Box>
-
-      {/* Landmark Modal */}
-      <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <DialogTitle>Add Landmark to Route</DialogTitle>
-        <DialogContent>
-  <Typography>Landmark: {selectedLandmark?.name}</Typography>
-  <Typography>ID: {selectedLandmark?.id}</Typography>
-
-  <TextField
-  label="Departure Time"
-  type="datetime-local"
-  fullWidth
-  margin="normal"
-  value={selectedLandmark?.departureTime || ""}
-  onChange={(e) => {
-    setSelectedLandmark({
-      ...selectedLandmark!,
-      departureTime: e.target.value,
-    });
-    // This will close the picker after selection
-    (document.activeElement as HTMLElement | null)?.blur();
-  }}
-  InputLabelProps={{ shrink: true }} // Additional close handler
-/>
-
-<TextField
-  label="Arrival Time"
-  type="datetime-local"
-  fullWidth
-  margin="normal"
-  value={selectedLandmark?.arrivalTime || ""}
-  onChange={(e) => {
-    setSelectedLandmark({
-      ...selectedLandmark!,
-      arrivalTime: e.target.value,
-    });
-    // This will close the picker after selection
-    (document.activeElement as HTMLElement | null)?.blur();
-
-  }}
-  InputLabelProps={{ shrink: true }} // Additional close handler
-/>
-
-<TextField
-  label="Distance from Start (meters)"
-  fullWidth
-  margin="normal"
-  value={
-    selectedLandmark?.sequenceId === 1 
-      ? 0 
-      : selectedLandmark?.distance_from_start || ''
+    );
   }
-  onChange={(e) => {
-    // Only allow changes if it's not the first landmark
-    if (selectedLandmark?.sequenceId !== 1) {
-      setSelectedLandmark({
-        ...selectedLandmark!,
-        distance_from_start: parseInt(e.target.value) || 0,
-      });
-    }
-  }}
-  disabled={selectedLandmark?.sequenceId === 1}
-  type="number"
-  InputLabelProps={{ shrink: true }}
-  inputProps={{
-    min: 0,
-    step: 1
-  }}
-/>
-</DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleAddLandmark}
-            color="primary"
-            disabled={
-              !selectedLandmark?.arrivalTime || !selectedLandmark?.departureTime
-            }
-          >
-            Add
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  );
-});
+);
 
 export default MapComponent;

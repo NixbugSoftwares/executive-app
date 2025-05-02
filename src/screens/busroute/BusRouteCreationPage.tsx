@@ -134,6 +134,28 @@ const BusRouteCreation = ({
     }
   };
 
+
+  const formatDateTime = (dateTimeStr: string) => {
+    if (!dateTimeStr) return "Not set";
+    
+    try {
+      const date = new Date(dateTimeStr);
+      // Format as "DD/MM/YYYY, HH:MM AM/PM"
+      return date.toLocaleString('en-US', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (e) {
+      return dateTimeStr; // Return original if parsing fails
+    }
+  };
+
+  
+
   return (
     <Box
       sx={{
@@ -213,44 +235,43 @@ const BusRouteCreation = ({
             {landmarks.map((landmark, index) => (
               <Box key={`${landmark.id}-${index}`}>
                 <ListItem
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    py: 2,
-                    backgroundColor:
-                      index % 2 === 0 ? "action.hover" : "background.paper",
-                    borderRadius: 1,
-                  }}
-                >
-                  <Chip
-                    label={landmark.sequenceId}
-                    color="primary"
-                    sx={{ mr: 2, minWidth: 32 }}
-                  />
-                  <ListItemText
-                    primary={landmark.name}
-                    secondary={
-                      <>
-                        <span>Departure: {landmark.departureTime}</span>
-                        <span> | Arrival: {landmark.arrivalTime}</span>
-                        {landmark.distance_from_start !== undefined && (
-                          <span>
-                            {" "}
-                            | Distance: {landmark.distance_from_start}m
-                          </span>
-                        )}
-                      </>
-                    }
-                  />
-                  <IconButton
-                    onClick={() => onLandmarkRemove(landmark.id)}
-                    aria-label="delete"
-                    color="error"
-                    size="small"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </ListItem>
+  sx={{
+    display: "flex",
+    alignItems: "center",
+    py: 2,
+    backgroundColor:
+      index % 2 === 0 ? "action.hover" : "background.paper",
+    borderRadius: 1,
+  }}
+>
+  <Chip
+    label={landmark.sequenceId}
+    color="primary"
+    sx={{ mr: 2, minWidth: 32 }}
+  />
+  <ListItemText
+    primary={landmark.name}
+    secondary={
+      <>
+        <span>
+          Departure: {formatDateTime(landmark.departureTime)}
+        </span>
+        <span> | Arrival: {formatDateTime(landmark.arrivalTime)}</span>
+        {landmark.distance_from_start !== undefined && (
+          <span> | Distance: {landmark.distance_from_start}m</span>
+        )}
+      </>
+    }
+  />
+  <IconButton
+    onClick={() => onLandmarkRemove(landmark.id)}
+    aria-label="delete"
+    color="error"
+    size="small"
+  >
+    <DeleteIcon />
+  </IconButton>
+</ListItem>
                 {index < landmarks.length - 1 && (
                   <Divider
                     component="li"

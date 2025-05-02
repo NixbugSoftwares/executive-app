@@ -21,7 +21,7 @@ import {
 } from "@mui/material";
 import { Delete } from "@mui/icons-material";
 import { useDispatch } from "react-redux";
-import { busRouteLandmarkListApi, busRouteListApi, routeDeleteApi } from "../../slices/appSlice";
+import { busRouteLandmarkListApi, busRouteListApi, routeDeleteApi, } from "../../slices/appSlice";
 import { AppDispatch } from "../../store/Store";
 import { useParams, useLocation } from "react-router-dom";
 import MapComponent from "./BusRouteMap";
@@ -58,14 +58,14 @@ const BusRouteListing = () => {
   const rowsPerPage = 10;
   const roleDetails = localStorageHelper.getItem("@roleDetails");
   const canManageRoutes = roleDetails?.manage_route || false;
-  const mapRef = useRef<{clearRoutePath: () => void}>(null);
+  const mapRef = useRef<{ clearRoutePath: () => void; toggleAddLandmarkMode?: () => void }>(null);
   const [_selectedRouteLandmarks, setSelectedRouteLandmarks] = useState<RouteLandmark[]>([]);
   const [mapLandmarks, setMapLandmarks] = useState<SelectedLandmark[]>([]);
-
+  const [isEditingRoute, setIsEditingRoute] = useState(false);
+  const [newRouteLandmarks, setNewRouteLandmarks] = useState<SelectedLandmark[]>([]);
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const urlCompanyId = companyId || queryParams.get("companyId");
-
     if (urlCompanyId) {
       const id = parseInt(urlCompanyId);
       if (!isNaN(id)) {
@@ -230,17 +230,32 @@ const BusRouteListing = () => {
       >
         {selectedRoute ? (
           // In BusRouteListing component
-<BusRouteDetailsPage 
-  routeId={selectedRoute.id} 
+<BusRouteDetailsPage
+  routeId={selectedRoute.id}
   routeName={selectedRoute.name}
   onBack={() => {
     setSelectedRoute(null);
-    setMapLandmarks([]); 
+    setMapLandmarks([]);
+    setIsEditingRoute(false);
     if (mapRef.current) {
-      mapRef.current.clearRoutePath(); // Clear the map when going back
+      mapRef.current.clearRoutePath();
     }
   }}
   onLandmarksUpdate={setMapLandmarks}
+  onEnableAddLandmark={() => {
+    setIsEditingRoute(true);
+    if (mapRef.current?.toggleAddLandmarkMode) {
+      mapRef.current.toggleAddLandmarkMode();
+    }
+  }}
+  isEditing={isEditingRoute}
+  onCancelEdit={() => setIsEditingRoute(false)}
+  newLandmarks={newRouteLandmarks}
+  setNewLandmarks={setNewRouteLandmarks}
+  onNewLandmarkAdded={(landmark) => {
+    setNewRouteLandmarks(prev => [...prev, landmark]);
+    setMapLandmarks(prev => [...prev, landmark]);
+  }}
 />
         ) : showCreationForm ? (
           <>
@@ -483,12 +498,13 @@ const BusRouteListing = () => {
         }}
       >
         <MapComponent
-          onAddLandmark={handleAddLandmark}
-          isSelecting={showCreationForm}
-          ref={mapRef}
-          landmarks={mapLandmarks}
-          mode={selectedRoute ? 'view' : 'create'}
-        />
+  onAddLandmark={handleAddLandmark}
+  isSelecting={showCreationForm || isEditingRoute} 
+  ref={mapRef}
+  landmarks={mapLandmarks}
+  mode={selectedRoute ? 'view' : 'create'}
+  isEditing={isEditingRoute} 
+/>
       </Box>
 
       <Dialog
