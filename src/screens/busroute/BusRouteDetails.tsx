@@ -39,12 +39,13 @@ interface BusRouteDetailsProps {
   routeName: string;
   onBack: () => void;
   onLandmarksUpdate: (landmarks: any[]) => void;
-  onEnableAddLandmark: () => void; // Callback to enable Add Landmark mode
-  onNewLandmarkAdded: (landmark: SelectedLandmark) => void; // Callback for new landmarks
+  onEnableAddLandmark: () => void; 
+  onNewLandmarkAdded: (landmark: SelectedLandmark) => void;
   isEditing?: boolean;
   onCancelEdit: () => void;
   newLandmarks: SelectedLandmark[];
   setNewLandmarks: React.Dispatch<React.SetStateAction<SelectedLandmark[]>>;
+  refreshList: (value: any) => void;
 }
 
 const BusRouteDetailsPage = ({
@@ -57,7 +58,7 @@ const BusRouteDetailsPage = ({
   onCancelEdit,
   newLandmarks,
   setNewLandmarks,
-
+  refreshList
 }: BusRouteDetailsProps) => {
   const dispatch = useAppDispatch();
   const [routeLandmarks, setRouteLandmarks] = useState<RouteLandmark[]>([]);
@@ -217,7 +218,8 @@ const BusRouteDetailsPage = ({
       formData.append("name", updatedRouteName);
 
       await dispatch(routeUpdationApi({ routeId, formData })).unwrap();
-      showSuccessToast("Route name updated successfully");
+      refreshList("refresh");
+      showSuccessToast("Route  updated successfully");
       setEditMode(false);
       onBack();
     } catch (error) {
@@ -367,13 +369,15 @@ const BusRouteDetailsPage = ({
                     primary={getLandmarkName(landmark.landmark_id)}
                     secondary={
                       <>
+                       <span>
+                          Departure: {formatTime(landmark.departure_time)}
+                        </span>
+
                         <span>
                           Arrival: {formatTime(landmark.arrival_time)}
                         </span>
                         <span style={{ margin: "0 8px" }}>|</span>
-                        <span>
-                          Departure: {formatTime(landmark.departure_time)}
-                        </span>
+                       
                         {landmark.distance_from_start !== undefined && (
                           <>
                             <span style={{ margin: "0 8px" }}>|</span>

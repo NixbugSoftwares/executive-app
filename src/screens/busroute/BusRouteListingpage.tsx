@@ -211,6 +211,14 @@ const BusRouteListing = () => {
   };
 
 
+  const refreshList = (value: string) => {
+    if (value === "refresh") {
+      fetchRoute();
+    }
+  };
+
+
+
 
   return (
     <Box
@@ -237,6 +245,7 @@ const BusRouteListing = () => {
 <BusRouteDetailsPage
   routeId={selectedRoute.id}
   routeName={selectedRoute.name}
+  refreshList={(value: any) => refreshList(value)}
   onBack={() => {
     setSelectedRoute(null);
     setMapLandmarks([]);

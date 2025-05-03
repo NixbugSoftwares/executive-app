@@ -249,7 +249,6 @@ const BusRouteCreation = ({
             borderRadius: 1,
           }}
         >
-          {/* Update Chip label to show sorted order */}
           <Chip
             label={index + 1}
             color="primary"
