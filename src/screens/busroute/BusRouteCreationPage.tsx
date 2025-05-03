@@ -33,8 +33,6 @@ interface BusRouteCreationProps {
   onClearRoute?: () => void;
 }
 
-
-
 interface BusRouteFormInputs {
   name: string;
 }
@@ -82,12 +80,19 @@ const BusRouteCreation = ({
       ).unwrap();
       const routeId = routeResponse.id;
       console.log("Route created successfully. Route ID:", routeId);
+      
+      const sortedLandmarks = [...landmarks].sort(
+        (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
+      );
 
+      
       // Step 2: Add all landmarks to the route
-      const landmarkPromises = landmarks.map((landmark) => {
+      const landmarkPromises = sortedLandmarks.map((landmark, index) => {
         const landmarkFormData = new FormData();
         landmarkFormData.append("route_id", routeId.toString());
         landmarkFormData.append("landmark_id", landmark.id.toString());
+        // Assign sequence_id based on sorted index
+        landmarkFormData.append("sequence_id", (index + 1).toString());
         landmarkFormData.append(
           "distance_from_start",
           landmark.distance_from_start?.toString() || "0"
@@ -134,27 +139,24 @@ const BusRouteCreation = ({
     }
   };
 
-
   const formatDateTime = (dateTimeStr: string) => {
     if (!dateTimeStr) return "Not set";
-    
+
     try {
       const date = new Date(dateTimeStr);
       // Format as "DD/MM/YYYY, HH:MM AM/PM"
-      return date.toLocaleString('en-US', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
+      return date.toLocaleString("en-US", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
       });
     } catch (e) {
       return dateTimeStr; // Return original if parsing fails
     }
   };
-
-  
 
   return (
     <Box
@@ -230,64 +232,74 @@ const BusRouteCreation = ({
           </Box>
         ) : (
           <List
-            sx={{ width: "100%", maxHeight: 400, overflow: "auto", flex: 1 }}
-          >
-            {landmarks.map((landmark, index) => (
-              <Box key={`${landmark.id}-${index}`}>
-                <ListItem
-  sx={{
-    display: "flex",
-    alignItems: "center",
-    py: 2,
-    backgroundColor:
-      index % 2 === 0 ? "action.hover" : "background.paper",
-    borderRadius: 1,
-  }}
+  sx={{ width: "100%", maxHeight: 400, overflow: "auto", flex: 1 }}
 >
-  <Chip
-    label={landmark.sequenceId}
-    color="primary"
-    sx={{ mr: 2, minWidth: 32 }}
-  />
-  <ListItemText
-    primary={landmark.name}
-    secondary={
-      <>
-        <span>
-          Departure: {formatDateTime(landmark.departureTime)}
-        </span>
-        <span> | Arrival: {formatDateTime(landmark.arrivalTime)}</span>
-        {landmark.distance_from_start !== undefined && (
-          <span> | Distance: {landmark.distance_from_start}m</span>
-        )}
-      </>
-    }
-  />
-  <IconButton
-    onClick={() => onLandmarkRemove(landmark.id)}
-    aria-label="delete"
-    color="error"
-    size="small"
-  >
-    <DeleteIcon />
-  </IconButton>
-</ListItem>
-                {index < landmarks.length - 1 && (
-                  <Divider
-                    component="li"
-                    sx={{
-                      borderLeftWidth: 2,
-                      borderLeftStyle: "dashed",
-                      borderColor: "divider",
-                      height: 20,
-                      ml: 3.5,
-                      listStyle: "none",
-                    }}
-                  />
+  {landmarks
+    .slice()
+    .sort((a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0))
+    .map((landmark, index) => (
+      <Box key={`${landmark.id}-${index}`}>
+        <ListItem
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            py: 2,
+            backgroundColor:
+              index % 2 === 0 ? "action.hover" : "background.paper",
+            borderRadius: 1,
+          }}
+        >
+          {/* Update Chip label to show sorted order */}
+          <Chip
+            label={index + 1}
+            color="primary"
+            sx={{ mr: 2, minWidth: 32 }}
+          />
+          <ListItemText
+            primary={landmark.name}
+            secondary={
+              <>
+                <span>
+                  Departure: {formatDateTime(landmark.departureTime)}
+                </span>
+                <span>
+                  {" "}
+                  | Arrival: {formatDateTime(landmark.arrivalTime)}
+                </span>
+                {landmark.distance_from_start !== undefined && (
+                  <span>
+                    {" "}
+                    | Distance: {landmark.distance_from_start}m
+                  </span>
                 )}
-              </Box>
-            ))}
-          </List>
+              </>
+            }
+          />
+          <IconButton
+            onClick={() => onLandmarkRemove(landmark.id)}
+            aria-label="delete"
+            color="error"
+            size="small"
+          >
+            <DeleteIcon />
+          </IconButton>
+        </ListItem>
+        {index < landmarks.length - 1 && (
+          <Divider
+            component="li"
+            sx={{
+              borderLeftWidth: 2,
+              borderLeftStyle: "dashed",
+              borderColor: "divider",
+              height: 20,
+              ml: 3.5,
+              listStyle: "none",
+            }}
+          />
+        )}
+      </Box>
+    ))}
+</List>
         )}
 
         <Box sx={{ mt: "auto", pt: 2 }}>

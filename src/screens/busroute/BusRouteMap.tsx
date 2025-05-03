@@ -44,6 +44,7 @@ interface MapComponentProps {
   isSelecting: boolean;
   onClearRoute?: () => void;
   landmarks: SelectedLandmark[];
+  selectedLandmarks: SelectedLandmark[];
   mode: "create" | "view";
   isEditing?: boolean;
 }
@@ -56,6 +57,7 @@ const MapComponent = React.forwardRef(
       landmarks: propLandmarks,
       mode,
       isEditing,
+      selectedLandmarks,
     }: MapComponentProps,
     ref
   ) => {
@@ -151,10 +153,16 @@ const MapComponent = React.forwardRef(
               setSelectedLandmark({
                 id: landmark.id,
                 name: landmark.name,
-                sequenceId: landmarks.length + 1, // This sets the correct sequenceId
                 arrivalTime: "",
                 departureTime: "",
-                distance_from_start: landmarks.length === 0 ? 0 : 0, // Set to 0 for first landmark
+                distance_from_start:
+                  selectedLandmarks.length === 0
+                    ? 0
+                    : Math.max(
+                        ...selectedLandmarks.map(
+                          (l) => l.distance_from_start || 0
+                        )
+                      ) + 100,
               });
               setIsModalOpen(true);
             }
@@ -337,7 +345,7 @@ const MapComponent = React.forwardRef(
           });
         }
       }
-    }, [showAllBoundaries, landmarks]);
+    }, [showAllBoundaries, landmarks]); // Ensure dependencies are correct
 
     // Handle search
     const handleSearch = async () => {
@@ -425,63 +433,118 @@ const MapComponent = React.forwardRef(
       }
     };
 
-    const updateRoutePath = (landmark: SelectedLandmark) => {
-      const feature = vectorSource.current
-        .getFeatures()
-        .find((f) => f.get("id") === landmark.id);
+    useEffect(() => {
+      vectorSource.current.clear();
+      routePathSource.current.clear();
+      routeCoordsRef.current = [];
+      const landmarksToProcess =
+        mode === "create" ? selectedLandmarks : propLandmarks;
+      if (!landmarksToProcess || landmarksToProcess.length === 0) return;
 
-      if (!feature) return;
+      // Sort landmarks by distance_from_start
+      const sortedLandmarks = [...landmarksToProcess].sort(
+        (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
+      );
 
-      const geometry = feature.getGeometry();
-      if (geometry instanceof Polygon) {
-        const center = getCenter(geometry.getExtent());
-        routeCoordsRef.current.push(center);
+      // Process landmarks to get coordinates and add polygons
+      sortedLandmarks.forEach((landmark, index) => {
+        const lm = landmarks.find((l) => l.id === landmark.id);
+        if (lm?.boundary) {
+          try {
+            const coordinates = lm.boundary
+              .split(",")
+              .map((coord: string) => coord.trim().split(" ").map(Number))
+              .map((coord: Coordinate) => fromLonLat(coord));
 
-        // Clear previous features
-        routePathSource.current.clear();
+            // Add polygon feature
+            const polygon = new Polygon([coordinates]);
+            const polygonFeature = new Feature(polygon);
+            polygonFeature.set("id", lm.id);
 
-        if (routeCoordsRef.current.length > 1) {
-          const routeFeature = new Feature({
-            geometry: new LineString(routeCoordsRef.current),
-          });
+            // Style for creation mode
+            polygonFeature.setStyle(
+              new Style({
+                stroke: new Stroke({
+                  color: "rgba(0, 150, 0, 0.7)",
+                  width: 2,
+                }),
+                fill: new Fill({
+                  color: "rgba(0, 150, 0, 0.1)",
+                }),
+                text: new Text({
+                  text: (index + 1).toString(),
+                  font: "bold 14px Arial",
+                  fill: new Fill({ color: "#fff" }),
+                  stroke: new Stroke({ color: "#000", width: 3 }),
+                  offsetY: -20,
+                }),
+              })
+            );
 
-          routeFeature.setStyle(
-            new Style({
-              stroke: new Stroke({
-                color: "rgba(128, 0, 117, 0.9)",
-                width: 2,
-              }),
-            })
-          );
-          routePathSource.current.addFeature(routeFeature);
+            vectorSource.current.addFeature(polygonFeature);
+
+            // Get center for route path
+            const center = getCenter(polygon.getExtent());
+            routeCoordsRef.current.push(center);
+          } catch (error) {
+            console.error("Error processing landmark boundary:", error);
+          }
         }
+      });
 
-        // Add sequence numbers to landmarks
-        routeCoordsRef.current.forEach((coord, index) => {
-          const numberFeature = new Feature({
-            geometry: new Point(coord),
-          });
-
-          numberFeature.setStyle(
-            new Style({
-              text: new Text({
-                text: (index + 1).toString(),
-                font: "bold 14px Arial",
-                fill: new Fill({ color: "white" }),
-                stroke: new Stroke({ color: "black", width: 2 }),
-                offsetY: -20,
-              }),
-              image: new Circle({
-                radius: 5,
-                fill: new Fill({ color: "rgba(128, 0, 117, 0.9)" }),
-                stroke: new Stroke({ color: "white", width: 2 }),
-              }),
-            })
-          );
-          routePathSource.current.addFeature(numberFeature);
+      // Create route line
+      if (routeCoordsRef.current.length > 1) {
+        const routeFeature = new Feature({
+          geometry: new LineString(routeCoordsRef.current),
         });
+
+        routeFeature.setStyle(
+          new Style({
+            stroke: new Stroke({
+              color: "rgba(218, 29, 16, 0.7)",
+              width: 3,
+            }),
+          })
+        );
+        routePathSource.current.addFeature(routeFeature);
       }
-    };
+
+      // Add sequence numbers
+      routeCoordsRef.current.forEach((coord, index) => {
+        const numberFeature = new Feature({
+          geometry: new Point(coord),
+        });
+
+        numberFeature.setStyle(
+          new Style({
+            text: new Text({
+              text: (index + 1).toString(),
+              font: "bold 14px Arial",
+              fill: new Fill({ color: "white" }),
+              stroke: new Stroke({ color: "black", width: 2 }),
+              offsetY: -20,
+            }),
+            image: new Circle({
+              radius: 5,
+              fill: new Fill({ color: "rgba(128, 0, 117, 0.9)" }),
+              stroke: new Stroke({ color: "white", width: 2 }),
+            }),
+          })
+        );
+        routePathSource.current.addFeature(numberFeature);
+      });
+
+      // Update map view
+      if (mapInstance.current) {
+        const extent = vectorSource.current.getExtent();
+        if (extent[0] !== Infinity) {
+          mapInstance.current.getView().fit(extent, {
+            padding: [50, 50, 50, 50],
+            duration: 1000,
+          });
+        }
+      }
+    }, [propLandmarks, landmarks, selectedLandmarks, mode]); // Add selectedLandmarks to dependencies
 
     // Handle landmark addition
     const handleAddLandmark = () => {
@@ -498,23 +561,16 @@ const MapComponent = React.forwardRef(
         return;
       }
 
-      // Force distance to 0 for first landmark
-      const distance =
-        selectedLandmark.sequenceId === 1
-          ? 0
-          : selectedLandmark.distance_from_start || 0;
-
       const landmarkWithDistance = {
         ...selectedLandmark,
-        distance_from_start: distance,
-        sequenceId: landmarks.length + 1,
+        distance_from_start: selectedLandmark.distance_from_start || 0,
       };
 
       onAddLandmark(landmarkWithDistance);
       highlightSelectedLandmark(selectedLandmark.id.toString());
-      updateRoutePath(selectedLandmark);
-
       setIsModalOpen(false);
+
+      // Do not reset showAllBoundaries here
     };
 
     // Toggle landmark adding mode
@@ -692,21 +748,13 @@ const MapComponent = React.forwardRef(
               label="Distance from Start (meters)"
               fullWidth
               margin="normal"
-              value={
-                selectedLandmark?.sequenceId === 1
-                  ? 0
-                  : selectedLandmark?.distance_from_start || ""
-              }
+              value={selectedLandmark?.distance_from_start || ""}
               onChange={(e) => {
-                // Only allow changes if it's not the first landmark
-                if (selectedLandmark?.sequenceId !== 1) {
-                  setSelectedLandmark({
-                    ...selectedLandmark!,
-                    distance_from_start: parseInt(e.target.value) || 0,
-                  });
-                }
+                setSelectedLandmark({
+                  ...selectedLandmark!,
+                  distance_from_start: parseInt(e.target.value) || 0,
+                });
               }}
-              disabled={selectedLandmark?.sequenceId === 1}
               type="number"
               InputLabelProps={{ shrink: true }}
               inputProps={{

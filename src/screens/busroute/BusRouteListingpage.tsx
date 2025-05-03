@@ -40,6 +40,7 @@ interface Route {
 }
 
 
+
 const BusRouteListing = () => {
   const { companyId } = useParams();
   const location = useLocation();
@@ -63,6 +64,7 @@ const BusRouteListing = () => {
   const [mapLandmarks, setMapLandmarks] = useState<SelectedLandmark[]>([]);
   const [isEditingRoute, setIsEditingRoute] = useState(false);
   const [newRouteLandmarks, setNewRouteLandmarks] = useState<SelectedLandmark[]>([]);
+  
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const urlCompanyId = companyId || queryParams.get("companyId");
@@ -122,6 +124,7 @@ const BusRouteListing = () => {
     fetchRouteLandmarks();
   }, [selectedRoute]);
 
+ 
   useEffect(() => {
     return () => {
       setMapLandmarks([]);
@@ -168,12 +171,11 @@ const BusRouteListing = () => {
     fetchRoute();
   };
 
-  const handleAddLandmark = (newLandmark: SelectedLandmark) => {
-    const updatedLandmark = {
-      ...newLandmark,
-      sequenceId: landmarks.length + 1,
-    };
-    setLandmarks([...landmarks, updatedLandmark]);
+  const handleAddLandmark = (landmark: SelectedLandmark) => {
+    const sortedLandmarks = [...landmarks, landmark]
+      .sort((a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0));
+    
+    setLandmarks(sortedLandmarks);
   };
 
   const handleRemoveLandmark = (id: number) => {
@@ -207,6 +209,8 @@ const BusRouteListing = () => {
       setRouteToDelete(null);
     }
   };
+
+
 
   return (
     <Box
@@ -497,13 +501,14 @@ const BusRouteListing = () => {
           gap: 2,
         }}
       >
-        <MapComponent
+       <MapComponent
   onAddLandmark={handleAddLandmark}
-  isSelecting={showCreationForm || isEditingRoute} 
+  isSelecting={showCreationForm || isEditingRoute}
   ref={mapRef}
-  landmarks={mapLandmarks}
+  landmarks={selectedRoute ? mapLandmarks : landmarks} 
   mode={selectedRoute ? 'view' : 'create'}
-  isEditing={isEditingRoute} 
+  isEditing={isEditingRoute}
+  selectedLandmarks={landmarks}
 />
       </Box>
 

@@ -118,7 +118,7 @@ const BusRouteDetailsPage = ({
         const formData = new FormData();
         formData.append("route_id", routeId.toString());
         formData.append("landmark_id", landmark.id.toString());
-        formData.append("sequence_id", landmark.sequenceId.toString()); // Add sequence_id
+        formData.append("sequence_id", (landmark.sequenceId ?? 0).toString()); // Add sequence_id
         formData.append("departure_time", landmark.departureTime);
         formData.append("arrival_time", landmark.arrivalTime);
         formData.append(
@@ -299,7 +299,7 @@ const BusRouteDetailsPage = ({
             onClick={handleSaveNewLandmarks}
             disabled={newLandmarks.length === 0}
           >
-            Save Changes
+            Save New Landmarks
           </Button>
         )}
       </Stack>

@@ -27,7 +27,7 @@ export interface BusStop {
 export interface SelectedLandmark {
   id: number;
   name: string;
-  sequenceId: number;
+  sequenceId?: number;
   arrivalTime: string;
   departureTime: string;
   distance_from_start: number; 

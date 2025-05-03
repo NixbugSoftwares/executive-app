@@ -74,130 +74,133 @@
 
 
 
-import axios from "axios";
-import { toast } from "react-toastify";
-import moment from "moment";
-import localStorageHelper from "./localStorageHelper";
+// import axios from "axios";
+// import { toast } from "react-toastify";
+// import moment from "moment";
+// import localStorageHelper from "./localStorageHelper";
 
-export const base_URL = "http://192.168.0.134:8080"; //base URL
+// export const base_URL = "http://192.168.0.134:8080"; //base URL
 
-//******************************************************Token **************************************** */
-const getAuthToken = async () => {
-  try {
-    const token = await localStorageHelper.getItem("@token");
-    console.log("token=====================>", token);
+// //******************************************************Token **************************************** */
+// const getAuthToken = async () => {
+//   try {
+//     const token = await localStorageHelper.getItem("@token");
+//     console.log("token=====================>", token);
 
-    const response = await axios.post( 
-      `${base_URL}/executive/token`,
-      { refreshToken: token }, 
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+//     const response = await axios.post( 
+//       `${base_URL}/executive/token`,
+//       { refreshToken: token }, 
+//       { headers: { Authorization: `Bearer ${token}` } }
+//     );
 
-    console.log("getAuthtokenresponse=====>", response);
+//     console.log("getAuthtokenresponse=====>", response);
 
-    localStorageHelper.storeItem("@token", response?.data?.access_token);
-    localStorageHelper.storeItem("@token_expires", response?.data?.expires_in);
+//     localStorageHelper.storeItem("@token", response?.data?.access_token);
+//     localStorageHelper.storeItem("@token_expires", response?.data?.expires_in);
 
-    return response?.data?.access_token;
-  } catch (err) {
-    console.error("Error in getAuthToken", err);
-    throw err;
-  }
-};
+//     return response?.data?.access_token;
+//   } catch (err) {
+//     console.error("Error in getAuthToken", err);
+//     throw err;
+//   }
+// };
 
-//****************************************************** prepare Headers **************************************** */
-const prepareHeaders = async (tokenNeeded: any) => {
-  let headers: any = { "Content-Type": "application/json" };
-  if (tokenNeeded) {
-    let AuthToken = await localStorageHelper.getItem("@token");
-    const tokenExpiry = await localStorageHelper.getItem("@token_expiry");
+// //****************************************************** prepare Headers **************************************** */
+// const prepareHeaders = async (tokenNeeded: any) => {
+//   let headers: any = { "Content-Type": "application/json" };
+//   if (tokenNeeded) {
+//     let AuthToken = await localStorageHelper.getItem("@token");
+//     const tokenExpiry = await localStorageHelper.getItem("@token_expiry");
 
-    if (tokenExpiry && moment(tokenExpiry).isValid()) {
-      const hourDifference = moment(tokenExpiry).diff(moment(), "hours");
-      if (hourDifference <= 1) {
-        try {
-          AuthToken = await getAuthToken();
-        } catch (err) {
-          console.error("Token refresh failed. Logging out...", err);
-          localStorageHelper.removeStoredItem("@token");
-          localStorageHelper.removeStoredItem("@token_expiry");
-          window.location.href = "/login"; 
-        }
-      }
-    }
+//     if (tokenExpiry && moment(tokenExpiry).isValid()) {
+//       const hourDifference = moment(tokenExpiry).diff(moment(), "hours");
+//       if (hourDifference <= 1) {
+//         try {
+//           AuthToken = await getAuthToken();
+//         } catch (err) {
+//           console.error("Token refresh failed. Logging out...", err);
+//           localStorageHelper.removeStoredItem("@token");
+//           localStorageHelper.removeStoredItem("@token_expiry");
+//           window.location.href = "/login"; 
+//         }
+//       }
+//     }
 
-    headers["Authorization"] = `Bearer ${AuthToken}`;
-  }
+//     headers["Authorization"] = `Bearer ${AuthToken}`;
+//   }
 
-  return headers;
-};
+//   return headers;
+// };
 
-//****************************************************** response handler **************************************** */
+// //****************************************************** response handler **************************************** */
 
-const handleResponse = async (response: any) => {
-  console.log("response====================>", response);
+// const handleResponse = async (response: any) => {
+//   console.log("response====================>", response);
   
-  return response?.data; // Fix for response structure
-};
+//   return response?.data; // Fix for response structure
+// };
 
-//******************************************************  errorResponse handler  **************************************** */
-const handleErrorResponse = (errorResponse: any) => {
-  if (!errorResponse) {
-    toast.error("Network error. Please try again.");
-    return { error: "Network error" };
-  }
+// //******************************************************  errorResponse handler  **************************************** */
+// const handleErrorResponse = (errorResponse: any) => {
+//   if (!errorResponse) {
+//     toast.error("Network error. Please try again.");
+//     return { error: "Network error" };
+//   }
 
-  const { status, data } = errorResponse;
-  const errorMessage = data?.message || "Api Failed";
+//   const { status, data } = errorResponse;
+//   const errorMessage = data?.message || "Api Failed";
 
-  if (status === 400 && Array.isArray(data?.message)) {
-    const validationErrors = data.message
-      .map((err: any) => Object.values(err.constraints).join(", "))
-      .join(" | ");
-    toast.error(validationErrors);
-    return { error: validationErrors };
-  } else {
-    if (status !== 500) {
-      toast.error(errorMessage);
-    }
-    return { error: errorMessage }; 
-  }
-};
+//   if (status === 400 && Array.isArray(data?.message)) {
+//     const validationErrors = data.message
+//       .map((err: any) => Object.values(err.constraints).join(", "))
+//       .join(" | ");
+//     toast.error(validationErrors);
+//     return { error: validationErrors };
+//   } else {
+//     if (status !== 500) {
+//       toast.error(errorMessage);
+//     }
+//     return { error: errorMessage }; 
+//   }
+// };
 
-//******************************************************  apiCall  ****************************************
+// //******************************************************  apiCall  ****************************************
 
-const apiCall = async (
-  method: "get" | "post" | "patch" | "delete",
-  route: string,
-  params: any = {},
-  tokenNeeded: boolean = true,
-  contentType: string = "application/json"
-) => {
-  console.log(route);
-  console.log("method===========>", method);
-  try {
-    const headers = await prepareHeaders(tokenNeeded);
+// const apiCall = async (
+//   method: "get" | "post" | "patch" | "delete",
+//   route: string,
+//   params: any = {},
+//   tokenNeeded: boolean = true,
+//   contentType: string = "application/json"
+// ) => {
+//   console.log(route);
+//   console.log("method===========>", method);
+//   try {
+//     const headers = await prepareHeaders(tokenNeeded);
 
-    headers["Content-Type"] = contentType;
+//     headers["Content-Type"] = contentType;
 
-    const config = {
-      method,
-      url: `${base_URL}${route}`,
-      headers,
-      data: method !== "get" ? params : undefined,
-      params: method === "get" ? params : undefined, 
-    };
+//     const config = {
+//       method,
+//       url: `${base_URL}${route}`,
+//       headers,
+//       data: method !== "get" ? params : undefined,
+//       params: method === "get" ? params : undefined, 
+//     };
 
-    console.log("CONFIG ===> ", config);
+//     console.log("CONFIG ===> ", config);
 
-    const response = await axios(config);
-    return await handleResponse(response);
-  } catch (err: any) {
-    console.log("errorrr======>", err);
-    return handleErrorResponse(err?.response);
-  }
-};
+//     const response = await axios(config);
+//     return await handleResponse(response);
+//   } catch (err: any) {
+//     console.log("errorrr======>", err);
+//     return handleErrorResponse(err?.response);
+//   }
+// };
 
-export default {
-  apiCall,
-};
+// export default {
+//   apiCall,
+// };
+
+
+
