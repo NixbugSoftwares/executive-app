@@ -202,7 +202,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             anchor: [0.5, 1],
           }),
           text: new Text({
-            text: selectedBuststop.name || 'Bus Stop', // Use stop.name or default text
+            text: selectedBuststop.name || 'Bus Stop', 
             font: 'bold 12px Arial',
             fill: new Fill({
               color: '#000000'
@@ -211,7 +211,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
               color: '#FFFFFF',
               width: 3
             }),
-            offsetY: -25, // Position above the icon
+            offsetY: -25, 
             textAlign: 'center'
           })
         })

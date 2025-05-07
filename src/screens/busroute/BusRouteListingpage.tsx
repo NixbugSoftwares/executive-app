@@ -17,11 +17,14 @@ import {
   DialogContentText,
   DialogActions,
   Tooltip,
-  IconButton,
 } from "@mui/material";
 import { Delete } from "@mui/icons-material";
 import { useDispatch } from "react-redux";
-import { busRouteLandmarkListApi, busRouteListApi, routeDeleteApi, } from "../../slices/appSlice";
+import {
+  busRouteLandmarkListApi,
+  busRouteListApi,
+  routeDeleteApi,
+} from "../../slices/appSlice";
 import { AppDispatch } from "../../store/Store";
 import { useParams, useLocation } from "react-router-dom";
 import MapComponent from "./BusRouteMap";
@@ -32,14 +35,12 @@ import {
 } from "../../common/toastMessageHelper";
 import localStorageHelper from "../../utils/localStorageHelper";
 import BusRouteDetailsPage from "./BusRouteDetails";
-import { SelectedLandmark, RouteLandmark } from '../../types/type';
+import { SelectedLandmark, RouteLandmark } from "../../types/type";
 interface Route {
   id: number;
   companyId: number;
   name: string;
 }
-
-
 
 const BusRouteListing = () => {
   const { companyId } = useParams();
@@ -54,17 +55,27 @@ const BusRouteListing = () => {
   const [landmarks, setLandmarks] = useState<SelectedLandmark[]>([]);
   const [routeToDelete, setRouteToDelete] = useState<Route | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [selectedRoute, setSelectedRoute] = useState<{id: number, name: string} | null>(null);
+  const [selectedRoute, setSelectedRoute] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
   const [page, setPage] = useState(0);
   const rowsPerPage = 10;
   const roleDetails = localStorageHelper.getItem("@roleDetails");
   const canManageRoutes = roleDetails?.manage_route || false;
-  const mapRef = useRef<{ clearRoutePath: () => void; toggleAddLandmarkMode?: () => void }>(null);
-  const [_selectedRouteLandmarks, setSelectedRouteLandmarks] = useState<RouteLandmark[]>([]);
+  const mapRef = useRef<{
+    clearRoutePath: () => void;
+    toggleAddLandmarkMode?: () => void;
+  }>(null);
+  const [_selectedRouteLandmarks, setSelectedRouteLandmarks] = useState<
+    RouteLandmark[]
+  >([]);
   const [mapLandmarks, setMapLandmarks] = useState<SelectedLandmark[]>([]);
   const [isEditingRoute, setIsEditingRoute] = useState(false);
-  const [newRouteLandmarks, setNewRouteLandmarks] = useState<SelectedLandmark[]>([]);
-  
+  const [newRouteLandmarks, setNewRouteLandmarks] = useState<
+    SelectedLandmark[]
+  >([]);
+
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const urlCompanyId = companyId || queryParams.get("companyId");
@@ -103,16 +114,16 @@ const BusRouteListing = () => {
           const response = await dispatch(
             busRouteLandmarkListApi(selectedRoute.id)
           ).unwrap();
-          
+
           const processed = response.map((lm: any) => ({
             id: lm.landmark_id,
             name: lm.name,
             sequenceId: lm.sequence_id,
             arrivalTime: lm.arrival_time,
             departureTime: lm.departure_time,
-            distance_from_start: lm.distance_from_start ?? 0 
+            distance_from_start: lm.distance_from_start ?? 0,
           }));
-          
+
           setSelectedRouteLandmarks(processed);
           setMapLandmarks(processed);
         } catch (error) {
@@ -120,11 +131,10 @@ const BusRouteListing = () => {
         }
       }
     };
-  
+
     fetchRouteLandmarks();
   }, [selectedRoute]);
 
- 
   useEffect(() => {
     return () => {
       setMapLandmarks([]);
@@ -172,9 +182,10 @@ const BusRouteListing = () => {
   };
 
   const handleAddLandmark = (landmark: SelectedLandmark) => {
-    const sortedLandmarks = [...landmarks, landmark]
-      .sort((a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0));
-    
+    const sortedLandmarks = [...landmarks, landmark].sort(
+      (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
+    );
+
     setLandmarks(sortedLandmarks);
   };
 
@@ -210,15 +221,16 @@ const BusRouteListing = () => {
     }
   };
 
+  const handleAddLandmarkEdit = (landmark: SelectedLandmark) => {
+    setNewRouteLandmarks((prev) => [...prev, landmark]);
+    setMapLandmarks((prev) => [...prev, landmark]);
+  };
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
       fetchRoute();
     }
   };
-
-
-
 
   return (
     <Box
@@ -242,34 +254,34 @@ const BusRouteListing = () => {
       >
         {selectedRoute ? (
           // In BusRouteListing component
-<BusRouteDetailsPage
-  routeId={selectedRoute.id}
-  routeName={selectedRoute.name}
-  refreshList={(value: any) => refreshList(value)}
-  onBack={() => {
-    setSelectedRoute(null);
-    setMapLandmarks([]);
-    setIsEditingRoute(false);
-    if (mapRef.current) {
-      mapRef.current.clearRoutePath();
-    }
-  }}
-  onLandmarksUpdate={setMapLandmarks}
-  onEnableAddLandmark={() => {
-    setIsEditingRoute(true);
-    if (mapRef.current?.toggleAddLandmarkMode) {
-      mapRef.current.toggleAddLandmarkMode();
-    }
-  }}
-  isEditing={isEditingRoute}
-  onCancelEdit={() => setIsEditingRoute(false)}
-  newLandmarks={newRouteLandmarks}
-  setNewLandmarks={setNewRouteLandmarks}
-  onNewLandmarkAdded={(landmark) => {
-    setNewRouteLandmarks(prev => [...prev, landmark]);
-    setMapLandmarks(prev => [...prev, landmark]);
-  }}
-/>
+          <BusRouteDetailsPage
+            routeId={selectedRoute.id}
+            routeName={selectedRoute.name}
+            refreshList={(value: any) => refreshList(value)}
+            onBack={() => {
+              setSelectedRoute(null);
+              setMapLandmarks([]);
+              setIsEditingRoute(false);
+              if (mapRef.current) {
+                mapRef.current.clearRoutePath();
+              }
+            }}
+            onLandmarksUpdate={setMapLandmarks}
+            onEnableAddLandmark={() => {
+              setIsEditingRoute(true);
+              if (mapRef.current?.toggleAddLandmarkMode) {
+                mapRef.current.toggleAddLandmarkMode();
+              }
+            }}
+            isEditing={isEditingRoute}
+            onCancelEdit={() => setIsEditingRoute(false)}
+            newLandmarks={newRouteLandmarks}
+            setNewLandmarks={setNewRouteLandmarks}
+            onNewLandmarkAdded={(landmark) => {
+              setNewRouteLandmarks((prev) => [...prev, landmark]);
+              setMapLandmarks((prev) => [...prev, landmark]);
+            }}
+          />
         ) : showCreationForm ? (
           <>
             <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
@@ -399,27 +411,26 @@ const BusRouteListing = () => {
                         page * rowsPerPage + rowsPerPage
                       )
                       .map((row) => (
-                        <TableRow key={row.id}
-                        hover
-                        >
+                        <TableRow key={row.id} hover>
                           <TableCell>{row.id}</TableCell>
-                          <TableCell 
-                            sx={{ 
+                          <TableCell
+                            sx={{
                               cursor: "pointer",
-                              
                             }}
-                            onClick={() => setSelectedRoute({ id: row.id, name: row.name })}
+                            onClick={() =>
+                              setSelectedRoute({ id: row.id, name: row.name })
+                            }
                           >
                             {row.name}
                           </TableCell>
                           <TableCell sx={{ textAlign: "center" }}>
-                            <IconButton
+                            <Button
                               color="error"
                               size="small"
                               onClick={() => handleDeleteClick(row)}
                             >
                               <Delete sx={{ fontSize: 20 }} />
-                            </IconButton>
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -510,15 +521,17 @@ const BusRouteListing = () => {
           gap: 2,
         }}
       >
-       <MapComponent
-  onAddLandmark={handleAddLandmark}
-  isSelecting={showCreationForm || isEditingRoute}
-  ref={mapRef}
-  landmarks={selectedRoute ? mapLandmarks : landmarks} 
-  mode={selectedRoute ? 'view' : 'create'}
-  isEditing={isEditingRoute}
-  selectedLandmarks={landmarks}
-/>
+        <MapComponent
+          onAddLandmark={
+            isEditingRoute ? handleAddLandmarkEdit : handleAddLandmark
+          }
+          isSelecting={showCreationForm || isEditingRoute}
+          ref={mapRef}
+          landmarks={selectedRoute ? mapLandmarks : landmarks}
+          mode={selectedRoute ? "view" : "create"}
+          isEditing={isEditingRoute}
+          selectedLandmarks={isEditingRoute ? newRouteLandmarks : landmarks}
+        />
       </Box>
 
       <Dialog

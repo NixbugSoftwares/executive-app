@@ -4,7 +4,6 @@ import {
   Typography,
   List,
   ListItem,
-  ListItemText,
   Divider,
   Chip,
   Button,
@@ -17,8 +16,15 @@ import {
   DialogTitle,
   IconButton,
   TextField,
+  Tooltip,
 } from "@mui/material";
-import { Delete, Edit } from "@mui/icons-material";
+import {
+  Delete,
+  Edit,
+  Directions,
+  ArrowUpward,
+  ArrowDownward,
+} from "@mui/icons-material";
 import {
   busRouteLandmarkListApi,
   landmarkListApi,
@@ -39,7 +45,7 @@ interface BusRouteDetailsProps {
   routeName: string;
   onBack: () => void;
   onLandmarksUpdate: (landmarks: any[]) => void;
-  onEnableAddLandmark: () => void; 
+  onEnableAddLandmark: () => void;
   onNewLandmarkAdded: (landmark: SelectedLandmark) => void;
   isEditing?: boolean;
   onCancelEdit: () => void;
@@ -58,7 +64,7 @@ const BusRouteDetailsPage = ({
   onCancelEdit,
   newLandmarks,
   setNewLandmarks,
-  refreshList
+  refreshList,
 }: BusRouteDetailsProps) => {
   const dispatch = useAppDispatch();
   const [routeLandmarks, setRouteLandmarks] = useState<RouteLandmark[]>([]);
@@ -85,7 +91,7 @@ const BusRouteDetailsPage = ({
       const processedLandmarks = processLandmarks(response);
       const sortedLandmarks = processedLandmarks.sort(
         (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
-      ); 
+      );
       setRouteLandmarks(sortedLandmarks);
       updateParentMapLandmarks(sortedLandmarks);
     } catch (error) {
@@ -132,7 +138,7 @@ const BusRouteDetailsPage = ({
 
       await Promise.all(creationPromises);
       showSuccessToast("New landmarks added successfully");
-      setNewLandmarks([]); 
+      setNewLandmarks([]);
       fetchRouteLandmarks();
     } catch (error) {
       showErrorToast("Failed to add new landmarks");
@@ -307,33 +313,33 @@ const BusRouteDetailsPage = ({
       </Stack>
 
       <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-        >
-          {editMode ? (
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <TextField
-                value={updatedRouteName}
-                onChange={(e) => setUpdatedRouteName(e.target.value)}
-                variant="outlined"
-                size="small"
-              />
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleRouteNameUpdate}
-              >
-                Save
-              </Button>
-            </Stack>
-          ) : (
-            <Typography variant="h5" gutterBottom>
-              {routeName}
-            </Typography>
-          )}
-        </Stack>
+      <Stack
+  direction="row"
+  justifyContent="center" // Center the content
+  alignItems="center"
+>
+  {editMode ? (
+    <Stack direction="row" alignItems="center" spacing={2}>
+      <TextField
+        value={updatedRouteName}
+        onChange={(e) => setUpdatedRouteName(e.target.value)}
+        variant="outlined"
+        size="small"
+      />
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleRouteNameUpdate}
+      >
+        Save
+      </Button>
+    </Stack>
+  ) : (
+    <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, textAlign: "center" }}>
+      {routeName}
+    </Typography>
+  )}
+</Stack>
       </Paper>
 
       {isLoading ? (
@@ -353,62 +359,118 @@ const BusRouteDetailsPage = ({
                 <ListItem
                   sx={{
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "flex-start",
                     py: 2,
+                    px: 2,
                     backgroundColor:
                       index % 2 === 0 ? "action.hover" : "background.paper",
                     borderRadius: 1,
+                    gap: 2,
                   }}
                 >
                   <Chip
                     label={index + 1}
                     color="primary"
-                    sx={{ mr: 2, minWidth: 32 }}
+                    sx={{
+                      mr: 1,
+                      minWidth: 32,
+                      height: 32,
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                    }}
                   />
-                  <ListItemText
-                    primary={getLandmarkName(landmark.landmark_id)}
-                    secondary={
-                      <>
-                       <span>
-                          Departure: {formatTime(landmark.departure_time)}
-                        </span>
 
-                        <span>
-                          Arrival: {formatTime(landmark.arrival_time)}
-                        </span>
-                        <span style={{ margin: "0 8px" }}>|</span>
-                       
-                        {landmark.distance_from_start !== undefined && (
-                          <>
-                            <span style={{ margin: "0 8px" }}>|</span>
-                            <span>
-                              Distance: {landmark.distance_from_start} m
-                            </span>
-                          </>
-                        )}
-                      </>
-                    }
-                  />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      {getLandmarkName(landmark.landmark_id)}
+                    </Typography>
+
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mt: 0.5,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      {landmark.distance_from_start !== undefined && (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            backgroundColor: "primary.light",
+                            color: "primary.contrastText",
+                            px: 1.5,
+                            py: 0.5,
+                            borderRadius: 1,
+                            fontSize: "0.75rem",
+                          }}
+                        >
+                          <Directions sx={{ fontSize: "1rem", mr: 0.5 }} />
+                          {landmark.distance_from_start}m
+                        </Box>
+                      )}
+
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1.5,
+                          fontSize: "0.8rem",
+                          color: "text.secondary",
+                        }}
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <ArrowUpward
+                            sx={{
+                              fontSize: "1rem",
+                              mr: 0.5,
+                              color: "success.main",
+                            }}
+                          />
+                          <span>
+                            Depart: {formatTime(landmark.departure_time)}
+                          </span>
+                        </Box>
+
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <ArrowDownward
+                            sx={{
+                              fontSize: "1rem",
+                              mr: 0.5,
+                              color: "error.main",
+                            }}
+                          />
+                          <span>
+                            Arrive: {formatTime(landmark.arrival_time)}
+                          </span>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Box>
+
                   {editMode && (
-                    <>
+                    <Stack direction="row" spacing={1}>
                       <IconButton
+                        onClick={() => handleLandmarkEditClick(landmark)}
+                        aria-label="edit"
                         color="primary"
                         size="small"
-                        sx={{ mr: 1 }}
-                        onClick={() => handleLandmarkEditClick(landmark)}
                       >
-                        <Edit sx={{ fontSize: 20 }} />
+                        <Edit fontSize="small" />
                       </IconButton>
                       <IconButton
+                        onClick={() => handleDeleteClick(landmark)}
+                        aria-label="delete"
                         color="error"
                         size="small"
-                        onClick={() => handleDeleteClick(landmark)}
                       >
-                        <Delete sx={{ fontSize: 20 }} />
+                        <Delete fontSize="small" />
                       </IconButton>
-                    </>
+                    </Stack>
                   )}
                 </ListItem>
+
                 {index < routeLandmarks.length - 1 && (
                   <Divider
                     component="li"
@@ -417,46 +479,137 @@ const BusRouteDetailsPage = ({
                       borderLeftStyle: "dashed",
                       borderColor: "divider",
                       height: 20,
-                      ml: 3.5,
+                      ml: 4.5,
                       listStyle: "none",
                     }}
                   />
                 )}
               </Box>
             ))}
+
+            {/* New Landmarks Section */}
             {newLandmarks.map((landmark, index) => (
               <Box key={`new-${landmark.id}-${index}`}>
-                <ListItem sx={{ backgroundColor: "#e3f2fd" }}>
+                <ListItem
+                  sx={{
+                    backgroundColor: "#e3f2fd",
+                    borderRadius: 1,
+                    display: "flex",
+                    alignItems: "flex-start",
+                    py: 2,
+                    px: 2,
+                    gap: 2,
+                  }}
+                >
                   <Chip
                     label={routeLandmarks.length + index + 1}
                     color="primary"
+                    sx={{
+                      mr: 1,
+                      minWidth: 32,
+                      height: 32,
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                    }}
                   />
-                  <ListItemText
-                    primary={landmark.name}
-                    secondary={
-                      <>
-                        <span>Arrival: {landmark.arrivalTime}</span>
-                        <span style={{ margin: "0 8px" }}>|</span>
-                        <span>Departure: {landmark.departureTime}</span>
-                        <span style={{ margin: "0 8px" }}>|</span>
-                        <span>Distance: {landmark.distance_from_start}m</span>
-                      </>
-                    }
-                  />
+
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      {landmark.name}
+                    </Typography>
+
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mt: 0.5,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          backgroundColor: "primary.light",
+                          color: "primary.contrastText",
+                          px: 1.5,
+                          py: 0.5,
+                          borderRadius: 1,
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        <Directions sx={{ fontSize: "1rem", mr: 0.5 }} />
+                        {landmark.distance_from_start}m
+                      </Box>
+
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1.5,
+                          fontSize: "0.8rem",
+                          color: "text.secondary",
+                        }}
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <ArrowUpward
+                            sx={{
+                              fontSize: "1rem",
+                              mr: 0.5,
+                              color: "success.main",
+                            }}
+                          />
+                          <span>
+                            Depart: {formatTime(landmark.departureTime)}
+                          </span>
+                        </Box>
+
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <ArrowDownward
+                            sx={{
+                              fontSize: "1rem",
+                              mr: 0.5,
+                              color: "error.main",
+                            }}
+                          />
+                          <span>
+                            Arrive: {formatTime(landmark.arrivalTime)}
+                          </span>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Box>
+
                   <IconButton
                     color="error"
+                    size="small"
                     onClick={() =>
                       setNewLandmarks(
                         newLandmarks.filter((_, i) => i !== index)
                       )
                     }
+                    sx={{
+                      backgroundColor: "error.light",
+                      "&:hover": {
+                        backgroundColor: "error.main",
+                        color: "error.contrastText",
+                      },
+                    }}
                   >
-                    <Delete />
+                    <Delete fontSize="small" />
                   </IconButton>
                 </ListItem>
+
                 <Divider
                   component="li"
-                  sx={{ borderLeftWidth: 2, borderLeftStyle: "dashed" }}
+                  sx={{
+                    borderLeftWidth: 2,
+                    borderLeftStyle: "dashed",
+                    borderColor: "divider",
+                    height: 20,
+                    ml: 4.5,
+                    listStyle: "none",
+                  }}
                 />
               </Box>
             ))}
@@ -524,20 +677,33 @@ const BusRouteDetailsPage = ({
                 }
                 InputLabelProps={{ shrink: true }}
               />
-              <TextField
-                label="Distance from Start (m)"
-                type="number"
-                fullWidth
-                margin="normal"
-                value={editingLandmark.distance_from_start || 0}
-                onChange={(e) =>
-                  setEditingLandmark({
-                    ...editingLandmark,
-                    distance_from_start: parseFloat(e.target.value) || 0,
-                  })
+              <Tooltip
+                title={
+                  editingLandmark.distance_from_start === 0
+                    ? "You can't edit the starting landmark distance"
+                    : ""
                 }
-                disabled={editingLandmark.sequence_id === 1}
-              />
+              >
+                <span>
+                  <TextField
+                    label="Distance from Start (m)"
+                    type="number"
+                    fullWidth
+                    margin="normal"
+                    value={editingLandmark.distance_from_start || 0}
+                    onChange={(e) =>
+                      setEditingLandmark({
+                        ...editingLandmark,
+                        distance_from_start: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    disabled={editingLandmark.distance_from_start === 0}
+                    InputProps={{
+                      readOnly: editingLandmark.distance_from_start === 0,
+                    }}
+                  />
+                </span>
+              </Tooltip>
             </>
           )}
         </DialogContent>
@@ -560,19 +726,21 @@ const BusRouteDetailsPage = ({
       </Dialog>
 
       {selectedLandmark && (
-        <><Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSaveNewLandmarks}
-            disabled={newLandmarks.length === 0}
+        <>
+          <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSaveNewLandmarks}
+              disabled={newLandmarks.length === 0}
+            >
+              Save New Landmarks
+            </Button>
+          </Stack>
+          <Dialog
+            open={!!selectedLandmark}
+            onClose={() => setSelectedLandmark(null)}
           >
-            Save New Landmarks
-          </Button>
-        </Stack><Dialog
-          open={!!selectedLandmark}
-          onClose={() => setSelectedLandmark(null)}
-        >
             <DialogTitle>Add Landmark Details</DialogTitle>
             <DialogContent>
               <TextField
@@ -581,32 +749,41 @@ const BusRouteDetailsPage = ({
                 fullWidth
                 margin="normal"
                 value={selectedLandmark.arrivalTime}
-                onChange={(e) => setSelectedLandmark({
-                  ...selectedLandmark,
-                  arrivalTime: e.target.value,
-                })}
-                InputLabelProps={{ shrink: true }} />
+                onChange={(e) =>
+                  setSelectedLandmark({
+                    ...selectedLandmark,
+                    arrivalTime: e.target.value,
+                  })
+                }
+                InputLabelProps={{ shrink: true }}
+              />
               <TextField
                 label="Departure Time"
                 type="datetime-local"
                 fullWidth
                 margin="normal"
                 value={selectedLandmark.departureTime}
-                onChange={(e) => setSelectedLandmark({
-                  ...selectedLandmark,
-                  departureTime: e.target.value,
-                })}
-                InputLabelProps={{ shrink: true }} />
+                onChange={(e) =>
+                  setSelectedLandmark({
+                    ...selectedLandmark,
+                    departureTime: e.target.value,
+                  })
+                }
+                InputLabelProps={{ shrink: true }}
+              />
               <TextField
                 label="Distance from Start (m)"
                 type="number"
                 fullWidth
                 margin="normal"
                 value={selectedLandmark.distance_from_start}
-                onChange={(e) => setSelectedLandmark({
-                  ...selectedLandmark,
-                  distance_from_start: Number(e.target.value),
-                })} />
+                onChange={(e) =>
+                  setSelectedLandmark({
+                    ...selectedLandmark,
+                    distance_from_start: Number(e.target.value),
+                  })
+                }
+              />
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setSelectedLandmark(null)}>Cancel</Button>
@@ -614,13 +791,14 @@ const BusRouteDetailsPage = ({
                 onClick={() => {
                   handleAddNewLandmark(selectedLandmark);
                   setSelectedLandmark(null);
-                } }
+                }}
                 color="primary"
               >
                 Add
               </Button>
             </DialogActions>
-          </Dialog></>
+          </Dialog>
+        </>
       )}
     </Box>
   );

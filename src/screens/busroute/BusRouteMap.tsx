@@ -74,288 +74,297 @@ const MapComponent = React.forwardRef(
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [landmarks, setLandmarks] = useState<Landmark[]>([]);
     const [showAllBoundaries, setShowAllBoundaries] = useState(false);
-    const [selectedLandmark, setSelectedLandmark] =useState<SelectedLandmark | null>(null);
+    const [selectedLandmark, setSelectedLandmark] =
+      useState<SelectedLandmark | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isAddingLandmark, setIsAddingLandmark] = useState(false);
     const selectInteractionRef = useRef<OlSelect | null>(null);
     const routeCoordsRef = useRef<Coordinate[]>([]);
     // Initialize the map
     const initializeMap = () => {
-          if (!mapRef.current) return null;
-    
-          const map = new Map({
-            controls: [],
-            layers: [
-              new TileLayer({ source: new OSM() }),
-              new VectorLayer({ 
-                source: allBoundariesSource.current,
-                zIndex: 1
-              }),
-              new VectorLayer({ 
-                source: selectedLandmarksSource.current,
-                zIndex: 2
-              }),
-              new VectorLayer({ 
-                source: routePathSource.current,
-                zIndex: 3
-              }),
-            ],
-            target: mapRef.current,
-            view: new View({
-              center: fromLonLat([76.9366, 8.5241]),
-              zoom: 10,
-              minZoom: 3,
-              maxZoom: 18,
-            }),
-          });
-    
-          map.on("pointermove", (event) => {
-            const coords = toLonLat(event.coordinate);
-            setMousePosition(`${coords[0].toFixed(7)}, ${coords[1].toFixed(7)}`);
-          });
-    
-          return map;
-        };
+      if (!mapRef.current) return null;
+
+      const map = new Map({
+        controls: [],
+        layers: [
+          new TileLayer({ source: new OSM() }),
+          new VectorLayer({
+            source: allBoundariesSource.current,
+            zIndex: 1,
+          }),
+          new VectorLayer({
+            source: selectedLandmarksSource.current,
+            zIndex: 2,
+          }),
+          new VectorLayer({
+            source: routePathSource.current,
+            zIndex: 3,
+          }),
+        ],
+        target: mapRef.current,
+        view: new View({
+          center: fromLonLat([76.9366, 8.5241]),
+          zoom: 10,
+          minZoom: 3,
+          maxZoom: 18,
+        }),
+      });
+
+      map.on("pointermove", (event) => {
+        const coords = toLonLat(event.coordinate);
+        setMousePosition(`${coords[0].toFixed(7)}, ${coords[1].toFixed(7)}`);
+      });
+
+      return map;
+    };
 
     useEffect(() => {
-          if (!mapInstance.current) {
-            mapInstance.current = initializeMap();
-          }
-          fetchLandmark();
-        }, []);
-    
-        useEffect(() => {
-          if (mode === "view") {
-            handleViewModeLandmarks();
-          }
-        }, [propLandmarks, mode]);
-    
-        useEffect(() => {
-          if (isEditing !== undefined) {
-            setIsAddingLandmark(isEditing);
-            setShowAllBoundaries(isEditing);
-          }
-        }, [isEditing]);
+      if (!mapInstance.current) {
+        mapInstance.current = initializeMap();
+      }
+      fetchLandmark();
+    }, []);
 
     useEffect(() => {
-          if (!mapInstance.current) return;
-    
-          const layers = mapInstance.current.getLayers().getArray();
-          const allBoundariesLayer = layers[1] instanceof VectorLayer ? layers[1] : null;
-    
-          if (!allBoundariesLayer) return;
-    
-          if (isAddingLandmark) {
-            if (selectInteractionRef.current) {
-              mapInstance.current.removeInteraction(selectInteractionRef.current);
-            }
-            const selectInteraction = new OlSelect({
-              layers: [allBoundariesLayer],
-            });
-    
-            selectInteraction.on("select", (e) => {
-              const selectedFeature = e.selected[0];
-              if (selectedFeature) {
-                const landmarkId = selectedFeature.get("id");
-                const landmark = landmarks.find((lm) => lm.id === landmarkId);
-    
-                if (landmark) {
-                  setSelectedLandmark({
-                    id: landmark.id,
-                    name: landmark.name,
-                    arrivalTime: "",
-                    departureTime: "",
-                    distance_from_start:
-                      selectedLandmarks.length === 0
-                        ? 0
-                        : Math.max(
-                            ...selectedLandmarks.map(
-                              (l) => l.distance_from_start || 0
-                            )
-                          ) + 100,
-                  });
-                  setIsModalOpen(true);
-                }
-              }
-              selectInteraction.getFeatures().clear();
-            });
-    
-            mapInstance.current.addInteraction(selectInteraction);
-            selectInteractionRef.current = selectInteraction;
-          } else {
-            if (selectInteractionRef.current) {
-              mapInstance.current.removeInteraction(selectInteractionRef.current);
-              selectInteractionRef.current = null;
+      if (mode === "view") {
+        handleViewModeLandmarks();
+      }
+    }, [propLandmarks, mode]);
+
+    useEffect(() => {
+      if (isEditing !== undefined) {
+        setIsAddingLandmark(isEditing);
+        setShowAllBoundaries(isEditing);
+      }
+    }, [isEditing]);
+
+    useEffect(() => {
+      if (!mapInstance.current) return;
+
+      const layers = mapInstance.current.getLayers().getArray();
+      const allBoundariesLayer =
+        layers[1] instanceof VectorLayer ? layers[1] : null;
+
+      if (!allBoundariesLayer) return;
+
+      if (isAddingLandmark) {
+        if (selectInteractionRef.current) {
+          mapInstance.current.removeInteraction(selectInteractionRef.current);
+        }
+        const selectInteraction = new OlSelect({
+          layers: [allBoundariesLayer],
+        });
+
+        selectInteraction.on("select", (e) => {
+          const selectedFeature = e.selected[0];
+          if (selectedFeature) {
+            const landmarkId = selectedFeature.get("id");
+            const landmark = landmarks.find((lm) => lm.id === landmarkId);
+
+            if (landmark) {
+              setSelectedLandmark({
+                id: landmark.id,
+                name: landmark.name,
+                arrivalTime: "",
+                departureTime: "",
+                distance_from_start:
+                  selectedLandmarks.length === 0
+                    ? 0
+                    : Math.max(
+                        ...selectedLandmarks.map(
+                          (l) => l.distance_from_start || 0
+                        )
+                      ) + 100,
+              });
+              setIsModalOpen(true);
             }
           }
-    
-          return () => {
-            if (selectInteractionRef.current) {
-              mapInstance.current?.removeInteraction(selectInteractionRef.current);
-            }
-          };
-        }, [isAddingLandmark, landmarks]);
+          selectInteraction.getFeatures().clear();
+        });
+
+        mapInstance.current.addInteraction(selectInteraction);
+        selectInteractionRef.current = selectInteraction;
+      } else {
+        if (selectInteractionRef.current) {
+          mapInstance.current.removeInteraction(selectInteractionRef.current);
+          selectInteractionRef.current = null;
+        }
+      }
+
+      return () => {
+        if (selectInteractionRef.current) {
+          mapInstance.current?.removeInteraction(selectInteractionRef.current);
+        }
+      };
+    }, [isAddingLandmark, landmarks]);
 
     const handleViewModeLandmarks = () => {
-          selectedLandmarksSource.current.clear();
-          routePathSource.current.clear();
-          routeCoordsRef.current = [];
-    
-          if (!propLandmarks || propLandmarks.length === 0) {
-            return;
-          }
-    
-          const sortedLandmarks = [...propLandmarks].sort(
-            (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
-          );
-    
-          sortedLandmarks.forEach((landmark, index) => {
-            const lm = landmarks.find((l) => l.id === landmark.id);
-            if (lm?.boundary) {
-              try {
-                const coordinates = lm.boundary
-                  .split(",")
-                  .map((coord: string) => coord.trim().split(" ").map(Number))
-                  .map((coord: Coordinate) => fromLonLat(coord));
-    
-                const polygon = new Polygon([coordinates]);
-                const feature = new Feature(polygon);
-                feature.set("id", lm.id);
-    
-                feature.setStyle(
-                  new Style({
-                    stroke: new Stroke({
-                      color: "rgba(0, 150, 0, 0.7)", // Green color for selected
-                      width: 2,
-                    }),
-                    fill: new Fill({
-                      color: "rgba(0, 150, 0, 0.1)",
-                    }),
-                    text: new Text({
-                      text: (index + 1).toString(),
-                      font: "bold 14px Arial",
-                      fill: new Fill({ color: "#fff" }),
-                      stroke: new Stroke({ color: "#000", width: 3 }),
-                      offsetY: -20,
-                    }),
-                  })
-                );
-    
-                selectedLandmarksSource.current.addFeature(feature);
-    
-                const center = getCenter(polygon.getExtent());
-                routeCoordsRef.current.push(center);
-              } catch (error) {
-                console.error("Error processing landmark boundary:", error);
-              }
-            }
-          });
-    
-          if (routeCoordsRef.current.length > 1) {
-            const routeFeature = new Feature({
-              geometry: new LineString(routeCoordsRef.current),
-            });
-    
-            routeFeature.setStyle(
+      selectedLandmarksSource.current.clear();
+      routePathSource.current.clear();
+      routeCoordsRef.current = [];
+
+      if (!propLandmarks || propLandmarks.length === 0) {
+        return;
+      }
+
+      const sortedLandmarks = [...propLandmarks].sort(
+        (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
+      );
+
+      sortedLandmarks.forEach((landmark, index) => {
+        const lm = landmarks.find((l) => l.id === landmark.id);
+        if (lm?.boundary) {
+          try {
+            const coordinates = lm.boundary
+              .split(",")
+              .map((coord: string) => coord.trim().split(" ").map(Number))
+              .map((coord: Coordinate) => fromLonLat(coord));
+
+            const polygon = new Polygon([coordinates]);
+            const feature = new Feature(polygon);
+            feature.set("id", lm.id);
+
+            feature.setStyle(
               new Style({
                 stroke: new Stroke({
-                  color: "rgba(218, 29, 16, 0.7)",
-                  width: 3,
+                  color: "rgba(0, 150, 0, 0.7)", // Green color for selected
+                  width: 2,
+                }),
+                fill: new Fill({
+                  color: "rgba(0, 150, 0, 0.1)",
+                }),
+                text: new Text({
+                  text: (index + 1).toString(),
+                  font: "bold 14px Arial",
+                  fill: new Fill({ color: "#fff" }),
+                  stroke: new Stroke({ color: "#000", width: 3 }),
+                  offsetY: -20,
                 }),
               })
             );
-    
-            routePathSource.current.addFeature(routeFeature);
+
+            selectedLandmarksSource.current.addFeature(feature);
+
+            const center = getCenter(polygon.getExtent());
+            routeCoordsRef.current.push(center);
+          } catch (error) {
+            console.error("Error processing landmark boundary:", error);
           }
-    
-          if (routeCoordsRef.current.length > 0 && mapInstance.current) {
-            const extent = selectedLandmarksSource.current.getExtent();
-            mapInstance.current.getView().fit(extent, {
-              padding: [50, 50, 50, 50],
-              duration: 1000,
-            });
-          }
-        };
+        }
+      });
+
+      if (routeCoordsRef.current.length > 1) {
+        const routeFeature = new Feature({
+          geometry: new LineString(routeCoordsRef.current),
+        });
+
+        routeFeature.setStyle(
+          new Style({
+            stroke: new Stroke({
+              color: "rgba(218, 29, 16, 0.7)",
+              width: 3,
+            }),
+          })
+        );
+
+        routePathSource.current.addFeature(routeFeature);
+      }
+
+      if (routeCoordsRef.current.length > 0 && mapInstance.current) {
+        const extent = selectedLandmarksSource.current.getExtent();
+        mapInstance.current.getView().fit(extent, {
+          padding: [50, 50, 50, 50],
+          duration: 1000,
+        });
+      }
+    };
 
     // Fetch landmarks
     const fetchLandmark = () => {
-          dispatch(landmarkListApi())
-            .unwrap()
-            .then((res: any[]) => {
-              const formattedLandmarks = res.map((landmark: any) => ({
-                id: landmark.id,
-                name: landmark.name,
-                boundary: extractRawPoints(landmark.boundary),
-                importance:
-                  landmark.importance === 1
-                    ? "Low"
-                    : landmark.importance === 2
-                    ? "Medium"
-                    : "High",
-                status: landmark.status === 1 ? "Validating" : "Verified",
-              }));
-              setLandmarks(formattedLandmarks);
-            })
-            .catch((err: any) => {
-              showErrorToast(err);
-            });
-        };
+      dispatch(landmarkListApi())
+        .unwrap()
+        .then((res: any[]) => {
+          const formattedLandmarks = res.map((landmark: any) => ({
+            id: landmark.id,
+            name: landmark.name,
+            boundary: extractRawPoints(landmark.boundary),
+            importance:
+              landmark.importance === 1
+                ? "Low"
+                : landmark.importance === 2
+                ? "Medium"
+                : "High",
+            status: landmark.status === 1 ? "Validating" : "Verified",
+          }));
+          setLandmarks(formattedLandmarks);
+        })
+        .catch((err: any) => {
+          showErrorToast(err);
+        });
+    };
 
-        const extractRawPoints = (polygonString: string): string => {
-          if (!polygonString) return "";
-          const matches = polygonString.match(/\(\((.*?)\)\)/);
-          return matches ? matches[1] : "";
-        };
-    
+    const extractRawPoints = (polygonString: string): string => {
+      if (!polygonString) return "";
+      const matches = polygonString.match(/\(\((.*?)\)\)/);
+      return matches ? matches[1] : "";
+    };
 
     useEffect(() => {
-          if (!mapInstance.current) return;
-    
-          allBoundariesSource.current.clear();
-          const features: Feature[] = [];
-    
-          if (showAllBoundaries && landmarks) {
-            landmarks.forEach((landmark) => {
-              if (landmark.boundary) {
-                try {
-                  const coordinates = landmark.boundary
-                    .split(",")
-                    .map((coord: string) => coord.trim().split(" ").map(Number))
-                    .map((coord: Coordinate) => fromLonLat(coord));
-    
-                  const polygon = new Polygon([coordinates]);
-                  const feature = new Feature(polygon);
-                  feature.set("id", landmark.id);
-                  feature.setStyle(
-                    new Style({
-                      stroke: new Stroke({
-                        color: "rgba(0, 0, 255, 0.7)", // Blue for all boundaries
-                        width: 2,
-                      }),
-                      fill: new Fill({
-                        color: "rgba(0, 0, 255, 0.1)",
-                      }),
-                    })
-                  );
-                  features.push(feature);
-                } catch (error) {
-                  console.error(`Error processing landmark ${landmark.id}:`, error);
-                }
-              }
-            });
-          }
-    
-          if (features.length > 0) {
-            allBoundariesSource.current.addFeatures(features);
-            const extent = allBoundariesSource.current.getExtent();
-            if (extent[0] !== Infinity) {
-              mapInstance.current.getView().fit(extent, {
-                padding: [50, 50, 50, 50],
-                duration: 1000,
-              });
+      if (!mapInstance.current) return;
+
+      allBoundariesSource.current.clear();
+      const features: Feature[] = [];
+
+      if (showAllBoundaries && landmarks) {
+        landmarks.forEach((landmark) => {
+          if (landmark.boundary) {
+            try {
+              const coordinates = landmark.boundary
+                .split(",")
+                .map((coord: string) => coord.trim().split(" ").map(Number))
+                .map((coord: Coordinate) => fromLonLat(coord));
+
+              const polygon = new Polygon([coordinates]);
+              const feature = new Feature(polygon);
+              feature.set("id", landmark.id);
+              feature.setStyle(
+                new Style({
+                  stroke: new Stroke({
+                    color: "rgba(0, 0, 255, 0.7)",
+                    width: 2,
+                  }),
+                  fill: new Fill({
+                    color: "rgba(0, 0, 255, 0.1)",
+                  }),
+                  text: new Text({
+                    text: landmark.name,
+                    font: "bold 14px Arial",
+                    fill: new Fill({ color: "#000" }),
+                    stroke: new Stroke({ color: "#fff", width: 2 }),
+                    offsetY: -30,
+                    textAlign: "center",
+                  }),
+                })
+              );
+              features.push(feature);
+            } catch (error) {
+              console.error(`Error processing landmark ${landmark.id}:`, error);
             }
           }
-        }, [showAllBoundaries, landmarks]);
+        });
+      }
+
+      if (features.length > 0) {
+        allBoundariesSource.current.addFeatures(features);
+        const extent = allBoundariesSource.current.getExtent();
+        if (extent[0] !== Infinity) {
+          mapInstance.current.getView().fit(extent, {
+            padding: [50, 50, 50, 50],
+            duration: 1000,
+          });
+        }
+      }
+    }, [showAllBoundaries, landmarks]);
 
     // Handle search
     const handleSearch = async () => {
@@ -554,7 +563,7 @@ const MapComponent = React.forwardRef(
           });
         }
       }
-    }, [propLandmarks, landmarks, selectedLandmarks, mode]); 
+    }, [propLandmarks, landmarks, selectedLandmarks, mode]);
 
     // Handle landmark addition
     const handleAddLandmark = () => {
@@ -565,7 +574,7 @@ const MapComponent = React.forwardRef(
 
       const departure = new Date(selectedLandmark.departureTime);
       const arrival = new Date(selectedLandmark.arrivalTime);
-      const finalDistance = selectedLandmark?.distance_from_start ?? 0;
+      const finalDistance = selectedLandmark?.distance_from_start;
       if (departure >= arrival) {
         showErrorToast("Departure time must be earlier than arrival time");
         return;
@@ -598,21 +607,21 @@ const MapComponent = React.forwardRef(
       toggleAddLandmarkMode, // Expose the toggle method
     }));
 
-   const clearRoutePath = () => {
-         routeCoordsRef.current = [];
-         routePathSource.current.clear();
-         selectedLandmarksSource.current.clear();
-         setShowAllBoundaries(false);
-         if (mapInstance.current) {
-           mapInstance.current.getView().setZoom(10);
-           mapInstance.current.getView().setCenter(fromLonLat([76.9366, 8.5241]));
-         }
-       };
+    const clearRoutePath = () => {
+      routeCoordsRef.current = [];
+      routePathSource.current.clear();
+      selectedLandmarksSource.current.clear();
+      setShowAllBoundaries(false);
+      if (mapInstance.current) {
+        mapInstance.current.getView().setZoom(10);
+        mapInstance.current.getView().setCenter(fromLonLat([76.9366, 8.5241]));
+      }
+    };
 
     React.useImperativeHandle(ref, () => ({
-          clearRoutePath,
-          toggleAddLandmarkMode,
-        }));
+      clearRoutePath,
+      toggleAddLandmarkMode,
+    }));
 
     const refreshMap = () => {
       setTimeout(() => {
@@ -732,10 +741,9 @@ const MapComponent = React.forwardRef(
                   ...selectedLandmark!,
                   departureTime: e.target.value,
                 });
-                // This will close the picker after selection
                 (document.activeElement as HTMLElement | null)?.blur();
               }}
-              InputLabelProps={{ shrink: true }} // Additional close handler
+              InputLabelProps={{ shrink: true }}
             />
 
             <TextField
@@ -749,32 +757,28 @@ const MapComponent = React.forwardRef(
                   ...selectedLandmark!,
                   arrivalTime: e.target.value,
                 });
-                // This will close the picker after selection
                 (document.activeElement as HTMLElement | null)?.blur();
               }}
-              InputLabelProps={{ shrink: true }} // Additional close handler
+              InputLabelProps={{ shrink: true }}
             />
 
-<TextField
-  label="Distance from Start (meters)"
-  fullWidth
-  margin="normal"
-  value={selectedLandmark?.distance_from_start ?? ""} // Show empty if undefined/null
-  onChange={(e) => {
-    // Allow empty input and convert to undefined
-    const value = e.target.value === "" ? undefined : Number(e.target.value);
-    setSelectedLandmark({
-      ...selectedLandmark!,
-      distance_from_start: value ?? 0
-    });
-  }}
-  type="number"
-  InputLabelProps={{ shrink: true }}
-  inputProps={{
-    min: 0,
-    step: 1,
-  }}
-/>
+            {/* Conditionally render the Distance field */}
+            {(selectedLandmarks.length > 0 || propLandmarks.length > 0) && (
+              <TextField
+                label="Distance from Start"
+                type="number"
+                required
+                fullWidth
+                margin="normal"
+                value={selectedLandmark?.distance_from_start || ""}
+                onChange={(e) =>
+                  setSelectedLandmark({
+                    ...selectedLandmark!,
+                    distance_from_start: parseFloat(e.target.value),
+                  })
+                }
+              />
+            )}
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>

@@ -4,7 +4,6 @@ import {
   Typography,
   List,
   ListItem,
-  ListItemText,
   Divider,
   Chip,
   TextField,
@@ -13,6 +12,9 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import IconButton from "@mui/material/IconButton";
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import DirectionsIcon from '@mui/icons-material/Directions';
 import {
   routeCreationApi,
   routeLandmarkCreationApi,
@@ -80,12 +82,11 @@ const BusRouteCreation = ({
       ).unwrap();
       const routeId = routeResponse.id;
       console.log("Route created successfully. Route ID:", routeId);
-      
+
       const sortedLandmarks = [...landmarks].sort(
         (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
       );
 
-      
       // Step 2: Add all landmarks to the route
       const landmarkPromises = sortedLandmarks.map((landmark, index) => {
         const landmarkFormData = new FormData();
@@ -154,7 +155,7 @@ const BusRouteCreation = ({
         hour12: true,
       });
     } catch (e) {
-      return dateTimeStr; // Return original if parsing fails
+      return dateTimeStr;
     }
   };
 
@@ -231,9 +232,7 @@ const BusRouteCreation = ({
             </Typography>
           </Box>
         ) : (
-          <List
-  sx={{ width: "100%", maxHeight: 400, overflow: "auto", flex: 1 }}
->
+          <List sx={{ width: "100%", maxHeight: 400, overflow: "auto", flex: 1 }}>
   {landmarks
     .slice()
     .sort((a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0))
@@ -242,47 +241,84 @@ const BusRouteCreation = ({
         <ListItem
           sx={{
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-start",
             py: 2,
-            backgroundColor:
-              index % 2 === 0 ? "action.hover" : "background.paper",
+            px: 2,
+            backgroundColor: index % 2 === 0 ? "action.hover" : "background.paper",
             borderRadius: 1,
+            gap: 2,
           }}
         >
           <Chip
             label={index + 1}
             color="primary"
-            sx={{ mr: 2, minWidth: 32 }}
+            sx={{ 
+              mr: 1, 
+              minWidth: 32, 
+              height: 32, 
+              fontSize: '0.875rem',
+              fontWeight: 600 
+            }}
           />
-          <ListItemText
-            primary={landmark.name}
-            secondary={
-              <>
-                <span>
-                  Departure: {formatDateTime(landmark.departureTime)}
-                </span>
-                <span>
-                  {" "}
-                  | Arrival: {formatDateTime(landmark.arrivalTime)}
-                </span>
-                {landmark.distance_from_start !== undefined && (
-                  <span>
-                    {" "}
-                    | Distance: {landmark.distance_from_start}m
-                  </span>
-                )}
-              </>
-            }
-          />
+          
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="subtitle1" fontWeight={600}>
+              {landmark.name}
+            </Typography>
+            
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              gap: 2,
+              mt: 0.5,
+              flexWrap: 'wrap'
+            }}>
+              {landmark.distance_from_start !== undefined && (
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  backgroundColor: 'primary.light',
+                  color: 'primary.contrastText',
+                  px: 1.5,
+                  py: 0.5,
+                  borderRadius: 1,
+                  fontSize: '0.75rem'
+                }}>
+                  <DirectionsIcon sx={{ fontSize: '1rem', mr: 0.5 }} />
+                  {landmark.distance_from_start}m
+                </Box>
+              )}
+              
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 1.5,
+                fontSize: '0.8rem',
+                color: 'text.secondary'
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <ArrowUpwardIcon sx={{ fontSize: '1rem', mr: 0.5, color: 'success.main' }} />
+                  <span>Depart: {formatDateTime(landmark.departureTime)}</span>
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <ArrowDownwardIcon sx={{ fontSize: '1rem', mr: 0.5, color: 'error.main' }} />
+                  <span>Arrive: {formatDateTime(landmark.arrivalTime)}</span>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+          
           <IconButton
             onClick={() => onLandmarkRemove(landmark.id)}
             aria-label="delete"
             color="error"
             size="small"
+            
           >
-            <DeleteIcon />
+            <DeleteIcon fontSize="small" />
           </IconButton>
         </ListItem>
+        
         {index < landmarks.length - 1 && (
           <Divider
             component="li"
@@ -291,7 +327,7 @@ const BusRouteCreation = ({
               borderLeftStyle: "dashed",
               borderColor: "divider",
               height: 20,
-              ml: 3.5,
+              ml: 4.5,
               listStyle: "none",
             }}
           />
