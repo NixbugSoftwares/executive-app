@@ -166,7 +166,8 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
           `POINT (${data.longitude} ${data.latitude})`
         );
       }
-      if (data.contact_person) formData.append("owner_name", data.contact_person);
+      if (data.contact_person)
+        formData.append("contact_person", data.contact_person);
       if (data.phone_number)
         formData.append("phone_number", `+91${data.phone_number}`);
       if (data.email) formData.append("email_id", data.email);
@@ -248,7 +249,7 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
             margin="normal"
             required
             fullWidth
-            label="Owner Name"
+            label="contact person"
             {...register("contact_person")}
             error={!!errors.contact_person}
             helperText={errors.contact_person?.message}

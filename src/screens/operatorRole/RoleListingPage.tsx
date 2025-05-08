@@ -186,7 +186,7 @@ const RoleListingTable = () => {
           <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
             {filterCompanyId && (
               <Typography variant="body2" color="textSecondary">
-                Showing roles for company: {companyList.find(c => c.id === filterCompanyId)?.name || filterCompanyId}
+                Company Name: {companyList.find(c => c.id === filterCompanyId)?.name || filterCompanyId}
               </Typography>
             )}
           </Box>

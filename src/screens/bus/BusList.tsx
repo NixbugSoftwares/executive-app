@@ -36,7 +36,6 @@ interface Bus {
   pollution_upto: string;
   fitness_upto: string;
 }
-
 interface Company {
   id: number;
   name: string;
@@ -52,11 +51,8 @@ const BusListingTable = () => {
   const [busList, setBusList] = useState<Bus[]>([]);
   const [companyList, setCompanyList] = useState<Company[]>([]);
   const [selectedBus, setSelectedBus] = useState<Bus | null>(null);
-
   const [search, setSearch] = useState({
     id: "",
-    company_id: "",
-    company_name: "",
     registrationNumber: "",
     name: "",
     capacity: "",
@@ -65,17 +61,12 @@ const BusListingTable = () => {
 
   const [page, setPage] = useState(0);
   const rowsPerPage = selectedBus ? 8 : 8;
-
   const [openCreateModal, setOpenCreateModal] = useState(false);
-
   const roleDetails = localStorageHelper.getItem("@roleDetails");
-  console.log("rolesdetails>>>>>>>>>>>>>", roleDetails);
-
   const canManageCompany = roleDetails?.manage_company || false;
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const urlCompanyId = companyId || queryParams.get("companyId");
-
     if (urlCompanyId) {
       const id = parseInt(urlCompanyId);
       if (!isNaN(id)) {
@@ -84,15 +75,12 @@ const BusListingTable = () => {
     }
   }, [companyId, location.search]);
 
-  // Function to fetch accounts
   const fetchBus = () => {
     dispatch(busListApi(filterCompanyId))
       .unwrap()
       .then((res: any[]) => {
         console.log("API Response:", res);
-
-        // Transform API data to match expected structure
-        const formattedAccounts = res.map((bus: any) => ({
+        const formattedBusses = res.map((bus: any) => ({
           id: bus.id,
           companyId: bus.company_id,
           companyName: bus.company_name,
@@ -105,9 +93,7 @@ const BusListingTable = () => {
           pollution_upto: bus.pollution_upto ?? "-",
           fitness_upto: bus.fitness_upto ?? "-",
         }));
-
-        console.log("Formatted Accounts:", formattedAccounts);
-        setBusList(formattedAccounts);
+        setBusList(formattedBusses);
       })
       .catch((err: any) => {
         console.error("Error fetching accounts", err);
@@ -147,9 +133,6 @@ const BusListingTable = () => {
       (row.id?.toString()?.toLowerCase() || "").includes(
         search.id.toLowerCase()
       ) &&
-      (getCompanyName(row.companyId)?.toLowerCase() || "").includes(
-        search.company_name.toLowerCase()
-      ) &&
       (row.registrationNumber?.toLowerCase() || "").includes(
         search.registrationNumber.toLowerCase()
       ) &&
@@ -176,7 +159,6 @@ const BusListingTable = () => {
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      console.log("Account list refreshed...");
       fetchBus();
     }
   };
@@ -229,7 +211,7 @@ const BusListingTable = () => {
             title={
               !canManageCompany
                 ? "You don't have permission, contact the admin"
-                : "click to open the operator creation form"
+                : "click to open the Bus  creation form"
             }
             placement="top-end"
           >
@@ -261,12 +243,14 @@ const BusListingTable = () => {
           </Tooltip>
         </Box>
 
-        <TableContainer sx={{
+        <TableContainer
+          sx={{
             flex: 1,
             maxHeight: "calc(100vh - 100px)",
             overflowY: "hidden",
-          }}>
-          <Table >
+          }}
+        >
+          <Table>
             <TableHead>
               <TableRow>
                 <TableCell>
@@ -299,7 +283,6 @@ const BusListingTable = () => {
                     }}
                   />
                 </TableCell>
-                
 
                 <TableCell>
                   <b
@@ -398,8 +381,6 @@ const BusListingTable = () => {
                     }}
                   />
                 </TableCell>
-
-                
               </TableRow>
             </TableHead>
 
@@ -418,24 +399,24 @@ const BusListingTable = () => {
                     const isSelected = selectedBus?.id === row.id;
                     return (
                       <TableRow
-                      key={row.id}
-                      hover
-                      onClick={() => handleRowClick(row)}
-                      sx={{
-                        cursor: "pointer",
-                        backgroundColor: isSelected
-                          ? "#E3F2FD !important"
-                          : "inherit",
-                        color: isSelected ? "black" : "black",
-                        "&:hover": {
+                        key={row.id}
+                        hover
+                        onClick={() => handleRowClick(row)}
+                        sx={{
+                          cursor: "pointer",
                           backgroundColor: isSelected
                             ? "#E3F2FD !important"
-                            : "#E3F2FD",
-                        },
-                        "& td": {
-                          color: isSelected ? "black !important" : "black",
-                        },
-                      }}
+                            : "inherit",
+                          color: isSelected ? "black" : "black",
+                          "&:hover": {
+                            backgroundColor: isSelected
+                              ? "#E3F2FD !important"
+                              : "#E3F2FD",
+                          },
+                          "& td": {
+                            color: isSelected ? "black !important" : "black",
+                          },
+                        }}
                       >
                         <TableCell>{row.id}</TableCell>
                         <TableCell>{row.name}</TableCell>
@@ -457,65 +438,65 @@ const BusListingTable = () => {
 
         {/* Pagination */}
         <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    gap: 1,
-                    mt: 2,
-                    position: "sticky",
-                    bottom: 0,
-                    backgroundColor: "white",
-                    zIndex: 1,
-                    p: 1,
-                    borderTop: "1px solid #e0e0e0",
-                  }}
-                >
-                  <Button
-                    onClick={() => handleChangePage(null, page - 1)}
-                    disabled={page === 0}
-                    sx={{ padding: "5px 10px", minWidth: 40 }}
-                  >
-                    &lt;
-                  </Button>
-                  {Array.from(
-                    { length: Math.ceil(filteredData.length / rowsPerPage) },
-                    (_, index) => index
-                  )
-                    .slice(
-                      Math.max(0, page - 1),
-                      Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
-                    )
-                    .map((pageNumber) => (
-                      <Button
-                        key={pageNumber}
-                        onClick={() => handleChangePage(null, pageNumber)}
-                        sx={{
-                          padding: "5px 10px",
-                          minWidth: 40,
-                          bgcolor:
-                            page === pageNumber
-                              ? "rgba(21, 101, 192, 0.2)"
-                              : "transparent",
-                          fontWeight: page === pageNumber ? "bold" : "normal",
-                          borderRadius: "5px",
-                          transition: "all 0.3s",
-                          "&:hover": {
-                            bgcolor: "rgba(21, 101, 192, 0.3)",
-                          },
-                        }}
-                      >
-                        {pageNumber + 1}
-                      </Button>
-                    ))}
-                  <Button
-                    onClick={() => handleChangePage(null, page + 1)}
-                    disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
-                    sx={{ padding: "5px 10px", minWidth: 40 }}
-                  >
-                    &gt;
-                  </Button>
-                </Box>
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 1,
+            mt: 2,
+            position: "sticky",
+            bottom: 0,
+            backgroundColor: "white",
+            zIndex: 1,
+            p: 1,
+            borderTop: "1px solid #e0e0e0",
+          }}
+        >
+          <Button
+            onClick={() => handleChangePage(null, page - 1)}
+            disabled={page === 0}
+            sx={{ padding: "5px 10px", minWidth: 40 }}
+          >
+            &lt;
+          </Button>
+          {Array.from(
+            { length: Math.ceil(filteredData.length / rowsPerPage) },
+            (_, index) => index
+          )
+            .slice(
+              Math.max(0, page - 1),
+              Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
+            )
+            .map((pageNumber) => (
+              <Button
+                key={pageNumber}
+                onClick={() => handleChangePage(null, pageNumber)}
+                sx={{
+                  padding: "5px 10px",
+                  minWidth: 40,
+                  bgcolor:
+                    page === pageNumber
+                      ? "rgba(21, 101, 192, 0.2)"
+                      : "transparent",
+                  fontWeight: page === pageNumber ? "bold" : "normal",
+                  borderRadius: "5px",
+                  transition: "all 0.3s",
+                  "&:hover": {
+                    bgcolor: "rgba(21, 101, 192, 0.3)",
+                  },
+                }}
+              >
+                {pageNumber + 1}
+              </Button>
+            ))}
+          <Button
+            onClick={() => handleChangePage(null, page + 1)}
+            disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
+            sx={{ padding: "5px 10px", minWidth: 40 }}
+          >
+            &gt;
+          </Button>
+        </Box>
       </Box>
 
       {/* Right Side - Account Details Card */}
@@ -556,6 +537,7 @@ const BusListingTable = () => {
             refreshList={(value: any) => refreshList(value)}
             onClose={handleCloseModal}
             defaultCompanyId={filterCompanyId ?? undefined}
+            companyList={companyList}
           />
         </DialogContent>
         <DialogActions>

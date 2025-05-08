@@ -261,7 +261,8 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
               {company.companyType
                 ? company.companyType.charAt(0).toUpperCase() +
                   company.companyType.slice(1).toLowerCase()
-                : "Not specified"} Company
+                : "Not specified"}{" "}
+              Company
             </Typography>
           </Box>
         </Card>

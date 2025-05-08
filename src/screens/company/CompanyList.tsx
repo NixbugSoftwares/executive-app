@@ -151,13 +151,13 @@ const CompanyListingTable = () => {
 
   return (
     <Box
-      sx={{
-        display: "flex",
-        flexDirection: { xs: "column", md: "row" },
-        width: "100%",
-        height: "100vh",
-        gap: 2,
-      }}
+    sx={{
+      display: "flex",
+      flexDirection: { xs: "column", md: "row" },
+      width: "100%",
+      height: "100vh",
+      gap: 2,
+    }}
     >
       <Box
         sx={{
@@ -166,7 +166,10 @@ const CompanyListingTable = () => {
             : "0 0 100%",
           maxWidth: selectedCompany ? { xs: "100%", md: "65%" } : "100%",
           transition: "all 0.3s ease",
-          overflowY: selectedCompany ? "auto" : "hidden",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
         }}
       >
         <Tooltip

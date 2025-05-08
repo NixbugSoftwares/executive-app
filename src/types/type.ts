@@ -1,28 +1,35 @@
 export interface User {
-    executive_id: number,
+  executive_id: number;
 }
 
+export interface Account {
+  id: number;
+  fullName: string;
+  username: string;
+  password?: string;
+  gender: string;
+  designation: string;
+  email: string;
+  phoneNumber: string;
+  status: string;
+}
 
 export interface Landmark {
-    id: number;
-    name: string;
-    boundary: string;
-    status: string;
-    importance: string;
-  }
-
+  id: number;
+  name: string;
+  boundary: string;
+  status: string;
+  importance: string;
+}
 
 export interface BusStop {
-    id: number;
-    name: string;
-    landmark_id: number;
-    location: string;
-    status: string;
-    parsedLocation?: [number, number] | null;
-  }
-
-
-
+  id: number;
+  name: string;
+  landmark_id: number;
+  location: string;
+  status: string;
+  parsedLocation?: [number, number] | null;
+}
 
 export interface SelectedLandmark {
   id: number;
@@ -30,7 +37,7 @@ export interface SelectedLandmark {
   sequenceId?: number;
   arrivalTime: string;
   departureTime: string;
-  distance_from_start: number; 
+  distance_from_start: number;
 }
 
 export interface RouteLandmark {
@@ -42,7 +49,3 @@ export interface RouteLandmark {
   distance_from_start?: number;
   sequence_id?: number;
 }
-
-
-
-
