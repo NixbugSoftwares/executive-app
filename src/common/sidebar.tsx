@@ -123,6 +123,11 @@ const Sidebar: React.FC = () => {
             path: "/executive/busstop",
             icon: <ModeOfTravelIcon />,
           },
+          {
+            label: "Common Fare",
+            path: "/executive/global-fare",
+            icon: <CorporateFareIcon />,
+          },
         ],
       },
     ],

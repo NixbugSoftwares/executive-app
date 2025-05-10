@@ -1328,7 +1328,57 @@ export const routeLandmarkUpdationApi = createAsyncThunk(
 );
 
 
+//****************************************************************global and local Fare *************************************************************************
+//fare get api
+export const fareListApi = createAsyncThunk(
+  "fares/list",
+  async (params: { scope: 1 | 2; companyId?: string }, { rejectWithValue }) => {
+    try {
+      if (!params.scope) {
+        throw new Error("Scope parameter is required (1 for global, 2 for local)");
+      }
 
+      const endpoint = "/executive/company/fare";
+      const queryParams = new URLSearchParams({ scope: params.scope.toString() });
+
+      if (params.scope === 2 && params.companyId) {
+        queryParams.append("companyId", params.companyId);
+      }
+
+      const response = await commonApi.apiCall(
+        "get",
+        `${endpoint}?${queryParams.toString()}`,
+        null,
+        true,
+        "application/json"
+      );
+
+      if (!response || typeof response !== "object") {
+        throw new Error("API returned non-object response");
+      }
+
+      const responseData = response.data || response;
+      const fareData = Array.isArray(responseData) ? responseData : [responseData];
+
+      if (!fareData.length || !fareData[0].id) {
+        throw new Error("API response doesn't contain valid fare data");
+      }
+
+      return {
+        scope: params.scope,
+        companyId: params.scope === 2 ? params.companyId : null,
+        data: fareData,
+      };
+    } catch (error: any) {
+      console.error("Error fetching fares:", error);
+      return rejectWithValue({
+        message: error?.response?.data?.message || error.message,
+        code: error?.response?.status || 500,
+        details: error?.response?.data?.errors || null,
+      });
+    }
+  }
+);
 
 // Slice
 export const appSlice = createSlice({
