@@ -38,6 +38,7 @@ interface Role {
   manageSchedule?: boolean;
   manageService?: boolean;
   manageDuty?: boolean;
+  manageFare?: boolean;
 }
 
 const RoleListingTable = () => {
@@ -66,6 +67,7 @@ const RoleListingTable = () => {
           manageSchedule: role.manage_schedule,
           manageService: role.manage_service,
           manageDuty: role.manage_duty,
+          manageFare: role.manage_fare,
         }));
         setRoleList(formattedRoles);
       })
@@ -258,6 +260,7 @@ const RoleListingTable = () => {
                   "Schedule",
                   "Service",
                   "Duty",
+                  "Fare"
                 ].map((permission) => (
                   <TableCell
                     key={permission}
@@ -325,6 +328,7 @@ const RoleListingTable = () => {
                           "manageSchedule",
                           "manageService",
                           "manageDuty",
+                          "manageFare",
                         ].map((key) => (
                           <TableCell key={key} align="center">
                             {row[key as keyof Role] ? (

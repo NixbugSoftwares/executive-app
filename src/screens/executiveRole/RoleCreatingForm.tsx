@@ -20,6 +20,7 @@ type RoleFormValues = {
   manageSchedule?: boolean;
   manageService?: boolean;
   manageDuty?: boolean;
+  manageFare?: boolean;
 };
 
 interface IRoleCreationFormProps {
@@ -52,6 +53,7 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
       manageSchedule: false,
       manageService: false,
       manageDuty: false,
+      manageFare: false,
     },
   });
 
@@ -69,6 +71,7 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
       formData.append("manage_schedule", String(data.manageSchedule));
       formData.append("manage_service", String(data.manageService));
       formData.append("manage_duty", String(data.manageDuty));
+      formData.append("manage_fare", String(data.manageFare));
 
       const response = await dispatch(roleCreationApi(formData)).unwrap();
       if (response?.id) {
@@ -127,6 +130,7 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
           "manageSchedule",
           "manageService",
           "manageDuty",
+          "manageFare",
         ] as (keyof RoleFormValues)[]
       ).map((field) => (
         <Box

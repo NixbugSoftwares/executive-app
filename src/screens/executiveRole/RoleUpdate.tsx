@@ -25,6 +25,7 @@ type RoleFormValues = {
   manageSchedule?: boolean;
   manageService?: boolean;
   manageDuty?: boolean;
+  manageFare?: boolean;
 };
 
 interface IRoleUpdateFormProps {
@@ -67,6 +68,7 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
             manageSchedule: role.manage_schedule,
             manageService: role.manage_service,
             manageDuty: role.manage_duty,
+            manageFare: role.manage_fare,
           });
 
           reset({
@@ -77,6 +79,7 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
             manageLandmark: role.manage_landmark,
             manageCompany: role.manage_company,
             manageVendor: role.manage_vendor,
+            manageFare: role.manage_fare,
             manageRoute: role.manage_route,
             manageSchedule: role.manage_schedule,
             manageService: role.manage_service,
@@ -110,6 +113,7 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
       formData.append("manage_schedule", String(data.manageSchedule));
       formData.append("manage_service", String(data.manageService));
       formData.append("manage_duty", String(data.manageDuty));
+      formData.append("manage_fare", String(data.manageFare));
 
       await dispatch(roleUpdationApi({ roleId, formData })).unwrap();
 
@@ -151,6 +155,7 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
           "manageSchedule",
           "manageService",
           "manageDuty",
+          "manageFare",
         ] as (keyof RoleFormValues)[]
       ).map((field) => (
         <Box

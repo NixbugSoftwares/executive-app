@@ -17,6 +17,10 @@ import {
   IconButton,
   TextField,
   Tooltip,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
 } from "@mui/material";
 import {
   Delete,
@@ -43,6 +47,7 @@ import { Landmark, RouteLandmark, SelectedLandmark } from "../../types/type";
 interface BusRouteDetailsProps {
   routeId: number;
   routeName: string;
+  routeStartingTime: string;
   onBack: () => void;
   onLandmarksUpdate: (landmarks: any[]) => void;
   onEnableAddLandmark: () => void;
@@ -57,6 +62,7 @@ interface BusRouteDetailsProps {
 const BusRouteDetailsPage = ({
   routeId,
   routeName,
+  routeStartingTime,
   onBack,
   onLandmarksUpdate,
   onEnableAddLandmark,
@@ -77,6 +83,10 @@ const BusRouteDetailsPage = ({
   const [editingLandmark, setEditingLandmark] = useState<RouteLandmark | null>(
     null
   );
+  const [hour, setHour] = useState<number>(8); // Default to 8 AM
+  const [minute, setMinute] = useState<number>(0);
+  const [period, setPeriod] = useState<"AM" | "PM">("AM");
+  const [editStartingTime, setEditStartingTime] = useState(false);
   const [updatedRouteName, setUpdatedRouteName] = useState(routeName);
   const [selectedLandmark, setSelectedLandmark] =
     useState<SelectedLandmark | null>(null);
@@ -101,13 +111,49 @@ const BusRouteDetailsPage = ({
     }
   };
 
+
+useEffect(() => {
+  if (routeStartingTime) {
+    try {
+      const date = new Date(routeStartingTime);
+      let hours = date.getUTCHours();
+      const minutes = date.getUTCMinutes();
+      
+      // Convert to 12-hour format
+      const period = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12; // Convert 0 to 12 for 12-hour format
+      
+      setHour(hours);
+      setMinute(minutes);
+      setPeriod(period);
+    } catch (e) {
+      console.error("Error parsing starting time:", e);
+    }
+  }
+}, [routeStartingTime]);
+const formatTimeForDisplay = (timeString: string) => {
+  if (!timeString) return "Not set";
+  
+  try {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch (e) {
+    return timeString;
+  }
+};
+
+
   const updateParentMapLandmarks = (landmarks: RouteLandmark[]) => {
     const mapLandmarks = landmarks.map((lm) => ({
       id: lm.landmark_id,
       name: lm.name,
       sequenceId: lm.sequence_id || 0,
-      arrivalTime: lm.arrival_time,
-      departureTime: lm.departure_time,
+      arrivalTime: lm.arrival_delta,
+      departureTime: lm.departure_delta,
       distance_from_start: lm.distance_from_start || 0,
     }));
 
@@ -125,9 +171,9 @@ const BusRouteDetailsPage = ({
         const formData = new FormData();
         formData.append("route_id", routeId.toString());
         formData.append("landmark_id", landmark.id.toString());
-        formData.append("sequence_id", (landmark.sequenceId ?? 0).toString()); // Add sequence_id
-        formData.append("departure_time", landmark.departureTime);
-        formData.append("arrival_time", landmark.arrivalTime);
+        formData.append("sequence_id", (landmark.sequenceId ?? 0).toString());
+        formData.append("arrival_delta", landmark.arrivalDelta);
+        formData.append("departure_delta", landmark.departureDelta);
         formData.append(
           "distance_from_start",
           landmark.distance_from_start.toString()
@@ -180,11 +226,6 @@ const BusRouteDetailsPage = ({
     return landmark ? landmark.name : "Unknown Landmark";
   };
 
-  const formatTime = (datetime: string) => {
-    if (!datetime) return "Not set";
-    return datetime.split("T")[1]?.substring(0, 5) || datetime;
-  };
-
   const handleDeleteClick = (landmark: RouteLandmark) => {
     setRouteLandmarkToDelete(landmark);
     setDeleteConfirmOpen(true);
@@ -233,6 +274,39 @@ const BusRouteDetailsPage = ({
     }
   };
 
+  const handleStartingTimeUpdate = async () => {
+  try {
+    // Convert 12-hour time to 24-hour UTC format
+    let hour24 = period === 'PM' 
+      ? (hour === 12 ? 12 : hour + 12)
+      : (hour === 12 ? 0 : hour);
+    
+    // Create a date object with current date and the selected time
+    const now = new Date();
+    const dateWithTime = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      hour24,
+      minute
+    );
+    
+    // Format as ISO string (UTC)
+    const isoTimeString = dateWithTime.toISOString();
+
+    const formData = new FormData();
+    formData.append("id", routeId.toString());
+    formData.append("starting_time", isoTimeString);
+
+    await dispatch(routeUpdationApi({ routeId, formData })).unwrap();
+    showSuccessToast("Starting time updated successfully");
+    setEditStartingTime(false);
+    refreshList("refresh");
+  } catch (error) {
+    showErrorToast("Failed to update starting time");
+  }
+};
+
   const handleLandmarkEditClick = (landmark: RouteLandmark) => {
     const formatForInput = (timeString: string) => {
       if (!timeString) return "";
@@ -248,14 +322,14 @@ const BusRouteDetailsPage = ({
 
     setEditingLandmark({
       ...landmark,
-      arrival_time: formatForInput(landmark.arrival_time),
-      departure_time: formatForInput(landmark.departure_time),
+      arrival_delta: formatForInput(landmark.arrival_delta),
+      departure_delta: formatForInput(landmark.departure_delta),
     });
   };
 
   const handleLandmarkUpdate = async (updatedData: {
-    arrival_time: string;
-    departure_time: string;
+    arrival_delta: string;
+    departure_delta: string;
     distance_from_start?: number;
   }) => {
     if (!editingLandmark) return;
@@ -263,8 +337,8 @@ const BusRouteDetailsPage = ({
     try {
       const formData = new FormData();
       formData.append("id", editingLandmark.id.toString());
-      formData.append("arrival_time", updatedData.arrival_time);
-      formData.append("departure_time", updatedData.departure_time);
+      formData.append("arrival_delta", updatedData.arrival_delta);
+      formData.append("departure_delta", updatedData.departure_delta);
       if (updatedData.distance_from_start !== undefined) {
         formData.append(
           "distance_from_start",
@@ -313,34 +387,114 @@ const BusRouteDetailsPage = ({
       </Stack>
 
       <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-      <Stack
-  direction="row"
-  justifyContent="center" // Center the content
-  alignItems="center"
->
-  {editMode ? (
-    <Stack direction="row" alignItems="center" spacing={2}>
-      <TextField
-        value={updatedRouteName}
-        onChange={(e) => setUpdatedRouteName(e.target.value)}
-        variant="outlined"
-        size="small"
-      />
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleRouteNameUpdate}
-      >
-        Save
-      </Button>
-    </Stack>
-  ) : (
-    <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, textAlign: "center" }}>
-      {routeName}
-    </Typography>
-  )}
-</Stack>
-      </Paper>
+  <Stack direction="column" alignItems="center">
+    {editMode ? (
+      <>
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+          <TextField
+            value={updatedRouteName}
+            onChange={(e) => setUpdatedRouteName(e.target.value)}
+            variant="outlined"
+            size="small"
+          />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleRouteNameUpdate}
+          >
+            Save Name
+          </Button>
+        </Stack>
+        
+        {editStartingTime ? (
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <FormControl size="small" sx={{ minWidth: 80 }}>
+              <InputLabel>Hour</InputLabel>
+              <Select
+                value={hour}
+                onChange={(e) => setHour(Number(e.target.value))}
+                label="Hour"
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+                  <MenuItem key={h} value={h}>
+                    {h}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            
+            <FormControl size="small" sx={{ minWidth: 80 }}>
+              <InputLabel>Minute</InputLabel>
+              <Select
+                value={minute}
+                onChange={(e) => setMinute(Number(e.target.value))}
+                label="Minute"
+              >
+                {Array.from({ length: 60 }, (_, i) => i).map((m) => (
+                  <MenuItem key={m} value={m}>
+                    {String(m).padStart(2, '0')}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            
+            <FormControl size="small" sx={{ minWidth: 80 }}>
+              <InputLabel>AM/PM</InputLabel>
+              <Select
+                value={period}
+                onChange={(e) => setPeriod(e.target.value as 'AM' | 'PM')}
+                label="AM/PM"
+              >
+                <MenuItem value="AM">AM</MenuItem>
+                <MenuItem value="PM">PM</MenuItem>
+              </Select>
+            </FormControl>
+            
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleStartingTimeUpdate}
+            >
+              Save Time
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => setEditStartingTime(false)}
+            >
+              Cancel
+            </Button>
+          </Stack>
+        ) : (
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Typography>
+              Starting Time: {formatTimeForDisplay(routeStartingTime)}
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setEditStartingTime(true)}
+            >
+              Edit Time
+            </Button>
+          </Stack>
+        )}
+      </>
+    ) : (
+      <>
+        <Typography
+          variant="h5"
+          gutterBottom
+          sx={{ fontWeight: 600, textAlign: "center" }}
+        >
+          {routeName}
+        </Typography>
+        <Typography variant="subtitle1" sx={{ mt: 1 }}>
+          Starting Time: {formatTimeForDisplay(routeStartingTime)}
+        </Typography>
+      </>
+    )}
+  </Stack>
+</Paper>
 
       {isLoading ? (
         <Typography>Loading route details...</Typography>
@@ -421,19 +575,6 @@ const BusRouteDetailsPage = ({
                         }}
                       >
                         <Box sx={{ display: "flex", alignItems: "center" }}>
-                          <ArrowUpward
-                            sx={{
-                              fontSize: "1rem",
-                              mr: 0.5,
-                              color: "success.main",
-                            }}
-                          />
-                          <span>
-                            Depart: {formatTime(landmark.departure_time)}
-                          </span>
-                        </Box>
-
-                        <Box sx={{ display: "flex", alignItems: "center" }}>
                           <ArrowDownward
                             sx={{
                               fontSize: "1rem",
@@ -441,9 +582,17 @@ const BusRouteDetailsPage = ({
                               color: "error.main",
                             }}
                           />
-                          <span>
-                            Arrive: {formatTime(landmark.arrival_time)}
-                          </span>
+                          <span>Arrive: {landmark.arrival_delta}</span>
+                        </Box>
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <ArrowUpward
+                            sx={{
+                              fontSize: "1rem",
+                              mr: 0.5,
+                              color: "success.main",
+                            }}
+                          />
+                          <span>Depart: {landmark.departure_delta}</span>
                         </Box>
                       </Box>
                     </Box>
@@ -559,9 +708,7 @@ const BusRouteDetailsPage = ({
                               color: "success.main",
                             }}
                           />
-                          <span>
-                            Depart: {formatTime(landmark.departureTime)}
-                          </span>
+                          <span>Arrive: {landmark.arrivalDelta}</span>
                         </Box>
 
                         <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -572,9 +719,7 @@ const BusRouteDetailsPage = ({
                               color: "error.main",
                             }}
                           />
-                          <span>
-                            Arrive: {formatTime(landmark.arrivalTime)}
-                          </span>
+                          <span>Depart: {landmark.departureDelta}</span>
                         </Box>
                       </Box>
                     </Box>
@@ -654,11 +799,11 @@ const BusRouteDetailsPage = ({
                 type="datetime-local"
                 fullWidth
                 margin="normal"
-                value={editingLandmark.departure_time || ""}
+                value={editingLandmark.departure_delta || ""}
                 onChange={(e) =>
                   setEditingLandmark({
                     ...editingLandmark,
-                    departure_time: e.target.value,
+                    departure_delta: e.target.value,
                   })
                 }
                 InputLabelProps={{ shrink: true }}
@@ -668,11 +813,11 @@ const BusRouteDetailsPage = ({
                 type="datetime-local"
                 fullWidth
                 margin="normal"
-                value={editingLandmark.arrival_time || ""}
+                value={editingLandmark.arrival_delta || ""}
                 onChange={(e) =>
                   setEditingLandmark({
                     ...editingLandmark,
-                    arrival_time: e.target.value,
+                    arrival_delta: e.target.value,
                   })
                 }
                 InputLabelProps={{ shrink: true }}
@@ -713,8 +858,8 @@ const BusRouteDetailsPage = ({
             onClick={() =>
               editingLandmark &&
               handleLandmarkUpdate({
-                arrival_time: editingLandmark.arrival_time,
-                departure_time: editingLandmark.departure_time,
+                arrival_delta: editingLandmark.arrival_delta,
+                departure_delta: editingLandmark.departure_delta,
                 distance_from_start: editingLandmark.distance_from_start,
               })
             }
@@ -748,11 +893,11 @@ const BusRouteDetailsPage = ({
                 type="datetime-local"
                 fullWidth
                 margin="normal"
-                value={selectedLandmark.arrivalTime}
+                value={selectedLandmark.arrivalDelta}
                 onChange={(e) =>
                   setSelectedLandmark({
                     ...selectedLandmark,
-                    arrivalTime: e.target.value,
+                    arrivalDelta: e.target.value,
                   })
                 }
                 InputLabelProps={{ shrink: true }}
@@ -762,11 +907,11 @@ const BusRouteDetailsPage = ({
                 type="datetime-local"
                 fullWidth
                 margin="normal"
-                value={selectedLandmark.departureTime}
+                value={selectedLandmark.departureDelta}
                 onChange={(e) =>
                   setSelectedLandmark({
                     ...selectedLandmark,
-                    departureTime: e.target.value,
+                    departureDelta: e.target.value,
                   })
                 }
                 InputLabelProps={{ shrink: true }}

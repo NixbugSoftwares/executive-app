@@ -40,6 +40,7 @@ interface RoleCardProps {
     manageSchedule?: boolean;
     manageService?: boolean;
     manageDuty?: boolean;
+    manageFare?: boolean;
   };
   onBack: () => void;
   onUpdate: (id: number) => void;
@@ -161,6 +162,11 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
             <Chip
               label={`Manage Duty: ${role.manageDuty ? "Yes" : "No"}`}
               color={role.manageDuty ? "success" : "error"}
+              variant="outlined"
+            />
+            <Chip
+              label={`Manage Fare: ${role.manageFare ? "Yes" : "No"}`}
+              color={role.manageFare ? "success" : "error"}
               variant="outlined"
             />
           </Box>

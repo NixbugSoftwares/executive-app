@@ -25,6 +25,7 @@ interface Role {
   manage_role?: boolean;
   manage_operator?: boolean;
   manage_company?: boolean;
+  manage_fare?: boolean;
 }
 
 interface Company {
@@ -74,6 +75,7 @@ const RoleListingTable = () => {
           manage_role: role.manage_role,
           manage_operator: role.manage_operator,
           manage_company: role.manage_company,
+          manage_fare: role.manage_fare,
         }));
         setRoleList(formattedRoles);
       })
@@ -277,7 +279,7 @@ const RoleListingTable = () => {
                   />
                 </TableCell>
 
-                {["Bus", "Route", "Schedule", "Role", "Operator", "Company"].map((permission) => (
+                {["Operator", "Role","Bus", "Company", "Route", "Schedule", "Fare"].map((permission) => (
                   <TableCell key={permission} align="center">
                     <b style={{ display: "block", textAlign: "center" }}>Manage {permission}</b>
                   </TableCell>
@@ -312,6 +314,7 @@ const RoleListingTable = () => {
                           "manage_role",
                           "manage_operator",
                           "manage_company",
+                          "manage_fare"
                         ].map((key) => (
                           <TableCell key={key} align="center">
                             {row[key as keyof Role] ? (

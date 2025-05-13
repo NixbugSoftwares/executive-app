@@ -18,6 +18,7 @@ interface RoleCardProps {
     manage_role?: boolean;
     manage_operator?: boolean;
     manage_company?: boolean;
+    manage_fare?: boolean;
   };
   onBack: () => void; 
   onUpdate: (id: number) => void; 
@@ -82,12 +83,13 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({ role, onBack, onDelete, refr
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {/* List all permissions */}
-            <Chip label={`Manage Executive: ${role.manage_bus ? "Yes" : "No"}`} color={role.manage_bus ? "success" : "error"} variant="outlined" />
-            <Chip label={`Manage Role: ${role.manage_route ? "Yes" : "No"}`} color={role.manage_route ? "success" : "error"} variant="outlined" />
-            <Chip label={`Manage Landmark: ${role.manage_schedule ? "Yes" : "No"}`} color={role.manage_schedule ? "success" : "error"} variant="outlined" />
-            <Chip label={`Manage Company: ${role.manage_role ? "Yes" : "No"}`} color={role.manage_role ? "success" : "error"} variant="outlined" />
-            <Chip label={`Manage Vendor: ${role.manage_operator ? "Yes" : "No"}`} color={role.manage_operator ? "success" : "error"} variant="outlined" />
-            <Chip label={`Manage Route: ${role.manage_company ? "Yes" : "No"}`} color={role.manage_company ? "success" : "error"} variant="outlined" />
+            <Chip label={`Manage Bus: ${role.manage_bus ? "Yes" : "No"}`} color={role.manage_bus ? "success" : "error"} variant="outlined" />
+            <Chip label={`Manage Route: ${role.manage_route ? "Yes" : "No"}`} color={role.manage_route ? "success" : "error"} variant="outlined" />
+            <Chip label={`Manage Schedule: ${role.manage_schedule ? "Yes" : "No"}`} color={role.manage_schedule ? "success" : "error"} variant="outlined" />
+            <Chip label={`Manage Roles: ${role.manage_role ? "Yes" : "No"}`} color={role.manage_role ? "success" : "error"} variant="outlined" />
+            <Chip label={`Manage Operators: ${role.manage_operator ? "Yes" : "No"}`} color={role.manage_operator ? "success" : "error"} variant="outlined" />
+            <Chip label={`Manage Company: ${role.manage_company ? "Yes" : "No"}`} color={role.manage_company ? "success" : "error"} variant="outlined" />
+            <Chip label={`Manage Fare: ${role.manage_fare ? "Yes" : "No"}`} color={role.manage_fare ? "success" : "error"} variant="outlined" />
           </Box>
         </CardContent>
 

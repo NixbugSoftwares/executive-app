@@ -13,6 +13,7 @@ type RoleFormValues = {
   manage_role?: boolean;
   manage_operator?: boolean;
   manage_company?: boolean;
+  manage_fare?: boolean;
 };
 
 interface IRoleUpdateFormProps {
@@ -56,7 +57,8 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
             manage_schedule: role.manage_schedule,
             manage_role: role.manage_role,
             manage_operator: role.manage_operator,
-            manage_company: role.manage_company
+            manage_company: role.manage_company,
+            manage_fare: role.manage_fare,
           });
 
           reset({
@@ -67,7 +69,8 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
             manage_schedule: role.manage_schedule,
             manage_role: role.manage_role,  
             manage_operator: role.manage_operator,
-            manage_company: role.manage_company
+            manage_company: role.manage_company,
+            manage_fare: role.manage_fare,
           });
         }
       } catch (error) {
@@ -95,6 +98,7 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
       formData.append("manage_role", String(data.manage_role));
       formData.append("manage_operator", String(data.manage_operator));
       formData.append("manage_company", String(data.manage_company));
+      formData.append("manage_fare", String(data.manage_fare));
   
       // Update API
       await dispatch(operatorRoleUpdationApi({ roleId, formData })).unwrap();
@@ -144,6 +148,7 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
         "manage_role",
         "manage_operator",
         "manage_company",
+        "manage_fare",
       ] as (keyof RoleFormValues)[]).map((field) => (
         <Box key={field} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Typography>{field.replace("manage", "Manage ")}</Typography>
