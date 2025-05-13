@@ -59,14 +59,14 @@ const FareListingPage = () => {
       .then((res: any) => {
         const formattedFares = res.data.map((fare: any) => ({
           id: fare.id,
+          name: fare.name,
           company_id: fare.company_id,
           version: fare.version,
-          name: fare.name,
           attributes: {
             df_version: fare.attributes?.df_version || 1,
             ticket_types: fare.attributes?.ticket_types || [],
             currency_type: fare.attributes?.currency_type || "INR",
-            distance_unit: fare.attributes?.distance_unit || "km",
+            distance_unit: fare.attributes?.distance_unit || "m",
             extra: fare.attributes?.extra || {},
           },
           function: fare.function,
@@ -151,7 +151,13 @@ const FareListingPage = () => {
           <Table stickyHeader>
             <TableHead>
               <TableRow>
-                <TableCell>
+                <TableCell
+                  sx={{
+                    width: "25%", 
+                    maxWidth: "25%",
+                    textAlign: "center",
+                  }}
+                >
                   <b style={{ display: "block", textAlign: "center" }}>ID</b>
                   <TextField
                     variant="outlined"
@@ -172,7 +178,12 @@ const FareListingPage = () => {
                     }}
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell
+                  sx={{
+                    width: "75", 
+                    textAlign: "center",
+                  }}
+                >
                   <b style={{ display: "block", textAlign: "center" }}>Name</b>
                   <TextField
                     variant="outlined"
@@ -316,14 +327,14 @@ const FareListingPage = () => {
           overflow: "hidden",
         }}
       >
-        <Box 
-          sx={{ 
+        <Box
+          sx={{
             p: 2,
             height: "10%",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            borderBottom: "1px solid #e0e0e0"
+            borderBottom: "1px solid #e0e0e0",
           }}
         >
           <Typography variant="h6">
@@ -338,18 +349,27 @@ const FareListingPage = () => {
             onClick={() => {
               try {
                 // Wrap the eval call in a function to ensure it returns a value
-                const output = (() => eval(selectedFare?.function || editableCode))();
+                const output = (() =>
+                  eval(selectedFare?.function || editableCode))();
                 console.log("Output:", output);
 
                 // Handle cases where the output is undefined
                 if (output === undefined) {
-                  setOutput("Output: undefined (Ensure your code has a return statement)");
+                  setOutput(
+                    "Output: undefined (Ensure your code has a return statement)"
+                  );
                 } else {
                   setOutput(`Output: ${output}`);
                 }
               } catch (error) {
                 console.error("Error executing code:", error);
-                setOutput(`Error: ${error instanceof Error ? error.message : "An unknown error occurred"}`);
+                setOutput(
+                  `Error: ${
+                    error instanceof Error
+                      ? error.message
+                      : "An unknown error occurred"
+                  }`
+                );
               }
             }}
           >
