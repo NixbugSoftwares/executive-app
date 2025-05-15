@@ -35,8 +35,11 @@ export interface SelectedLandmark {
   id: number;
   name: string;
   sequenceId?: number;
+  starting_time: string;
   arrivalTime: string;
   departureTime: string;
+  arrivalDelta: number;
+  departureDelta: number;
   distance_from_start: number;
 }
 
@@ -44,8 +47,9 @@ export interface RouteLandmark {
   id: number;
   landmark_id: string;
   name: string;
-  arrival_time: string;
-  departure_time: string;
+  starting_time: string;
+  arrival_delta: string;
+  departure_delta: string;
   distance_from_start?: number;
   sequence_id?: number;
 }

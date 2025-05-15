@@ -40,6 +40,7 @@ interface Route {
   id: number;
   companyId: number;
   name: string;
+  starting_time: string;
 }
 
 const BusRouteListing = () => {
@@ -58,6 +59,7 @@ const BusRouteListing = () => {
   const [selectedRoute, setSelectedRoute] = useState<{
     id: number;
     name: string;
+    starting_time: string;
   } | null>(null);
   const [page, setPage] = useState(0);
   const rowsPerPage = 10;
@@ -95,6 +97,7 @@ const BusRouteListing = () => {
           id: routes.id,
           companyId: routes.company_id,
           name: routes.name,
+          starting_time: routes.starting_time,
         }));
         setRouteList(formattedRoutes);
       })
@@ -119,8 +122,8 @@ const BusRouteListing = () => {
             id: lm.landmark_id,
             name: lm.name,
             sequenceId: lm.sequence_id,
-            arrivalTime: lm.arrival_time,
-            departureTime: lm.departure_time,
+            arrivalTime: lm.arrival_delta,
+            departureTime: lm.departure_delta,
             distance_from_start: lm.distance_from_start ?? 0,
           }));
 
@@ -257,6 +260,7 @@ const BusRouteListing = () => {
           <BusRouteDetailsPage
             routeId={selectedRoute.id}
             routeName={selectedRoute.name}
+            routeStartingTime={selectedRoute.starting_time}
             refreshList={(value: any) => refreshList(value)}
             onBack={() => {
               setSelectedRoute(null);
@@ -418,7 +422,11 @@ const BusRouteListing = () => {
                               cursor: "pointer",
                             }}
                             onClick={() =>
-                              setSelectedRoute({ id: row.id, name: row.name })
+                              setSelectedRoute({
+                                id: row.id,
+                                name: row.name,
+                                starting_time: row.starting_time,
+                              })
                             }
                           >
                             {row.name}

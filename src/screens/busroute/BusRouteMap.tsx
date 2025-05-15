@@ -74,8 +74,7 @@ const MapComponent = React.forwardRef(
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [landmarks, setLandmarks] = useState<Landmark[]>([]);
     const [showAllBoundaries, setShowAllBoundaries] = useState(false);
-    const [selectedLandmark, setSelectedLandmark] =
-      useState<SelectedLandmark | null>(null);
+    const [selectedLandmark, setSelectedLandmark] = useState<any | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isAddingLandmark, setIsAddingLandmark] = useState(false);
     const selectInteractionRef = useRef<OlSelect | null>(null);
@@ -566,45 +565,50 @@ const MapComponent = React.forwardRef(
     }, [propLandmarks, landmarks, selectedLandmarks, mode]);
 
     // Handle landmark addition
+    // In MapComponent's handleAddLandmark function
     const handleAddLandmark = () => {
       if (!selectedLandmark?.departureTime || !selectedLandmark?.arrivalTime) {
         showErrorToast("Both departure and arrival times are required");
         return;
       }
 
-      const departure = new Date(selectedLandmark.departureTime);
-      const arrival = new Date(selectedLandmark.arrivalTime);
-      const finalDistance = selectedLandmark?.distance_from_start;
-      if (departure >= arrival) {
-        showErrorToast("Departure time must be earlier than arrival time");
-        return;
-      }
+      // Convert 12-hour times to 24-hour format before storing
+      const convertTo24Hour = (time12h: string) => {
+        const [time, modifier] = time12h.split(" ");
+        let [hours, minutes] = time.split(":").map(Number);
+
+        if (modifier === "PM" && hours < 12) hours += 12;
+        if (modifier === "AM" && hours === 12) hours = 0;
+
+        return `${hours.toString().padStart(2, "0")}:${minutes
+          .toString()
+          .padStart(2, "0")}`;
+      };
 
       const landmarkWithDistance = {
         ...selectedLandmark,
-        distance_from_start: finalDistance,
+        arrivalTime: convertTo24Hour(selectedLandmark.arrivalTime),
+        departureTime: convertTo24Hour(selectedLandmark.departureTime),
+        distance_from_start: selectedLandmark?.distance_from_start,
       };
 
       onAddLandmark(landmarkWithDistance);
       highlightSelectedLandmark(selectedLandmark.id.toString());
       setIsModalOpen(false);
-
-      // Do not reset showAllBoundaries here
     };
 
-    // Toggle landmark adding mode
     const toggleAddLandmarkMode = () => {
       const newAddingState = !isAddingLandmark;
       setIsAddingLandmark(newAddingState);
 
       if (newAddingState) {
-        setShowAllBoundaries(true); // Show boundaries when adding landmarks
+        setShowAllBoundaries(true);
       }
     };
 
     React.useImperativeHandle(ref, () => ({
       clearRoutePath,
-      toggleAddLandmarkMode, // Expose the toggle method
+      toggleAddLandmarkMode,
     }));
 
     const clearRoutePath = () => {
@@ -729,35 +733,31 @@ const MapComponent = React.forwardRef(
           <DialogContent>
             <Typography>Landmark: {selectedLandmark?.name}</Typography>
             <Typography>ID: {selectedLandmark?.id}</Typography>
-
-            <TextField
-              label="Departure Time"
-              type="datetime-local"
-              fullWidth
-              margin="normal"
-              value={selectedLandmark?.departureTime || ""}
-              onChange={(e) => {
-                setSelectedLandmark({
-                  ...selectedLandmark!,
-                  departureTime: e.target.value,
-                });
-                (document.activeElement as HTMLElement | null)?.blur();
-              }}
-              InputLabelProps={{ shrink: true }}
-            />
-
             <TextField
               label="Arrival Time"
-              type="datetime-local"
+              type="time"
               fullWidth
               margin="normal"
               value={selectedLandmark?.arrivalTime || ""}
               onChange={(e) => {
                 setSelectedLandmark({
                   ...selectedLandmark!,
-                  arrivalTime: e.target.value,
+                  arrivalTime: e.target.value, // Already in 24-hour format
                 });
-                (document.activeElement as HTMLElement | null)?.blur();
+              }}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="Departure Time"
+              type="time"
+              fullWidth
+              margin="normal"
+              value={selectedLandmark?.departureTime || ""}
+              onChange={(e) => {
+                setSelectedLandmark({
+                  ...selectedLandmark!,
+                  departureTime: e.target.value, // Already in 24-hour format
+                });
               }}
               InputLabelProps={{ shrink: true }}
             />
