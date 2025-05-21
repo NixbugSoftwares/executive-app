@@ -24,6 +24,7 @@ import {
   TextField,
   Tooltip,
   Typography,
+  Alert,
 } from "@mui/material";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { Refresh } from "@mui/icons-material";
@@ -41,7 +42,6 @@ import { Landmark, SelectedLandmark } from "../../types/type";
 
 interface MapComponentProps {
   onAddLandmark: (landmark: SelectedLandmark) => void;
-  isSelecting: boolean;
   onClearRoute?: () => void;
   landmarks: SelectedLandmark[];
   selectedLandmarks: SelectedLandmark[];
@@ -53,7 +53,6 @@ const MapComponent = React.forwardRef(
   (
     {
       onAddLandmark,
-      isSelecting,
       landmarks: propLandmarks,
       mode,
       isEditing,
@@ -79,6 +78,15 @@ const MapComponent = React.forwardRef(
     const [isAddingLandmark, setIsAddingLandmark] = useState(false);
     const selectInteractionRef = useRef<OlSelect | null>(null);
     const routeCoordsRef = useRef<Coordinate[]>([]);
+
+    // Time selection states
+    const [arrivalHour, setArrivalHour] = useState<number>(12);
+    const [arrivalMinute, setArrivalMinute] = useState<number>(30);
+    const [arrivalAmPm, setArrivalAmPm] = useState<string>("AM");
+    const [departureHour, setDepartureHour] = useState<number>(12);
+    const [departureMinute, setDepartureMinute] = useState<number>(30);
+    const [departureAmPm, setDepartureAmPm] = useState<string>("AM");
+
     // Initialize the map
     const initializeMap = () => {
       if (!mapRef.current) return null;
@@ -115,6 +123,23 @@ const MapComponent = React.forwardRef(
       });
 
       return map;
+    };
+
+    // Convert local time (IST) to UTC time string
+    const convertLocalToUTC = (
+      hour: number,
+      minute: number,
+      period: string
+    ) => {
+      let utcHour = hour;
+      if (period === "PM" && hour !== 12) {
+        utcHour += 12;
+      } else if (period === "AM" && hour === 12) {
+        utcHour = 0;
+      }
+      return `${utcHour.toString().padStart(2, "0")}:${minute
+        .toString()
+        .padStart(2, "0")}:00Z`;
     };
 
     useEffect(() => {
@@ -164,8 +189,6 @@ const MapComponent = React.forwardRef(
               setSelectedLandmark({
                 id: landmark.id,
                 name: landmark.name,
-                arrivalTime: "",
-                departureTime: "",
                 distance_from_start:
                   selectedLandmarks.length === 0
                     ? 0
@@ -226,7 +249,7 @@ const MapComponent = React.forwardRef(
             feature.setStyle(
               new Style({
                 stroke: new Stroke({
-                  color: "rgba(0, 150, 0, 0.7)", // Green color for selected
+                  color: "rgba(0, 150, 0, 0.7)",
                   width: 2,
                 }),
                 fill: new Fill({
@@ -278,7 +301,6 @@ const MapComponent = React.forwardRef(
       }
     };
 
-    // Fetch landmarks
     const fetchLandmark = () => {
       dispatch(landmarkListApi())
         .unwrap()
@@ -365,7 +387,6 @@ const MapComponent = React.forwardRef(
       }
     }, [showAllBoundaries, landmarks]);
 
-    // Handle search
     const handleSearch = async () => {
       if (!searchQuery || !mapInstance.current) return;
 
@@ -392,7 +413,6 @@ const MapComponent = React.forwardRef(
       }
     };
 
-    // Change map type
     const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
       if (!mapInstance.current) return;
 
@@ -459,12 +479,10 @@ const MapComponent = React.forwardRef(
         mode === "create" ? selectedLandmarks : propLandmarks;
       if (!landmarksToProcess || landmarksToProcess.length === 0) return;
 
-      // Sort landmarks by distance_from_start
       const sortedLandmarks = [...landmarksToProcess].sort(
         (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
       );
 
-      // Process landmarks to get coordinates and add polygons
       sortedLandmarks.forEach((landmark, index) => {
         const lm = landmarks.find((l) => l.id === landmark.id);
         if (lm?.boundary) {
@@ -474,12 +492,10 @@ const MapComponent = React.forwardRef(
               .map((coord: string) => coord.trim().split(" ").map(Number))
               .map((coord: Coordinate) => fromLonLat(coord));
 
-            // Add polygon feature
             const polygon = new Polygon([coordinates]);
             const polygonFeature = new Feature(polygon);
             polygonFeature.set("id", lm.id);
 
-            // Style for creation mode
             polygonFeature.setStyle(
               new Style({
                 stroke: new Stroke({
@@ -501,7 +517,6 @@ const MapComponent = React.forwardRef(
 
             selectedLandmarksSource.current.addFeature(polygonFeature);
 
-            // Get center for route path
             const center = getCenter(polygon.getExtent());
             routeCoordsRef.current.push(center);
           } catch (error) {
@@ -510,7 +525,6 @@ const MapComponent = React.forwardRef(
         }
       });
 
-      // Create route line
       if (routeCoordsRef.current.length > 1) {
         const routeFeature = new Feature({
           geometry: new LineString(routeCoordsRef.current),
@@ -527,7 +541,6 @@ const MapComponent = React.forwardRef(
         routePathSource.current.addFeature(routeFeature);
       }
 
-      // Add sequence numbers
       routeCoordsRef.current.forEach((coord, index) => {
         const numberFeature = new Feature({
           geometry: new Point(coord),
@@ -552,7 +565,6 @@ const MapComponent = React.forwardRef(
         routePathSource.current.addFeature(numberFeature);
       });
 
-      // Update map view
       if (mapInstance.current) {
         const extent = selectedLandmarksSource.current.getExtent();
         if (extent[0] !== Infinity) {
@@ -564,31 +576,32 @@ const MapComponent = React.forwardRef(
       }
     }, [propLandmarks, landmarks, selectedLandmarks, mode]);
 
-    // Handle landmark addition
-    // In MapComponent's handleAddLandmark function
     const handleAddLandmark = () => {
-      if (!selectedLandmark?.departureTime || !selectedLandmark?.arrivalTime) {
+      if (
+        !arrivalHour ||
+        !arrivalMinute ||
+        !departureHour ||
+        !departureMinute
+      ) {
         showErrorToast("Both departure and arrival times are required");
         return;
       }
 
-      // Convert 12-hour times to 24-hour format before storing
-      const convertTo24Hour = (time12h: string) => {
-        const [time, modifier] = time12h.split(" ");
-        let [hours, minutes] = time.split(":").map(Number);
-
-        if (modifier === "PM" && hours < 12) hours += 12;
-        if (modifier === "AM" && hours === 12) hours = 0;
-
-        return `${hours.toString().padStart(2, "0")}:${minutes
-          .toString()
-          .padStart(2, "0")}`;
-      };
+      const arrivalTimeUTC = convertLocalToUTC(
+        arrivalHour,
+        arrivalMinute,
+        arrivalAmPm
+      );
+      const departureTimeUTC = convertLocalToUTC(
+        departureHour,
+        departureMinute,
+        departureAmPm
+      );
 
       const landmarkWithDistance = {
         ...selectedLandmark,
-        arrivalTime: convertTo24Hour(selectedLandmark.arrivalTime),
-        departureTime: convertTo24Hour(selectedLandmark.departureTime),
+        arrivalTime: arrivalTimeUTC,
+        departureTime: departureTimeUTC,
         distance_from_start: selectedLandmark?.distance_from_start,
       };
 
@@ -603,13 +616,10 @@ const MapComponent = React.forwardRef(
 
       if (newAddingState) {
         setShowAllBoundaries(true);
+      } else {
+        setShowAllBoundaries(false);
       }
     };
-
-    React.useImperativeHandle(ref, () => ({
-      clearRoutePath,
-      toggleAddLandmarkMode,
-    }));
 
     const clearRoutePath = () => {
       routeCoordsRef.current = [];
@@ -625,6 +635,7 @@ const MapComponent = React.forwardRef(
     React.useImperativeHandle(ref, () => ({
       clearRoutePath,
       toggleAddLandmarkMode,
+      isAddingLandmark,
     }));
 
     const refreshMap = () => {
@@ -655,8 +666,8 @@ const MapComponent = React.forwardRef(
             padding: 1,
             backgroundColor: "#f5f5f5",
             borderRadius: 1,
-            gap: 1, // Add gap between elements
-            flexWrap: "wrap", // Allow wrapping on small screens
+            gap: 1,
+            flexWrap: "wrap",
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -689,15 +700,6 @@ const MapComponent = React.forwardRef(
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
             </Box>
-            {isSelecting && (
-              <Button
-                variant="contained"
-                color={isAddingLandmark ? "secondary" : "primary"}
-                onClick={toggleAddLandmarkMode}
-              >
-                {isAddingLandmark ? "Cancel " : "Select Landmark"}
-              </Button>
-            )}
 
             <Tooltip
               title={showAllBoundaries ? "Hide landmarks" : "Show landmarks"}
@@ -727,45 +729,118 @@ const MapComponent = React.forwardRef(
           </Typography>
         </Box>
 
-        {/* Landmark Modal */}
         <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)}>
           <DialogTitle>Add Landmark to Route</DialogTitle>
           <DialogContent>
             <Typography>Landmark: {selectedLandmark?.name}</Typography>
             <Typography>ID: {selectedLandmark?.id}</Typography>
-            <TextField
-              label="Arrival Time"
-              type="time"
-              fullWidth
-              margin="normal"
-              value={selectedLandmark?.arrivalTime || ""}
-              onChange={(e) => {
-                setSelectedLandmark({
-                  ...selectedLandmark!,
-                  arrivalTime: e.target.value, // Already in 24-hour format
-                });
-              }}
-              InputLabelProps={{ shrink: true }}
-            />
-            <TextField
-              label="Departure Time"
-              type="time"
-              fullWidth
-              margin="normal"
-              value={selectedLandmark?.departureTime || ""}
-              onChange={(e) => {
-                setSelectedLandmark({
-                  ...selectedLandmark!,
-                  departureTime: e.target.value, // Already in 24-hour format
-                });
-              }}
-              InputLabelProps={{ shrink: true }}
-            />
+            <Box mb={2}>
+              <Alert severity="info">
+                1. For the starting landmark, arrival and departure time must be
+                the same as the starting time.
+                <br />
+                2. For the ending landmark, arrival and departure time must be
+                the same.
+              </Alert>
+            </Box>
 
-            {/* Conditionally render the Distance field */}
+            <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
+              Arrival Time (IST)
+            </Typography>
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Hour</InputLabel>
+                <Select
+                  value={arrivalHour}
+                  onChange={(e) => setArrivalHour(Number(e.target.value))}
+                  label="Hour"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+                    <MenuItem key={h} value={h}>
+                      {h.toString().padStart(2, "0")}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth size="small">
+                <InputLabel>Minute</InputLabel>
+                <Select
+                  value={arrivalMinute}
+                  onChange={(e) => setArrivalMinute(Number(e.target.value))}
+                  label="Minute"
+                >
+                  {Array.from({ length: 60 }, (_, i) => i).map((m) => (
+                    <MenuItem key={m} value={m}>
+                      {String(m).padStart(2, "0")}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth size="small">
+                <InputLabel>AM/PM</InputLabel>
+                <Select
+                  value={arrivalAmPm}
+                  onChange={(e) => setArrivalAmPm(e.target.value as string)}
+                  label="AM/PM"
+                >
+                  <MenuItem value="AM">AM</MenuItem>
+                  <MenuItem value="PM">PM</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+            <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
+              Departure Time (IST)
+            </Typography>
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Hour</InputLabel>
+                <Select
+                  value={departureHour}
+                  onChange={(e) => setDepartureHour(Number(e.target.value))}
+                  label="Hour"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+                    <MenuItem key={h} value={h}>
+                      {h.toString().padStart(2, "0")}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth size="small">
+                <InputLabel>Minute</InputLabel>
+                <Select
+                  value={departureMinute}
+                  onChange={(e) => setDepartureMinute(Number(e.target.value))}
+                  label="Minute"
+                >
+                  {Array.from({ length: 60 }, (_, i) => i).map((m) => (
+                    <MenuItem key={m} value={m}>
+                      {String(m).padStart(2, "0")}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth size="small">
+                <InputLabel>AM/PM</InputLabel>
+                <Select
+                  value={departureAmPm}
+                  onChange={(e) => setDepartureAmPm(e.target.value as string)}
+                  label="AM/PM"
+                >
+                  <MenuItem value="AM">AM</MenuItem>
+                  <MenuItem value="PM">PM</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
             {(selectedLandmarks.length > 0 || propLandmarks.length > 0) && (
               <TextField
-                label="Distance from Start"
+                label="Distance from Start (meters)"
                 type="number"
                 required
                 fullWidth
@@ -786,8 +861,10 @@ const MapComponent = React.forwardRef(
               onClick={handleAddLandmark}
               color="primary"
               disabled={
-                !selectedLandmark?.arrivalTime ||
-                !selectedLandmark?.departureTime
+                !arrivalHour ||
+                !arrivalMinute ||
+                !departureHour ||
+                !departureMinute
               }
             >
               Add

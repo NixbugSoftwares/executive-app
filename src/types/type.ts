@@ -50,6 +50,9 @@ export interface RouteLandmark {
   starting_time: string;
   arrival_delta: string;
   departure_delta: string;
+  
+  arrivalTime: string;
+  departureTime: string;
   distance_from_start?: number;
   sequence_id?: number;
 }

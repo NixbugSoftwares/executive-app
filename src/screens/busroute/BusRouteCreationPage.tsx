@@ -38,6 +38,7 @@ interface BusRouteCreationProps {
   onSuccess: () => void;
   onCancel: () => void;
   onClearRoute?: () => void;
+  mapRef: React.RefObject<any>;
 }
 
 interface BusRouteFormInputs {
@@ -52,12 +53,14 @@ const BusRouteCreation = ({
   onSuccess,
   onCancel,
   onClearRoute,
+  mapRef,
 }: BusRouteCreationProps) => {
   const dispatch = useAppDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hour, setHour] = useState<number>(0); // UTC hours (0-23)
-  const [minute, setMinute] = useState<number>(0);
-
+  const [localHour, setLocalHour] = useState<number>(12); // Local hours (1-12)
+  const [localMinute, setLocalMinute] = useState<number>(30);
+  const [amPm, setAmPm] = useState<string>("AM");
+  const [isAddingLandmark, setIsAddingLandmark] = useState(false);
   const {
     register,
     handleSubmit,
@@ -66,105 +69,136 @@ const BusRouteCreation = ({
     formState: { errors },
   } = useForm<BusRouteFormInputs>();
 
-  // Helper function to format time for display (24h to 12h)
-  const formatTimeForDisplay = (time24h: string) => {
-    const [hours, minutes] = time24h.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  // Convert local time to UTC time string
+  const convertLocalToUTC = (hour: number, minute: number, period: string) => {
+    let utcHour = hour;
+    if (period === "PM" && hour !== 12) {
+      utcHour += 12;
+    } else if (period === "AM" && hour === 12) {
+      utcHour = 0;
+    }
+    return `${utcHour.toString().padStart(2, "0")}:${minute
+      .toString()
+      .padStart(2, "0")}:00Z`;
   };
 
- useEffect(() => {
-    const utcTimeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`;
-setValue("starting_time", utcTimeString + "Z");
-    console.log("UTC time set:", utcTimeString);
-  }, [hour, minute, setValue]);
+  const calculateTimeDeltas = (startTime: string, landmarkTimes: string[]) => {
+  const deltas: number[] = [];
+  let currentDay = 0;
+  let previousTimeInSeconds = 0;
 
-  const handleRouteCreation: SubmitHandler<BusRouteFormInputs> = async (data) => {
-    if (!companyId) {
-      showErrorToast("Company ID is missing");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const routeFormData = new FormData();
-      routeFormData.append("company_id", companyId.toString());
-      routeFormData.append("name", data.name);
-      routeFormData.append("starting_time", data.starting_time);
-      console.log("starting_time", data.starting_time);
-      
-
-      const routeResponse = await dispatch(
-        routeCreationApi(routeFormData)
-      ).unwrap();
-      const routeId = routeResponse.id;
-
-      const sortedLandmarks = [...landmarks].sort(
-        (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
-      );
-
-
-      const landmarkPromises = sortedLandmarks.map((landmark, index) => {
-  const landmarkFormData = new FormData();
-  landmarkFormData.append("route_id", routeId.toString());
-  landmarkFormData.append("landmark_id", landmark.id.toString());
-  landmarkFormData.append("sequence_id", (index + 1).toString());
-  landmarkFormData.append(
-    "distance_from_start",
-    landmark.distance_from_start?.toString() || "0"
-  );
-
-  // First landmark always has 0 deltas
-  if (index === 0) {
-    landmarkFormData.append("arrival_delta", "0");
-    landmarkFormData.append("departure_delta", "0");
-    return dispatch(routeLandmarkCreationApi(landmarkFormData)).unwrap();
-  }
-
-  // Parse UTC times directly
-  const [arrivalH, arrivalM] = landmark.arrivalTime.split(':').map(Number);
-  const arrivalTimeInSeconds = arrivalH * 3600 + arrivalM * 60;
-
-  const [departureH, departureM] = landmark.departureTime.split(':').map(Number);
-  const departureTimeInSeconds = departureH * 3600 + departureM * 60;
-
-  // Starting time is already in UTC
-  const [startH, startM] = data.starting_time.split(':').map(Number);
+  // Convert start time to seconds
+  const [startH, startM] = startTime.split(':').map(Number);
   const startTimeInSeconds = startH * 3600 + startM * 60;
 
-  // Calculate deltas (all in UTC)
-  const arrivalDelta = arrivalTimeInSeconds - startTimeInSeconds;
-  const departureDelta = departureTimeInSeconds - startTimeInSeconds;
+  landmarkTimes.forEach((time, index) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const currentTimeInSeconds = hours * 3600 + minutes * 60;
 
-  // Validate
-  if (arrivalDelta < 0 || departureDelta < 0) {
-    throw new Error(`Landmark times cannot be before the starting time`);
+    if (index > 0) {
+      // If current time is earlier than previous time, we've crossed midnight
+      if (currentTimeInSeconds < previousTimeInSeconds) {
+        currentDay++;
+      }
+    }
+
+    // Calculate total delta including days
+    const totalDelta = (currentDay * 86400) + (currentTimeInSeconds - startTimeInSeconds);
+    deltas.push(totalDelta);
+    previousTimeInSeconds = currentTimeInSeconds;
+  });
+
+  return deltas;
+};
+
+  // Update UTC time value whenever local time changes
+  useEffect(() => {
+    const utcTimeString = convertLocalToUTC(localHour, localMinute, amPm);
+    setValue("starting_time", utcTimeString);
+    console.log("UTC time set:", utcTimeString);
+  }, [localHour, localMinute, amPm, setValue]);
+
+  // Helper function to format time for display (12h AM/PM)
+  const formatTimeForDisplay = (time24h: string) => {
+    const [hours, minutes] = time24h.split(":").map(Number);
+    const period = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (mapRef.current?.isAddingLandmark !== undefined) {
+        setIsAddingLandmark(mapRef.current.isAddingLandmark);
+      }
+    }, 200);
+    return () => clearInterval(interval);
+  }, [mapRef]);
+
+  const handleRouteCreation: SubmitHandler<BusRouteFormInputs> = async (data) => {
+  if (!companyId) {
+    showErrorToast("Company ID is missing");
+    return;
   }
 
-  landmarkFormData.append("arrival_delta", arrivalDelta.toString());
-  landmarkFormData.append("departure_delta", departureDelta.toString());
+  setIsSubmitting(true);
 
-  return dispatch(routeLandmarkCreationApi(landmarkFormData)).unwrap();
-});
-      await Promise.all(landmarkPromises);
+  try {
+    const routeFormData = new FormData();
+    routeFormData.append("company_id", companyId.toString());
+    routeFormData.append("name", data.name);
+    routeFormData.append("starting_time", data.starting_time);
 
-      showSuccessToast("Route and landmarks created successfully");
-      reset();
-      onSuccess();
-      if (onClearRoute) onClearRoute();
-    } catch (error: unknown) {
-      console.error("Error in route creation process:", error);
-      showErrorToast(
-        typeof error === 'object' && error !== null && 'message' in error 
-          ? (error as Error).message 
-          : "Failed to create route and landmarks"
+    const routeResponse = await dispatch(
+      routeCreationApi(routeFormData)
+    ).unwrap();
+    const routeId = routeResponse.id;
+
+    const sortedLandmarks = [...landmarks].sort(
+      (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
+    );
+
+    // Extract all arrival and departure times
+    const arrivalTimes = sortedLandmarks.map(l => l.arrivalTime.replace('Z', ''));
+    const departureTimes = sortedLandmarks.map(l => l.departureTime.replace('Z', ''));
+    
+    // Calculate all deltas at once to properly track day progression
+    const startTime = data.starting_time.replace('Z', '');
+    const arrivalDeltas = calculateTimeDeltas(startTime, arrivalTimes);
+    const departureDeltas = calculateTimeDeltas(startTime, departureTimes);
+
+    const landmarkPromises = sortedLandmarks.map((landmark, index) => {
+      const landmarkFormData = new FormData();
+      landmarkFormData.append("route_id", routeId.toString());
+      landmarkFormData.append("landmark_id", landmark.id.toString());
+      landmarkFormData.append("sequence_id", (index + 1).toString());
+      landmarkFormData.append(
+        "distance_from_start",
+        landmark.distance_from_start?.toString() || "0"
       );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+
+      landmarkFormData.append("arrival_delta", arrivalDeltas[index].toString());
+      landmarkFormData.append("departure_delta", departureDeltas[index].toString());
+
+      return dispatch(routeLandmarkCreationApi(landmarkFormData)).unwrap();
+    });
+
+    await Promise.all(landmarkPromises);
+    showSuccessToast("Route and landmarks created successfully");
+    reset();
+    onSuccess();
+    if (onClearRoute) onClearRoute();
+  } catch (error: unknown) {
+    console.error("Error in route creation process:", error);
+    showErrorToast(
+      typeof error === "object" && error !== null && "message" in error
+        ? (error as Error).message
+        : "Failed to create route and landmarks"
+    );
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <Box
@@ -213,29 +247,29 @@ setValue("starting_time", utcTimeString + "Z");
         />
 
         <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
-        Starting Time (UTC)
-      </Typography>
+          Starting Time (IST)
+        </Typography>
         <Box sx={{ display: "flex", gap: 2 }}>
           <FormControl fullWidth size="small">
-          <InputLabel>Hour (UTC)</InputLabel>
-          <Select
-            value={hour}
-            onChange={(e) => setHour(Number(e.target.value))}
-            label="Hour (UTC)"
-          >
-            {Array.from({ length: 24 }, (_, i) => i).map((h) => (
-              <MenuItem key={h} value={h}>
-                {h.toString().padStart(2, '0')}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+            <InputLabel>Hour</InputLabel>
+            <Select
+              value={localHour}
+              onChange={(e) => setLocalHour(Number(e.target.value))}
+              label="Hour"
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+                <MenuItem key={h} value={h}>
+                  {h.toString().padStart(2, "0")}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <FormControl fullWidth size="small">
             <InputLabel>Minute</InputLabel>
             <Select
-              value={minute}
-              onChange={(e) => setMinute(Number(e.target.value))}
+              value={localMinute}
+              onChange={(e) => setLocalMinute(Number(e.target.value))}
               label="Minute"
             >
               {Array.from({ length: 60 }, (_, i) => i).map((m) => (
@@ -245,7 +279,32 @@ setValue("starting_time", utcTimeString + "Z");
               ))}
             </Select>
           </FormControl>
+
+          <FormControl fullWidth size="small">
+            <InputLabel>AM/PM</InputLabel>
+            <Select
+              value={amPm}
+              onChange={(e) => setAmPm(e.target.value as string)}
+              label="AM/PM"
+            >
+              <MenuItem value="AM">AM</MenuItem>
+              <MenuItem value="PM">PM</MenuItem>
+            </Select>
+          </FormControl>
         </Box>
+
+        <Button
+          variant={isAddingLandmark ? "outlined" : "contained"}
+          color={isAddingLandmark ? "error" : "primary"}
+          sx={{ mt: 2, mb: 2 }}
+          disabled={!localHour && !localMinute}
+          onClick={() => {
+            mapRef.current?.toggleAddLandmarkMode();
+            setIsAddingLandmark((prev) => !prev);
+          }}
+        >
+          {isAddingLandmark ? "Cancel" : "Add Landmark"}
+        </Button>
 
         <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
           Route Landmarks
@@ -359,7 +418,10 @@ setValue("starting_time", utcTimeString + "Z");
                                 color: "error.main",
                               }}
                             />
-                            <span>Arrive: {formatTimeForDisplay(landmark.arrivalTime)}</span>
+                            <span>
+                              Arrive:{" "}
+                              {formatTimeForDisplay(landmark.arrivalTime)}
+                            </span>
                           </Box>
                           <Box sx={{ display: "flex", alignItems: "center" }}>
                             <ArrowUpwardIcon
@@ -369,7 +431,10 @@ setValue("starting_time", utcTimeString + "Z");
                                 color: "success.main",
                               }}
                             />
-                            <span>Depart: {formatTimeForDisplay(landmark.departureTime)}</span>
+                            <span>
+                              Depart:{" "}
+                              {formatTimeForDisplay(landmark.departureTime)}
+                            </span>
                           </Box>
                         </Box>
                       </Box>

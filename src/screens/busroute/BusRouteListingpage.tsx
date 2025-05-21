@@ -18,7 +18,6 @@ import {
   DialogActions,
   Tooltip,
 } from "@mui/material";
-import { Delete } from "@mui/icons-material";
 import { useDispatch } from "react-redux";
 import {
   busRouteLandmarkListApi,
@@ -77,6 +76,7 @@ const BusRouteListing = () => {
   const [newRouteLandmarks, setNewRouteLandmarks] = useState<
     SelectedLandmark[]
   >([]);
+  
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -262,6 +262,7 @@ const BusRouteListing = () => {
             routeName={selectedRoute.name}
             routeStartingTime={selectedRoute.starting_time}
             refreshList={(value: any) => refreshList(value)}
+            routeManagePermission={canManageRoutes}
             onBack={() => {
               setSelectedRoute(null);
               setMapLandmarks([]);
@@ -304,6 +305,7 @@ const BusRouteListing = () => {
               onSuccess={handleRouteCreated}
               onCancel={toggleCreationForm}
               onClearRoute={() => mapRef.current?.clearRoutePath()}
+              mapRef={mapRef} 
             />
           </>
         ) : (
@@ -402,6 +404,7 @@ const BusRouteListing = () => {
                         />
                       </Box>
                     </TableCell>
+
                     <TableCell sx={{ width: "20%", textAlign: "center" }}>
                       <b>Actions</b>
                     </TableCell>
@@ -431,14 +434,47 @@ const BusRouteListing = () => {
                           >
                             {row.name}
                           </TableCell>
-                          <TableCell sx={{ textAlign: "center" }}>
-                            <Button
-                              color="error"
-                              size="small"
-                              onClick={() => handleDeleteClick(row)}
+                          <TableCell sx={{ textAlign: "center", boxShadow: 1 }}>
+                            <Tooltip
+                              title={
+                                !canManageRoutes
+                                  ? "You don't have permission, contact the admin"
+                                  : " DELETE the route"
+                              }
+                              placement="top-end"
                             >
-                              <Delete sx={{ fontSize: 20 }} />
-                            </Button>
+                              <span
+                                style={{
+                                  cursor: !canManageRoutes
+                                    ? "not-allowed"
+                                    : "default",
+                                }}
+                              >
+                                <Button
+                                  variant="contained"
+                                  color="error"
+                                  size="small"
+                                  sx={{
+                                    ml: "auto",
+                                    mr: 2,
+                                    mb: 2,
+                                    display: "block",
+                                    backgroundColor: !canManageRoutes
+                                      ? "#f46a6a  !important" // light red for disabled
+                                      : "#d32f2f", // MUI error main red
+                                    color: "white",
+                                    "&.Mui-disabled": {
+                                      backgroundColor: "#f46a6a  !important", // light red when disabled
+                                      color: "#ffffff99",
+                                    },
+                                  }}
+                                  disabled={!canManageRoutes}
+                                  onClick={() => handleDeleteClick(row)}
+                                >
+                                  Delete
+                                </Button>
+                              </span>
+                            </Tooltip>
                           </TableCell>
                         </TableRow>
                       ))
@@ -533,12 +569,12 @@ const BusRouteListing = () => {
           onAddLandmark={
             isEditingRoute ? handleAddLandmarkEdit : handleAddLandmark
           }
-          isSelecting={showCreationForm || isEditingRoute}
           ref={mapRef}
           landmarks={selectedRoute ? mapLandmarks : landmarks}
           mode={selectedRoute ? "view" : "create"}
           isEditing={isEditingRoute}
           selectedLandmarks={isEditingRoute ? newRouteLandmarks : landmarks}
+          
         />
       </Box>
 
