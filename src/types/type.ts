@@ -56,3 +56,21 @@ export interface RouteLandmark {
   distance_from_start?: number;
   sequence_id?: number;
 }
+
+
+export interface Fare {
+  id: number;
+  name: string;
+  company_id: number | null;
+  version: number;
+  function: string;
+  scope: number;
+  attributes: {
+    df_version: number;
+    ticket_types: { id: number; name: string }[];
+    currency_type: string;
+    distance_unit: string;
+    extra: Record<string, any>;
+  };
+  created_on: string;
+}

@@ -1331,7 +1331,7 @@ export const routeLandmarkUpdationApi = createAsyncThunk(
 //****************************************************************global and local Fare *************************************************************************
 //fare get api
 export const fareListApi = createAsyncThunk(
-  "fares/list",
+  "executive/company/fare",
   async (params: { scope: 1 | 2; companyId?: string }, { rejectWithValue }) => {
     try {
       if (!params.scope) {
@@ -1376,6 +1376,72 @@ export const fareListApi = createAsyncThunk(
         code: error?.response?.status || 500,
         details: error?.response?.data?.errors || null,
       });
+    }
+  }
+);
+
+//fare creation API
+export const fareCreationApi = createAsyncThunk(
+  "/executive/company/fare",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "post",
+        "/executive/company/fare",
+        data,
+        true,
+        "application/x-www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message || "Account creation failed"
+      );
+    }
+  }
+);
+
+//fare updation API
+export const fareupdationApi = createAsyncThunk(
+  "/executive/company/fare",
+  async (
+    { formData }: { fareId: number; formData: URLSearchParams },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await commonApi.apiCall(
+        "patch",
+        `/executive/company/fare`,
+        formData,
+        true,
+        "application/x-www-form-urlencoded" // Use the correct content type
+      );
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data); // Log the full error response
+      return rejectWithValue(
+        error?.response?.data?.message || "Fare update failed"
+      );
+    }
+  }
+);
+//fare delete API
+export const fareDeleteApi = createAsyncThunk(
+  "executive/company/fare",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "delete",
+        "/executive/company/fare",
+        data,
+        true,
+        "application/x-www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message || "Fare deletion failed"
+      );
     }
   }
 );

@@ -30,7 +30,6 @@ const LoggedInUser: React.FC = () => {
         setLoading(false);
         return;
       }
-
       try {
         const response = await dispatch(loggedinuserAPI(userLoggedIn)).unwrap();
         console.log("API Response >>>>>>>>>>>>>", response);

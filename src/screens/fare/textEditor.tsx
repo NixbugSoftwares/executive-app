@@ -18,7 +18,7 @@ function CodeEditor({ value, readOnly = false, onChange }: CodeEditorProps) {
         options={{
           readOnly,
           minimap: { enabled: false },
-          fontSize: 14,
+          fontSize: 12,
           scrollBeyondLastLine: false,
         }}
         onChange={onChange}
