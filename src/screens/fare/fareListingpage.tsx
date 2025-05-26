@@ -11,9 +11,13 @@ import {
   Typography,
   TextField,
   Tooltip,
+  Chip,
 } from "@mui/material";
 import { useDispatch } from "react-redux";
 import ErrorIcon from "@mui/icons-material/Error";
+import PersonIcon from "@mui/icons-material/Person";
+import ChildCareIcon from "@mui/icons-material/ChildCare";
+import SchoolIcon from "@mui/icons-material/School";
 import { fareListApi } from "../../slices/appSlice";
 import type { AppDispatch } from "../../store/Store";
 import { showInfoToast } from "../../common/toastMessageHelper";
@@ -47,7 +51,7 @@ const FareListingPage = () => {
           attributes: {
             df_version: fare.attributes?.df_version || 1,
             ticket_types: fare.attributes?.ticket_types || [],
-            currency_type: fare.attributes?.currency_type || "INR",
+            currency_type: fare.attributes?.currency_type,
             distance_unit: fare.attributes?.distance_unit || "m",
             extra: fare.attributes?.extra || {},
           },
@@ -175,196 +179,253 @@ const FareListingPage = () => {
           </Box>
 
           <TableContainer
-            sx={{
-              flex: 1,
-              overflowY: "auto",
-            }}
-          >
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell
-                    sx={{
-                      width: "25%",
-                      maxWidth: "25%",
-                      textAlign: "center",
-                    }}
-                  >
-                    <b style={{ display: "block", textAlign: "center" }}>ID</b>
-                    <TextField
-                      variant="outlined"
-                      size="small"
-                      placeholder="Search"
-                      value={search.id}
-                      onChange={(e) => handleSearchChange(e, "id")}
-                      fullWidth
-                      sx={{
-                        "& .MuiInputBase-root": {
-                          height: 40,
-                          padding: "4px",
-                          textAlign: "center",
-                        },
-                        "& .MuiInputBase-input": {
-                          textAlign: "center",
-                        },
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      width: "35",
-                      textAlign: "center",
-                    }}
-                  >
-                    <b style={{ display: "block", textAlign: "center" }}>
-                      Name
-                    </b>
-                    <TextField
-                      variant="outlined"
-                      size="small"
-                      placeholder="Search"
-                      value={search.name}
-                      onChange={(e) => handleSearchChange(e, "name")}
-                      fullWidth
-                      sx={{
-                        "& .MuiInputBase-root": {
-                          height: 40,
-                          padding: "4px",
-                          textAlign: "center",
-                        },
-                        "& .MuiInputBase-input": {
-                          textAlign: "center",
-                        },
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      width: "75",
-                      textAlign: "center",
-                    }}
-                  >
-                    <b style={{ display: "block", textAlign: "center" }}>
-                      Ticket Types
-                    </b>
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      width: "75",
-                      textAlign: "center",
-                    }}
-                  >
-                    <b style={{ display: "block", textAlign: "center" }}>
-                      Version
-                    </b>
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredData.length > 0 ? (
-                  filteredData
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((fare) => {
-                      const isSelected = selectedFare?.id === fare.id;
-                      return (
-                        <TableRow
-                          key={fare.id}
-                          hover
-                          selected={isSelected}
-                          onClick={() => {
-                            setSelectedFare(fare);
-                            setViewMode("view");
-                          }}
-                          sx={{
-                            cursor: "pointer",
-                            backgroundColor: isSelected
-                              ? "#E3F2FD !important"
-                              : "inherit",
-                            "&:hover": {
-                              backgroundColor: isSelected
-                                ? "#E3F2FD !important"
-                                : "#E3F2FD",
-                            },
-                          }}
-                        >
-                          <TableCell>{fare.id}</TableCell>
-                          <TableCell
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedFare(fare);
-                              setViewMode("view");
-                            }}
+  sx={{
+    flex: 1,
+    overflowY: "auto",
+    "& .MuiTableCell-root": {
+      padding: "8px 12px",
+    },
+    "& .MuiTableCell-head": {  // Header centering fix
+      textAlign: "center",
+      padding: "8px 12px",
+      "& > *": {
+        justifyContent: "center",
+        margin: "0 auto",
+      }
+    }
+  }}
+>
+  <Table stickyHeader>
+    <TableHead>
+      <TableRow>
+        {/* ID Column */}
+        <TableCell sx={{ width: "10%" }}>
+          <Box display="flex" flexDirection="column" alignItems="center">
+            <b>ID</b>
+            <TextField
+              variant="outlined"
+              size="small"
+              placeholder="Search"
+              value={search.id}
+              onChange={(e) => handleSearchChange(e, "id")}
+              sx={{
+                width: "100%",
+                mt: 1,
+                "& .MuiInputBase-root": { height: 36 },
+              }}
+            />
+          </Box>
+        </TableCell>
+
+        {/* Name Column */}
+        <TableCell sx={{ width: "25%" }}>
+          <Box display="flex" flexDirection="column" alignItems="center">
+            <b>Name</b>
+            <TextField
+              variant="outlined"
+              size="small"
+              placeholder="Search"
+              value={search.name}
+              onChange={(e) => handleSearchChange(e, "name")}
+              sx={{
+                width: "100%",
+                mt: 1,
+                "& .MuiInputBase-root": { height: 36 },
+              }}
+            />
+          </Box>
+        </TableCell>
+
+        {/* Ticket Types Header */}
+        <TableCell>
+          <b style={{ display: "block", textAlign: "center" }}>Ticket Types</b>
+        </TableCell>
+
+        {/* Currency Header */}
+        <TableCell>
+          <b style={{ display: "block", textAlign: "center" }}>Currency Code</b>
+        </TableCell>
+
+        {/* Version Header */}
+        <TableCell>
+          <b style={{ display: "block", textAlign: "center" }}>Version</b>
+        </TableCell>
+
+        {/* Created On Header */}
+        <TableCell>
+          <b style={{ display: "block", textAlign: "center" }}>Created On</b>
+        </TableCell>
+      </TableRow>
+    </TableHead>
+
+    <TableBody>
+      {filteredData.length > 0 ? (
+        filteredData
+          .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+          .map((fare) => {
+            const isSelected = selectedFare?.id === fare.id;
+            return (
+              <TableRow
+                key={fare.id}
+                hover
+                selected={isSelected}
+                onClick={() => {
+                  setSelectedFare(fare);
+                  setViewMode("view");
+                }}
+                sx={{
+                  cursor: "pointer",
+                  backgroundColor: isSelected ? "#E3F2FD !important" : "inherit",
+                  "&:hover": { backgroundColor: "#E3F2FD" },
+                }}
+              >
+                {/* ID */}
+                <TableCell sx={{ fontWeight: 500, textAlign: "center" }}>
+                  {fare.id}
+                </TableCell>
+
+                {/* Name */}
+                <TableCell
+                  onClick={(e) => e.stopPropagation()}
+                  sx={{
+                    "&:hover": { textDecoration: "underline" },
+                  }}
+                >
+                  {fare.name || (
+                    <Tooltip title="Name not available">
+                      <ErrorIcon color="disabled" />
+                    </Tooltip>
+                  )}
+                </TableCell>
+
+                {/* Ticket Types - Block Style */}
+                <TableCell>
+                  {fare.attributes.ticket_types?.length > 0 ? (
+                    <Box display="flex" flexDirection="column" gap={1}>
+                      {fare.attributes.ticket_types.map((type, index) => {
+                        const typeConfig = {
+                          adult: {
+                            bg: "rgba(25, 118, 210, 0.1)",
+                            color: "#1565c0",
+                            icon: <PersonIcon fontSize="small" />,
+                          },
+                          child: {
+                            bg: "rgba(255, 152, 0, 0.1)",
+                            color: "#ef6c00",
+                            icon: <ChildCareIcon fontSize="small" />,
+                          },
+                          default: {
+                            bg: "rgba(76, 175, 80, 0.1)",
+                            color: "#2e7d32",
+                            icon: <SchoolIcon fontSize="small" />,
+                          },
+                        };
+
+                        const typeKey = type.name?.toLowerCase().includes("adult")
+                          ? "adult"
+                          : type.name?.toLowerCase().includes("child")
+                          ? "child"
+                          : "default";
+
+                        return (
+                          <Chip
+                            key={index}
+                            size="small"
+                            icon={typeConfig[typeKey].icon}
+                            label={type.name || `Type ${index + 1}`}
                             sx={{
-                              cursor: "pointer",
-                              "&:hover": {
-                                textDecoration: "underline",
+                              width: "100%",
+                              maxWidth: "120px",
+                              justifyContent: "flex-start",
+                              borderRadius: "4px",
+                              backgroundColor: typeConfig[typeKey].bg,
+                              color: typeConfig[typeKey].color,
+                              "& .MuiChip-icon": {
+                                color: typeConfig[typeKey].color,
+                                opacity: 0.8,
+                                marginLeft: "8px",
                               },
                             }}
-                          >
-                            {fare.name ? (
-                              fare.name
-                            ) : (
-                              <Tooltip
-                                title="Name not available"
-                                placement="bottom"
-                              >
-                                <ErrorIcon sx={{ color: "#737d72 " }} />
-                              </Tooltip>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {fare.attributes.ticket_types &&
-                            fare.attributes.ticket_types.length > 0 ? (
-                              <ul
-                                style={{
-                                  margin: 0,
-                                  paddingLeft: 20,
-                                  listStyleType: "disc",
-                                  textAlign: "left",
-                                }}
-                              >
-                                {fare.attributes.ticket_types.map(
-                                  (type: any, index: number) => (
-                                    <li key={index}>
-                                      {type.name || `Ticket Type ${index + 1}`}
-                                    </li>
-                                  )
-                                )}
-                              </ul>
-                            ) : (
-                              <Tooltip
-                                title="No ticket types available"
-                                placement="bottom"
-                              >
-                                <ErrorIcon sx={{ color: "#737d72" }} />
-                              </Tooltip>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {fare.version ? (
-                              fare.version
-                            ) : (
-                              <Tooltip
-                                title="Version not available"
-                                placement="bottom"
-                              >
-                                <ErrorIcon sx={{ color: "#737d72 " }} />
-                              </Tooltip>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={4} align="center">
-                      No fares found
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                          />
+                        );
+                      })}
+                    </Box>
+                  ) : (
+                    <Tooltip title="No ticket types">
+                      <ErrorIcon color="disabled" />
+                    </Tooltip>
+                  )}
+                </TableCell>
+
+                {/* Currency - Chip Style */}
+                <TableCell>
+                  {fare.attributes.currency_type ? (
+                    <Chip
+                      size="small"
+                      label={
+                        <Box display="flex" alignItems="center" gap={0.5}>
+                          {fare.attributes.currency_type === "INR" && "₹"}
+                          {fare.attributes.currency_type === "USD" && "$"}
+                          {fare.attributes.currency_type === "EUR" && "€"}
+                          {fare.attributes.currency_type}
+                        </Box>
+                      }
+                      sx={{
+                        backgroundColor: 
+                          fare.attributes.currency_type === "INR"
+                            ? "rgba(27, 94, 32, 0.1)"
+                            : fare.attributes.currency_type === "USD"
+                            ? "rgba(25, 118, 210, 0.1)"
+                            : "rgba(255, 152, 0, 0.1)",
+                        color:
+                          fare.attributes.currency_type === "INR"
+                            ? "#1b5e20"
+                            : fare.attributes.currency_type === "USD"
+                            ? "#1565c0"
+                            : "#ef6c00",
+                        borderRadius: "4px",
+                        fontWeight: 500,
+                      }}
+                    />
+                  ) : (
+                    <Tooltip title="Currency not available">
+                      <ErrorIcon color="disabled" />
+                    </Tooltip>
+                  )}
+                </TableCell>
+
+                {/* Version */}
+                <TableCell sx={{ textAlign: "center" }}>
+                  {fare.version || (
+                    <Tooltip title="Version not available">
+                      <ErrorIcon color="disabled" />
+                    </Tooltip>
+                  )}
+                </TableCell>
+
+                {/* Created On */}
+                <TableCell sx={{ textAlign: "center" }}>
+                  {fare.created_on ? (
+                    new Date(fare.created_on).toLocaleDateString()
+                  ) : (
+                    <Tooltip title="Date not available">
+                      <ErrorIcon color="disabled" />
+                    </Tooltip>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })
+      ) : (
+        <TableRow>
+          <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+            <Typography color="textSecondary">No fares found</Typography>
+          </TableCell>
+        </TableRow>
+      )}
+    </TableBody>
+  </Table>
+</TableContainer>
 
           <Box
             sx={{
