@@ -74,136 +74,224 @@
 
 
 
-// import axios from "axios";
-// import { toast } from "react-toastify";
-// import moment from "moment";
-// import localStorageHelper from "./localStorageHelper";
 
-// export const base_URL = "http://192.168.0.134:8080"; //base URL
 
-// //******************************************************Token **************************************** */
-// const getAuthToken = async () => {
-//   try {
-//     const token = await localStorageHelper.getItem("@token");
-//     console.log("token=====================>", token);
+//eg for addng new lm to the exsting routes .. 
+{selectedLandmark && (
+  <Dialog
+    open={!!selectedLandmark}
+    onClose={() => setSelectedLandmark(null)}
+    maxWidth="sm"
+    fullWidth
+  >
+    <DialogTitle>Add Landmark Details</DialogTitle>
+    <DialogContent>
+      <Typography variant="h6" sx={{ mb: 2 }}>
+        {selectedLandmark.name}
+      </Typography>
 
-//     const response = await axios.post( 
-//       `${base_URL}/executive/token`,
-//       { refreshToken: token }, 
-//       { headers: { Authorization: `Bearer ${token}` } }
-//     );
+      {/* Arrival Time */}
+      <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
+        Arrival Time
+      </Typography>
+      <Box sx={{ display: "flex", gap: 2, flexWrap: 'wrap' }}>
+        <FormControl fullWidth size="small">
+          <InputLabel>Day Offset</InputLabel>
+          <Select
+            value={selectedLandmark.arrivalDayOffset || 0}
+            onChange={(e) => setSelectedLandmark({
+              ...selectedLandmark,
+              arrivalDayOffset: Number(e.target.value)
+            })}
+            label="Day Offset"
+          >
+            <MenuItem value={0}>Day 0</MenuItem>
+            <MenuItem value={1}>Day 1</MenuItem>
+            <MenuItem value={2}>Day 2</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl fullWidth size="small">
+          <InputLabel>Hour</InputLabel>
+          <Select
+            value={selectedLandmark.arrivalHour || 12}
+            onChange={(e) => setSelectedLandmark({
+              ...selectedLandmark,
+              arrivalHour: Number(e.target.value)
+            })}
+            label="Hour"
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+              <MenuItem key={h} value={h}>
+                {String(h).padStart(2, "0")}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl fullWidth size="small">
+          <InputLabel>Minute</InputLabel>
+          <Select
+            value={selectedLandmark.arrivalMinute || 0}
+            onChange={(e) => setSelectedLandmark({
+              ...selectedLandmark,
+              arrivalMinute: Number(e.target.value)
+            })}
+            label="Minute"
+          >
+            {Array.from({ length: 60 }, (_, i) => i).map((m) => (
+              <MenuItem key={m} value={m}>
+                {String(m).padStart(2, "0")}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl fullWidth size="small">
+          <InputLabel>AM/PM</InputLabel>
+          <Select
+            value={selectedLandmark.arrivalAmPm || "AM"}
+            onChange={(e) => setSelectedLandmark({
+              ...selectedLandmark,
+              arrivalAmPm: e.target.value as "AM" | "PM"
+            })}
+            label="AM/PM"
+          >
+            <MenuItem value="AM">AM</MenuItem>
+            <MenuItem value="PM">PM</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
 
-//     console.log("getAuthtokenresponse=====>", response);
+      {/* Departure Time */}
+      <Typography variant="subtitle2" sx={{ mt: 3, mb: 1 }}>
+        Departure Time
+      </Typography>
+      <Box sx={{ display: "flex", gap: 2, flexWrap: 'wrap' }}>
+        <FormControl fullWidth size="small">
+          <InputLabel>Day Offset</InputLabel>
+          <Select
+            value={selectedLandmark.departureDayOffset || 0}
+            onChange={(e) => setSelectedLandmark({
+              ...selectedLandmark,
+              departureDayOffset: Number(e.target.value)
+            })}
+            label="Day Offset"
+          >
+            <MenuItem value={0}>Day 0</MenuItem>
+            <MenuItem value={1}>Day 1</MenuItem>
+            <MenuItem value={2}>Day 2</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl fullWidth size="small">
+          <InputLabel>Hour</InputLabel>
+          <Select
+            value={selectedLandmark.departureHour || 12}
+            onChange={(e) => setSelectedLandmark({
+              ...selectedLandmark,
+              departureHour: Number(e.target.value)
+            })}
+            label="Hour"
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+              <MenuItem key={h} value={h}>
+                {String(h).padStart(2, "0")}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl fullWidth size="small">
+          <InputLabel>Minute</InputLabel>
+          <Select
+            value={selectedLandmark.departureMinute || 0}
+            onChange={(e) => setSelectedLandmark({
+              ...selectedLandmark,
+              departureMinute: Number(e.target.value)
+            })}
+            label="Minute"
+          >
+            {Array.from({ length: 60 }, (_, i) => i).map((m) => (
+              <MenuItem key={m} value={m}>
+                {String(m).padStart(2, "0")}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl fullWidth size="small">
+          <InputLabel>AM/PM</InputLabel>
+          <Select
+            value={selectedLandmark.departureAmPm || "AM"}
+            onChange={(e) => setSelectedLandmark({
+              ...selectedLandmark,
+              departureAmPm: e.target.value as "AM" | "PM"
+            })}
+            label="AM/PM"
+          >
+            <MenuItem value="AM">AM</MenuItem>
+            <MenuItem value="PM">PM</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
 
-//     localStorageHelper.storeItem("@token", response?.data?.access_token);
-//     localStorageHelper.storeItem("@token_expires", response?.data?.expires_in);
+      <TextField
+        label="Distance from Start (m)"
+        type="number"
+        fullWidth
+        margin="normal"
+        value={selectedLandmark.distance_from_start || 0}
+        onChange={(e) =>
+          setSelectedLandmark({
+            ...selectedLandmark,
+            distance_from_start: Number(e.target.value),
+          })
+        }
+      />
+    </DialogContent>
+    <DialogActions>
+      <Button onClick={() => setSelectedLandmark(null)}>Cancel</Button>
+      <Button
+        onClick={() => {
+          handleAddNewLandmark(selectedLandmark);
+          setSelectedLandmark(null);
+        }}
+        color="primary"
+      >
+        Add
+      </Button>
+    </DialogActions>
+  </Dialog>
+)} 
 
-//     return response?.data?.access_token;
-//   } catch (err) {
-//     console.error("Error in getAuthToken", err);
-//     throw err;
+
+// const handleAddNewLandmark = (landmark: SelectedLandmark) => {
+//   if (!routeStartingTime) {
+//     showErrorToast("Route starting time is missing");
+//     return;
 //   }
-// };
-
-// //****************************************************** prepare Headers **************************************** */
-// const prepareHeaders = async (tokenNeeded: any) => {
-//   let headers: any = { "Content-Type": "application/json" };
-//   if (tokenNeeded) {
-//     let AuthToken = await localStorageHelper.getItem("@token");
-//     const tokenExpiry = await localStorageHelper.getItem("@token_expiry");
-
-//     if (tokenExpiry && moment(tokenExpiry).isValid()) {
-//       const hourDifference = moment(tokenExpiry).diff(moment(), "hours");
-//       if (hourDifference <= 1) {
-//         try {
-//           AuthToken = await getAuthToken();
-//         } catch (err) {
-//           console.error("Token refresh failed. Logging out...", err);
-//           localStorageHelper.removeStoredItem("@token");
-//           localStorageHelper.removeStoredItem("@token_expiry");
-//           window.location.href = "/login"; 
-//         }
-//       }
-//     }
-
-//     headers["Authorization"] = `Bearer ${AuthToken}`;
-//   }
-
-//   return headers;
-// };
-
-// //****************************************************** response handler **************************************** */
-
-// const handleResponse = async (response: any) => {
-//   console.log("response====================>", response);
+//   // Convert local times to UTC with day offsets
+//   const arrivalTimeUTC = convertLocalToUTC(
+    
+//     landmark.arrivalHour  || 12,
+//     landmark.arrivalMinute || 0,
+//     landmark.arrivalAmPm || "AM",
+//     landmark.arrivalDayOffset || 0
+//   );
   
-//   return response?.data; // Fix for response structure
+//   const departureTimeUTC = convertLocalToUTC(
+//     landmark.departureHour || 12,
+//     landmark.departureMinute || 0,
+//     landmark.departureAmPm || "AM",
+//     landmark.departureDayOffset || 0
+//   );
+
+//   const newLandmark = {
+//     ...landmark,
+//     arrivalTime: arrivalTimeUTC,
+//     departureTime: departureTimeUTC,
+//     distance_from_start: landmark.distance_from_start || 0,
+//     sequenceId: routeLandmarks.length + newLandmarks.length + 1,
+//   };
+
+//   setNewLandmarks([...newLandmarks, newLandmark]);
+//   onNewLandmarkAdded(newLandmark);
 // };
-
-// //******************************************************  errorResponse handler  **************************************** */
-// const handleErrorResponse = (errorResponse: any) => {
-//   if (!errorResponse) {
-//     toast.error("Network error. Please try again.");
-//     return { error: "Network error" };
-//   }
-
-//   const { status, data } = errorResponse;
-//   const errorMessage = data?.message || "Api Failed";
-
-//   if (status === 400 && Array.isArray(data?.message)) {
-//     const validationErrors = data.message
-//       .map((err: any) => Object.values(err.constraints).join(", "))
-//       .join(" | ");
-//     toast.error(validationErrors);
-//     return { error: validationErrors };
-//   } else {
-//     if (status !== 500) {
-//       toast.error(errorMessage);
-//     }
-//     return { error: errorMessage }; 
-//   }
-// };
-
-// //******************************************************  apiCall  ****************************************
-
-// const apiCall = async (
-//   method: "get" | "post" | "patch" | "delete",
-//   route: string,
-//   params: any = {},
-//   tokenNeeded: boolean = true,
-//   contentType: string = "application/json"
-// ) => {
-//   console.log(route);
-//   console.log("method===========>", method);
-//   try {
-//     const headers = await prepareHeaders(tokenNeeded);
-
-//     headers["Content-Type"] = contentType;
-
-//     const config = {
-//       method,
-//       url: `${base_URL}${route}`,
-//       headers,
-//       data: method !== "get" ? params : undefined,
-//       params: method === "get" ? params : undefined, 
-//     };
-
-//     console.log("CONFIG ===> ", config);
-
-//     const response = await axios(config);
-//     return await handleResponse(response);
-//   } catch (err: any) {
-//     console.log("errorrr======>", err);
-//     return handleErrorResponse(err?.response);
-//   }
-// };
-
-// export default {
-//   apiCall,
-// };
-
-
-
 
 
 

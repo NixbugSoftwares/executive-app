@@ -39,6 +39,7 @@ interface BusRouteCreationProps {
   onCancel: () => void;
   onClearRoute?: () => void;
   mapRef: React.RefObject<any>;
+  onStartingTimeChange: (time: string) => void;
 }
 
 interface BusRouteFormInputs {
@@ -54,13 +55,15 @@ const BusRouteCreation = ({
   onCancel,
   onClearRoute,
   mapRef,
+  onStartingTimeChange,
 }: BusRouteCreationProps) => {
   const dispatch = useAppDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [localHour, setLocalHour] = useState<number>(12); // Local hours (1-12)
+  const [localHour, setLocalHour] = useState<number>(12);
   const [localMinute, setLocalMinute] = useState<number>(30);
   const [amPm, setAmPm] = useState<string>("AM");
   const [isAddingLandmark, setIsAddingLandmark] = useState(false);
+  const [startingDayOffset] = useState(0);
   const {
     register,
     handleSubmit,
@@ -70,61 +73,70 @@ const BusRouteCreation = ({
   } = useForm<BusRouteFormInputs>();
 
   // Convert local time to UTC time string
-  const convertLocalToUTC = (hour: number, minute: number, period: string) => {
+  const convertLocalToUTC = (
+    hour: number,
+    minute: number,
+    period: string,
+    dayOffset: number = 0
+  ) => {
     let utcHour = hour;
     if (period === "PM" && hour !== 12) {
       utcHour += 12;
     } else if (period === "AM" && hour === 12) {
       utcHour = 0;
     }
-    return `${utcHour.toString().padStart(2, "0")}:${minute
-      .toString()
-      .padStart(2, "0")}:00Z`;
+
+    const utcTime = new Date(
+      Date.UTC(1970, 0, 1 + dayOffset, utcHour, minute, 0)
+    );
+
+    return {
+      displayTime: utcTime.toISOString().slice(11, 19),
+      fullTime: utcTime.toISOString(),
+      dayOffset,
+      timestamp: utcTime.getTime(),
+    };
   };
 
-  const calculateTimeDeltas = (startTime: string, landmarkTimes: string[]) => {
-  const deltas: number[] = [];
-  let currentDay = 0;
-  let previousTimeInSeconds = 0;
+  const calculateTimeDeltas = (
+    startingTime: string,
+    landmarks: SelectedLandmark[],
+    timeType: "arrival" | "departure"
+  ) => {
+    const startTimeStr = startingTime.endsWith("Z")
+      ? startingTime.slice(0, -1)
+      : startingTime;
+    const [startH, startM, startS] = startTimeStr.split(":").map(Number);
+    const startDate = new Date(Date.UTC(1970, 0, 1, startH, startM, startS));
 
-  // Convert start time to seconds
-  const [startH, startM] = startTime.split(':').map(Number);
-  const startTimeInSeconds = startH * 3600 + startM * 60;
+    return landmarks.map((landmark) => {
+      const timeObj =
+        timeType === "arrival" ? landmark.arrivalTime : landmark.departureTime;
+      const landmarkDate = new Date(timeObj.fullTime);
+      const deltaSeconds =
+        (landmarkDate.getTime() - startDate.getTime()) / 1000;
+      return Math.max(0, Math.floor(deltaSeconds));
+    });
+  };
 
-  landmarkTimes.forEach((time, index) => {
-    const [hours, minutes] = time.split(':').map(Number);
-    const currentTimeInSeconds = hours * 3600 + minutes * 60;
-
-    if (index > 0) {
-      // If current time is earlier than previous time, we've crossed midnight
-      if (currentTimeInSeconds < previousTimeInSeconds) {
-        currentDay++;
-      }
-    }
-
-    // Calculate total delta including days
-    const totalDelta = (currentDay * 86400) + (currentTimeInSeconds - startTimeInSeconds);
-    deltas.push(totalDelta);
-    previousTimeInSeconds = currentTimeInSeconds;
-  });
-
-  return deltas;
-};
-
-  // Update UTC time value whenever local time changes
   useEffect(() => {
-    const utcTimeString = convertLocalToUTC(localHour, localMinute, amPm);
-    setValue("starting_time", utcTimeString);
-    console.log("UTC time set:", utcTimeString);
-  }, [localHour, localMinute, amPm, setValue]);
-
-  // Helper function to format time for display (12h AM/PM)
-  const formatTimeForDisplay = (time24h: string) => {
-    const [hours, minutes] = time24h.split(":").map(Number);
-    const period = hours >= 12 ? "PM" : "AM";
-    const displayHours = hours % 12 || 12;
-    return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
-  };
+    const { displayTime } = convertLocalToUTC(
+      localHour,
+      localMinute,
+      amPm,
+      startingDayOffset
+    );
+    const fullTime = displayTime + "Z";
+    setValue("starting_time", fullTime);
+    onStartingTimeChange(fullTime); // Notify parent component
+  }, [
+    localHour,
+    localMinute,
+    amPm,
+    startingDayOffset,
+    setValue,
+    onStartingTimeChange,
+  ]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -135,70 +147,94 @@ const BusRouteCreation = ({
     return () => clearInterval(interval);
   }, [mapRef]);
 
-  const handleRouteCreation: SubmitHandler<BusRouteFormInputs> = async (data) => {
-  if (!companyId) {
-    showErrorToast("Company ID is missing");
-    return;
-  }
+  const handleRouteCreation: SubmitHandler<BusRouteFormInputs> = async (
+    data
+  ) => {
+    if (!companyId) {
+      showErrorToast("Company ID is missing");
+      return;
+    }
 
-  setIsSubmitting(true);
+    setIsSubmitting(true);
 
-  try {
-    const routeFormData = new FormData();
-    routeFormData.append("company_id", companyId.toString());
-    routeFormData.append("name", data.name);
-    routeFormData.append("starting_time", data.starting_time);
+    try {
+      const routeFormData = new FormData();
+      routeFormData.append("company_id", companyId.toString());
+      routeFormData.append("name", data.name);
+      routeFormData.append("starting_time", data.starting_time);
 
-    const routeResponse = await dispatch(
-      routeCreationApi(routeFormData)
-    ).unwrap();
-    const routeId = routeResponse.id;
+      const routeResponse = await dispatch(
+        routeCreationApi(routeFormData)
+      ).unwrap();
+      const routeId = routeResponse.id;
 
-    const sortedLandmarks = [...landmarks].sort(
-      (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
-    );
-
-    // Extract all arrival and departure times
-    const arrivalTimes = sortedLandmarks.map(l => l.arrivalTime.replace('Z', ''));
-    const departureTimes = sortedLandmarks.map(l => l.departureTime.replace('Z', ''));
-    
-    // Calculate all deltas at once to properly track day progression
-    const startTime = data.starting_time.replace('Z', '');
-    const arrivalDeltas = calculateTimeDeltas(startTime, arrivalTimes);
-    const departureDeltas = calculateTimeDeltas(startTime, departureTimes);
-
-    const landmarkPromises = sortedLandmarks.map((landmark, index) => {
-      const landmarkFormData = new FormData();
-      landmarkFormData.append("route_id", routeId.toString());
-      landmarkFormData.append("landmark_id", landmark.id.toString());
-      landmarkFormData.append("sequence_id", (index + 1).toString());
-      landmarkFormData.append(
-        "distance_from_start",
-        landmark.distance_from_start?.toString() || "0"
+      const sortedLandmarks = [...landmarks].sort(
+        (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
       );
 
-      landmarkFormData.append("arrival_delta", arrivalDeltas[index].toString());
-      landmarkFormData.append("departure_delta", departureDeltas[index].toString());
+      // Calculate deltas using the new function
+      const arrivalDeltas = calculateTimeDeltas(
+        data.starting_time,
+        sortedLandmarks,
+        "arrival"
+      );
+      const departureDeltas = calculateTimeDeltas(
+        data.starting_time,
+        sortedLandmarks,
+        "departure"
+      );
 
-      return dispatch(routeLandmarkCreationApi(landmarkFormData)).unwrap();
-    });
+      console.log("Starting time:", data.starting_time);
+      console.log("Arrival deltas:", arrivalDeltas);
+      console.log("Departure deltas:", departureDeltas);
 
-    await Promise.all(landmarkPromises);
-    showSuccessToast("Route and landmarks created successfully");
-    reset();
-    onSuccess();
-    if (onClearRoute) onClearRoute();
-  } catch (error: unknown) {
-    console.error("Error in route creation process:", error);
-    showErrorToast(
-      typeof error === "object" && error !== null && "message" in error
-        ? (error as Error).message
-        : "Failed to create route and landmarks"
-    );
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      const landmarkPromises = sortedLandmarks.map((landmark, index) => {
+        const landmarkFormData = new FormData();
+        landmarkFormData.append("route_id", routeId.toString());
+        landmarkFormData.append("landmark_id", landmark.id.toString());
+        landmarkFormData.append("sequence_id", (index + 1).toString());
+        landmarkFormData.append(
+          "distance_from_start",
+          landmark.distance_from_start?.toString() || "0"
+        );
+
+        landmarkFormData.append(
+          "arrival_delta",
+          arrivalDeltas[index].toString()
+        );
+        landmarkFormData.append(
+          "departure_delta",
+          departureDeltas[index].toString()
+        );
+
+        return dispatch(routeLandmarkCreationApi(landmarkFormData)).unwrap();
+      });
+
+      await Promise.all(landmarkPromises);
+      showSuccessToast("Route and landmarks created successfully");
+      reset();
+      onSuccess();
+      if (onClearRoute) onClearRoute();
+    } catch (error) {
+      console.error("Error in route creation process:", error);
+      showErrorToast(
+        error instanceof Error
+          ? error.message
+          : "Failed to create route and landmarks"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const formatTimeForDisplay = (isoString: string) => {
+    const date = new Date(isoString);
+    const hours = date.getUTCHours();
+    const minutes = date.getUTCMinutes();
+    const period = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+  };
 
   return (
     <Box
@@ -249,7 +285,20 @@ const BusRouteCreation = ({
         <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
           Starting Time (IST)
         </Typography>
-        <Box sx={{ display: "flex", gap: 2 }}>
+        <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+          {/* Starting Day Offset - fixed to Day 0 */}
+          <FormControl fullWidth size="small">
+            <InputLabel>Starting Day Offset</InputLabel>
+            <Select
+              value={0} // hardcoded to Day 0
+              label="Starting Day Offset"
+              disabled // disables dropdown interaction
+            >
+              <MenuItem value={0}>Day 1</MenuItem>
+            </Select>
+          </FormControl>
+
+          {/* Hour */}
           <FormControl fullWidth size="small">
             <InputLabel>Hour</InputLabel>
             <Select
@@ -265,6 +314,7 @@ const BusRouteCreation = ({
             </Select>
           </FormControl>
 
+          {/* Minute */}
           <FormControl fullWidth size="small">
             <InputLabel>Minute</InputLabel>
             <Select
@@ -280,6 +330,7 @@ const BusRouteCreation = ({
             </Select>
           </FormControl>
 
+          {/* AM/PM */}
           <FormControl fullWidth size="small">
             <InputLabel>AM/PM</InputLabel>
             <Select
@@ -420,7 +471,9 @@ const BusRouteCreation = ({
                             />
                             <span>
                               Arrive:{" "}
-                              {formatTimeForDisplay(landmark.arrivalTime)}
+                              {formatTimeForDisplay(
+                                landmark.arrivalTime.fullTime
+                              )}
                             </span>
                           </Box>
                           <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -433,7 +486,9 @@ const BusRouteCreation = ({
                             />
                             <span>
                               Depart:{" "}
-                              {formatTimeForDisplay(landmark.departureTime)}
+                              {formatTimeForDisplay(
+                                landmark.departureTime.fullTime
+                              )}
                             </span>
                           </Box>
                         </Box>

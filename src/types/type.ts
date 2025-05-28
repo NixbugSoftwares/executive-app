@@ -36,12 +36,27 @@ export interface SelectedLandmark {
   name: string;
   sequenceId?: number;
   starting_time: string;
-  arrivalTime: string;
-  departureTime: string;
+
+  // Final UTC-converted times
+  arrivalTime: { fullTime: string };
+  departureTime: { fullTime: string };
+
+  // Day offsets and deltas
+  arrivalDayOffset: number; 
+  departureDayOffset: number;
   arrivalDelta: number;
   departureDelta: number;
   distance_from_start: number;
+
+  // These are needed during the conversion
+  arrivalHour?: number;
+  arrivalMinute?: number;
+  arrivalAmPm?: "AM" | "PM";
+  departureHour?: number;
+  departureMinute?: number;
+  departureAmPm?: "AM" | "PM";
 }
+
 
 export interface RouteLandmark {
   id: number;
@@ -50,13 +65,11 @@ export interface RouteLandmark {
   starting_time: string;
   arrival_delta: string;
   departure_delta: string;
-  
-  arrivalTime: string;
-  departureTime: string;
+  arrivalTime: {  fullTime: string };
+  departureTime: { fullTime: string };
   distance_from_start?: number;
   sequence_id?: number;
 }
-
 
 export interface Fare {
   id: number;

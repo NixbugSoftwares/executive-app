@@ -76,7 +76,10 @@ const BusRouteListing = () => {
   const [newRouteLandmarks, setNewRouteLandmarks] = useState<
     SelectedLandmark[]
   >([]);
-  
+  const [routeStartingTime, setRouteStartingTime] = useState('');
+    const handleStartingTimeChange = (time: string) => {
+    setRouteStartingTime(time);
+  };
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -99,6 +102,8 @@ const BusRouteListing = () => {
           name: routes.name,
           starting_time: routes.starting_time,
         }));
+        console.log("formattedRoutes", formattedRoutes);
+        
         setRouteList(formattedRoutes);
       })
       .catch((err: any) => {
@@ -121,7 +126,6 @@ const BusRouteListing = () => {
           const processed = response.map((lm: any) => ({
             id: lm.landmark_id,
             name: lm.name,
-            sequenceId: lm.sequence_id,
             arrivalTime: lm.arrival_delta,
             departureTime: lm.departure_delta,
             distance_from_start: lm.distance_from_start ?? 0,
@@ -260,7 +264,7 @@ const BusRouteListing = () => {
           <BusRouteDetailsPage
             routeId={selectedRoute.id}
             routeName={selectedRoute.name}
-            routeStartingTime={selectedRoute.starting_time}
+            routeStartingTime={`1970-01-01T${selectedRoute.starting_time}`}
             refreshList={(value: any) => refreshList(value)}
             routeManagePermission={canManageRoutes}
             onBack={() => {
@@ -282,10 +286,6 @@ const BusRouteListing = () => {
             onCancelEdit={() => setIsEditingRoute(false)}
             newLandmarks={newRouteLandmarks}
             setNewLandmarks={setNewRouteLandmarks}
-            onNewLandmarkAdded={(landmark) => {
-              setNewRouteLandmarks((prev) => [...prev, landmark]);
-              setMapLandmarks((prev) => [...prev, landmark]);
-            }}
           />
         ) : showCreationForm ? (
           <>
@@ -306,6 +306,8 @@ const BusRouteListing = () => {
               onCancel={toggleCreationForm}
               onClearRoute={() => mapRef.current?.clearRoutePath()}
               mapRef={mapRef} 
+              onStartingTimeChange={handleStartingTimeChange}
+
             />
           </>
         ) : (
@@ -574,7 +576,7 @@ const BusRouteListing = () => {
           mode={selectedRoute ? "view" : "create"}
           isEditing={isEditingRoute}
           selectedLandmarks={isEditingRoute ? newRouteLandmarks : landmarks}
-          
+           startingTime={routeStartingTime} 
         />
       </Box>
 

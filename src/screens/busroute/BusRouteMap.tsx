@@ -45,8 +45,10 @@ interface MapComponentProps {
   onClearRoute?: () => void;
   landmarks: SelectedLandmark[];
   selectedLandmarks: SelectedLandmark[];
-  mode: "create" | "view";
+  mode: "create" | "view" | "edit";
   isEditing?: boolean;
+  startingTime?: string;
+  isNewRoute?: boolean;
 }
 
 const MapComponent = React.forwardRef(
@@ -57,6 +59,7 @@ const MapComponent = React.forwardRef(
       mode,
       isEditing,
       selectedLandmarks,
+      startingTime,
     }: MapComponentProps,
     ref
   ) => {
@@ -78,7 +81,6 @@ const MapComponent = React.forwardRef(
     const [isAddingLandmark, setIsAddingLandmark] = useState(false);
     const selectInteractionRef = useRef<OlSelect | null>(null);
     const routeCoordsRef = useRef<Coordinate[]>([]);
-
     // Time selection states
     const [arrivalHour, setArrivalHour] = useState<number>(12);
     const [arrivalMinute, setArrivalMinute] = useState<number>(30);
@@ -86,7 +88,10 @@ const MapComponent = React.forwardRef(
     const [departureHour, setDepartureHour] = useState<number>(12);
     const [departureMinute, setDepartureMinute] = useState<number>(30);
     const [departureAmPm, setDepartureAmPm] = useState<string>("AM");
-
+    const [arrivalDayOffset, setArrivalDayOffset] = useState<number>(0);
+    const [departureDayOffset, setDepartureDayOffset] = useState<number>(0);
+    const [isFirstLandmark, setIsFirstLandmark] = useState(false);
+    const [showTimeError, setShowTimeError] = useState<string>("");
     // Initialize the map
     const initializeMap = () => {
       if (!mapRef.current) return null;
@@ -124,101 +129,12 @@ const MapComponent = React.forwardRef(
 
       return map;
     };
-
-    // Convert local time (IST) to UTC time string
-    const convertLocalToUTC = (
-      hour: number,
-      minute: number,
-      period: string
-    ) => {
-      let utcHour = hour;
-      if (period === "PM" && hour !== 12) {
-        utcHour += 12;
-      } else if (period === "AM" && hour === 12) {
-        utcHour = 0;
-      }
-      return `${utcHour.toString().padStart(2, "0")}:${minute
-        .toString()
-        .padStart(2, "0")}:00Z`;
-    };
-
     useEffect(() => {
       if (!mapInstance.current) {
         mapInstance.current = initializeMap();
       }
       fetchLandmark();
     }, []);
-
-    useEffect(() => {
-      if (mode === "view") {
-        handleViewModeLandmarks();
-      }
-    }, [propLandmarks, mode]);
-
-    useEffect(() => {
-      if (isEditing !== undefined) {
-        setIsAddingLandmark(isEditing);
-        setShowAllBoundaries(isEditing);
-      }
-    }, [isEditing]);
-
-    useEffect(() => {
-      if (!mapInstance.current) return;
-
-      const layers = mapInstance.current.getLayers().getArray();
-      const allBoundariesLayer =
-        layers[1] instanceof VectorLayer ? layers[1] : null;
-
-      if (!allBoundariesLayer) return;
-
-      if (isAddingLandmark) {
-        if (selectInteractionRef.current) {
-          mapInstance.current.removeInteraction(selectInteractionRef.current);
-        }
-        const selectInteraction = new OlSelect({
-          layers: [allBoundariesLayer],
-        });
-
-        selectInteraction.on("select", (e) => {
-          const selectedFeature = e.selected[0];
-          if (selectedFeature) {
-            const landmarkId = selectedFeature.get("id");
-            const landmark = landmarks.find((lm) => lm.id === landmarkId);
-
-            if (landmark) {
-              setSelectedLandmark({
-                id: landmark.id,
-                name: landmark.name,
-                distance_from_start:
-                  selectedLandmarks.length === 0
-                    ? 0
-                    : Math.max(
-                        ...selectedLandmarks.map(
-                          (l) => l.distance_from_start || 0
-                        )
-                      ) + 100,
-              });
-              setIsModalOpen(true);
-            }
-          }
-          selectInteraction.getFeatures().clear();
-        });
-
-        mapInstance.current.addInteraction(selectInteraction);
-        selectInteractionRef.current = selectInteraction;
-      } else {
-        if (selectInteractionRef.current) {
-          mapInstance.current.removeInteraction(selectInteractionRef.current);
-          selectInteractionRef.current = null;
-        }
-      }
-
-      return () => {
-        if (selectInteractionRef.current) {
-          mapInstance.current?.removeInteraction(selectInteractionRef.current);
-        }
-      };
-    }, [isAddingLandmark, landmarks]);
 
     const handleViewModeLandmarks = () => {
       selectedLandmarksSource.current.clear();
@@ -300,7 +216,82 @@ const MapComponent = React.forwardRef(
         });
       }
     };
+    useEffect(() => {
+      if (mode === "view") {
+        handleViewModeLandmarks();
+      }
+    }, [propLandmarks, mode]);
 
+    useEffect(() => {
+      if (isEditing !== undefined) {
+        setIsAddingLandmark(isEditing);
+        setShowAllBoundaries(isEditing);
+      }
+    }, [isEditing]);
+
+    useEffect(() => {
+      if (!mapInstance.current) return;
+
+      const layers = mapInstance.current.getLayers().getArray();
+      const allBoundariesLayer =
+        layers[1] instanceof VectorLayer ? layers[1] : null;
+
+      if (!allBoundariesLayer) return;
+
+      if (isAddingLandmark) {
+        if (selectInteractionRef.current) {
+          mapInstance.current.removeInteraction(selectInteractionRef.current);
+        }
+        const selectInteraction = new OlSelect({
+          layers: [allBoundariesLayer],
+        });
+
+        selectInteraction.on("select", (e) => {
+          const selectedFeature = e.selected[0];
+          if (selectedFeature) {
+            const landmarkId = selectedFeature.get("id");
+            const landmark = landmarks.find((lm) => lm.id === landmarkId);
+
+            if (landmark) {
+              setSelectedLandmark({
+                id: landmark.id,
+                name: landmark.name,
+                distance_from_start:
+                  selectedLandmarks.length === 0
+                    ? 0
+                    : Math.max(
+                        ...selectedLandmarks.map(
+                          (l) => l.distance_from_start || 0
+                        )
+                      ) + 100,
+              });
+              setIsModalOpen(true);
+            }
+          }
+          selectInteraction.getFeatures().clear();
+        });
+
+        mapInstance.current.addInteraction(selectInteraction);
+        selectInteractionRef.current = selectInteraction;
+      } else {
+        if (selectInteractionRef.current) {
+          mapInstance.current.removeInteraction(selectInteractionRef.current);
+          selectInteractionRef.current = null;
+        }
+      }
+
+      return () => {
+        if (selectInteractionRef.current) {
+          mapInstance.current?.removeInteraction(selectInteractionRef.current);
+        }
+      };
+    }, [isAddingLandmark, landmarks]);
+
+    const extractRawPoints = (polygonString: string): string => {
+      if (!polygonString) return "";
+      const matches = polygonString.match(/\(\((.*?)\)\)/);
+      return matches ? matches[1] : "";
+    };
     const fetchLandmark = () => {
       dispatch(landmarkListApi())
         .unwrap()
@@ -322,12 +313,6 @@ const MapComponent = React.forwardRef(
         .catch((err: any) => {
           showErrorToast(err);
         });
-    };
-
-    const extractRawPoints = (polygonString: string): string => {
-      if (!polygonString) return "";
-      const matches = polygonString.match(/\(\((.*?)\)\)/);
-      return matches ? matches[1] : "";
     };
 
     useEffect(() => {
@@ -576,40 +561,6 @@ const MapComponent = React.forwardRef(
       }
     }, [propLandmarks, landmarks, selectedLandmarks, mode]);
 
-    const handleAddLandmark = () => {
-      if (
-        !arrivalHour ||
-        !arrivalMinute ||
-        !departureHour ||
-        !departureMinute
-      ) {
-        showErrorToast("Both departure and arrival times are required");
-        return;
-      }
-
-      const arrivalTimeUTC = convertLocalToUTC(
-        arrivalHour,
-        arrivalMinute,
-        arrivalAmPm
-      );
-      const departureTimeUTC = convertLocalToUTC(
-        departureHour,
-        departureMinute,
-        departureAmPm
-      );
-
-      const landmarkWithDistance = {
-        ...selectedLandmark,
-        arrivalTime: arrivalTimeUTC,
-        departureTime: departureTimeUTC,
-        distance_from_start: selectedLandmark?.distance_from_start,
-      };
-
-      onAddLandmark(landmarkWithDistance);
-      highlightSelectedLandmark(selectedLandmark.id.toString());
-      setIsModalOpen(false);
-    };
-
     const toggleAddLandmarkMode = () => {
       const newAddingState = !isAddingLandmark;
       setIsAddingLandmark(newAddingState);
@@ -655,6 +606,175 @@ const MapComponent = React.forwardRef(
         mapInstance.current?.render();
       }, 1100);
     };
+
+    //*************************************** time selection and logics for adding landmarks **********************************
+    const convertLocalToUTC = (
+      hour: number,
+      minute: number,
+      period: string,
+      dayOffset: number = 0
+    ) => {
+      let utcHour = hour;
+      if (period === "PM" && hour !== 12) {
+        utcHour += 12;
+      } else if (period === "AM" && hour === 12) {
+        utcHour = 0;
+      }
+
+      // ✅ Apply dayOffset directly to the day argument in Date.UTC()
+      const utcTime = new Date(
+        Date.UTC(1970, 0, 1 + dayOffset, utcHour, minute, 0)
+      );
+
+      return {
+        displayTime: utcTime.toISOString().slice(11, 19),
+        fullTime: utcTime.toISOString(),
+        dayOffset,
+        timestamp: utcTime.getTime(), // helpful for delta calculation
+      };
+    };
+
+    useEffect(() => {
+      // Only treat as first landmark if it's a new route creation (mode === "create")
+      const firstLandmark = mode === "create" && selectedLandmarks.length === 0;
+      setIsFirstLandmark(firstLandmark);
+
+      if (firstLandmark && startingTime) {
+        const timeStr = startingTime.replace("Z", "");
+        const [hours, minutes] = timeStr.split(":").map(Number);
+
+        // Convert to 12-hour format
+        const displayHours = hours % 12 || 12;
+        const period = hours >= 12 ? "PM" : "AM";
+
+        setArrivalHour(displayHours);
+        setArrivalMinute(minutes);
+        setArrivalAmPm(period);
+        setDepartureHour(displayHours);
+        setDepartureMinute(minutes);
+        setDepartureAmPm(period);
+        setArrivalDayOffset(0);
+        setDepartureDayOffset(0);
+      }
+    }, [selectedLandmarks.length, startingTime, mode]);
+    const validateTimes = () => {
+      return (
+        arrivalHour !== null &&
+        arrivalHour !== undefined &&
+        arrivalMinute !== null &&
+        arrivalMinute !== undefined &&
+        departureHour !== null &&
+        departureHour !== undefined &&
+        departureMinute !== null &&
+        departureMinute !== undefined
+      );
+    };
+    
+    const getTimestamp = (
+      hour: number,
+      minute: number,
+      amPm: string,
+      dayOffset: number
+    ): number => {
+      const h24 =
+        amPm === "PM" && hour !== 12
+          ? hour + 12
+          : amPm === "AM" && hour === 12
+          ? 0
+          : hour;
+      const date = new Date(2000, 0, 1 + dayOffset, h24, minute);
+      return date.getTime();
+    };
+
+    const handleAddLandmark = () => {
+      const arrivalTS = getTimestamp(
+        arrivalHour,
+        arrivalMinute,
+        arrivalAmPm,
+        arrivalDayOffset
+      );
+      const departureTS = getTimestamp(
+        departureHour,
+        departureMinute,
+        departureAmPm,
+        departureDayOffset
+      );
+
+      if (!validateTimes()) {
+        setShowTimeError("Both departure and arrival times are required");
+        return;
+      }
+      if (departureTS < arrivalTS) {
+        setShowTimeError("Departure time must be after or equal to arrival time.");
+        return;
+      } 
+        setShowTimeError("");
+
+      // For first landmark, force times to match starting time
+      if (isFirstLandmark && startingTime) {
+        const timeStr = startingTime.replace("Z", "");
+        const [hours, minutes] = timeStr.split(":").map(Number);
+
+        const arrivalUTC = convertLocalToUTC(
+          hours % 12 || 12,
+          minutes,
+          hours >= 12 ? "PM" : "AM",
+          0
+        );
+
+        const departureUTC = convertLocalToUTC(
+          hours % 12 || 12,
+          minutes,
+          hours >= 12 ? "PM" : "AM",
+          0
+        );
+
+        const landmarkWithDistance = {
+          ...selectedLandmark,
+          arrivalTime: arrivalUTC,
+          departureTime: departureUTC,
+          arrivalDayOffset: 0,
+          departureDayOffset: 0,
+          distance_from_start: 0, // Starting point has 0 distance
+        };
+
+        onAddLandmark(landmarkWithDistance);
+        setIsModalOpen(false);
+        return;
+      }
+
+      // Existing logic for non-first landmarks
+      const arrivalTimeUTC = convertLocalToUTC(
+        arrivalHour,
+        arrivalMinute,
+        arrivalAmPm,
+        arrivalDayOffset
+      );
+      const departureTimeUTC = convertLocalToUTC(
+        departureHour,
+        departureMinute,
+        departureAmPm,
+        departureDayOffset
+      );
+      const landmarkWithDistance = {
+        ...selectedLandmark,
+        arrivalTime: arrivalTimeUTC,
+        departureTime: departureTimeUTC,
+        arrivalDayOffset,
+        departureDayOffset,
+        distance_from_start: selectedLandmark?.distance_from_start,
+      };
+
+      onAddLandmark(landmarkWithDistance);
+      highlightSelectedLandmark(selectedLandmark.id.toString());
+      setIsModalOpen(false);
+    };
+
+    const handleClose = () => {
+  setShowTimeError("");
+  setIsModalOpen(false);
+};
+
 
     return (
       <Box height="100%">
@@ -736,12 +856,15 @@ const MapComponent = React.forwardRef(
             <Typography>ID: {selectedLandmark?.id}</Typography>
             <Box mb={2}>
               <Alert severity="info">
-                1. For the starting landmark, arrival and departure time must be
-                the same as the starting time.
-                <br />
-                2. For the ending landmark, arrival and departure time must be
-                the same.
+                {mode === "create" && isFirstLandmark
+                  ? "This is the starting landmark. Arrival and departure times are fixed to match the route's starting time."
+                  : "For ending landmarks, arrival and departure time must be the same."}
               </Alert>
+              {showTimeError && (
+  <Box mb={2}>
+    <Alert severity="error">{showTimeError}</Alert>
+  </Box>
+)}
             </Box>
 
             <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
@@ -749,11 +872,31 @@ const MapComponent = React.forwardRef(
             </Typography>
             <Box sx={{ display: "flex", gap: 2 }}>
               <FormControl fullWidth size="small">
+                <InputLabel>Day</InputLabel>
+                <Select
+                  value={arrivalDayOffset}
+                  onChange={(e) =>
+                    !isFirstLandmark &&
+                    setArrivalDayOffset(Number(e.target.value))
+                  }
+                  label="Day"
+                  disabled={isFirstLandmark}
+                >
+                  {Array.from({ length: 10 }, (_, i) => (
+                    <MenuItem key={i} value={i}>{`Day ${i + 1}`}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth size="small">
                 <InputLabel>Hour</InputLabel>
                 <Select
                   value={arrivalHour}
-                  onChange={(e) => setArrivalHour(Number(e.target.value))}
+                  onChange={(e) =>
+                    !isFirstLandmark && setArrivalHour(Number(e.target.value))
+                  }
                   label="Hour"
+                  disabled={isFirstLandmark}
                 >
                   {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
                     <MenuItem key={h} value={h}>
@@ -767,8 +910,11 @@ const MapComponent = React.forwardRef(
                 <InputLabel>Minute</InputLabel>
                 <Select
                   value={arrivalMinute}
-                  onChange={(e) => setArrivalMinute(Number(e.target.value))}
+                  onChange={(e) =>
+                    !isFirstLandmark && setArrivalMinute(Number(e.target.value))
+                  }
                   label="Minute"
+                  disabled={isFirstLandmark}
                 >
                   {Array.from({ length: 60 }, (_, i) => i).map((m) => (
                     <MenuItem key={m} value={m}>
@@ -782,8 +928,11 @@ const MapComponent = React.forwardRef(
                 <InputLabel>AM/PM</InputLabel>
                 <Select
                   value={arrivalAmPm}
-                  onChange={(e) => setArrivalAmPm(e.target.value as string)}
+                  onChange={(e) =>
+                    !isFirstLandmark && setArrivalAmPm(e.target.value as string)
+                  }
                   label="AM/PM"
+                  disabled={isFirstLandmark}
                 >
                   <MenuItem value="AM">AM</MenuItem>
                   <MenuItem value="PM">PM</MenuItem>
@@ -796,11 +945,27 @@ const MapComponent = React.forwardRef(
             </Typography>
             <Box sx={{ display: "flex", gap: 2 }}>
               <FormControl fullWidth size="small">
+                <InputLabel>Day</InputLabel>
+                <Select
+                  value={departureDayOffset}
+                  onChange={(e) =>
+                    setDepartureDayOffset(Number(e.target.value))
+                  }
+                  label="Day"
+                  disabled={isFirstLandmark}
+                >
+                  {Array.from({ length: 10 }, (_, i) => (
+                    <MenuItem key={i} value={i}>{`Day ${i + 1}`}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth size="small">
                 <InputLabel>Hour</InputLabel>
                 <Select
                   value={departureHour}
                   onChange={(e) => setDepartureHour(Number(e.target.value))}
                   label="Hour"
+                  disabled={isFirstLandmark}
                 >
                   {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
                     <MenuItem key={h} value={h}>
@@ -816,6 +981,7 @@ const MapComponent = React.forwardRef(
                   value={departureMinute}
                   onChange={(e) => setDepartureMinute(Number(e.target.value))}
                   label="Minute"
+                  disabled={isFirstLandmark}
                 >
                   {Array.from({ length: 60 }, (_, i) => i).map((m) => (
                     <MenuItem key={m} value={m}>
@@ -831,6 +997,7 @@ const MapComponent = React.forwardRef(
                   value={departureAmPm}
                   onChange={(e) => setDepartureAmPm(e.target.value as string)}
                   label="AM/PM"
+                  disabled={isFirstLandmark}
                 >
                   <MenuItem value="AM">AM</MenuItem>
                   <MenuItem value="PM">PM</MenuItem>
@@ -856,16 +1023,11 @@ const MapComponent = React.forwardRef(
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleClose} >Cancel</Button>
             <Button
               onClick={handleAddLandmark}
               color="primary"
-              disabled={
-                !arrivalHour ||
-                !arrivalMinute ||
-                !departureHour ||
-                !departureMinute
-              }
+              disabled={!validateTimes()}
             >
               Add
             </Button>
