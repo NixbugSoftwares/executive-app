@@ -639,10 +639,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
                   disabled={!canManageLandmark}
                   sx={{
                     backgroundColor: !canManageLandmark
-                      ? "#6c87b7 !important"
-                      : isDrawing
-                      ? "#a923d1  !important"
-                      : "#3f51b5 !important",
+                  ? "#6c87b7 !important"
+                  : "#00008B",
+                color: "white",
+                "&.Mui-disabled": {
+                  backgroundColor: "#6c87b7 !important",
+                  color: "#ffffff99",
+                },
                   }}
                 >
                   {isDrawing ? "Disable " : "Add Landmark"}

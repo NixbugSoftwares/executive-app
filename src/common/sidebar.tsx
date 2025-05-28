@@ -18,11 +18,12 @@ import { useNavigate, useLocation, useParams } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
 import Diversity3Icon from "@mui/icons-material/Diversity3";
-import ModeOfTravelIcon from "@mui/icons-material/ModeOfTravel";
+// import ModeOfTravelIcon from "@mui/icons-material/ModeOfTravel";
 import RoomIcon from "@mui/icons-material/Room";
 import EngineeringIcon from "@mui/icons-material/Engineering";
 import RouteIcon from "@mui/icons-material/Route";
-import CorporateFareIcon from "@mui/icons-material/CorporateFare";
+import CalculateIcon from "@mui/icons-material/Calculate";
+// import CorporateFareIcon from "@mui/icons-material/CorporateFare";
 import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
 import BusinessIcon from "@mui/icons-material/Business";
 import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew";
@@ -118,15 +119,15 @@ const Sidebar: React.FC = () => {
             path: "/executive/landmark",
             icon: <RoomIcon />,
           },
-          {
-            label: "Bus Stop",
-            path: "/executive/busstop",
-            icon: <ModeOfTravelIcon />,
-          },
+          // {
+          //   label: "Bus Stop",
+          //   path: "/executive/busstop",
+          //   icon: <ModeOfTravelIcon />,
+          // },
           {
             label: "Common Fare",
             path: "/executive/global-fare",
-            icon: <CorporateFareIcon />,
+            icon: <CalculateIcon />,
           },
         ],
       },
@@ -157,11 +158,11 @@ const Sidebar: React.FC = () => {
         path: `/executive/company/busroute${companyId ? `/${companyId}` : ""}`,
         icon: <RouteIcon />,
       },
-      {
-        label: "Fare",
-        path: `/executive/company/fare${companyId ? `/${companyId}` : ""}`,
-        icon: <CorporateFareIcon />,
-      },
+      // {
+      //   label: "Fare",
+      //   path: `/executive/company/fare${companyId ? `/${companyId}` : ""}`,
+      //   icon: <CorporateFareIcon />,
+      // },
     ],
     [companyId]
   );

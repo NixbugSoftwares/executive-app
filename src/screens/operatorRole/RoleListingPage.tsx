@@ -210,7 +210,7 @@ const RoleListingTable = () => {
                   display: "block",
                   backgroundColor: !canManageCompany
                     ? "#6c87b7 !important"
-                    : "#3f51b5",
+                    : "#00008B",
                   color: "white",
                   "&.Mui-disabled": {
                     backgroundColor: "#6c87b7 !important",
