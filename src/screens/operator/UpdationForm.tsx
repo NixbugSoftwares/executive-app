@@ -18,9 +18,11 @@ import {
   operatorRoleListApi,
   operatorRoleAssignUpdateApi,
   fetchOperatorRoleMappingApi,
+  operatorRoleAssignApi
 } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { showErrorToast, showSuccessToast, showWarningToast } from "../../common/toastMessageHelper";
 
 type operatorFormValues = {
   id: number;
@@ -32,7 +34,7 @@ type operatorFormValues = {
   gender?: number;
   status?: string;
   companyId?: number;
-  role: number;
+  role?: number;
   roleAssignmentId?: number;
 };
 
@@ -41,6 +43,7 @@ interface IOperatorUpdateFormProps {
   refreshList: (value: any) => void;
   operatorId: number;
   roleAssignmentId?: number;
+  onCloseDetailCard(): void;
 }
 
 const genderOptions = [
@@ -59,6 +62,7 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
   onClose,
   refreshList,
   operatorId,
+  onCloseDetailCard
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
@@ -66,6 +70,7 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
   const [operatorData, setOperatorData] = useState<operatorFormValues | null>(null);
   const [filteredRoles, setFilteredRoles] = useState<{ id: number; name: string }[]>([]);
   const [showPassword, setShowPassword] = useState(false);
+  const [roleMappingError, setRoleMappingError] = useState(false);
   
   const {
     register,
@@ -101,58 +106,57 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
         const operator = operators.find((r: any) => r.id === operatorId);
 
         if (operator) {
-          // Fetch role mapping
-          const roleMapping = await dispatch(
-            fetchOperatorRoleMappingApi(operatorId)
-          ).unwrap();
-          
+          const operatorFormData: operatorFormValues = {
+            id: operator.id,
+            username: operator.username,
+            password: operator.password,
+            fullName: operator.full_name,
+            phoneNumber: operator.phone_number
+              ? operator.phone_number.replace(/\D/g, "").replace(/^91/, "")
+              : "",
+            email: operator.email_id,
+            gender: operator.gender,
+            status: operator.status,
+            companyId: operator.company_id,
+          };
+
+          // Try to fetch role mapping, but don't fail if it doesn't exist
+          try {
+            const roleMapping = await dispatch(
+              fetchOperatorRoleMappingApi(operatorId)
+            ).unwrap();
+
+            if (roleMapping) {
+              operatorFormData.role = roleMapping.role_id;
+              operatorFormData.roleAssignmentId = roleMapping.id;
+            }
+          } catch (error: any) {
+            console.error("Role mapping error:", error);
+            setRoleMappingError(true);
+          }
+
           // Fetch roles for the operator's company
-          const companyRoles = await dispatch(
-            operatorRoleListApi(operator.company_id)
-          ).unwrap();
-          
-          setRoles(companyRoles.map((role: any) => ({
-            id: role.id,
-            name: role.name,
-            company_id: role.company_id
-          })));
-
-          setOperatorData({
-            id: operator.id,
-            username: operator.username,
-            password: operator.password,
-            fullName: operator.full_name,
-            phoneNumber: operator.phone_number
-              ? operator.phone_number.replace(/\D/g, "").replace(/^91/, "")
-              : "",
-            email: operator.email_id,
-            gender: operator.gender,
-            status: operator.status,
-            companyId: operator.company_id,
-            role: roleMapping.role_id,
-            roleAssignmentId: roleMapping.id,
+          try {
+            const companyRoles = await dispatch(
+              operatorRoleListApi(operator.company_id)
+            ).unwrap();
             
-          });
+            setRoles(companyRoles.map((role: any) => ({
+              id: role.id,
+              name: role.name,
+              company_id: role.company_id
+            })));
 
-          reset({
-            id: operator.id,
-            username: operator.username,
-            password: operator.password,
-            fullName: operator.full_name,
-            phoneNumber: operator.phone_number
-              ? operator.phone_number.replace(/\D/g, "").replace(/^91/, "")
-              : "",
-            email: operator.email_id,
-            gender: operator.gender,
-            status: operator.status,
-            companyId: operator.company_id,
-            role: roleMapping.role_id,
-            roleAssignmentId: roleMapping.id,
-          });
+            setOperatorData(operatorFormData);
+            reset(operatorFormData);
+          } catch (error) {
+            console.error("Error fetching roles:", error);
+            showErrorToast("Failed to fetch roles for this company");
+          }
         }
       } catch (error) {
         console.error("Error fetching operator data:", error);
-        alert("Failed to fetch operator data. Please try again.");
+        showErrorToast("Failed to fetch operator data. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -186,49 +190,98 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
         formData.append("status", data.status.toString());
       }
 
+      // Step 1: Update operator
       const operatorResponse = await dispatch(
         operatorupdationApi({ operatorId, formData })
       ).unwrap();
 
       if (!operatorResponse || !operatorResponse.id) {
-        alert("Account update failed! Please try again.");
+        showErrorToast("Operator update failed! Please try again.");
         onClose();
         return;
       }
 
-      if (data.roleAssignmentId && data.role) {
+      // Step 2: Handle role assignment
+      if (data.role) {
         try {
-          const roleUpdateResponse = await dispatch(
-            operatorRoleAssignUpdateApi({
-              id: data.roleAssignmentId,
-              role_id: data.role,
-            })
-          ).unwrap();
+          // If we have a roleAssignmentId, try to update
+          if (data.roleAssignmentId) {
+            const roleUpdateResponse = await dispatch(
+              operatorRoleAssignUpdateApi({
+                id: data.roleAssignmentId,
+                role_id: data.role,
+              })
+            ).unwrap();
 
-          if (!roleUpdateResponse || !roleUpdateResponse.id) {
-            alert("Account updated, but role assignment update failed!");
-            onClose();
-            return;
+            if (!roleUpdateResponse || !roleUpdateResponse.id) {
+              throw new Error("Role assignment update failed");
+            }
+          } else {
+            // If no roleAssignmentId, create a new role assignment
+            const createResponse = await dispatch(
+              operatorRoleAssignApi({
+                operator_id: operatorId,
+                role_id: data.role,
+              })
+            ).unwrap();
+
+            if (!createResponse || !createResponse.id) {
+              showErrorToast(
+                "Operator updated, but role assignment creation failed!"
+              );
+            }
           }
-        } catch (roleError) {
-          console.error("Error during role assignment update:", roleError);
-          alert("Account updated, but role assignment update failed!");
+        } catch (error) {
+          // If update fails, try to create a new role assignment
+          try {
+            const createResponse = await dispatch(
+              operatorRoleAssignApi({
+                operator_id: operatorId,
+                role_id: data.role,
+              })
+            ).unwrap();
+
+            if (!createResponse || !createResponse.id) {
+              showErrorToast(
+                "Operator updated, but role assignment creation failed!"
+              );
+            }
+          } catch (createError) {
+            showErrorToast("Operator updated, but role assignment failed!");
+          }
         }
+      } else {
+        showWarningToast("No role selected. Skipping role assignment.");
       }
 
-      alert("Account updated successfully!");
+      showSuccessToast("Operator updated successfully!");
+      onCloseDetailCard();
       refreshList("refresh");
       onClose();
     } catch (error) {
       console.error("Error updating operator:", error);
-      alert("Failed to update operator. Please try again.");
+      showErrorToast("Failed to update operator");
     } finally {
       setLoading(false);
     }
   };
 
   if (!operatorData) {
-    return <CircularProgress />;
+    return (
+      <Container component="main" maxWidth="xs">
+        <CssBaseline />
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100vh",
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
   }
 
   return (
@@ -245,6 +298,11 @@ const OperatorUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
         <Typography component="h1" variant="h5">
           Update Operator
         </Typography>
+        {roleMappingError && (
+          <Typography color="error" variant="body2" sx={{ mt: 2 }}>
+            Note: Previous role assignment not found. Please select a new role.
+          </Typography>
+        )}
         <Box
           component="form"
           noValidate

@@ -18,11 +18,12 @@ import { useNavigate, useLocation, useParams } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
 import Diversity3Icon from "@mui/icons-material/Diversity3";
-import ModeOfTravelIcon from "@mui/icons-material/ModeOfTravel";
+// import ModeOfTravelIcon from "@mui/icons-material/ModeOfTravel";
 import RoomIcon from "@mui/icons-material/Room";
 import EngineeringIcon from "@mui/icons-material/Engineering";
 import RouteIcon from "@mui/icons-material/Route";
-import CorporateFareIcon from "@mui/icons-material/CorporateFare";
+import CalculateIcon from "@mui/icons-material/Calculate";
+// import CorporateFareIcon from "@mui/icons-material/CorporateFare";
 import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
 import BusinessIcon from "@mui/icons-material/Business";
 import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew";
@@ -31,16 +32,19 @@ import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { useTheme, useMediaQuery } from "@mui/material";
 import LogoutConfirmationModal from "./logoutModal";
 import LoggedInUser from "./UserDetails";
+import { companyListApi } from "../slices/appSlice";
+import type { AppDispatch } from "../store/Store";
+import { useDispatch } from "react-redux";
 
 // Styled component for smooth transitions
 const StableCollapse = styled(Collapse)({
-  transition: "height 267ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
   "&.MuiCollapse-hidden": {
     visibility: "visible", // Prevents visual glitches
   },
 });
 
 const Sidebar: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const location = useLocation();
   const { companyId } = useParams();
@@ -48,6 +52,7 @@ const Sidebar: React.FC = () => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isUserSectionOpen, setIsUserSectionOpen] = useState(false);
   const [isCompanySectionOpen, setIsCompanySectionOpen] = useState(false);
+  const [companyName, setCompanyName] = useState("");
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -62,6 +67,40 @@ const Sidebar: React.FC = () => {
       location.pathname.startsWith("/executive/company/fare"),
     [companyId, location.pathname]
   );
+
+  // Fetch company name when companyId changes
+  // Updated fetchCompanyName useEffect
+  useEffect(() => {
+    const fetchCompanyName = async () => {
+      if (companyId) {
+        try {
+          console.log("Fetching company name for ID:", companyId);
+          const response = await dispatch(companyListApi()).unwrap();
+          console.log("API Response:", response);
+          const companies = response.data || response;
+          const company = companies.find(
+            (c: any) =>
+              String(c.id) === String(companyId) || c._id === companyId
+          );
+
+          if (company) {
+            console.log("Found company:", company);
+            setCompanyName(company.name || company.companyName || "");
+          } else {
+            console.warn("Company not found in response");
+            setCompanyName("");
+          }
+        } catch (error) {
+          console.error("Failed to fetch company list:", error);
+          setCompanyName("");
+        }
+      } else {
+        setCompanyName("");
+      }
+    };
+
+    fetchCompanyName();
+  }, [companyId, dispatch]);
 
   // Stable sections data
   const sections = useMemo(
@@ -80,10 +119,15 @@ const Sidebar: React.FC = () => {
             path: "/executive/landmark",
             icon: <RoomIcon />,
           },
+          // {
+          //   label: "Bus Stop",
+          //   path: "/executive/busstop",
+          //   icon: <ModeOfTravelIcon />,
+          // },
           {
-            label: "Bus Stop",
-            path: "/executive/busstop",
-            icon: <ModeOfTravelIcon />,
+            label: "Common Fare",
+            path: "/executive/global-fare",
+            icon: <CalculateIcon />,
           },
         ],
       },
@@ -114,11 +158,11 @@ const Sidebar: React.FC = () => {
         path: `/executive/company/busroute${companyId ? `/${companyId}` : ""}`,
         icon: <RouteIcon />,
       },
-      {
-        label: "Fare",
-        path: `/executive/company/fare${companyId ? `/${companyId}` : ""}`,
-        icon: <CorporateFareIcon />,
-      },
+      // {
+      //   label: "Fare",
+      //   path: `/executive/company/fare${companyId ? `/${companyId}` : ""}`,
+      //   icon: <CorporateFareIcon />,
+      // },
     ],
     [companyId]
   );
@@ -261,7 +305,7 @@ const Sidebar: React.FC = () => {
                   </ListItem>
                 ))}
 
-                <ListItem disablePadding>
+                <ListItem disablePadding sx={{ flexDirection: "column" }}>
                   <ListItemButton
                     onClick={handleCompanyClick}
                     sx={{
@@ -273,6 +317,7 @@ const Sidebar: React.FC = () => {
                       "&:hover": {
                         backgroundColor: "#E3F2FD",
                       },
+                      width: "100%",
                     }}
                   >
                     <ListItemIcon>
@@ -286,6 +331,23 @@ const Sidebar: React.FC = () => {
                         <ExpandMoreIcon />
                       ))}
                   </ListItemButton>
+                  {companyName && (
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        pl: 4,
+                        py: 1,
+                        color: "text.secondary",
+                        fontStyle: "italic",
+                        width: "100%",
+                        textOverflow: "ellipsis",
+                        overflow: "hidden",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {companyName}
+                    </Typography>
+                  )}
                 </ListItem>
 
                 <StableCollapse
@@ -315,7 +377,7 @@ const Sidebar: React.FC = () => {
                   </Avatar>
                 </ListItemIcon>
                 <ListItemText primary="User" />
-                {isUserSectionOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                {isUserSectionOpen ? <ExpandMoreIcon /> : <ExpandLessIcon />}
               </ListItemButton>
             </ListItem>
 

@@ -26,18 +26,8 @@ import AccountCreationForm from "./AccountForm";
 import type { AppDispatch } from "../../store/Store";
 import localStorageHelper from "../../utils/localStorageHelper";
 import { showErrorToast } from "../../common/toastMessageHelper";
+import { Account } from "../../types/type";
 
-interface Account {
-  id: number;
-  fullName: string;
-  username: string;
-  password: string;
-  gender: string;
-  designation: string;
-  email: string;
-  phoneNumber: string;
-  status: string;
-}
 
 const AccountListingTable = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -67,7 +57,6 @@ const AccountListingTable = () => {
           id: account.id,
           fullName: account.full_name,
           username: account.username,
-          password: "",
           gender:
             account.gender === 1
               ? "Female"
@@ -189,7 +178,7 @@ const AccountListingTable = () => {
                 display: "block",
                 backgroundColor: !canManageExecutive
                   ? "#6c87b7 !important"
-                  : "#3f51b5",
+                  : "#00008B",
                 color: "white",
                 "&.Mui-disabled": {
                   backgroundColor: "#6c87b7 !important",
@@ -428,6 +417,7 @@ const AccountListingTable = () => {
                   .map((row) => {
                     const isSelected = selectedAccount?.id === row.id;
                     return (
+                      
                       <TableRow
                         key={row.id}
                         hover

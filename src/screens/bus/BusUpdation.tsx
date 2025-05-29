@@ -12,13 +12,13 @@ import {
 import { useAppDispatch } from "../../store/Hooks";
 import { busUpdationApi, busListApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
+import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
 
 type BusFormValues = {
   id: number;
   registration_number: string;
   name: string;
   capacity: number;
-  model: string;
   status?: string;
   manufactured_on: string;
   insurance_upto?: string | null;
@@ -30,6 +30,7 @@ interface IOperatorUpdateFormProps {
   onClose: () => void;
   refreshList: (value: any) => void;
   busId: number;
+  onCloseDetailCard(): void;
 }
 
 const statusOptions = [
@@ -42,6 +43,7 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
   onClose,
   refreshList,
   busId,
+  onCloseDetailCard,
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
@@ -82,7 +84,7 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
         }
       } catch (error) {
         console.error("Error fetching bus data:", error);
-        alert("Failed to fetch bus data. Please try again.");
+        showSuccessToast("Failed to fetch bus data. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -107,7 +109,6 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
       formData.append("registration_number", data.registration_number);
       formData.append("name", data.name);
       formData.append("capacity", data.capacity.toString());
-      formData.append("model", data.model);
       formData.append("manufactured_on", formatDateToUTC(data.manufactured_on) || "");
       if (data.insurance_upto) formData.append("insurance_upto", formatDateToUTC(data.insurance_upto) || "");
       if (data.pollution_upto) formData.append("pollution_upto", formatDateToUTC(data.pollution_upto) || "");
@@ -118,7 +119,6 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
         registration_number: data.registration_number,
         name: data.name,
         capacity: data.capacity,
-        model: data.model,
         manufactured_on: formatDateToUTC(data.manufactured_on),
         insurance_upto: formatDateToUTC(data.insurance_upto??null),
         pollution_upto: formatDateToUTC(data.pollution_upto??null),
@@ -126,14 +126,15 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
         status: data.status,
       });
 
-      const updateResponse = await dispatch(busUpdationApi({ busId, formData })).unwrap();
-      console.log("Bus updated:", updateResponse);
-      alert("Bus updated successfully!");
+      await dispatch(busUpdationApi({ busId, formData })).unwrap();
+      
+      showSuccessToast("Bus updated successfully!");
+      onCloseDetailCard();
       refreshList("refresh");
       onClose();
     } catch (error) {
       console.error("Error updating bus:", error);
-      alert("Failed to update bus. Please try again.");
+      showErrorToast("Failed to update bus. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -193,16 +194,7 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             helperText={errors.capacity?.message}
             size="small"
           />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Model"
-            {...register("model")}
-            error={!!errors.model}
-            helperText={errors.model?.message}
-            size="small"
-          />
+          
           <Controller
             name="status"
             control={control}

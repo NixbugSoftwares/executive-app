@@ -38,6 +38,7 @@ interface Role {
   manageSchedule?: boolean;
   manageService?: boolean;
   manageDuty?: boolean;
+  manageFare?: boolean;
 }
 
 const RoleListingTable = () => {
@@ -66,6 +67,7 @@ const RoleListingTable = () => {
           manageSchedule: role.manage_schedule,
           manageService: role.manage_service,
           manageDuty: role.manage_duty,
+          manageFare: role.manage_fare,
         }));
         setRoleList(formattedRoles);
       })
@@ -138,8 +140,10 @@ const RoleListingTable = () => {
           flex: selectedRole ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
           maxWidth: selectedRole ? { xs: "100%", md: "65%" } : "100%",
           transition: "all 0.3s ease",
-          overflowX: "auto",
-          overflowY: "auto",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
         }}
       >
         {/* Create Role Button */}
@@ -160,7 +164,7 @@ const RoleListingTable = () => {
                 display: "block",
                 backgroundColor: !canManageRole
                   ? "#6c87b7 !important"
-                  : "#3f51b5",
+                  : "#00008B",
                 color: "white",
                 "&.Mui-disabled": {
                   backgroundColor: "#6c87b7 !important",
@@ -200,14 +204,14 @@ const RoleListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: "1rem",
+                        fontSize: selectedRole ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: "1rem",
+                        fontSize: selectedRole ? "0.8rem" : "1rem",
                       },
                     }}
                   />
@@ -233,14 +237,14 @@ const RoleListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
-                        fontSize: "1rem",
+                        fontSize: selectedRole ? "0.8rem" : "1rem",
                       },
                       "& .MuiInputBase-input": {
                         textAlign: "center",
-                        fontSize: "1rem",
+                        fontSize: selectedRole ? "0.8rem" : "1rem",
                       },
                     }}
                   />
@@ -256,6 +260,7 @@ const RoleListingTable = () => {
                   "Schedule",
                   "Service",
                   "Duty",
+                  "Fare"
                 ].map((permission) => (
                   <TableCell
                     key={permission}
@@ -323,6 +328,7 @@ const RoleListingTable = () => {
                           "manageSchedule",
                           "manageService",
                           "manageDuty",
+                          "manageFare",
                         ].map((key) => (
                           <TableCell key={key} align="center">
                             {row[key as keyof Role] ? (
@@ -350,11 +356,16 @@ const RoleListingTable = () => {
         <Box
           sx={{
             display: "flex",
-            justifyContent: "right",
-            alignItems: "right",
+            justifyContent: "center",
+            alignItems: "center",
             gap: 1,
-            mt: 1,
-            mr: 20,
+            mt: 2,
+            position: "sticky",
+            bottom: 0,
+            backgroundColor: "white",
+            zIndex: 1,
+            p: 1,
+            borderTop: "1px solid #e0e0e0",
           }}
         >
           <Button
@@ -381,13 +392,13 @@ const RoleListingTable = () => {
                   minWidth: 40,
                   bgcolor:
                     page === pageNumber
-                      ? "rgba(97, 97, 97, 0.2)"
+                      ? "rgba(21, 101, 192, 0.2)"
                       : "transparent",
                   fontWeight: page === pageNumber ? "bold" : "normal",
                   borderRadius: "5px",
                   transition: "all 0.3s",
                   "&:hover": {
-                    bgcolor: "rgba(97, 97, 97, 0.3)",
+                    bgcolor: "rgba(21, 101, 192, 0.3)",
                   },
                 }}
               >
@@ -432,12 +443,7 @@ const RoleListingTable = () => {
       )}
 
       {/* Create Role Modal */}
-      <Dialog
-        open={openCreateModal}
-        onClose={handleCloseModal}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={openCreateModal} onClose={handleCloseModal} maxWidth="sm">
         <DialogContent>
           <RoleCreatingForm
             onClose={handleCloseModal}

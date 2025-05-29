@@ -20,7 +20,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Point } from "ol/geom";
-import { Style, Icon } from "ol/style";
+import { Style, Icon, Text } from "ol/style";
 import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { useNavigate } from "react-router-dom";
@@ -201,6 +201,19 @@ const MapComponent: React.FC<MapComponentProps> = ({
             scale: 0.1,
             anchor: [0.5, 1],
           }),
+          text: new Text({
+            text: selectedBuststop.name || 'Bus Stop', 
+            font: 'bold 12px Arial',
+            fill: new Fill({
+              color: '#000000'
+            }),
+            stroke: new Stroke({
+              color: '#FFFFFF',
+              width: 3
+            }),
+            offsetY: -25, 
+            textAlign: 'center'
+          })
         })
       );
       vectorSource.current.addFeature(feature);
@@ -284,6 +297,19 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 scale: 0.1,
                 anchor: [0.5, 1],
               }),
+              text: new Text({
+                text: busStop.name || 'Bus Stop', 
+                font: 'bold 12px Arial',
+                fill: new Fill({
+                  color: '#000000'
+                }),
+                stroke: new Stroke({
+                  color: '#FFFFFF',
+                  width: 3
+                }),
+                offsetY: -25, 
+                textAlign: 'center'
+              })
             })
           );
 

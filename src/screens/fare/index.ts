@@ -1,2 +1,2 @@
 
-export { default as Fare } from './Fare';
+export { default as GlobalFare } from './Fare';

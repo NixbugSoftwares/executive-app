@@ -8,7 +8,6 @@ import {
   InputAdornment,
   IconButton,
   Button,
-  Typography,
   Container,
   CssBaseline,
   CircularProgress,
@@ -90,14 +89,12 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
     setShowPassword((prev) => !prev);
   };
 
-  // Handle Account Creation & Role Assignment
   const handleAccountCreation: SubmitHandler<IAccountFormInputs> = async (
     data
   ) => {
     try {
       setLoading(true);
 
-      // Prepare form data for account creation
       const formData = new FormData();
       formData.append("username", data.username);
       formData.append("password", data.password);
@@ -121,7 +118,6 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
         accountCreationApi(formData)
       ).unwrap();
       if (accountResponse?.id) {
-        // Assign role to the created account
         const roleResponse = await dispatch(
           roleAssignApi({
             executive_id: accountResponse.id,
@@ -157,9 +153,6 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
           alignItems: "center",
         }}
       >
-        <Typography component="h1" variant="h5">
-          Account Creation
-        </Typography>
         <Box
           component="form"
           noValidate
@@ -198,55 +191,6 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
               ),
             }}
           />
-          <TextField
-            margin="normal"
-            fullWidth
-            label="Full Name"
-            {...register("fullName")}
-            error={!!errors.fullName}
-            helperText={errors.fullName?.message}
-            size="small"
-          />
-          <Controller
-            name="phoneNumber"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                margin="normal"
-                fullWidth
-                label="Phone Number"
-                placeholder="+911234567890"
-                size="small"
-                error={!!errors.phoneNumber}
-                helperText={errors.phoneNumber?.message}
-                value={field.value ? `+91${field.value}` : ""}
-                onChange={(e) => {
-                  let value = e.target.value.replace(/^\+91/, ""); // Remove +91 if manually entered
-                  value = value.replace(/\D/g, ""); // Ensure only digits
-                  if (value.length > 10) value = value.slice(0, 10); // Limit to 10 digits
-                  field.onChange(value || undefined); // Remove if empty
-                }}
-                onFocus={() => {
-                  if (!field.value) field.onChange(""); // Ensure empty field is editable
-                }}
-                onBlur={() => {
-                  if (field.value === "") field.onChange(undefined); // Remove field if empty
-                }}
-              />
-            )}
-          />
-
-          <TextField
-            margin="normal"
-            fullWidth
-            label="Email"
-            placeholder="example@gmail.com"
-            {...register("email")}
-            error={!!errors.email}
-            helperText={errors.email?.message}
-            size="small"
-          />
-
           <Controller
             name="role"
             control={control}
@@ -270,6 +214,54 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
                 ))}
               </TextField>
             )}
+          />
+          <TextField
+            margin="normal"
+            fullWidth
+            label="Full Name"
+            {...register("fullName")}
+            error={!!errors.fullName}
+            helperText={errors.fullName?.message}
+            size="small"
+          />
+          <Controller
+            name="phoneNumber"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                margin="normal"
+                fullWidth
+                label="Phone Number"
+                placeholder="+911234567890"
+                size="small"
+                error={!!errors.phoneNumber}
+                helperText={errors.phoneNumber?.message}
+                value={field.value ? `+91${field.value}` : ""}
+                onChange={(e) => {
+                  let value = e.target.value.replace(/^\+91/, "");
+                  value = value.replace(/\D/g, "");
+                  if (value.length > 10) value = value.slice(0, 10);
+                  field.onChange(value || undefined);
+                }}
+                onFocus={() => {
+                  if (!field.value) field.onChange("");
+                }}
+                onBlur={() => {
+                  if (field.value === "") field.onChange(undefined);
+                }}
+              />
+            )}
+          />
+
+          <TextField
+            margin="normal"
+            fullWidth
+            label="Email"
+            placeholder="example@gmail.com"
+            {...register("email")}
+            error={!!errors.email}
+            helperText={errors.email?.message}
+            size="small"
           />
 
           <TextField

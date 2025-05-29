@@ -15,6 +15,7 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  Chip,
 } from "@mui/material";
 import { useDispatch } from "react-redux";
 import { companyListApi } from "../../slices/appSlice";
@@ -23,6 +24,10 @@ import localStorageHelper from "../../utils/localStorageHelper";
 import CompanyDetailsCard from "./CompanyDetailsCard";
 import CompanyCreationForm from "./CompanyCreationForm";
 import { showWarningToast } from "../../common/toastMessageHelper";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import WarningIcon from "@mui/icons-material/Warning";
+import BlockIcon from "@mui/icons-material/Block";
+import ErrorIcon from "@mui/icons-material/Error";
 
 interface Company {
   id: number;
@@ -33,6 +38,7 @@ interface Company {
   address: string;
   email: string;
   status: string;
+  companyType: string;
 }
 
 const CompanyListingTable = () => {
@@ -69,18 +75,18 @@ const CompanyListingTable = () => {
           ownerName: company.contact_person,
           phoneNumber: company.phone_number ?? "-",
           email: company.email_id ?? "-",
+          companyType: company.type === 1 ? "private" : "government",
           status:
-          company.status === 1
-            ? "Validating"
-            : company.status === 2
-            ? "Verified"
-            : "Suspended",
+            company.status === 1
+              ? "Validating"
+              : company.status === 2
+              ? "Verified"
+              : "Suspended",
         }));
         setCompanyList(formattedAccounts);
-        
       })
       .catch((err: any) => {
-        showWarningToast("Error fetching companies:"+ err);
+        showWarningToast("Error fetching companies:" + err);
       });
   };
 
@@ -145,13 +151,13 @@ const CompanyListingTable = () => {
 
   return (
     <Box
-      sx={{
-        display: "flex",
-        flexDirection: { xs: "column", md: "row" },
-        width: "100%",
-        height: "100vh",
-        gap: 2,
-      }}
+    sx={{
+      display: "flex",
+      flexDirection: { xs: "column", md: "row" },
+      width: "100%",
+      height: "100vh",
+      gap: 2,
+    }}
     >
       <Box
         sx={{
@@ -160,7 +166,10 @@ const CompanyListingTable = () => {
             : "0 0 100%",
           maxWidth: selectedCompany ? { xs: "100%", md: "65%" } : "100%",
           transition: "all 0.3s ease",
-          overflowY: selectedCompany ? "auto" : "hidden",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
         }}
       >
         <Tooltip
@@ -182,7 +191,7 @@ const CompanyListingTable = () => {
                 display: "block",
                 backgroundColor: !canManageCompany
                   ? "#6c87b7 !important"
-                  : "#187b48",
+                  : "#00008B",
                 color: "white",
                 "&.Mui-disabled": {
                   backgroundColor: "#6c87b7 !important",
@@ -221,7 +230,7 @@ const CompanyListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedCompany ? "0.8rem" : "1rem",
@@ -254,7 +263,7 @@ const CompanyListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedCompany ? "0.8rem" : "1rem",
@@ -286,7 +295,7 @@ const CompanyListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedCompany ? "0.8rem" : "1rem",
@@ -319,7 +328,7 @@ const CompanyListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedCompany ? "0.8rem" : "1rem",
@@ -351,7 +360,7 @@ const CompanyListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedCompany ? "0.8rem" : "1rem",
@@ -383,7 +392,7 @@ const CompanyListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedCompany ? "0.8rem" : "1rem",
@@ -394,6 +403,11 @@ const CompanyListingTable = () => {
                       },
                     }}
                   />
+                </TableCell>
+                <TableCell>
+                  <Box display="flex" justifyContent="center">
+                    <b>Status</b>
+                  </Box>
                 </TableCell>
               </TableRow>
             </TableHead>
@@ -409,13 +423,13 @@ const CompanyListingTable = () => {
               {filteredData.length > 0 ? (
                 filteredData
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row) => {
-                    const isSelected = selectedCompany?.id === row.id;
+                  .map((company) => {
+                    const isSelected = selectedCompany?.id === company.id;
                     return (
                       <TableRow
-                        key={row.id}
+                        key={company.id}
                         hover
-                        onClick={() => handleRowClick(row)}
+                        onClick={() => handleRowClick(company)}
                         sx={{
                           cursor: "pointer",
                           backgroundColor: isSelected
@@ -432,14 +446,82 @@ const CompanyListingTable = () => {
                           },
                         }}
                       >
-                        <TableCell>{row.id}</TableCell>
-                        <TableCell>{row.name}</TableCell>
-                        <TableCell>{row.address}</TableCell>
-                        <TableCell>{row.ownerName}</TableCell>
+                        <TableCell>{company.id}</TableCell>
+                        <TableCell>{company.name}</TableCell>
+                        <TableCell>{company.address}</TableCell>
+                        <TableCell>{company.ownerName}</TableCell>
                         <TableCell>
-                          {row.phoneNumber.replace("tel:", "")}
+                          {company.phoneNumber.replace("tel:", "")}
                         </TableCell>
-                        <TableCell>{row.email}</TableCell>
+                        <TableCell>
+                          {company.email ? (
+                            company.email
+                          ) : (
+                            <Tooltip
+                              title=" Email not added yet"
+                              placement="bottom"
+                            >
+                              <ErrorIcon sx={{ color: "#737d72 " }} />
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {company.status === "Validating" && (
+                            <Chip
+                              icon={<WarningIcon />}
+                              label="Validating"
+                              color="warning"
+                              size="small"
+                              sx={{
+                                backgroundColor:
+                                  selectedCompany?.id === company.id
+                                    ? "#edd18f"
+                                    : "#FFE082",
+                                color:
+                                  selectedCompany?.id === company.id
+                                    ? "#9f3b03"
+                                    : "#9f3b03",
+                                fontWeight: "bold",
+                              }}
+                            />
+                          )}
+                          {company.status === "Suspended" && (
+                            <Chip
+                              icon={<BlockIcon />}
+                              label="Suspended"
+                              color="error"
+                              size="small"
+                              sx={{
+                                backgroundColor:
+                                  selectedCompany?.id === company.id
+                                    ? "#FFCDD2"
+                                    : "#FFEBEE",
+                                color: "#D32F2F",
+                                fontWeight: "bold",
+                              }}
+                            />
+                          )}
+
+                          {company.status === "Verified" && (
+                            <Chip
+                              icon={<CheckCircleIcon />}
+                              label="Verified"
+                              color="success"
+                              size="small"
+                              sx={{
+                                backgroundColor:
+                                  selectedCompany?.id === company.id
+                                    ? "#A5D6A7"
+                                    : "#E8F5E9",
+                                color:
+                                  selectedCompany?.id === company.id
+                                    ? "#2E7D32"
+                                    : "#2E7D32",
+                                fontWeight: "bold",
+                              }}
+                            />
+                          )}
+                        </TableCell>
                       </TableRow>
                     );
                   })
@@ -458,11 +540,16 @@ const CompanyListingTable = () => {
         <Box
           sx={{
             display: "flex",
-            justifyContent: "right",
-            alignItems: "right",
+            justifyContent: "center",
+            alignItems: "center",
             gap: 1,
-            mt: 1,
-            mr: 20,
+            mt: 2,
+            position: "sticky",
+            bottom: 0,
+            backgroundColor: "white",
+            zIndex: 1,
+            p: 1,
+            borderTop: "1px solid #e0e0e0",
           }}
         >
           <Button

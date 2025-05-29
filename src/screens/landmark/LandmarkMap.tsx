@@ -26,7 +26,7 @@ import { useNavigate } from "react-router-dom";
 import * as ol from "ol";
 import localStorageHelper from "../../utils/localStorageHelper";
 import { Coordinate } from "ol/coordinate";
-import { Style, Stroke, Fill } from "ol/style";
+import { Style, Stroke, Fill, Text } from "ol/style";
 import { Refresh } from "@mui/icons-material";
 import { getArea } from "ol/sphere";
 import Icon from "ol/style/Icon";
@@ -264,9 +264,21 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 scale: 0.1,
                 anchor: [0.5, 1],
               }),
+              text: new Text({
+                text: stop.name || 'Bus Stop', 
+                font: 'bold 12px Arial',
+                fill: new Fill({
+                  color: '#000000'
+                }),
+                stroke: new Stroke({
+                  color: '#FFFFFF',
+                  width: 3
+                }),
+                offsetY: -25, 
+                textAlign: 'center'
+              })
             })
           );
-  
           features.push(busStopFeature);
         });
     }
@@ -627,10 +639,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
                   disabled={!canManageLandmark}
                   sx={{
                     backgroundColor: !canManageLandmark
-                      ? "#6c87b7 !important"
-                      : isDrawing
-                      ? "#a923d1  !important"
-                      : "#3f51b5 !important",
+                  ? "#6c87b7 !important"
+                  : "#00008B",
+                color: "white",
+                "&.Mui-disabled": {
+                  backgroundColor: "#6c87b7 !important",
+                  color: "#ffffff99",
+                },
                   }}
                 >
                   {isDrawing ? "Disable " : "Add Landmark"}

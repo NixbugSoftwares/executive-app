@@ -25,6 +25,7 @@ interface Role {
   manage_role?: boolean;
   manage_operator?: boolean;
   manage_company?: boolean;
+  manage_fare?: boolean;
 }
 
 interface Company {
@@ -38,7 +39,7 @@ const RoleListingTable = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [roleList, setRoleList] = useState<Role[]>([]);
   const [companyList, setCompanyList] = useState<Company[]>([]);
-  const [selectRole, setSelectedRole] = useState<Role | null>(null);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [search, setSearch] = useState({ id: "", Rolename: "", companyName: "" });
   const [filterCompanyId, setFilterCompanyId] = useState<number | null>(companyId ? parseInt(companyId) : null);
@@ -74,6 +75,7 @@ const RoleListingTable = () => {
           manage_role: role.manage_role,
           manage_operator: role.manage_operator,
           manage_company: role.manage_company,
+          manage_fare: role.manage_fare,
         }));
         setRoleList(formattedRoles);
       })
@@ -118,7 +120,7 @@ const RoleListingTable = () => {
   );
 
   const [page, setPage] = useState(0);
-  const rowsPerPage = selectRole ? 7 : 6;
+  const rowsPerPage = selectedRole ? 7 : 6;
 
   const handleChangePage = (
     _event: React.MouseEvent<HTMLButtonElement> | null,
@@ -143,6 +145,9 @@ const RoleListingTable = () => {
   const handleCloseModal = () => {
     setOpenCreateModal(false);
   };
+  const handleCloseDetailCard = () => {
+    setSelectedRole(null);
+  };
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
@@ -163,8 +168,8 @@ const RoleListingTable = () => {
       {/* Table Section */}
       <Box
         sx={{
-          flex: selectRole ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
-          maxWidth: selectRole ? { xs: "100%", md: "65%" } : "100%",
+          flex: selectedRole ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
+          maxWidth: selectedRole ? { xs: "100%", md: "65%" } : "100%",
           transition: "all 0.3s ease",
           overflowX: "auto",
           overflowY: "auto",
@@ -183,7 +188,7 @@ const RoleListingTable = () => {
           <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
             {filterCompanyId && (
               <Typography variant="body2" color="textSecondary">
-                Showing roles for company: {companyList.find(c => c.id === filterCompanyId)?.name || filterCompanyId}
+                Company Name: {companyList.find(c => c.id === filterCompanyId)?.name || filterCompanyId}
               </Typography>
             )}
           </Box>
@@ -199,10 +204,16 @@ const RoleListingTable = () => {
             <span style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}>
               <Button
                 sx={{
-                  backgroundColor: !canManageCompany ? "#6c87b7" : "#187b48",
+                  ml: "auto",
+                  mr: 2,
+                  mb: 2,
+                  display: "block",
+                  backgroundColor: !canManageCompany
+                    ? "#6c87b7 !important"
+                    : "#00008B",
                   color: "white",
                   "&.Mui-disabled": {
-                    backgroundColor: "#6c87b7",
+                    backgroundColor: "#6c87b7 !important",
                     color: "#ffffff99",
                   },
                 }}
@@ -231,8 +242,14 @@ const RoleListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
+                        textAlign: "center",
+                        fontSize: selectedRole ? "0.8rem" : "1rem",
+                      },
+                      "& .MuiInputBase-input": {
+                        textAlign: "center",
+                        fontSize: selectedRole ? "0.8rem" : "1rem",
                       },
                     }}
                   />
@@ -249,14 +266,20 @@ const RoleListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
+                        textAlign: "center",
+                        fontSize: selectedRole ? "0.8rem" : "1rem",
+                      },
+                      "& .MuiInputBase-input": {
+                        textAlign: "center",
+                        fontSize: selectedRole ? "0.8rem" : "1rem",
                       },
                     }}
                   />
                 </TableCell>
 
-                {["Bus", "Route", "Schedule", "Role", "Operator", "Company"].map((permission) => (
+                {["Operator", "Role","Bus", "Company", "Route", "Schedule", "Fare"].map((permission) => (
                   <TableCell key={permission} align="center">
                     <b style={{ display: "block", textAlign: "center" }}>Manage {permission}</b>
                   </TableCell>
@@ -269,7 +292,7 @@ const RoleListingTable = () => {
                 filteredData
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((row) => {
-                    const isSelected = selectRole?.id === row.id;
+                    const isSelected = selectedRole?.id === row.id;
                     return (
                       <TableRow
                         key={row.id}
@@ -291,6 +314,7 @@ const RoleListingTable = () => {
                           "manage_role",
                           "manage_operator",
                           "manage_company",
+                          "manage_fare"
                         ].map((key) => (
                           <TableCell key={key} align="center">
                             {row[key as keyof Role] ? (
@@ -373,7 +397,7 @@ const RoleListingTable = () => {
       </Box>
 
       {/* Role Details Card */}
-      {selectRole && (
+      {selectedRole && (
         <Box
           sx={{
             flex: { xs: "0 0 100%", md: "0 0 35%" },
@@ -384,12 +408,13 @@ const RoleListingTable = () => {
           }}
         >
           <RoleDetailsCard
-            role={selectRole}
+            role={selectedRole}
             onUpdate={() => {}}
             onDelete={() => {}}
             onBack={() => setSelectedRole(null)}
             refreshList={refreshList}
             canManageCompany={canManageCompany}
+            handleCloseDetailCard={handleCloseDetailCard}
           />
         </Box>
       )}

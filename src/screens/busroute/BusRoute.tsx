@@ -1,15 +1,26 @@
-import React from 'react';
+import React from 'react'
 import { Sidebar } from "../../common";
 import { Box } from '@mui/material';
-const RoutePage: React.FC = () => {
-  return(
-    <Box>
+import BusRouteListing from './BusRouteListingpage';
+const BusRoutePage: React.FC = () => {
+  return (
+    <Box
+    sx={{
+      display: "flex",
+      height: "100%",
+      width: "100%",
+      scrollBehavior: "auto",
+    }}>
       <Sidebar/>
-      <h1>bus Route Page</h1>
+      <Box
+      sx={{ width: "100%", p: 3 }}
+      >
+      <BusRouteListing/>
+      </Box>
+      
+
     </Box>
-
   )
-  
-};
+}
 
-export default RoutePage;
+export default BusRoutePage

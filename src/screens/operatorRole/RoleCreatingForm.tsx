@@ -5,6 +5,7 @@ import { operatorRoleCreationApi, companyListApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { operatorRoleCreationSchema } from "../auth/validations/authValidation";
+import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
 
 type RoleFormValues = {
   name: string;
@@ -15,6 +16,7 @@ type RoleFormValues = {
   manage_role?: boolean;
   manage_operator?: boolean;
   manage_company?: boolean;
+  manage_fare?: boolean;
 };
 
 interface IRoleCreationFormProps {
@@ -45,6 +47,7 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({ onClose, refreshLi
       manage_role: false,
       manage_operator: false,
       manage_company: false,
+      manage_fare: false,
       
     },
   });
@@ -79,18 +82,19 @@ useEffect(() => {
       formData.append("manage_role", String(data.manage_role));
       formData.append("manage_operator", String(data.manage_operator));
       formData.append("manage_company", String(data.manage_company));
+      formData.append("manage_fare", String(data.manage_fare));
 
       const response = await dispatch(operatorRoleCreationApi(formData)).unwrap();
       if (response?.id) {
-        alert("Role created successfully!");
+        showSuccessToast("Role created successfully!");
         refreshList("refresh");
         onClose();
       } else {
-        alert("Role creation failed. Please try again.");
+        showErrorToast("Role creation failed. Please try again.");
       }
     } catch (error) {
       console.error("Error creating role:", error);
-      alert("Failed to create role. Please try again.");
+      showErrorToast("Failed to create role. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -160,6 +164,7 @@ useEffect(() => {
         "manage_role",
         "manage_operator",
         "manage_company",
+        "manage_fare",
       ] as (keyof RoleFormValues)[]).map((field) => (
         <Box key={field} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Typography>{field.replace("manage", "Manage ")}</Typography>

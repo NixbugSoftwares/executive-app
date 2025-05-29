@@ -7,7 +7,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   TextField,
   Box,
   Button,
@@ -37,7 +36,6 @@ interface Bus {
   pollution_upto: string;
   fitness_upto: string;
 }
-
 interface Company {
   id: number;
   name: string;
@@ -53,11 +51,8 @@ const BusListingTable = () => {
   const [busList, setBusList] = useState<Bus[]>([]);
   const [companyList, setCompanyList] = useState<Company[]>([]);
   const [selectedBus, setSelectedBus] = useState<Bus | null>(null);
-
   const [search, setSearch] = useState({
     id: "",
-    company_id: "",
-    company_name: "",
     registrationNumber: "",
     name: "",
     capacity: "",
@@ -66,17 +61,12 @@ const BusListingTable = () => {
 
   const [page, setPage] = useState(0);
   const rowsPerPage = selectedBus ? 8 : 8;
-
   const [openCreateModal, setOpenCreateModal] = useState(false);
-
   const roleDetails = localStorageHelper.getItem("@roleDetails");
-  console.log("rolesdetails>>>>>>>>>>>>>", roleDetails);
-
   const canManageCompany = roleDetails?.manage_company || false;
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const urlCompanyId = companyId || queryParams.get("companyId");
-
     if (urlCompanyId) {
       const id = parseInt(urlCompanyId);
       if (!isNaN(id)) {
@@ -85,15 +75,12 @@ const BusListingTable = () => {
     }
   }, [companyId, location.search]);
 
-  // Function to fetch accounts
   const fetchBus = () => {
     dispatch(busListApi(filterCompanyId))
       .unwrap()
       .then((res: any[]) => {
         console.log("API Response:", res);
-
-        // Transform API data to match expected structure
-        const formattedAccounts = res.map((bus: any) => ({
+        const formattedBusses = res.map((bus: any) => ({
           id: bus.id,
           companyId: bus.company_id,
           companyName: bus.company_name,
@@ -106,9 +93,7 @@ const BusListingTable = () => {
           pollution_upto: bus.pollution_upto ?? "-",
           fitness_upto: bus.fitness_upto ?? "-",
         }));
-
-        console.log("Formatted Accounts:", formattedAccounts);
-        setBusList(formattedAccounts);
+        setBusList(formattedBusses);
       })
       .catch((err: any) => {
         console.error("Error fetching accounts", err);
@@ -148,9 +133,6 @@ const BusListingTable = () => {
       (row.id?.toString()?.toLowerCase() || "").includes(
         search.id.toLowerCase()
       ) &&
-      (getCompanyName(row.companyId)?.toLowerCase() || "").includes(
-        search.company_name.toLowerCase()
-      ) &&
       (row.registrationNumber?.toLowerCase() || "").includes(
         search.registrationNumber.toLowerCase()
       ) &&
@@ -171,10 +153,12 @@ const BusListingTable = () => {
   const handleCloseModal = () => {
     setOpenCreateModal(false);
   };
+  const handleCloseDetailCard = () => {
+    setSelectedBus(null);
+  };
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      console.log("Account list refreshed...");
       fetchBus();
     }
   };
@@ -227,7 +211,7 @@ const BusListingTable = () => {
             title={
               !canManageCompany
                 ? "You don't have permission, contact the admin"
-                : "click to open the operator creation form"
+                : "click to open the Bus  creation form"
             }
             placement="top-end"
           >
@@ -236,9 +220,13 @@ const BusListingTable = () => {
             >
               <Button
                 sx={{
+                  ml: "auto",
+                  mr: 2,
+                  mb: 2,
+                  display: "block",
                   backgroundColor: !canManageCompany
                     ? "#6c87b7 !important"
-                    : "#187b48",
+                    : "#00008B",
                   color: "white",
                   "&.Mui-disabled": {
                     backgroundColor: "#6c87b7 !important",
@@ -249,14 +237,20 @@ const BusListingTable = () => {
                 onClick={() => setOpenCreateModal(true)}
                 disabled={!canManageCompany}
               >
-                Add Bus
+                Add New Bus
               </Button>
             </span>
           </Tooltip>
         </Box>
 
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 600 }}>
+        <TableContainer
+          sx={{
+            flex: 1,
+            maxHeight: "calc(100vh - 100px)",
+            overflowY: "hidden",
+          }}
+        >
+          <Table>
             <TableHead>
               <TableRow>
                 <TableCell>
@@ -276,9 +270,8 @@ const BusListingTable = () => {
                     value={search.id}
                     onChange={(e) => handleSearchChange(e, "id")}
                     sx={{
-                      width: 80,
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedBus ? "0.8rem" : "1rem",
@@ -290,7 +283,6 @@ const BusListingTable = () => {
                     }}
                   />
                 </TableCell>
-                
 
                 <TableCell>
                   <b
@@ -311,7 +303,7 @@ const BusListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedBus ? "0.8rem" : "1rem",
@@ -346,7 +338,7 @@ const BusListingTable = () => {
                     fullWidth
                     sx={{
                       "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedBus ? "0.8rem" : "1rem",
@@ -376,41 +368,8 @@ const BusListingTable = () => {
                     value={search.capacity}
                     onChange={(e) => handleSearchChange(e, "capacity")}
                     sx={{
-                      width: "100%",
                       "& .MuiInputBase-root": {
-                        height: 30,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedBus ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedBus ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-
-                <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedBus ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    Model
-                  </b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.model}
-                    onChange={(e) => handleSearchChange(e, "model")}
-                    sx={{
-                      width: "100%",
-                      "& .MuiInputBase-root": {
-                        height: 30,
+                        height: 40,
                         padding: "4px",
                         textAlign: "center",
                         fontSize: selectedBus ? "0.8rem" : "1rem",
@@ -446,16 +405,16 @@ const BusListingTable = () => {
                         sx={{
                           cursor: "pointer",
                           backgroundColor: isSelected
-                            ? "#1565C0 !important"
+                            ? "#E3F2FD !important"
                             : "inherit",
-                          color: isSelected ? "white !important" : "inherit",
+                          color: isSelected ? "black" : "black",
                           "&:hover": {
                             backgroundColor: isSelected
-                              ? "#1565C0 !important"
+                              ? "#E3F2FD !important"
                               : "#E3F2FD",
                           },
                           "& td": {
-                            color: isSelected ? "white !important" : "inherit",
+                            color: isSelected ? "black !important" : "black",
                           },
                         }}
                       >
@@ -463,14 +422,13 @@ const BusListingTable = () => {
                         <TableCell>{row.name}</TableCell>
                         <TableCell>{row.registrationNumber}</TableCell>
                         <TableCell>{row.capacity}</TableCell>
-                        <TableCell>{row.model}</TableCell>
                       </TableRow>
                     );
                   })
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} align="center">
-                    No accounts found.
+                    No Bus found.
                   </TableCell>
                 </TableRow>
               )}
@@ -482,11 +440,16 @@ const BusListingTable = () => {
         <Box
           sx={{
             display: "flex",
-            justifyContent: "right",
-            alignItems: "right",
+            justifyContent: "center",
+            alignItems: "center",
             gap: 1,
-            mt: 1,
-            mr: 20,
+            mt: 2,
+            position: "sticky",
+            bottom: 0,
+            backgroundColor: "white",
+            zIndex: 1,
+            p: 1,
+            borderTop: "1px solid #e0e0e0",
           }}
         >
           <Button
@@ -558,6 +521,7 @@ const BusListingTable = () => {
             onBack={() => setSelectedBus(null)}
             refreshList={(value: any) => refreshList(value)}
             canManageCompany={canManageCompany}
+            onCloseDetailCard={handleCloseDetailCard}
           />
         </Box>
       )}
@@ -573,6 +537,7 @@ const BusListingTable = () => {
             refreshList={(value: any) => refreshList(value)}
             onClose={handleCloseModal}
             defaultCompanyId={filterCompanyId ?? undefined}
+            companyList={companyList}
           />
         </DialogContent>
         <DialogActions>

@@ -24,7 +24,7 @@ import {
   operatorRoleListApi,
   operatorRoleAssignApi,
 } from "../../slices/appSlice";
-import { showErrorToast } from "../../common/toastMessageHelper";
+import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
 
 interface IAccountFormInputs {
   username: string;
@@ -160,11 +160,11 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
         ).unwrap();
 
         if (roleResponse?.id && roleResponse?.role_id) {
-          alert("Account and role assigned successfully!");
+          showSuccessToast("Account and role assigned successfully!");
           refreshList("refresh");
           onClose();
         } else {
-          alert("Account created, but role assignment failed!");
+          showErrorToast("Account created, but role assignment failed!");
         }
       } else {
         alert("Account creation failed!");
@@ -254,7 +254,7 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton onClick={handleTogglePassword} edge="end">
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                    {showPassword ? < Visibility /> : <VisibilityOff />}
                   </IconButton>
                 </InputAdornment>
               ),
@@ -384,7 +384,7 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
             {loading ? (
               <CircularProgress size={24} sx={{ color: "white" }} />
             ) : (
-              "Create Account"
+              "Create Operator"
             )}
           </Button>
         </Box>

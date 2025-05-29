@@ -17,7 +17,7 @@ import {
   FormControlLabel,
   Alert,
 } from "@mui/material";
-import { Diversity3 as Diversity3Icon } from "@mui/icons-material";
+import { Diversity3 as Diversity3Icon, ArrowBack as BackIcon, } from "@mui/icons-material";
 import { useAppDispatch } from "../../store/Hooks";
 import { roleDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
@@ -40,6 +40,7 @@ interface RoleCardProps {
     manageSchedule?: boolean;
     manageService?: boolean;
     manageDuty?: boolean;
+    manageFare?: boolean;
   };
   onBack: () => void;
   onUpdate: (id: number) => void;
@@ -163,19 +164,25 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
               color={role.manageDuty ? "success" : "error"}
               variant="outlined"
             />
+            <Chip
+              label={`Manage Fare: ${role.manageFare ? "Yes" : "No"}`}
+              color={role.manageFare ? "success" : "error"}
+              variant="outlined"
+            />
           </Box>
         </CardContent>
 
         {/* Action Buttons */}
         <CardActions sx={{ justifyContent: "space-between", gap: 1 }}>
-          <Button
-            size="small"
-            variant="contained"
-            color="primary"
-            onClick={onBack}
-          >
-            Back
-          </Button>
+         <Button
+                       variant="outlined"
+                       color="primary"
+                       size="small"
+                       onClick={onBack}
+                       startIcon={<BackIcon />}
+                     >
+                       Back
+                     </Button>
           <Tooltip
             title={
               !canManageRole

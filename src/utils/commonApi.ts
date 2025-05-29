@@ -12,7 +12,7 @@ const getAuthToken = async () => {
     const token = await localStorageHelper.getItem("@token");
     console.log("token=====================>", token);
 
-    const response = await axios.post( 
+    const response = await axios.patch( 
       `${base_URL}/executive/token`,
       { refreshToken: token }, 
       { headers: { Authorization: `Bearer ${token}` } }
@@ -46,7 +46,6 @@ const prepareHeaders = async (tokenNeeded: any) => {
           console.error("Token refresh failed. Logging out...", err);
           localStorageHelper.removeStoredItem("@token");
           localStorageHelper.removeStoredItem("@token_expiry");
-          window.location.href = "/login"; 
         }
       }
     }
