@@ -79,12 +79,15 @@ const BusRouteDetailsPage = ({
   const [routeLandmarks, setRouteLandmarks] = useState<RouteLandmark[]>([]);
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [routeLandmarkToDelete, setRouteLandmarkToDelete] =useState<RouteLandmark | null>(null);
+  const [routeLandmarkToDelete, setRouteLandmarkToDelete] =
+    useState<RouteLandmark | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [editingLandmark, setEditingLandmark] = useState<RouteLandmark | null>(null);
+  const [editingLandmark, setEditingLandmark] = useState<RouteLandmark | null>(
+    null
+  );
   const [updatedRouteName, setUpdatedRouteName] = useState(routeName);
-  const [localHour, setLocalHour] = useState<number>(12); 
+  const [localHour, setLocalHour] = useState<number>(12);
   const [localMinute, setLocalMinute] = useState<number>(0);
   const [amPm, setAmPm] = useState<string>("AM");
   const [arrivalHour, setArrivalHour] = useState<number>(12);
@@ -144,6 +147,17 @@ const BusRouteDetailsPage = ({
     : 0;
   const totalDuration = formatDuration(totalDurationSeconds);
 
+  function formatTimeForDisplayIST(isoString: string) {
+    const date = new Date(isoString);
+    // Add 5 hours 30 minutes to UTC to get IST
+    date.setUTCHours(date.getUTCHours() + 5, date.getUTCMinutes() + 30);
+    let hours = date.getUTCHours();
+    const minutes = date.getUTCMinutes();
+    const period = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+  }
+
   // Helper function to calculate actual time from starting time and delta seconds
   const calculateActualTime = (startingTime: string, deltaSeconds: string) => {
     if (!startingTime || !deltaSeconds) return "N/A";
@@ -161,18 +175,29 @@ const BusRouteDetailsPage = ({
       // Add delta seconds to starting time
       const resultDate = new Date(startDate.getTime() + delta * 1000);
 
-      // Calculate day offset
-      const dayOffset = Math.floor(delta / 86400);
+      // Add 5 hours 30 minutes to UTC to get IST
+      resultDate.setTime(resultDate.getTime() + (5 * 60 + 30) * 60 * 1000);
+      let hours = resultDate.getUTCHours();
+      const minutes = resultDate.getUTCMinutes();
+      const period = hours >= 12 ? "PM" : "AM";
+      const displayHours = hours % 12 || 12;
 
-      // Format as HH:MM AM/PM in UTC with day indicator
-      const timeStr = resultDate.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-        timeZone: "UTC",
-      });
+      // Calculate day offset (in IST)
+      const dayOffset = Math.floor(
+        (resultDate.getTime() - Date.UTC(1970, 0, 1)) / (86400 * 1000)
+      );
+      const userDay = dayOffset + 1;
 
-      return dayOffset > 0 ? `${timeStr} (Day +${dayOffset})` : timeStr;
+      // Suffix logic for 1st, 2nd, 3rd, etc.
+      let suffix = "th";
+      if (userDay % 10 === 1 && userDay % 100 !== 11) suffix = "st";
+      else if (userDay % 10 === 2 && userDay % 100 !== 12) suffix = "nd";
+      else if (userDay % 10 === 3 && userDay % 100 !== 13) suffix = "rd";
+
+      const timeStr = `${displayHours}:${minutes
+        .toString()
+        .padStart(2, "0")} ${period}`;
+      return `${timeStr} (${userDay}${suffix} day)`;
     } catch (e) {
       console.error("Error calculating actual time:", e);
       return "N/A";
@@ -185,22 +210,25 @@ const BusRouteDetailsPage = ({
     period: string,
     dayOffset: number = 0
   ) => {
-    let utcHour = hour;
+    let istHour = hour;
     if (period === "PM" && hour !== 12) {
-      utcHour += 12;
+      istHour += 12;
     } else if (period === "AM" && hour === 12) {
-      utcHour = 0;
+      istHour = 0;
     }
 
-    const utcTime = new Date(
-      Date.UTC(1970, 0, 1 + dayOffset, utcHour, minute, 0)
+    // Create IST date
+    const istDate = new Date(
+      Date.UTC(1970, 0, 1 + dayOffset, istHour, minute, 0)
     );
+    // Subtract 5 hours 30 minutes to get UTC
+    istDate.setTime(istDate.getTime() - (5 * 60 + 30) * 60 * 1000);
 
     return {
-      displayTime: utcTime.toISOString().slice(11, 19),
-      fullTime: utcTime.toISOString(),
+      displayTime: istDate.toISOString().slice(11, 19),
+      fullTime: istDate.toISOString(),
       dayOffset,
-      timestamp: utcTime.getTime(),
+      timestamp: istDate.getTime(),
     };
   };
 
@@ -223,66 +251,14 @@ const BusRouteDetailsPage = ({
 
   const formatTimeForDisplay = (isoString: string) => {
     const date = new Date(isoString);
-    const hours = date.getUTCHours();
+    // Add 5 hours 30 minutes to UTC to get IST
+    date.setUTCHours(date.getUTCHours() + 5, date.getUTCMinutes() + 30);
+    let hours = date.getUTCHours();
     const minutes = date.getUTCMinutes();
     const period = hours >= 12 ? "PM" : "AM";
     const displayHours = hours % 12 || 12;
     return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
   };
-
-  // const calculateTimeDeltas = (
-  //   startingTime: string,
-  //   landmarks: SelectedLandmark[],
-  //   timeType: "arrival" | "departure"
-  // ) => {
-  //   const startTimeStr = startingTime.endsWith("Z")
-  //     ? startingTime.slice(0, -1)
-  //     : startingTime;
-  //   const [startH, startM, startS] = startTimeStr.split(":").map(Number);
-  //   const startDate = new Date(Date.UTC(1970, 0, 1, startH, startM, startS));
-
-  //   return landmarks.map((landmark) => {
-  //     const timeObj =
-  //       timeType === "arrival" ? landmark.arrivalTime : landmark.departureTime;
-  //     const landmarkDate = new Date(timeObj.fullTime);
-  //     const deltaSeconds =
-  //       (landmarkDate.getTime() - startDate.getTime()) / 1000;
-  //     return Math.max(0, Math.floor(deltaSeconds));
-  //   });
-  // };
-
-  // const calculateTimeInSeconds = (timeString: string) => {
-  //   const [hours, minutes] = timeString.split(":").map(Number);
-  //   return hours * 3600 + minutes * 60;
-  // };
-
-  // const calculateDeltaWithDayOffset = (
-  //   startTime: string,
-  //   targetTime: string,
-  //   previousTime: string | null,
-  //   previousDelta: number | null
-  // ) => {
-  //   const startSeconds = calculateTimeInSeconds(startTime);
-  //   const targetSeconds = calculateTimeInSeconds(targetTime);
-
-  //   let dayOffset = 0;
-  //   if (previousTime && previousDelta !== null) {
-  //     const prevSeconds = calculateTimeInSeconds(previousTime);
-  //     if (targetSeconds < prevSeconds) {
-  //       // Crossed midnight
-  //       dayOffset = Math.floor(previousDelta / 86400) + 1;
-  //     } else {
-  //       dayOffset = Math.floor(previousDelta / 86400);
-  //     }
-  //   }
-
-  //   const delta = dayOffset * 86400 + (targetSeconds - startSeconds);
-  //   if (targetSeconds < startSeconds) {
-  //     // If target time is earlier than start time, add 24 hours
-  //     return delta + 86400;
-  //   }
-  //   return delta;
-  // };
 
   const updateParentMapLandmarks = (landmarks: RouteLandmark[]) => {
     const mapLandmarks = landmarks.map((lm) => ({
@@ -405,12 +381,27 @@ const BusRouteDetailsPage = ({
   };
 
   const handleLandmarkEditClick = (landmark: RouteLandmark) => {
-    // Calculate day offsets from the deltas
-    const arrivalDayOffset = Math.floor(
-      parseInt(landmark.arrival_delta || "0", 10) / 86400
+    const startDate = new Date(routeStartingTime);
+    const arrivalDate = new Date(
+      startDate.getTime() + parseInt(landmark.arrival_delta || "0", 10) * 1000
     );
+    arrivalDate.setTime(arrivalDate.getTime() + (5 * 60 + 30) * 60 * 1000); // Add IST offset
+    const arrivalDayOffset = Math.floor(
+      (arrivalDate.getTime() - Date.UTC(1970, 0, 1)) / (86400 * 1000)
+    );
+
+    const departureDate = new Date(
+      startDate.getTime() + parseInt(landmark.departure_delta || "0", 10) * 1000
+    );
+    departureDate.setTime(departureDate.getTime() + (5 * 60 + 30) * 60 * 1000);
     const departureDayOffset = Math.floor(
-      parseInt(landmark.departure_delta || "0", 10) / 86400
+      (departureDate.getTime() - Date.UTC(1970, 0, 1)) / (86400 * 1000)
+    );
+    console.log(
+      "arrival_delta:",
+      landmark.arrival_delta,
+      "arrivalDayOffset:",
+      arrivalDayOffset
     );
 
     setArrivalDayOffset(arrivalDayOffset);
@@ -420,11 +411,11 @@ const BusRouteDetailsPage = ({
     const arrivalTime = calculateActualTime(
       routeStartingTime,
       landmark.arrival_delta || "0"
-    ).split(" ")[0]; // Remove day indicator if present
+    ).split(" (")[0];
     const departureTime = calculateActualTime(
       routeStartingTime,
       landmark.departure_delta || "0"
-    ).split(" ")[0]; // Remove day indicator if present
+    ).split(" (")[0];
 
     // Parse the formatted time back to 12-hour format
     const parse12HourTime = (timeStr: string) => {
@@ -463,14 +454,16 @@ const BusRouteDetailsPage = ({
   // Initialize the time values when editMode becomes true
   useEffect(() => {
     if (editMode && routeStartingTime) {
-      // Extract time from routeStartingTime (format: "HH:MM:SS")
-      const timePart = routeStartingTime.includes("1970-01-01T")
-        ? routeStartingTime.replace("1970-01-01T", "").replace("Z", "")
-        : routeStartingTime;
-
-      const [hours, minutes] = timePart.split(":").map(Number);
-
-      // Convert to 12-hour format
+      // Extract time from routeStartingTime (format: "HH:MM:SS" or ISO)
+      let date = new Date(
+        routeStartingTime.includes("T")
+          ? routeStartingTime
+          : `1970-01-01T${routeStartingTime}Z`
+      );
+      // Convert to IST
+      date.setTime(date.getTime() + (5 * 60 + 30) * 60 * 1000);
+      const hours = date.getUTCHours();
+      const minutes = date.getUTCMinutes();
       setLocalHour(hours % 12 || 12);
       setLocalMinute(minutes);
       setAmPm(hours >= 12 ? "PM" : "AM");
@@ -590,21 +583,28 @@ const BusRouteDetailsPage = ({
     setDeleteConfirmOpen(true);
   };
 
-  const handleRouteLandmarkDelete = async () => {
-    if (!routeLandmarkToDelete) return;
-    try {
-      const formData = new FormData();
-      formData.append("id", routeLandmarkToDelete.id.toString());
-      await dispatch(routeLandmarkDeleteApi(formData)).unwrap();
-      showSuccessToast("Landmark removed from route successfully");
-      fetchRouteLandmarks();
-    } catch (error) {
-      showErrorToast("Failed to remove landmark from route");
-    } finally {
-      setDeleteConfirmOpen(false);
-      setRouteLandmarkToDelete(null);
+ const handleRouteLandmarkDelete = async () => {
+  if (!routeLandmarkToDelete) return;
+  try {
+    const formData = new FormData();
+    formData.append("id", routeLandmarkToDelete.id.toString());
+    const result = await dispatch(routeLandmarkDeleteApi(formData)).unwrap();
+
+    if (result && result.error) {
+      throw new Error(result.error);
     }
-  };
+
+    showSuccessToast("Landmark removed from route successfully");
+    fetchRouteLandmarks();
+  } catch (error) {
+    showErrorToast(
+      error instanceof Error ? error.message : "Failed to remove landmark from route"
+    );
+  } finally {
+    setDeleteConfirmOpen(false);
+    setRouteLandmarkToDelete(null);
+  }
+};
 
   return (
     <Box
@@ -802,7 +802,7 @@ const BusRouteDetailsPage = ({
                   <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
                     Starting:{" "}
                     <Box component="span" sx={{ fontWeight: 600 }}>
-                      {formatTimeForDisplay(routeStartingTime)}
+                      {formatTimeForDisplayIST(routeStartingTime)}
                     </Box>
                   </Typography>
                 </Box>
