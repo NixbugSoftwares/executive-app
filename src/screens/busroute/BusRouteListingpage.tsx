@@ -76,8 +76,8 @@ const BusRouteListing = () => {
   const [newRouteLandmarks, setNewRouteLandmarks] = useState<
     SelectedLandmark[]
   >([]);
-  const [routeStartingTime, setRouteStartingTime] = useState('');
-    const handleStartingTimeChange = (time: string) => {
+  const [routeStartingTime, setRouteStartingTime] = useState("");
+  const handleStartingTimeChange = (time: string) => {
     setRouteStartingTime(time);
   };
 
@@ -103,7 +103,7 @@ const BusRouteListing = () => {
           starting_time: routes.starting_time,
         }));
         console.log("formattedRoutes", formattedRoutes);
-        
+
         setRouteList(formattedRoutes);
       })
       .catch((err: any) => {
@@ -305,9 +305,12 @@ const BusRouteListing = () => {
               onSuccess={handleRouteCreated}
               onCancel={toggleCreationForm}
               onClearRoute={() => mapRef.current?.clearRoutePath()}
-              mapRef={mapRef} 
+              mapRef={mapRef}
               onStartingTimeChange={handleStartingTimeChange}
-
+              onClose={() => {
+                setShowCreationForm(false);
+                setLandmarks([]);
+              }}
             />
           </>
         ) : (
@@ -576,7 +579,7 @@ const BusRouteListing = () => {
           mode={selectedRoute ? "view" : "create"}
           isEditing={isEditingRoute}
           selectedLandmarks={isEditingRoute ? newRouteLandmarks : landmarks}
-           startingTime={routeStartingTime} 
+          startingTime={routeStartingTime}
         />
       </Box>
 

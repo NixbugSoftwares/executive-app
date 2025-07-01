@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Button,
   Box,
@@ -7,7 +7,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
-import { roleUpdationApi, roleListApi } from "../../slices/appSlice";
+import { roleUpdationApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import {
   showSuccessToast,
@@ -15,87 +15,45 @@ import {
 } from "../../common/toastMessageHelper";
 type RoleFormValues = {
   id: number;
-  name: string;
-  manageExecutive?: boolean;
-  manageRole?: boolean;
-  manageLandmark?: boolean;
-  manageCompany?: boolean;
-  manageVendor?: boolean;
-  manageRoute?: boolean;
-  manageSchedule?: boolean;
-  manageService?: boolean;
-  manageDuty?: boolean;
-  manageFare?: boolean;
+  name?: string;
+  manage_executive?: boolean;
+  manage_role?: boolean;
+  manage_landmark?: boolean;
+  manage_company?: boolean;
+  manage_vendor?: boolean;
+  manage_route?: boolean;
+  manage_schedule?: boolean;
+  manage_service?: boolean;
+  manage_duty?: boolean;
+  manage_fare?: boolean;
 };
 
 interface IRoleUpdateFormProps {
+  roleId: number;
+  roleData?: RoleFormValues; 
   onClose: () => void;
   refreshList: (value: any) => void;
-  roleId: number;
-  handleCloseDetailCard: () => void;
+  onCloseDetailCard: () => void;
 }
 
 const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
   onClose,
   refreshList,
   roleId,
-  handleCloseDetailCard,
+  roleData,
+  onCloseDetailCard,
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  const [roleData, setRoleData] = useState<RoleFormValues | null>(null);
+console.log("Role Data:>>>>>>>>>>>>>>>>>>>>>>>>>", roleData);
 
-  const { handleSubmit, control, reset } = useForm<RoleFormValues>();
-
-  // Fetch role data on mount
-  useEffect(() => {
-    const fetchRoleData = async () => {
-      try {
-        setLoading(true);
-        const roles = await dispatch(roleListApi()).unwrap();
-        const role = roles.find((r: any) => r.id === roleId);
-
-        if (role) {
-          setRoleData({
-            id: role.id,
-            name: role.name,
-            manageExecutive: role.manage_executive,
-            manageRole: role.manage_role,
-            manageLandmark: role.manage_landmark,
-            manageCompany: role.manage_company,
-            manageVendor: role.manage_vendor,
-            manageRoute: role.manage_route,
-            manageSchedule: role.manage_schedule,
-            manageService: role.manage_service,
-            manageDuty: role.manage_duty,
-            manageFare: role.manage_fare,
-          });
-
-          reset({
-            id: role.id,
-            name: role.name,
-            manageExecutive: role.manage_executive,
-            manageRole: role.manage_role,
-            manageLandmark: role.manage_landmark,
-            manageCompany: role.manage_company,
-            manageVendor: role.manage_vendor,
-            manageFare: role.manage_fare,
-            manageRoute: role.manage_route,
-            manageSchedule: role.manage_schedule,
-            manageService: role.manage_service,
-            manageDuty: role.manage_duty,
-          });
-        }
-      } catch (error) {
-        showErrorToast("Failed to fetch role data. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRoleData();
-  }, [roleId, dispatch, reset]);
-
+  const { handleSubmit, control,  } = useForm<RoleFormValues>(
+    {
+      defaultValues: {
+      ...(roleData?.roleDetails || {}) 
+    }
+    }
+  );
   // Handle Role Update
   const handleRoleUpdate: SubmitHandler<RoleFormValues> = async (data) => {
     try {
@@ -103,23 +61,22 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
 
       const formData = new URLSearchParams();
       formData.append("id", roleId.toString());
-      formData.append("name", data.name);
-      formData.append("manage_executive", String(data.manageExecutive));
-      formData.append("manage_role", String(data.manageRole));
-      formData.append("manage_landmark", String(data.manageLandmark));
-      formData.append("manage_company", String(data.manageCompany));
-      formData.append("manage_vendor", String(data.manageVendor));
-      formData.append("manage_route", String(data.manageRoute));
-      formData.append("manage_schedule", String(data.manageSchedule));
-      formData.append("manage_service", String(data.manageService));
-      formData.append("manage_duty", String(data.manageDuty));
-      formData.append("manage_fare", String(data.manageFare));
+      formData.append("manage_executive", String(data.manage_executive));
+      formData.append("manage_role", String(data.manage_role));
+      formData.append("manage_landmark", String(data.manage_landmark));
+      formData.append("manage_company", String(data.manage_company));
+      formData.append("manage_vendor", String(data.manage_vendor));
+      formData.append("manage_route", String(data.manage_route));
+      formData.append("manage_schedule", String(data.manage_schedule));
+      formData.append("manage_service", String(data.manage_service));
+      formData.append("manage_duty", String(data.manage_duty));
+      formData.append("manage_fare", String(data.manage_fare));
 
       await dispatch(roleUpdationApi({ roleId, formData })).unwrap();
 
       showSuccessToast("Role updated successfully!");
       refreshList("refresh");
-      handleCloseDetailCard();
+      onCloseDetailCard();
       onClose();
     } catch (error) {
       showErrorToast("Failed to update role. Please try again.");
@@ -134,8 +91,7 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
 
   return (
     <Box component="form" onSubmit={handleSubmit(handleRoleUpdate)}>
-      
-      <Typography variant="body1" align="center" gutterBottom sx={{
+       <Typography variant="body1" align="center" gutterBottom sx={{
     fontWeight: "bold",
     color: "black",
     
@@ -144,57 +100,42 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
         <b>Role Name:</b> {roleData?.name}
       </Typography>
 
-      {(
-        [
-          "manageExecutive",
-          "manageRole",
-          "manageLandmark",
-          "manageCompany",
-          "manageVendor",
-          "manageRoute",
-          "manageSchedule",
-          "manageService",
-          "manageDuty",
-          "manageFare",
-        ] as (keyof RoleFormValues)[]
-      ).map((field) => (
-        <Box
-          key={field}
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+
+      {([
+        "manage_executive",
+        "manage_role",
+        "manage_landmark",
+        "manage_company",
+        "manage_vendor",
+        "manage_route",
+        "manage_schedule",
+        "manage_service",
+        "manage_duty",
+        "manage_fare"
+      ] as (keyof RoleFormValues)[]).map((field) => (
+        <Box key={field} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Typography>{field.replace("manage", "Manage ")}</Typography>
           <Controller
             name={field}
             control={control}
             render={({ field: { value, onChange } }) => (
-              <Switch
-                checked={!!value}
-                onChange={(e) => onChange(e.target.checked)}
-                color="success"
-              />
+              <Switch checked={!!value} onChange={(e) => onChange(e.target.checked)} color="success" />
             )}
           />
         </Box>
       ))}
 
-      {/* Submit Button */}
+      <Button type="submit" variant="contained" sx={{ bgcolor: "darkblue" }} fullWidth disabled={loading}>
+        {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Update Role"}
+      </Button>
       <Button
-        type="submit"
-        variant="contained"
-        color="primary"
+        variant="outlined"
+        color="error"
         fullWidth
-        disabled={loading}
-        sx={{ mt: 3, mb: 2, bgcolor: "darkblue" }}
+        onClick={onClose}
+        sx={{ mt: 2 }}
       >
-        {loading ? (
-          <CircularProgress size={24} sx={{ color: "white" }} />
-        ) : (
-          "Update Role"
-        )}
+        Cancel
       </Button>
     </Box>
   );

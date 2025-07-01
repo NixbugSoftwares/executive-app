@@ -14,6 +14,19 @@ export interface Account {
   status: string;
 }
 
+export interface RoleDetails {
+  manage_executive?: boolean;
+  manage_role?: boolean;
+  manage_landmark?: boolean;
+  manage_company?: boolean;
+  manage_vendor?: boolean;
+  manage_route?: boolean;
+  manage_schedule?: boolean;
+  manage_service?: boolean;
+  manage_duty?: boolean;
+  manage_fare?: boolean;
+}
+
 export interface Landmark {
   id: number;
   name: string;

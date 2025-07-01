@@ -44,7 +44,7 @@ export const accountFormSchema = yup.object().shape({
     
   fullName: yup
   .string()
-  .optional()
+  .required("Full Name is required")
   .test({
     name: 'fullNameValidation',
     message: (params) => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Table,
   TableBody,
@@ -10,12 +10,9 @@ import {
   TextField,
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  FormControl,
   Select,
   MenuItem,
+  Typography,
 } from "@mui/material";
 import ErrorIcon from "@mui/icons-material/Error";
 import { SelectChangeEvent } from "@mui/material";
@@ -24,11 +21,21 @@ import { accountListApi } from "../../slices/appSlice";
 import AccountDetailsCard from "./AccountDetailsCard";
 import AccountCreationForm from "./AccountForm";
 import type { AppDispatch } from "../../store/Store";
-import localStorageHelper from "../../utils/localStorageHelper";
 import { showErrorToast } from "../../common/toastMessageHelper";
 import { Account } from "../../types/type";
-
-
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
+import PaginationControls from "../../common/paginationControl";
+import FormModal from "../../common/formModal";
+const getGenderBackendValue = (displayValue: string): string => {
+  const genderMap: Record<string, string> = {
+    Female: "1",
+    Male: "2",
+    Transgender: "3",
+    Other: "4",
+  };
+  return genderMap[displayValue] || "";
+};
 const AccountListingTable = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [accountList, setAccountList] = useState<Account[]>([]);
@@ -38,24 +45,30 @@ const AccountListingTable = () => {
     fullName: "",
     designation: "",
     gender: "",
-    email: "",
+    email_id: "",
     phoneNumber: "",
   });
-
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const debounceRef = useRef<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(0);
-  const rowsPerPage = selectedAccount ? 10 : 10;
+  const rowsPerPage = 10;
+  const [hasNextPage, setHasNextPage] = useState(false);
   const [openCreateModal, setOpenCreateModal] = useState(false);
-  const roleDetails = localStorageHelper.getItem("@roleDetails");
-  const canManageExecutive = roleDetails?.manage_executive || false;
+  const canManageExecutive = useSelector((state: RootState) =>
+    state.app.permissions.includes("manage_executive")
+  );
 
   // Function to fetch accounts
-  const fetchAccounts = () => {
-    dispatch(accountListApi())
+  const fetchAccounts = useCallback((pageNumber: number, searchParams = {}) => {
+    const offset = pageNumber * rowsPerPage;
+    dispatch(accountListApi({ limit: rowsPerPage, offset, ...searchParams }))
       .unwrap()
-      .then((res: any[]) => {
-        const formattedAccounts = res.map((account: any) => ({
+      .then((res) => {
+        const items = res.data || [];
+        const formattedAccounts = items.map((account: any) => ({
           id: account.id,
-          fullName: account.full_name,
+          fullName: account.full_name || account.fullName,
           username: account.username,
           gender:
             account.gender === 1
@@ -65,74 +78,84 @@ const AccountListingTable = () => {
               : account.gender === 3
               ? "Transgender"
               : "Other",
-          designation: account.designation,
-          email: account.email_id,
-          phoneNumber: account.phone_number ?? "",
+          email_id: account.email_id || account.email,
+          phoneNumber: account.phone_number || account.phoneNumber || "",
           status: account.status === 1 ? "Active" : "Suspended",
+          designation: account.designation || "",
         }));
-        setAccountList(formattedAccounts);
-      })
-      .catch(() => {
-        showErrorToast("Failed to fetch account list. Please try again.");
-      });
-  };
 
-  useEffect(() => {
-    fetchAccounts();
-    refreshList;
+        setAccountList(formattedAccounts);
+        setHasNextPage(items.length === rowsPerPage);
+      })
+      .catch((error) => {
+        console.error("Fetch Error:", error);
+        showErrorToast(
+          error.detail ||
+            error.message ||
+            error ||
+            "Failed to fetch account list"
+        );
+      })
+      .finally(() => setIsLoading(false));
   }, []);
+
   const handleRowClick = (account: Account) => {
     setSelectedAccount(account);
   };
 
-  const handleCloseDetailCard = () => {
-    setSelectedAccount(null);
-  };
+  const handleSearchChange = useCallback(
+    (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+      column: keyof typeof search
+    ) => {
+      const value = e.target.value;
+      setSearch((prev) => ({ ...prev, [column]: value }));
 
-  const handleSearchChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    column: keyof typeof search
-  ) => {
-    setSearch((prev) => ({ ...prev, [column]: e.target.value }));
-  };
-
-  const handleSelectChange = (e: SelectChangeEvent<string>) => {
-    setSearch({ ...search, gender: e.target.value });
-  };
-
-  const filteredData = accountList.filter(
-    (row: Account) =>
-      (row.id?.toString()?.toLowerCase() || "").includes(
-        search.id.toLowerCase()
-      ) &&
-      (row.fullName?.toLowerCase() || "").includes(
-        search.fullName.toLowerCase()
-      ) &&
-      (row.designation?.toLowerCase() || "").includes(
-        search.designation.toLowerCase()
-      ) &&
-      (!search.gender ||
-        (row.gender?.toLowerCase() || "") === search.gender.toLowerCase()) &&
-      (row.email?.toLowerCase() || "").includes(search.email.toLowerCase()) &&
-      (row.phoneNumber?.toLowerCase() || "").includes(
-        search.phoneNumber.toLowerCase()
-      )
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = window.setTimeout(() => {
+        setDebouncedSearch((prev) => ({ ...prev, [column]: value }));
+        setPage(0);
+      }, 700);
+    },
+    []
   );
 
-  const handleChangePage = (
-    _event: React.MouseEvent<HTMLButtonElement> | null,
-    newPage: number
-  ) => {
-    setPage(newPage);
-  };
+  const handleSelectChange = useCallback((e: SelectChangeEvent<string>) => {
+    const value = e.target.value;
+    setSearch((prev) => ({ ...prev, gender: value }));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      setDebouncedSearch((prev) => ({ ...prev, gender: value }));
+      setPage(0);
+    }, 700);
+  }, []);
 
-  const handleCloseModal = () => {
-    setOpenCreateModal(false);
-  };
+  const handleChangePage = useCallback(
+    (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+      setPage(newPage);
+    },
+    []
+  );
+
+  useEffect(() => {
+    const genderBackendValue = getGenderBackendValue(debouncedSearch.gender);
+    const searchParams = {
+      ...(debouncedSearch.id && { id: debouncedSearch.id }),
+      ...(debouncedSearch.fullName && { fullName: debouncedSearch.fullName }),
+      ...(debouncedSearch.designation && { designation: debouncedSearch.designation }),
+      ...(debouncedSearch.gender && { gender: genderBackendValue }),
+      ...(debouncedSearch.email_id && { email_id: debouncedSearch.email_id }),
+      ...(debouncedSearch.phoneNumber && {
+        phoneNumber: debouncedSearch.phoneNumber,
+      }),
+    };
+
+    fetchAccounts(page, searchParams);
+  }, [page, debouncedSearch, fetchAccounts]);
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      fetchAccounts();
+      fetchAccounts(page, debouncedSearch);
     }
   };
 
@@ -161,60 +184,139 @@ const AccountListingTable = () => {
       >
         <Tooltip
           title={
-            !canManageExecutive
-              ? "You don't have permission, contact the admin"
-              : "click to open the account creation form"
+            <span>
+              {!canManageExecutive
+                ? "You don't have permission, contact the admin"
+                : "Click to open the account creation form"}
+            </span>
           }
           placement="top-end"
         >
-          <span
-            style={{ cursor: !canManageExecutive ? "not-allowed" : "default" }}
-          >
+          <span>
             <Button
               sx={{
                 ml: "auto",
                 mr: 2,
                 mb: 2,
-                display: "block",
                 backgroundColor: !canManageExecutive
                   ? "#6c87b7 !important"
                   : "#00008B",
-                color: "white",
+                color: "white !important",
+                display: "flex",
+                justifyContent: "flex-end",
                 "&.Mui-disabled": {
-                  backgroundColor: "#6c87b7 !important",
-                  color: "#ffffff99",
+                  color: "#fff !important",
                 },
               }}
               variant="contained"
               onClick={() => setOpenCreateModal(true)}
               disabled={!canManageExecutive}
+              style={{
+                cursor: !canManageExecutive ? "not-allowed" : "pointer",
+              }}
             >
-              Create Account
+              Add New Executive
             </Button>
           </span>
         </Tooltip>
-
         <TableContainer
           sx={{
             flex: 1,
             maxHeight: "calc(100vh - 100px)",
-            overflowY: "hidden",
+            overflowY: "auto",
+            borderRadius: 2,
+            border: "1px solid #e0e0e0",
           }}
         >
-          <Table>
+          <Table stickyHeader>
             <TableHead>
+              {/* Header Row */}
+              <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+                <TableCell
+                  sx={{
+                    width: "80px",
+                    minWidth: "80px",
+                    textAlign: "center",
+                    backgroundColor: "#fafafa",
+                    fontWeight: 600,
+                    fontSize: "0.875rem",
+                    borderBottom: "1px solid #ddd",
+                  }}
+                >
+                  ID
+                </TableCell>
+                <TableCell
+                  sx={{
+                    width: "200px",
+                    minWidth: "200px",
+                    textAlign: "center",
+                    backgroundColor: "#fafafa",
+                    fontWeight: 600,
+                    fontSize: "0.875rem",
+                    borderBottom: "1px solid #ddd",
+                  }}
+                >
+                  Full Name
+                </TableCell>
+                <TableCell
+                  sx={{
+                    width: "160px",
+                    minWidth: "160px",
+                    textAlign: "center",
+                    backgroundColor: "#fafafa",
+                    fontWeight: 600,
+                    fontSize: "0.875rem",
+                    borderBottom: "1px solid #ddd",
+                  }}
+                >
+                  Phone
+                </TableCell>
+                <TableCell
+                  sx={{
+                    width: "220px",
+                    minWidth: "220px",
+                    textAlign: "center",
+                    backgroundColor: "#fafafa",
+                    fontWeight: 600,
+                    fontSize: "0.875rem",
+                    borderBottom: "1px solid #ddd",
+                  }}
+                >
+                  Email
+                </TableCell>
+                <TableCell
+                  sx={{
+                    width: "120px",
+                    minWidth: "120px",
+                    textAlign: "center",
+                    backgroundColor: "#fafafa", 
+                    fontWeight: 600,
+                    fontSize: "0.875rem",
+                    borderBottom: "1px solid #ddd",
+                  }}
+                >
+                  Designation
+                </TableCell>
+                <TableCell
+                  sx={{
+                    width: "120px",
+                    minWidth: "120px",
+                    textAlign: "center",
+                    backgroundColor: "#fafafa",
+                    fontWeight: 600,
+                    fontSize: "0.875rem",
+                    borderBottom: "1px solid #ddd",
+                  }}
+                >
+                  Gender
+                </TableCell>
+                
+              </TableRow>
+              {/* Search Row */}
               <TableRow>
                 <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedAccount ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    ID
-                  </b>
                   <TextField
+                    type="number"
                     variant="outlined"
                     size="small"
                     placeholder="Search"
@@ -222,31 +324,14 @@ const AccountListingTable = () => {
                     onChange={(e) => handleSearchChange(e, "id")}
                     fullWidth
                     sx={{
-                      "& .MuiInputBase-root": {
-                        height: 40,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
-                      },
+                      "& .MuiInputBase-root": { height: 40 },
+                      "& .MuiInputBase-input": { textAlign: "center" },
                     }}
                   />
                 </TableCell>
-
                 <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedAccount ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    Full Name
-                  </b>
                   <TextField
+                    type="text"
                     variant="outlined"
                     size="small"
                     placeholder="Search"
@@ -254,63 +339,14 @@ const AccountListingTable = () => {
                     onChange={(e) => handleSearchChange(e, "fullName")}
                     fullWidth
                     sx={{
-                      "& .MuiInputBase-root": {
-                        height: 40,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
-                      },
+                      "& .MuiInputBase-root": { height: 40 },
+                      "& .MuiInputBase-input": { textAlign: "center" },
                     }}
                   />
                 </TableCell>
-
                 <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedAccount ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    Designation
-                  </b>
                   <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.designation}
-                    onChange={(e) => handleSearchChange(e, "designation")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 40,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-
-                <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedAccount ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    Phone
-                  </b>
-                  <TextField
+                    type="number"
                     variant="outlined"
                     size="small"
                     placeholder="Search"
@@ -318,251 +354,165 @@ const AccountListingTable = () => {
                     onChange={(e) => handleSearchChange(e, "phoneNumber")}
                     fullWidth
                     sx={{
-                      "& .MuiInputBase-root": {
-                        height: 40,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
-                      },
+                      "& .MuiInputBase-root": { height: 40 },
+                      "& .MuiInputBase-input": { textAlign: "center" },
+                    }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <TextField
+                    type="text"
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    value={search.email_id}
+                    onChange={(e) => handleSearchChange(e, "email_id")}
+                    fullWidth
+                    sx={{
+                      "& .MuiInputBase-root": { height: 40 },
+                      "& .MuiInputBase-input": { textAlign: "center" },
                     }}
                   />
                 </TableCell>
 
                 <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedAccount ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    Email
-                  </b>
                   <TextField
+                    type="text"
                     variant="outlined"
                     size="small"
                     placeholder="Search"
-                    value={search.email}
-                    onChange={(e) => handleSearchChange(e, "email")}
+                    value={search.designation}
+                    onChange={(e) => handleSearchChange(e, "designation")}
                     fullWidth
                     sx={{
-                      "& .MuiInputBase-root": {
-                        height: 40,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedAccount ? "0.8rem" : "1rem",
-                      },
+                      "& .MuiInputBase-root": { height: 40 },
+                      "& .MuiInputBase-input": { textAlign: "center" },
                     }}
                   />
                 </TableCell>
 
-                <TableCell size="small">
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedAccount ? "0.8rem" : "1rem",
-                    }}
+
+
+                <TableCell>
+                  <Select
+                    value={search.gender}
+                    onChange={handleSelectChange}
+                    displayEmpty
+                    size="small"
+                    fullWidth
+                    sx={{ height: 40 }}
                   >
-                    Gender
-                  </b>
-                  <FormControl fullWidth size="small">
-                    <Select
-                      value={search.gender}
-                      onChange={handleSelectChange}
-                      displayEmpty
-                      sx={{
-                        "& .MuiInputBase-root": {
-                          height: 30,
-                          padding: "4px",
-                          textAlign: "center",
-                          fontSize: selectedAccount ? "0.8rem" : "1rem",
-                        },
-                        "& .MuiInputBase-input": {
-                          textAlign: "center",
-                          fontSize: selectedAccount ? "0.8rem" : "1rem",
-                        },
-                      }}
-                    >
-                      <MenuItem value="">All</MenuItem>
-                      <MenuItem value="Male">Male</MenuItem>
-                      <MenuItem value="Female">Female</MenuItem>
-                      <MenuItem value="Transgender">Transgender</MenuItem>
-                      <MenuItem value="Other">Other</MenuItem>
-                    </Select>
-                  </FormControl>
+                    <MenuItem value="">All</MenuItem>
+                    <MenuItem value="Male">Male</MenuItem>
+                    <MenuItem value="Female">Female</MenuItem>
+                    <MenuItem value="Transgender">Transgender</MenuItem>
+                    <MenuItem value="Other">Other</MenuItem>
+                  </Select>
                 </TableCell>
               </TableRow>
             </TableHead>
-
-            <TableBody
-              sx={{
-                fontSize: selectedAccount ? "0.8rem" : "1rem",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {filteredData.length > 0 ? (
-                filteredData
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row) => {
-                    const isSelected = selectedAccount?.id === row.id;
-                    return (
-                      
-                      <TableRow
-                        key={row.id}
-                        hover
-                        onClick={() => handleRowClick(row)}
-                        sx={{
-                          cursor: "pointer",
-                          backgroundColor: isSelected
+            <TableBody>
+              {accountList.length > 0 ? (
+                accountList.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    hover
+                    onClick={() => handleRowClick(row)}
+                    sx={{
+                      cursor: "pointer",
+                      backgroundColor:
+                        selectedAccount?.id === row.id
+                          ? "#E3F2FD !important"
+                          : "inherit",
+                      "&:hover": {
+                        backgroundColor:
+                          selectedAccount?.id === row.id
                             ? "#E3F2FD !important"
-                            : "inherit",
-                          color: isSelected ? "black" : "black",
-                          "&:hover": {
-                            backgroundColor: isSelected
-                              ? "#E3F2FD !important"
-                              : "#E3F2FD",
-                          },
-                          "& td": {
-                            color: isSelected ? "black !important" : "black",
-                          },
-                        }}
-                      >
-                        <TableCell>{row.id}</TableCell>
-                        <TableCell>
-                          {row.fullName ? (
-                            row.fullName
-                          ) : (
-                            <Tooltip
-                              title=" Full Name not added yet"
-                              placement="bottom"
-                            >
-                              <ErrorIcon sx={{ color: "#737d72 " }} />
-                            </Tooltip>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {row.designation ? (
-                            row.designation
-                          ) : (
-                            <Tooltip
-                              title=" Designation not added yet"
-                              placement="bottom"
-                            >
-                              <ErrorIcon sx={{ color: "#737d72 " }} />
-                            </Tooltip>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {row.phoneNumber ? (
-                            row.phoneNumber.replace("tel:", "")
-                          ) : (
-                            <Tooltip
-                              title=" Phone Number not added yet"
-                              placement="bottom"
-                            >
-                              <ErrorIcon sx={{ color: "#737d72" }} />
-                            </Tooltip>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {row.email ? (
-                            row.email
-                          ) : (
-                            <Tooltip
-                              title=" Email not added yet"
-                              placement="bottom"
-                            >
-                              <ErrorIcon sx={{ color: "#737d72 " }} />
-                            </Tooltip>
-                          )}
-                        </TableCell>
-                        <TableCell>{row.gender}</TableCell>
-                      </TableRow>
-                    );
-                  })
+                            : "#E3F2FD",
+                      },
+                    }}
+                  >
+                    <TableCell sx={{ textAlign: "center" }}>{row.id}</TableCell>
+                    <TableCell>
+                      <Typography noWrap>
+                        {row.fullName ? (
+                          row.fullName
+                        ) : (
+                          <Tooltip
+                            title="Full Name not added yet"
+                            placement="bottom"
+                          >
+                            <ErrorIcon sx={{ color: "#737d72 " }} />
+                          </Tooltip>
+                        )}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography noWrap>
+                        {row.phoneNumber ? (
+                          row.phoneNumber.replace("tel:", "")
+                        ) : (
+                          <Tooltip
+                            title="Phone Number not added yet"
+                            placement="bottom"
+                          >
+                            <ErrorIcon sx={{ color: "#737d72" }} />
+                          </Tooltip>
+                        )}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography noWrap>
+                        {row.email ? (
+                          row.email
+                        ) : (
+                          <Tooltip
+                            title="Email not added yet"
+                            placement="bottom"
+                          >
+                            <ErrorIcon sx={{ color: "#737d72 " }} />
+                          </Tooltip>
+                        )}
+                      </Typography>
+                    </TableCell>
+
+                    <TableCell>
+                      <Typography noWrap>
+                        {row.designation ? (
+                          row.designation
+                        ) : (
+                          <Tooltip
+                            title="Designation not added yet"
+                            placement="bottom"
+                          >
+                            <ErrorIcon sx={{ color: "#737d72 " }} />
+                          </Tooltip>
+                        )}
+                      </Typography> 
+                    </TableCell>
+                    <TableCell sx={{ textAlign: "center" }}>
+                      {row.gender}
+                    </TableCell>
+                  </TableRow>
+                ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    No accounts found.
+                  <TableCell colSpan={5} align="center">
+                    <Typography variant="body1" color="textSecondary" mt={2}>
+                      No accounts found.
+                    </Typography>
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </TableContainer>
-
-        {/* Pagination */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 1,
-            mt: 2,
-            position: "sticky",
-            bottom: 0,
-            backgroundColor: "white",
-            zIndex: 1,
-            p: 1,
-            borderTop: "1px solid #e0e0e0",
-          }}
-        >
-          <Button
-            onClick={() => handleChangePage(null, page - 1)}
-            disabled={page === 0}
-            sx={{ padding: "5px 10px", minWidth: 40 }}
-          >
-            &lt;
-          </Button>
-          {Array.from(
-            { length: Math.ceil(filteredData.length / rowsPerPage) },
-            (_, index) => index
-          )
-            .slice(
-              Math.max(0, page - 1),
-              Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
-            )
-            .map((pageNumber) => (
-              <Button
-                key={pageNumber}
-                onClick={() => handleChangePage(null, pageNumber)}
-                sx={{
-                  padding: "5px 10px",
-                  minWidth: 40,
-                  bgcolor:
-                    page === pageNumber
-                      ? "rgba(21, 101, 192, 0.2)"
-                      : "transparent",
-                  fontWeight: page === pageNumber ? "bold" : "normal",
-                  borderRadius: "5px",
-                  transition: "all 0.3s",
-                  "&:hover": {
-                    bgcolor: "rgba(21, 101, 192, 0.3)",
-                  },
-                }}
-              >
-                {pageNumber + 1}
-              </Button>
-            ))}
-          <Button
-            onClick={() => handleChangePage(null, page + 1)}
-            disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
-            sx={{ padding: "5px 10px", minWidth: 40 }}
-          >
-            &gt;
-          </Button>
-        </Box>
+        <PaginationControls
+          page={page}
+          onPageChange={(newPage) => handleChangePage(null, newPage)}
+          isLoading={isLoading}
+          hasNextPage={hasNextPage}
+        />
       </Box>
 
       {/* Right Side - Account Details Card */}
@@ -587,30 +537,22 @@ const AccountListingTable = () => {
             onBack={() => setSelectedAccount(null)}
             refreshList={(value: any) => refreshList(value)}
             canManageExecutive={canManageExecutive}
-            onCloseDetailCard={handleCloseDetailCard}
+            onCloseDetailCard={() => setSelectedAccount(null)}
           />
         </Box>
       )}
 
       {/* Create Account Modal */}
-      <Dialog
+      <FormModal
         open={openCreateModal}
-        onClose={handleCloseModal}
-        maxWidth="sm"
-        fullWidth
+        onClose={() => setOpenCreateModal(false)}
+        title="Create Account"
       >
-        <DialogContent>
-          <AccountCreationForm
-            refreshList={(value: any) => refreshList(value)}
-            onClose={handleCloseModal}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal} color="error">
-            Cancel
-          </Button>
-        </DialogActions>
-      </Dialog>
+        <AccountCreationForm
+          refreshList={refreshList}
+          onClose={() => setOpenCreateModal(false)}
+        />
+      </FormModal>
     </Box>
   );
 };

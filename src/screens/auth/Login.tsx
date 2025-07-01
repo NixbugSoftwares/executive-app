@@ -1,7 +1,5 @@
-import React, { useState } from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import { loginSchema } from "./validations/authValidation";
+import React, {  useState } from "react";
+import { useForm, SubmitHandler,  } from "react-hook-form";
 import {
   Box,
   TextField,
@@ -19,86 +17,116 @@ import {
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import { useAppDispatch, useAppSelector } from "../../store/Hooks";
-import { LoginApi, selectAuth } from "../../slices/authSlice";
-import { User } from "../../types/type";
+import { useAppDispatch } from "../../store/Hooks";
+import { LoginApi,  } from "../../slices/authSlice";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { loginSchema } from "./validations/authValidation";
 import {
   userLoggedIn,
   fetchRoleMappingApi,
-  roleListApi,
+  loggedinUserRoleDetails,
+  setRoleDetails,
 } from "../../slices/appSlice";
 import {
   showSuccessToast,
   showErrorToast,
 } from "../../common/toastMessageHelper";
-// Login form interface
+import localStorageHelper from "../../utils/localStorageHelper";
+import { setPermissions } from "../../slices/appSlice";
 interface ILoginFormInputs {
   username: string;
   password: string;
 }
-
-// Login component
 const LoginPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { loading, error } = useAppSelector(selectAuth);
-
+  const [loading, _setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const {
-    register,
     handleSubmit,
+    register,
     formState: { errors },
   } = useForm<ILoginFormInputs>({
     resolver: yupResolver(loginSchema),
   });
 
-  const [showPassword, setShowPassword] = useState(false);
   const handleTogglePassword = () => {
     setShowPassword((prev) => !prev);
   };
-
   const handleLogin: SubmitHandler<ILoginFormInputs> = async (data) => {
     try {
       const formData = new FormData();
       formData.append("username", data.username);
       formData.append("password", data.password);
-      const response = await dispatch(LoginApi(formData)).unwrap();
-      if (response?.access_token) {
-        const expiresAt = Date.now() + response.expires_in * 1000;
-        localStorage.setItem("@token", response.access_token);
-        localStorage.setItem("@token_expires", expiresAt.toString());
-        const user: User = {
-          executive_id: response.executive_id,
-        };
-        if (response.executive_id) {
-          showSuccessToast("User signed in successfully!");
-        }
-        localStorage.setItem("@user", JSON.stringify(user));
-        dispatch(userLoggedIn(user));
 
-        // Fetch Role Mapping API
+      const response = await dispatch(LoginApi(formData)).unwrap();
+
+      if (response?.access_token) {
+        const user = {
+          username: data?.username,
+          executive_id: response?.executive_id,
+        };
+        const access_token = response?.access_token;
+        const expiresAt = Date.now() + response?.expires_in * 1000;
+        
+
+        localStorageHelper.storeItem("@token", access_token);
+        localStorageHelper.storeItem("@token_expires", expiresAt);
+        localStorageHelper.storeItem("@user", user);
+
+        dispatch(userLoggedIn(user));
+        showSuccessToast("Login successful");
+
         const roleResponse = await dispatch(
           fetchRoleMappingApi(response.executive_id)
         ).unwrap();
-        const assignedRole: any = {
+
+        if (!roleResponse) {
+          throw new Error("No role mapping found for this user");
+        }
+        const assignedRole = {
           id: roleResponse?.id,
-          userId: roleResponse?.executive_id,
+          userId: roleResponse?.operator_id,
           roleId: roleResponse?.role_id,
         };
-        // Store role_id in localStorage
+
         localStorage.setItem("@assignedRole", JSON.stringify(assignedRole));
-        const roleListingResponse = await dispatch(roleListApi()).unwrap();
-        const userRoleDetails = roleListingResponse.find(
-          (role: { id: any }) => role.id === assignedRole.roleId
-        );
-        if (userRoleDetails) {
-          localStorage.setItem("@roleDetails", JSON.stringify(userRoleDetails));
+
+        const roleListingResponse = await dispatch(
+          loggedinUserRoleDetails(assignedRole.roleId)
+        ).unwrap();
+
+        console.log("roleDetails=================================", roleListingResponse[0]);
+
+        if (roleListingResponse.length > 0) {
+          dispatch(setRoleDetails(roleListingResponse[0]));
+
+          const roleDetails = roleListingResponse[0];
+          dispatch(setRoleDetails(roleDetails));
+
+          const permissions = Object.entries(roleDetails)
+            .filter(
+              ([key, value]) => key.startsWith("manage_") && value === true
+            )
+            .map(([key]) => key);
+
+          localStorage.setItem("@permissions", JSON.stringify(permissions));
+          dispatch(setPermissions(permissions));
+          console.log("Permissions=================================s:", permissions);
+          
+          if (permissions) {
+            localStorage.setItem("@permissions", JSON.stringify(permissions));
+            dispatch(setPermissions(permissions));
+          }
         } else {
-          showErrorToast("Role not found for the given roleId");
+          showErrorToast("Role details not found");
         }
       }
     } catch (error: any) {
-      showErrorToast(error.message);
+      console.error("Login Error:", error);
+      showErrorToast(error?.detail || error || "Login failed");
     }
   };
+
   return (
     <Container component="main" maxWidth="xs" sx={{ mb: 10 }}>
       <CssBaseline />
@@ -130,6 +158,8 @@ const LoginPage: React.FC = () => {
               sx={{ mt: 1 }}
               onSubmit={handleSubmit(handleLogin)}
             >
+              
+
               <TextField
                 margin="normal"
                 required
@@ -163,11 +193,7 @@ const LoginPage: React.FC = () => {
                   ),
                 }}
               />
-              {error && (
-                <Typography color="error" variant="body2" sx={{ mt: 2 }}>
-                  {error}
-                </Typography>
-              )}
+
               <Button
                 type="submit"
                 fullWidth

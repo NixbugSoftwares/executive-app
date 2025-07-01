@@ -92,6 +92,7 @@ const MapComponent = React.forwardRef(
     const [departureDayOffset, setDepartureDayOffset] = useState<number>(0);
     const [isFirstLandmark, setIsFirstLandmark] = useState(false);
     const [showTimeError, setShowTimeError] = useState<string>("");
+    const [distanceError, setDistanceError] = useState<string>("");
     // Initialize the map
     const initializeMap = () => {
       if (!mapRef.current) return null;
@@ -738,7 +739,16 @@ const MapComponent = React.forwardRef(
         return;
       }
       setShowTimeError("");
-
+      if (
+    selectedLandmark?.distance_from_start === undefined ||
+    selectedLandmark?.distance_from_start === null ||
+    selectedLandmark?.distance_from_start === "" ||
+    isNaN(selectedLandmark?.distance_from_start)
+  ) {
+    setDistanceError("Distance from Start is required");
+    return;
+  }
+  setDistanceError("");
       // For first landmark, force times to match starting time
       if (isFirstLandmark && startingTime) {
         // Use the startingTime directly as UTC
@@ -1028,21 +1038,23 @@ const MapComponent = React.forwardRef(
               </FormControl>
             </Box>
 
-            {(selectedLandmarks.length > 0 || propLandmarks.length > 0) && (
+          {(selectedLandmarks.length > 0 || propLandmarks.length > 0) && (
               <TextField
-                required
-                label="Distance from Start (meters)"
-                type="number"
-                fullWidth
-                margin="normal"
-                value={selectedLandmark?.distance_from_start || ""}
-                onChange={(e) =>
-                  setSelectedLandmark({
-                    ...selectedLandmark!,
-                    distance_from_start: parseFloat(e.target.value),
-                  })
-                }
-              />
+  label="Distance from Start (meters)"
+  type="number"
+  fullWidth
+  margin="normal"
+  value={selectedLandmark?.distance_from_start ?? ""}
+  onChange={(e) => {
+    setSelectedLandmark({
+      ...selectedLandmark!,
+      distance_from_start: e.target.value === "" ? "" : parseFloat(e.target.value),
+    });
+    setDistanceError(""); 
+  }}
+  error={!!distanceError}
+  helperText={distanceError}
+/>
             )}
           </DialogContent>
           <DialogActions>

@@ -17,7 +17,10 @@ import {
   FormControlLabel,
   Alert,
 } from "@mui/material";
-import { Diversity3 as Diversity3Icon, ArrowBack as BackIcon, } from "@mui/icons-material";
+import {
+  Diversity3 as Diversity3Icon,
+  ArrowBack as BackIcon,
+} from "@mui/icons-material";
 import { useAppDispatch } from "../../store/Hooks";
 import { roleDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
@@ -27,20 +30,22 @@ import {
   showErrorToast,
 } from "../../common/toastMessageHelper";
 
-interface RoleCardProps {
+ interface RoleCardProps {
   role: {
     id: number;
     name: string;
-    manageExecutive?: boolean;
-    manageRole?: boolean;
-    manageLandmark?: boolean;
-    manageCompany?: boolean;
-    manageVendor?: boolean;
-    manageRoute?: boolean;
-    manageSchedule?: boolean;
-    manageService?: boolean;
-    manageDuty?: boolean;
-    manageFare?: boolean;
+    roleDetails?: {
+      manage_executive?: boolean;
+      manage_role?: boolean;
+      manage_landmark?: boolean;
+      manage_company?: boolean;
+      manage_vendor?: boolean;
+      manage_route?: boolean;
+      manage_schedule?: boolean;
+      manage_service?: boolean;
+      manage_duty?: boolean;
+      manage_fare?: boolean;
+    };
   };
   onBack: () => void;
   onUpdate: (id: number) => void;
@@ -48,6 +53,7 @@ interface RoleCardProps {
   refreshList: (value: any) => void;
   canManageRole: boolean;
   handleCloseDetailCard: () => void;
+  onCloseDetailCard: () => void;
 }
 
 const RoleDetailsCard: React.FC<RoleCardProps> = ({
@@ -57,12 +63,15 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
   refreshList,
   canManageRole,
   handleCloseDetailCard,
+  onCloseDetailCard,
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const [acknowledgedWarning, setAcknowledgedWarning] = useState(false);
   const dispatch = useAppDispatch();
 
+  console.log("Role Details Card Rendered+++++++++++++++", role);
+  
   const handleCloseModal = () => {
     setUpdateFormOpen(false);
   };
@@ -114,75 +123,75 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
 
         {/* Permissions Section */}
         <CardContent>
-          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: "bold" }}>
-            Permissions:
-          </Typography>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {/* List all permissions */}
-            <Chip
-              label={`Manage Executive: ${role.manageExecutive ? "Yes" : "No"}`}
-              color={role.manageExecutive ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Role: ${role.manageRole ? "Yes" : "No"}`}
-              color={role.manageRole ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Landmark: ${role.manageLandmark ? "Yes" : "No"}`}
-              color={role.manageLandmark ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Company: ${role.manageCompany ? "Yes" : "No"}`}
-              color={role.manageCompany ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Vendor: ${role.manageVendor ? "Yes" : "No"}`}
-              color={role.manageVendor ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Route: ${role.manageRoute ? "Yes" : "No"}`}
-              color={role.manageRoute ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Schedule: ${role.manageSchedule ? "Yes" : "No"}`}
-              color={role.manageSchedule ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Service: ${role.manageService ? "Yes" : "No"}`}
-              color={role.manageService ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Duty: ${role.manageDuty ? "Yes" : "No"}`}
-              color={role.manageDuty ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Fare: ${role.manageFare ? "Yes" : "No"}`}
-              color={role.manageFare ? "success" : "error"}
-              variant="outlined"
-            />
-          </Box>
-        </CardContent>
+  <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: "bold" }}>
+    Permissions:
+  </Typography>
+  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+    <Chip
+      label={`Manage Operators: ${role.roleDetails?.manage_executive ? "Yes" : "No"}`}
+      color={role.roleDetails?.manage_executive ? "success" : "error"}
+      variant="outlined"
+    />
+    <Chip
+      label={`Manage Roles: ${role.roleDetails?.manage_role ? "Yes" : "No"}`}
+      color={role.roleDetails?.manage_role ? "success" : "error"}
+      variant="outlined"
+    />
+    <Chip
+      label={`Manage Landmark: ${role.roleDetails?.manage_landmark ? "Yes" : "No"}`}
+      color={role.roleDetails?.manage_landmark ? "success" : "error"}
+      variant="outlined"
+    />
+    
+    <Chip
+      label={`Manage Company: ${role.roleDetails?.manage_company ? "Yes" : "No"}`}
+      color={role.roleDetails?.manage_company ? "success" : "error"}
+      variant="outlined"
+    />
+    <Chip
+      label={`Manage Vendor: ${role.roleDetails?.manage_vendor ? "Yes" : "No"}`}
+      color={role.roleDetails?.manage_vendor ? "success" : "error"}
+      variant="outlined"
+    />
+    <Chip
+      label={`Manage Route: ${role.roleDetails?.manage_route ? "Yes" : "No"}`}
+      color={role.roleDetails?.manage_route ? "success" : "error"}
+      variant="outlined"
+    />
+    <Chip
+      label={`Manage Schedule: ${role.roleDetails?.manage_schedule ? "Yes" : "No"}`}
+      color={role.roleDetails?.manage_schedule ? "success" : "error"}
+      variant="outlined"
+    />
+    <Chip
+      label={`Manage Service: ${role.roleDetails?.manage_service ? "Yes" : "No"}`}
+      color={role.roleDetails?.manage_service ? "success" : "error"}
+      variant="outlined"
+    />
+    <Chip
+      label={`Manage Duty: ${role.roleDetails?.manage_duty ? "Yes" : "No"}`}
+      color={role.roleDetails?.manage_duty ? "success" : "error"}
+      variant="outlined"
+    />
+    <Chip
+      label={`Manage Fare: ${role.roleDetails?.manage_fare ? "Yes" : "No"}`}
+      color={role.roleDetails?.manage_fare ? "success" : "error"}
+      variant="outlined"
+    />
+  </Box>
+</CardContent>
 
         {/* Action Buttons */}
         <CardActions sx={{ justifyContent: "space-between", gap: 1 }}>
-         <Button
-                       variant="outlined"
-                       color="primary"
-                       size="small"
-                       onClick={onBack}
-                       startIcon={<BackIcon />}
-                     >
-                       Back
-                     </Button>
+          <Button
+            variant="outlined"
+            color="primary"
+            size="small"
+            onClick={onBack}
+            startIcon={<BackIcon />}
+          >
+            Back
+          </Button>
           <Tooltip
             title={
               !canManageRole
@@ -306,10 +315,11 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
       >
         <DialogContent>
           <RoleUpdateForm
-            refreshList={(value: any) => refreshList(value)}
             roleId={role.id}
+            roleData={role}
+            refreshList={(value: any) => refreshList(value)}
             onClose={() => setUpdateFormOpen(false)}
-            handleCloseDetailCard={handleCloseDetailCard}
+            onCloseDetailCard={onCloseDetailCard}
           />
         </DialogContent>
         <DialogActions>

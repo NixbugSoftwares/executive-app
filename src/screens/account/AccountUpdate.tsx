@@ -19,7 +19,6 @@ import {
   accountupdationApi,
   roleListApi,
   roleAssignUpdateApi,
-  accountListApi,
   fetchRoleMappingApi,
   roleAssignApi,
 } from "../../slices/appSlice";
@@ -27,7 +26,6 @@ import localStorageHelper from "../../utils/localStorageHelper";
 import {
   showSuccessToast,
   showErrorToast,
-  showWarningToast,
 } from "../../common/toastMessageHelper";
 
 // Account update form interface
@@ -49,17 +47,22 @@ interface IAccountUpdateFormProps {
   onClose: () => void;
   refreshList: (value: any) => void;
   onCloseDetailCard(): void;
+  accountData?: IAccountFormInputs;
+  canManageExecutive?: boolean;
 }
-
+interface IOption {
+  label: string;
+  value: number;
+}
 // Gender options mapping
-const genderOptions = [
+const genderOptions: IOption[] = [
   { label: "Female", value: 1 },
   { label: "Male", value: 2 },
   { label: "Transgender", value: 3 },
   { label: "Other", value: 4 },
 ];
 
-const statusOptions = [
+const statusOptions: IOption[] = [
   { label: "Active", value: 1 },
   { label: "Suspended", value: 2 },
 ];
@@ -68,17 +71,16 @@ const userId = loggedInUser?.executive_id;
 
 const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
   accountId,
+  accountData,
   onClose,
   refreshList,
   onCloseDetailCard,
+  canManageExecutive,
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
   const isLoggedInUser = accountId === userId;
-  const [accountData, setAccountData] = useState<IAccountFormInputs | null>(
-    null
-  );
   const [roleMappingError, setRoleMappingError] = useState(false);
   const {
     register,
@@ -86,74 +88,56 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
     control,
     reset,
     formState: { errors },
-  } = useForm<IAccountFormInputs>({});
+  } = useForm<IAccountFormInputs>();
   const [showPassword, setShowPassword] = useState(false);
   const handleTogglePassword = () => {
     setShowPassword((prev) => !prev);
   };
 
-  // Fetch roles and account data
   useEffect(() => {
-    dispatch(roleListApi())
+    // Fetch available roles
+    dispatch(roleListApi({}))
       .unwrap()
-      .then((res: any[]) => {
-        setRoles(res.map((role) => ({ id: role.id, name: role.name })));
+      .then((res: { data: any[] }) => {
+        setRoles(res.data.map((role) => ({ id: role.id, name: role.name })));
       })
+
       .catch((err: any) => {
         showErrorToast(err);
       });
 
-    // Then fetch account data
-    dispatch(accountListApi())
+    // Fetch role mapping for this account
+    dispatch(fetchRoleMappingApi(accountId))
       .unwrap()
-      .then(async (res: any[]) => {
-        const account = res.find((acc) => acc.id === accountId);
-        if (account) {
-          const accountFormData: IAccountFormInputs = {
-            username: account.username,
-            password: account.password,
-            fullName: account.full_name,
-            phoneNumber: account.phone_number
-              ? account.phone_number.replace(/\D/g, "").replace(/^91/, "")
-              : "",
-            email: account.email_id,
-            gender: account.gender,
-            designation: account.designation,
-            status: account.status,
+      .then((roleMapping) => {
+        // Check for null, undefined, or empty object
+        if (roleMapping && Object.keys(roleMapping).length > 0) {
+          const formData = {
+            ...accountData,
+            role: roleMapping.role_id,
+            roleAssignmentId: roleMapping.id,
           };
-
-          // Try to fetch role mapping, but don't fail if it doesn't exist
-          try {
-            const roleMapping = await dispatch(
-              fetchRoleMappingApi(accountId)
-            ).unwrap();
-
-            if (roleMapping) {
-              accountFormData.role = roleMapping.role_id;
-              accountFormData.roleAssignmentId = roleMapping.id;
-            }
-          } catch (error: any) {
-            showErrorToast(error);
-            setRoleMappingError(true);
-          }
-
-          setAccountData(accountFormData);
-          reset(accountFormData);
+          reset(formData);
+          setRoleMappingError(false);
+        } else {
+          reset(accountData);
+          setRoleMappingError(true);
         }
       })
-      .catch((err: any) => {
-        showErrorToast(err);
+      .catch((error: any) => {
+        showErrorToast(error);
+        reset(accountData);
+        setRoleMappingError(true);
       });
-  }, [accountId, dispatch, reset]);
+  }, [accountId, dispatch, reset, accountData]);
 
-  // Handle Account Update & Role Assignment Update/Creation
   const handleAccountUpdate: SubmitHandler<IAccountFormInputs> = async (
     data
   ) => {
     try {
       setLoading(true);
 
-      const formData = new URLSearchParams();
+      const formData = new FormData();
       formData.append("id", accountId.toString());
       if (data.username) formData.append("username", data.username);
       if (data.password) formData.append("password", data.password);
@@ -164,74 +148,47 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       if (data.email) formData.append("email_id", data.email);
       if (data.designation) formData.append("designation", data.designation);
       if (data.status) formData.append("status", data.status.toString());
-
-      // Step 1: Update account
       const accountResponse = await dispatch(
         accountupdationApi({ accountId, formData })
       ).unwrap();
-
-      if (!accountResponse || !accountResponse.id) {
+      if (!accountResponse?.id) {
         showErrorToast("Account update failed! Please try again.");
         onClose();
         return;
       }
-
-      // Step 2: Handle role assignment
-      if (data.role) {
+      if (canManageExecutive && data.role) {
         try {
-          // If we have a roleAssignmentId, try to update
           if (data.roleAssignmentId) {
-            const roleUpdateResponse = await dispatch(
+            await dispatch(
               roleAssignUpdateApi({
                 id: data.roleAssignmentId,
                 role_id: data.role,
               })
             ).unwrap();
-
-            if (!roleUpdateResponse || !roleUpdateResponse.id) {
-              throw new Error("Role assignment update failed");
-            }
           } else {
-            const createResponse = await dispatch(
+            await dispatch(
               roleAssignApi({
                 executive_id: accountId,
                 role_id: data.role,
               })
             ).unwrap();
-
-            if (!createResponse || !createResponse.id) {
-              showErrorToast(
-                "Account updated, but role assignment creation failed!"
-              );
-            }
           }
-        } catch (error) {
-          try {
-            const createResponse = await dispatch(
-              roleAssignApi({
-                executive_id: accountId,
-                role_id: data.role,
-              })
-            ).unwrap();
-
-            if (!createResponse || !createResponse.id) {
-              showErrorToast(
-                "Account updated, but role assignment creation failed!"
-              );
-            }
-          } catch (createError) {
-            showErrorToast("Account updated, but role assignment failed!");
-          }
+          console.log("Role assignment successful");
+        } catch (error: any) {
+          console.error("Role assignment error:", error);
+          showErrorToast(
+            error.response?.data?.detail ||
+              error ||
+              "Account updated, but role assignment failed!"
+          );
         }
-      } else {
-        showWarningToast("No role selected. Skipping role assignment.");
       }
 
       showSuccessToast("Account Updated successfully!");
       onCloseDetailCard();
       refreshList("refresh");
       onClose();
-    } catch (error) {
+    } catch {
       showErrorToast("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -287,6 +244,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             fullWidth
             label="Full Name"
             {...register("fullName")}
+            defaultValue={accountData.fullName || ""}
             error={!!errors.fullName}
             helperText={errors.fullName?.message}
             size="small"
@@ -294,30 +252,38 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
           <Controller
             name="phoneNumber"
             control={control}
-            render={({ field }) => (
-              <TextField
-                margin="normal"
-                fullWidth
-                label="Phone Number"
-                placeholder="eg:+911234567890"
-                size="small"
-                error={!!errors.phoneNumber}
-                helperText={errors.phoneNumber?.message}
-                value={field.value ? `+91${field.value}` : ""}
-                onChange={(e) => {
-                  let value = e.target.value.replace(/\D/g, "");
-                  if (value.startsWith("91")) value = value.slice(2);
-                  if (value.length > 10) value = value.slice(0, 10);
-                  field.onChange(value || "");
-                }}
-                onFocus={() => {
-                  if (!field.value) field.onChange("");
-                }}
-                onBlur={() => {
-                  if (!field.value) field.onChange("");
-                }}
-              />
-            )}
+            render={({ field }) => {
+              let cleanValue = field.value || accountData.phoneNumber || "";
+              cleanValue = cleanValue
+                .replace(/^tel:/, "")
+                .replace(/[^0-9]/g, "");
+
+              if (cleanValue.startsWith("91") && cleanValue.length > 10) {
+                cleanValue = cleanValue.slice(2);
+              }
+              if (cleanValue.length > 10) {
+                cleanValue = cleanValue.slice(-10);
+              }
+
+              return (
+                <TextField
+                  margin="normal"
+                  fullWidth
+                  label="Phone Number"
+                  placeholder="eg: +911234567890"
+                  size="small"
+                  error={!!errors.phoneNumber}
+                  helperText={errors.phoneNumber?.message}
+                  value={cleanValue ? `+91${cleanValue}` : ""}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/\D/g, "");
+                    if (value.startsWith("91")) value = value.slice(2);
+                    if (value.length > 10) value = value.slice(0, 10);
+                    field.onChange(value || "");
+                  }}
+                />
+              );
+            }}
           />
 
           <TextField
@@ -325,35 +291,45 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             placeholder="example@gmail.com"
             fullWidth
             label="Email"
-            {...register("email")}
+            type="email"
+            {...register("email", {
+              pattern: {
+                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                message: "Invalid email address",
+              },
+            })}
+            defaultValue={accountData.email || ""}
             error={!!errors.email}
             helperText={errors.email?.message}
             size="small"
           />
-          <Controller
-            name="role"
-            control={control}
-            rules={{ required: "Role is required" }}
-            render={({ field }) => (
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                select
-                label="Role"
-                {...field}
-                error={!!errors.role}
-                helperText={errors.role?.message}
-                size="small"
-              >
-                {roles.map((role) => (
-                  <MenuItem key={role.id} value={role.id}>
-                    {role.name}
-                  </MenuItem>
-                ))}
-              </TextField>
-            )}
-          />
+          {canManageExecutive && (
+            <Controller
+              name="role"
+              control={control}
+              rules={{ required: "Role is required" }}
+              render={({ field }) => (
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  select
+                  label="Role"
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  error={!!errors.role}
+                  helperText={errors.role?.message}
+                  size="small"
+                >
+                  {roles.map((role) => (
+                    <MenuItem key={role.id} value={role.id}>
+                      {role.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
+          )}
           <Controller
             name="gender"
             control={control}
@@ -366,6 +342,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
                 {...field}
                 error={!!errors.gender}
                 size="small"
+                defaultValue={accountData.gender}
               >
                 {genderOptions.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
@@ -375,17 +352,19 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
               </TextField>
             )}
           />
+
           <TextField
             margin="normal"
             fullWidth
             label="Designation"
             {...register("designation")}
+            defaultValue={accountData.designation || ""}
             error={!!errors.designation}
             helperText={errors.designation?.message}
             size="small"
           />
 
-          {!isLoggedInUser && (
+          {canManageExecutive && !isLoggedInUser && (
             <Controller
               name="status"
               control={control}
@@ -394,10 +373,11 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
                   margin="normal"
                   fullWidth
                   select
-                  label="status"
+                  label="Status"
                   {...field}
                   error={!!errors.status}
                   size="small"
+                  defaultValue={accountData.status}
                 >
                   {statusOptions.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
@@ -409,14 +389,17 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             />
           )}
 
-          
-
           <TextField
             margin="normal"
             fullWidth
-            label="Reset password"
+            label="Reset Password"
             type={showPassword ? "text" : "password"}
-            {...register("password")}
+            {...register("password", {
+              minLength: {
+                value: 6,
+                message: "Password must be at least 6 characters",
+              },
+            })}
             error={!!errors.password}
             helperText={errors.password?.message}
             size="small"

@@ -29,7 +29,7 @@ import {
 interface IAccountFormInputs {
   username: string;
   password: string;
-  fullName?: string;
+  fullName: string;
   phoneNumber?: string;
   email?: string;
   gender?: number;
@@ -74,10 +74,10 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
 
   // Fetch roles
   useEffect(() => {
-    dispatch(roleListApi())
+    dispatch(roleListApi({}))
       .unwrap()
-      .then((res: any[]) => {
-        setRoles(res.map((role) => ({ id: role.id, name: role.name })));
+      .then((res: { data: any[] }) => {
+        setRoles(res.data.map((role) => ({ id: role.id, name: role.name })));
       })
 
       .catch((err: any) => {
@@ -218,6 +218,7 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
           <TextField
             margin="normal"
             fullWidth
+            required
             label="Full Name"
             {...register("fullName")}
             error={!!errors.fullName}

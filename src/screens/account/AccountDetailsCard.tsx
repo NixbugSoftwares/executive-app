@@ -52,7 +52,17 @@ interface AccountCardProps {
   canManageExecutive: boolean;
   onCloseDetailCard: () => void;
 }
+const genderOptions = [
+  { label: "Female", value: 1 },
+  { label: "Male", value: 2 },
+  { label: "Transgender", value: 3 },
+  { label: "Other", value: 4 },
+];
 
+const statusOptions = [
+  { label: "Active", value: 1 },
+  { label: "Suspended", value: 2 },
+];
 const loggedInUser = localStorageHelper.getItem("@user");
 const userId = loggedInUser?.executive_id;
 
@@ -88,7 +98,15 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
       showErrorToast(error);
     }
   };
+const getGenderValue = (genderText: string): number | undefined => {
+    const option = genderOptions.find((opt) => opt.label === genderText);
+    return option?.value;
+  };
 
+  const getStatusValue = (statusText: string): number | undefined => {
+    const option = statusOptions.find((opt) => opt.label === statusText);
+    return option?.value;
+  };
   return (
     <>
       <Card
@@ -212,7 +230,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
             {/* Update Button with Tooltip */}
             <Tooltip
               title={
-                !canManageExecutive
+                !canManageExecutive && !isLoggedInUser
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -232,7 +250,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
                     setUpdateFormOpen(true);
                   }}
                   startIcon={<EditIcon />}
-                  disabled={!canManageExecutive}
+                  disabled={!canManageExecutive && !isLoggedInUser}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#81c784 !important",
@@ -318,10 +336,20 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
       >
         <DialogContent>
           <AccountUpdateForm
-            refreshList={(value: any) => refreshList(value)}
             accountId={account.id}
+            accountData={{
+              username: account.username,
+              fullName: account.fullName,
+              email: account.email,
+              phoneNumber: account.phoneNumber,
+              designation: account.designation,
+            gender: getGenderValue(account.gender),
+            status: getStatusValue(account.status),
+            }}
             onClose={() => setUpdateFormOpen(false)}
             onCloseDetailCard={onCloseDetailCard}
+            refreshList={(value: any) => refreshList(value)}
+            canManageExecutive={canManageExecutive}
           />
         </DialogContent>
         <DialogActions>
