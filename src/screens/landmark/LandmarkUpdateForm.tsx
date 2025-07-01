@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState} from "react";
 import {
   TextField,
   Button,
@@ -8,14 +8,13 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
-import { landmarkUpdationApi, landmarkListApi } from "../../slices/appSlice";
+import { landmarkUpdationApi} from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import MapModal from "./LandmarkMapModal";
 import {
   showSuccessToast,
   showErrorToast,
 } from "../../common/toastMessageHelper";
-import { Landmark } from "../../types/type";
 
 interface ILandmarkFormInputs {
   name: string;
@@ -29,6 +28,7 @@ interface ILandmarkUpdateFormProps {
   refreshList: (value: string) => void;
   landmarkId: number;
   boundary?: string;
+  landmarkData?: ILandmarkFormInputs; 
 }
 
 const statusOptions = [
@@ -41,69 +41,60 @@ const importanceOptions = [
   { label: "MEDIUM", value: 2 },
   { label: "HIGH", value: 3 },
 ];
+const statusValueMap: Record<string, string> = {
+  "Validating": "1",
+  "VALIDATING": "1",
+  "Verified": "2",
+  "VERIFIED": "2",
+};
+const importanceValueMap: Record<string, string> = {
+  "Low": "1",
+  "LOW": "1",
+  "Medium": "2",
+  "MEDIUM": "2",
+  "High": "3",
+  "HIGH": "3",
+};
+
+function toWKTPolygon(boundary: string) {
+  if (!boundary) return "";
+  if (boundary.trim().startsWith("POLYGON")) return boundary;
+  return `POLYGON((${boundary}))`;
+}
 
 const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
   onClose,
   refreshList,
   landmarkId,
   boundary,
+  landmarkData
 }) => {
+  console.log("landmark dataaaaaaaaaaaa", landmarkData);
+  
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  const [landmarkData, setLandmarkData] = useState<ILandmarkFormInputs | null>(
-    null
-  );
   const [mapModalOpen, setMapModalOpen] = useState(false);
-  const [updatedBoundary, setUpdatedBoundary] = useState(boundary || "");
-  const [allLandmarks, setAllLandmarks] = useState<Landmark[]>([]);
-
+  const [updatedBoundary, setUpdatedBoundary] = useState(
+  landmarkData?.boundary || boundary || ""
+);
   const {
     register,
     handleSubmit,
     control,
-    reset,
     formState: { errors },
   } = useForm<ILandmarkFormInputs>({
     defaultValues: {
-      boundary: boundary || "",
-    },
+    name: landmarkData?.name || "",
+    boundary: landmarkData?.boundary,
+    status: statusValueMap[landmarkData?.status ?? ""] || "",
+    importance: importanceValueMap[landmarkData?.importance ?? ""] || "",
+  },
   });
 
   const handleSaveBoundary = (coordinates: string) => {
     setUpdatedBoundary(coordinates);
     setMapModalOpen(false);
   };
-
-  // Fetch landmark data on mount
-  useEffect(() => {
-    const fetchLandmarkData = async () => {
-      try {
-        setLoading(true);
-        const landmarks = await dispatch(landmarkListApi()).unwrap();
-        setAllLandmarks(landmarks); // Store all landmarks
-
-        const landmark = landmarks.find((r: any) => r.id === landmarkId);
-
-        if (landmark) {
-          setLandmarkData(landmark);
-          reset({
-            name: landmark.name,
-            boundary: boundary || landmark.boundary,
-            status: landmark.status,
-            importance: landmark.importance,
-          });
-          setUpdatedBoundary(boundary || landmark.boundary);
-        }
-      } catch (error) {
-        showErrorToast("Error fetching landmark data:" + error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLandmarkData();
-  }, [landmarkId, dispatch, reset, boundary]);
-
   const handleLandmarkUpdate: SubmitHandler<ILandmarkFormInputs> = async (
     data
   ) => {
@@ -113,17 +104,18 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       const formData = new FormData();
       formData.append("id", landmarkId.toString());
       formData.append("name", data.name);
-      formData.append("boundary", data.boundary || updatedBoundary);
+      formData.append("boundary", toWKTPolygon(data.boundary || updatedBoundary));
       formData.append("status", data.status);
       formData.append("importance", data.importance);
+console.log("boundary", data.boundary || updatedBoundary);
 
       await dispatch(landmarkUpdationApi({ landmarkId, formData })).unwrap();
 
       showSuccessToast("Landmark updated successfully!");
       refreshList("refresh");
       onClose();
-    } catch (error) {
-      showErrorToast("Failed to update landmark. Please try again.");
+    } catch (error: any) {
+      showErrorToast( error );
     } finally {
       setLoading(false);
     }
@@ -178,7 +170,7 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
         onClose={() => setMapModalOpen(false)}
         initialBoundary={updatedBoundary}
         onSave={handleSaveBoundary}
-        landmarks={allLandmarks}
+        editingLandmarkId={landmarkId}
       />
 
       <Controller

@@ -24,7 +24,8 @@ import {
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { useNavigate } from "react-router-dom";
 import * as ol from "ol";
-import localStorageHelper from "../../utils/localStorageHelper";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
 import { Coordinate } from "ol/coordinate";
 import { Style, Stroke, Fill, Text } from "ol/style";
 import { Refresh } from "@mui/icons-material";
@@ -78,8 +79,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [mousePosition, setMousePosition] = useState<string>("");
   const [drawingArea, setDrawingArea] = useState<string>("");
   const navigate = useNavigate();
-  const roleDetails = localStorageHelper.getItem("@roleDetails");
-  const canManageLandmark = roleDetails?.manage_landmark || false;
+  const canManageLandmark = useSelector((state: RootState) =>
+    state.app.permissions.includes("manage_executive")
+  );
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showAllBoundaries, setShowAllBoundaries] = useState(false);
 

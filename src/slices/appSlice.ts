@@ -58,6 +58,22 @@ interface ExecutiveRoleListParams {
   name?: string;
 }
 
+interface LandmarkListParams {
+  limit?: number;
+  offset?: number;
+  id?: string;
+  name?: string;
+  location?: string;
+}
+
+interface BusStopListParams {
+  limit?: number;
+  offset?: number;
+  landmark_id?: number;
+}
+
+
+
 //Logout API
 export const logoutApi = createAsyncThunk(
   "token",
@@ -435,32 +451,29 @@ export const roleAssignUpdateApi = createAsyncThunk(
 //landmark list API
 export const landmarkListApi = createAsyncThunk(
   "/executive/landmark",
-  async (_, { rejectWithValue }) => {
-    try {
+  async (params: LandmarkListParams, { rejectWithValue }) => {
+    const {limit, offset, id, name, location} = params;
+    const queryParams = {
+      limit,
+      offset ,
+      ...(id && { id }),
+      ...(name && { name }),
+      ...(location && { location }) 
+    };
+    try{
       const response = await commonApi.apiCall(
         "get",
-        "/executive/landmark",
-        {},
+        "landmark",
+        queryParams,
         true,
         "application/json"
       );
-      console.log("Full API Response==================>", response);
-
-      // Check if response is directly an array
-      if (Array.isArray(response)) {
-        return response;
-      }
-
-      // Check if response.data exists
-      if (!response || !response.data) {
-        throw new Error("Invalid response format");
-      }
-
-      return response.data; // Ensure correct return
+      console.log( "landmarkListApi called with:", params);
+      
+      return { data: response ||  response.data};
     } catch (error: any) {
-      console.log("Error fetching landmark=====================>", error);
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch landmarks"
+        error.detail || error.message || error || "Failed to fetch landmark list"
       );
     }
   }
@@ -473,7 +486,7 @@ export const landmarkCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/landmark",
+        "landmark",
         data,
         true,
         "application/www-form-urlencoded"
@@ -481,7 +494,7 @@ export const landmarkCreationApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Role creation failed"
+        error.detail || error.message || error || "landmark creation failed"
       );
     }
   }
@@ -497,7 +510,7 @@ export const landmarkUpdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        "/executive/landmark",
+        "landmark",
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -506,7 +519,7 @@ export const landmarkUpdationApi = createAsyncThunk(
     } catch (error: any) {
       console.error("Backend Error Response:", error.response?.data);
       return rejectWithValue(
-        error?.response?.data?.message || "Account update failed"
+        error.detail || error.message || error  || "Landmark update failed please try again"
       );
     }
   }
@@ -519,7 +532,7 @@ export const landmarkDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/landmark",
+        "landmark",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -528,7 +541,7 @@ export const landmarkDeleteApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Account deletion failed"
+        error.detail || error.message || error || "Account deletion failed"
       );
     }
   }
@@ -539,32 +552,25 @@ export const landmarkDeleteApi = createAsyncThunk(
 //bus stop list API
 export const busStopListApi = createAsyncThunk(
   "/executive/bus_stop",
-  async (_, { rejectWithValue }) => {
+  async (params: BusStopListParams, { rejectWithValue }) => {
+    const { limit, offset, landmark_id } = params;
+    const queryParams = {
+      ...(limit && { limit }),
+      ...(offset && { offset }),
+      ...(landmark_id && { landmark_id }),
+    };
     try {
       const response = await commonApi.apiCall(
         "get",
-        "/executive/bus_stop",
-        {},
+        "bus_stop",
+        queryParams,
         true,
         "application/json"
       );
-      console.log("Full API Response==================>", response);
-
-      // Check if response is directly an array
-      if (Array.isArray(response)) {
-        return response;
-      }
-
-      // Check if response.data exists
-      if (!response || !response.data) {
-        throw new Error("Invalid response format");
-      }
-
-      return response.data; // Ensure correct return
+      return response;
     } catch (error: any) {
-      console.log("Error fetching bus stops =====================>", error);
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch bus stops"
+       error.detail || error.message || error || "Failed to fetch bus stop list"
       );
     }
   }
@@ -577,7 +583,7 @@ export const busStopCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/bus_stop",
+        "bus_stop",
         data,
         true,
         "application/www-form-urlencoded"

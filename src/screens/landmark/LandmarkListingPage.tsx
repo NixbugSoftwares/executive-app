@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { useEffect, useRef, useState } from "react";
 import {
   Table,
@@ -44,7 +44,7 @@ import BusStopAddForm from "./busStopCreationForm";
 import BusStopUpdateForm from "./BusStopUpdationForm";
 import { showErrorToast } from "../../common/toastMessageHelper";
 import { Landmark, BusStop } from "../../types/type";
-
+import PaginationControls from "../../common/paginationControl";
 const LandmarkListing = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [landmarkList, setLandmarkList] = useState<Landmark[]>([]);
@@ -56,9 +56,13 @@ const LandmarkListing = () => {
   const [openBusStopModal, setOpenBusStopModal] = useState(false);
   const [busStopToUpdate, setBusStopToUpdate] = useState<BusStop | null>(null);
   const [busStopUpdateModalOpen, setBusStopUpdateModalOpen] = useState(false);
-  const [search, setSearch] = useState({ id: "", name: "", location: "" });
+  const [search, setSearch] = useState({ id: "", name: "" });
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const debounceRef = useRef<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(0);
   const rowsPerPage = 10;
+  const [hasNextPage, setHasNextPage] = useState(false);
   const [boundary, setBoundary] = useState<string>("");
   const [location, setLocation] = useState<string>("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -72,7 +76,7 @@ const LandmarkListing = () => {
   const vectorSource = useRef(new VectorSource());
   const [isDrawing, setIsDrawing] = useState(false);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
-
+  const [busStopsByLandmark, setBusStopsByLandmark] = useState<{ [key: number]: BusStop[] }>({});
   //****************exctracting points of landmark and busstop**********************
   const extractRawPoints = (polygonString: string): string => {
     if (!polygonString) return "";
@@ -92,59 +96,80 @@ const LandmarkListing = () => {
   };
 
   //********************fetching landmarks and busstops*****************************
-  const fetchLandmark = () => {
-    dispatch(landmarkListApi())
+  const fetchLandmark = useCallback((pageNumber: number, searchParams = {}) => {
+    const offset = pageNumber * rowsPerPage;
+    dispatch(landmarkListApi({ limit: rowsPerPage, offset, ...searchParams }))
       .unwrap()
-      .then((res: any[]) => {
-        const formattedLandmarks = res.map((landmark: any) => ({
-          id: landmark.id,
-          name: landmark.name,
-          boundary: extractRawPoints(landmark.boundary),
-          importance:
-            landmark.importance === 1
-              ? "Low"
-              : landmark.importance === 2
-              ? "Medium"
-              : "High",
-          status: landmark.status === 1 ? "Validating" : "Verified",
-        }));
-        setLandmarkList(formattedLandmarks);
+      .then((res) => {
+        console.log("Fetch Response||||||:", res);
+        
+      const items = res.data || [];
+      const formattedLandmarks = items.map((landmark: any) => ({
+        id: landmark.id,
+        name: landmark.name,
+        boundary: extractRawPoints(landmark.boundary),
+        importance:
+          landmark.importance === 1
+            ? "Low"
+            : landmark.importance === 2
+            ? "Medium"
+            : "High",
+        status: landmark.status === 1 ? "Validating" : "Verified",
+      }));
+      setLandmarkList(formattedLandmarks);
+      setHasNextPage(items.length === rowsPerPage);
+    })
+      .catch((error) => {
+        console.error("Fetch Error:", error);
+        showErrorToast(
+          error.detail ||
+            error.message ||
+            error ||
+            "Failed to fetch account list"
+        );
       })
-      .catch((err: any) => {
-        showErrorToast(err);
-      });
-  };
-
-  const fetchBusStop = () => {
-    dispatch(busStopListApi())
-      .unwrap()
-      .then((res: any[]) => {
-        const formattedBusStops = res.map((busStop: any) => {
-          const coords = parsePointString(busStop.location);
-          return {
-            id: busStop.id,
-            name: busStop.name,
-            landmark_id: busStop.landmark_id,
-            location: busStop.location,
-            parsedLocation: coords,
-            status: busStop.status === 1 ? "Validating" : "Verified",
-          };
-        });
-        setBusStopList(formattedBusStops);
-      })
-      .catch((err: any) => {
-        showErrorToast(err);
-      });
-  };
-
-  useEffect(() => {
-    fetchLandmark();
-    fetchBusStop();
+      .finally(() => setIsLoading(false));
   }, []);
+const handleRowClick = (landmark: Landmark) => {
+  if (isDrawing) return;
+  setSelectedLandmark(landmark);
+  setExpandedRow(expandedRow === landmark.id ? null : landmark.id);
 
-  const getBusStopsForLandmark = (landmarkId: number): BusStop[] => {
-    return busStopList.filter((stop) => stop.landmark_id === landmarkId);
-  };
+  // Fetch bus stops for this landmark if not already loaded
+  if (!busStopsByLandmark[landmark.id]) {
+    dispatch(busStopListApi({ landmark_id: landmark.id }))
+      .unwrap()
+      .then((res: any[]) => {
+        const formattedBusStops = res.map((busStop: any) => ({
+          id: busStop.id,
+          name: busStop.name,
+          landmark_id: busStop.landmark_id,
+          location: busStop.location,
+          parsedLocation: parsePointString(busStop.location),
+          status: busStop.status === 1 ? "Validating" : "Verified",
+        }));
+        setBusStopsByLandmark(prev => ({
+          ...prev,
+          [landmark.id]: formattedBusStops,
+        }));
+      })
+      .catch((error) => {
+        showErrorToast(error.detail || error.message || error || "Failed to fetch bus stops");
+      });
+  }
+};
+
+   useEffect(() => {
+    const searchParams = {
+      ...(debouncedSearch.id && { id: debouncedSearch.id }),
+      ...(debouncedSearch.name && { name: debouncedSearch.name }),
+    };
+
+    fetchLandmark(page, searchParams);
+  }, [page, debouncedSearch, fetchLandmark]);
+
+
+ 
 
   //*************************DELETE landmark and busstop*****************************
   const handleLandmarkDelete = async () => {
@@ -157,7 +182,7 @@ const LandmarkListing = () => {
       formData.append("id", String(landmarkToDelete.id));
       await dispatch(landmarkDeleteApi(formData)).unwrap();
       setDeleteConfirmOpen(false);
-      fetchLandmark();
+      refreshList("refresh");
       setExpandedRow(null);
       setSelectedLandmark(null);
     } catch (error: any) {
@@ -181,20 +206,12 @@ const LandmarkListing = () => {
       formData.append("id", String(busStopToDelete.id));
       await dispatch(busStopDeleteApi(formData)).unwrap();
       setBusStopDeleteConfirmOpen(false);
-      fetchBusStop();
     } catch (error: any) {
       showErrorToast(error);
     }
   };
 
-  const handleRowClick = (landmark: Landmark) => {
-    if (isDrawing) {
-      return;
-    }
-    setSelectedLandmark(landmark);
-    setExpandedRow(expandedRow === landmark.id ? null : landmark.id);
-  };
-
+ 
   const clearBoundaries = () => {
     vectorSource.current.clear();
   };
@@ -219,35 +236,34 @@ const LandmarkListing = () => {
     setIsDrawing(drawingState);
   };
 
-  const handleSearchChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    column: keyof typeof search
-  ) => {
-    setSearch((prev) => ({
-      ...prev,
-      [column]: (e.target as HTMLInputElement).value,
-    }));
+  const handleSearchChange = useCallback(
+    (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+      column: keyof typeof search
+    ) => {
+      const value = e.target.value;
+      setSearch((prev) => ({ ...prev, [column]: value }));
+
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = window.setTimeout(() => {
+        setDebouncedSearch((prev) => ({ ...prev, [column]: value }));
+        setPage(0);
+      }, 700);
+    },
+    []
+  );
+
+  const handleChangePage = useCallback(
+    (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+      setPage(newPage);
+    },
+    []
+  );
+const refreshList = (value: string) => {
+    if (value === "refresh") {
+      fetchLandmark(page, debouncedSearch) 
+    }
   };
-
-  const filteredData = landmarkList.filter((row) => {
-    const id = row.id ? row.id.toString().toLowerCase() : "";
-    const name = row.name ? row.name.toLowerCase() : "";
-    const location = row.boundary ? row.boundary.toLowerCase() : "";
-    const searchId = search.id ? search.id.toLowerCase() : "";
-    const searchName = search.name ? search.name.toLowerCase() : "";
-    const searchLocation = search.location ? search.location.toLowerCase() : "";
-
-    return (
-      id.includes(searchId) &&
-      name.includes(searchName) &&
-      location.includes(searchLocation)
-    );
-  });
-
-  const handleChangePage = (_event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
   return (
     <Box
       sx={{
@@ -324,286 +340,276 @@ const LandmarkListing = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredData.length > 0 ? (
-                filteredData
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row) => {
-                    const isSelected = selectedLandmark?.id === row.id;
-                    return (
-                      <React.Fragment key={row.id}>
-                        <Tooltip
-                          title={
-                            isDrawing
-                              ? "Finish drawing on the map first"
-                              : "Click to view details"
-                          }
+              {landmarkList.length > 0 ? (
+                landmarkList.map((row) => {
+                  const isSelected = selectedLandmark?.id === row.id;
+
+                  return (
+                    <React.Fragment key={row.id}>
+                      <Tooltip
+                        title={
+                          isDrawing
+                            ? "Finish drawing on the map first"
+                            : "Click to view details"
+                        }
+                      >
+                        <TableRow
+                          hover
+                          onClick={() => handleRowClick(row)}
+                          sx={{
+                            cursor: isDrawing ? "not-allowed" : "pointer",
+                            backgroundColor: isSelected ? "#E3F2FD" : "inherit",
+                            opacity: isDrawing ? 0.7 : 1,
+                            "&:hover": {
+                              backgroundColor: isDrawing
+                                ? "inherit"
+                                : isSelected
+                                ? "#E3F2FD !important"
+                                : "#E3F2FD",
+                            },
+                          }}
                         >
-                          <TableRow
-                            hover
-                            onClick={() => handleRowClick(row)}
-                            sx={{
-                              cursor: isDrawing ? "not-allowed" : "pointer",
-                              backgroundColor: isSelected
-                                ? "#E3F2FD"
-                                : "inherit",
-                              opacity: isDrawing ? 0.7 : 1,
-                              "&:hover": {
-                                backgroundColor: isDrawing
-                                  ? "inherit"
-                                  : isSelected
-                                  ? "#E3F2FD !important"
-                                  : "#E3F2FD",
-                              },
-                            }}
-                          >
-                            <TableCell>
-                              <IconButton
-                                aria-label="expand row"
+                          <TableCell>
+                            <IconButton
+                              aria-label="expand row"
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedRow(
+                                  expandedRow === row.id ? null : row.id
+                                );
+                              }}
+                            >
+                              {expandedRow === row.id ? (
+                                <KeyboardArrowUpIcon />
+                              ) : (
+                                <KeyboardArrowDownIcon />
+                              )}
+                            </IconButton>
+                          </TableCell>
+                          <TableCell>{row.id}</TableCell>
+                          <TableCell>{row.name}</TableCell>
+                          <TableCell>
+                            {row.importance === "Low" && (
+                              <Chip
+                                icon={<LowPriorityIcon />}
+                                label="Low"
+                                color="info"
                                 size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setExpandedRow(
-                                    expandedRow === row.id ? null : row.id
-                                  );
+                                sx={{
+                                  backgroundColor: isSelected
+                                    ? "#90CAF9"
+                                    : "#E3F2FD",
+                                  color: isSelected ? "#1565C0" : "#1565C0",
                                 }}
-                              >
-                                {expandedRow === row.id ? (
-                                  <KeyboardArrowUpIcon />
-                                ) : (
-                                  <KeyboardArrowDownIcon />
-                                )}
-                              </IconButton>
-                            </TableCell>
-                            <TableCell>{row.id}</TableCell>
-                            <TableCell>{row.name}</TableCell>
-                            <TableCell>
-                              {row.importance === "Low" && (
-                                <Chip
-                                  icon={<LowPriorityIcon />}
-                                  label="Low"
-                                  color="info"
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: isSelected
-                                      ? "#90CAF9"
-                                      : "#E3F2FD",
-                                    color: isSelected ? "#1565C0" : "#1565C0",
-                                  }}
-                                />
-                              )}
-                              {row.importance === "Medium" && (
-                                <Chip
-                                  icon={<MediumPriorityIcon />}
-                                  label="Medium"
-                                  color="warning"
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: isSelected
-                                      ? "#edd18f"
-                                      : "#FFE082",
-                                    color: isSelected ? "#9f3b03" : "#9f3b03",
-                                  }}
-                                />
-                              )}
-                              {row.importance === "High" && (
-                                <Chip
-                                  icon={<HighPriorityIcon />}
-                                  label="High"
-                                  color="error"
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: isSelected
-                                      ? "#EF9A9A"
-                                      : "#FFEBEE",
-                                    color: isSelected ? "#D32F2F" : "#D32F2F",
-                                  }}
-                                />
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {row.status === "Validating" && (
-                                <Chip
-                                  icon={<WarningIcon />}
-                                  label="Validating"
-                                  color="warning"
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: isSelected
-                                      ? "#edd18f"
-                                      : "#FFE082",
-                                    color: isSelected ? "#9f3b03" : "#9f3b03",
-                                  }}
-                                />
-                              )}
-                              {row.status === "Verified" && (
-                                <Chip
-                                  icon={<CheckCircleIcon />}
-                                  label="Verified"
-                                  color="success"
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: isSelected
-                                      ? "#A5D6A7"
-                                      : "#E8F5E9",
-                                    color: isSelected ? "#2E7D32" : "#2E7D32",
-                                  }}
-                                />
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        </Tooltip>
-                        <TableRow>
-                          <TableCell
-                            style={{ paddingBottom: 0, paddingTop: 0 }}
-                            colSpan={6}
+                              />
+                            )}
+                            {row.importance === "Medium" && (
+                              <Chip
+                                icon={<MediumPriorityIcon />}
+                                label="Medium"
+                                color="warning"
+                                size="small"
+                                sx={{
+                                  backgroundColor: isSelected
+                                    ? "#edd18f"
+                                    : "#FFE082",
+                                  color: isSelected ? "#9f3b03" : "#9f3b03",
+                                }}
+                              />
+                            )}
+                            {row.importance === "High" && (
+                              <Chip
+                                icon={<HighPriorityIcon />}
+                                label="High"
+                                color="error"
+                                size="small"
+                                sx={{
+                                  backgroundColor: isSelected
+                                    ? "#EF9A9A"
+                                    : "#FFEBEE",
+                                  color: isSelected ? "#D32F2F" : "#D32F2F",
+                                }}
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {row.status === "Validating" && (
+                              <Chip
+                                icon={<WarningIcon />}
+                                label="Validating"
+                                color="warning"
+                                size="small"
+                                sx={{
+                                  backgroundColor: isSelected
+                                    ? "#edd18f"
+                                    : "#FFE082",
+                                  color: isSelected ? "#9f3b03" : "#9f3b03",
+                                }}
+                              />
+                            )}
+                            {row.status === "Verified" && (
+                              <Chip
+                                icon={<CheckCircleIcon />}
+                                label="Verified"
+                                color="success"
+                                size="small"
+                                sx={{
+                                  backgroundColor: isSelected
+                                    ? "#A5D6A7"
+                                    : "#E8F5E9",
+                                  color: isSelected ? "#2E7D32" : "#2E7D32",
+                                }}
+                              />
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      </Tooltip>
+                      <TableRow>
+                        <TableCell
+                          style={{ paddingBottom: 0, paddingTop: 0 }}
+                          colSpan={6}
+                        >
+                          <Collapse
+                            in={expandedRow === row.id}
+                            timeout="auto"
+                            unmountOnExit
                           >
-                            <Collapse
-                              in={expandedRow === row.id}
-                              timeout="auto"
-                              unmountOnExit
+                            <Box
+                              sx={{
+                                margin: 1,
+                                p: 2,
+                                backgroundColor: "#f5f5f5",
+                                borderRadius: 1,
+                              }}
                             >
                               <Box
                                 sx={{
-                                  margin: 1,
-                                  p: 2,
-                                  backgroundColor: "#f5f5f5",
-                                  borderRadius: 1,
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 1,
                                 }}
                               >
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: 1,
-                                  }}
-                                >
-                                  <Typography
-                                    variant="subtitle1"
-                                    sx={{ mt: 2 }}
+                                <Typography variant="subtitle1" sx={{ mt: 2 }}>
+                                  <strong>Bus Stops:</strong>
+                                </Typography>
+
+                                {(busStopsByLandmark[row.id] || []).length > 0 ? (
+                                  <TableContainer
+                                    component={Paper}
+                                    sx={{ maxHeight: 300, overflow: "auto" }}
                                   >
-                                    <strong>Bus Stops:</strong>
-                                  </Typography>
-
-                                  {getBusStopsForLandmark(row.id).length > 0 ? (
-                                    <TableContainer
-                                      component={Paper}
-                                      sx={{ maxHeight: 300, overflow: "auto" }}
-                                    >
-                                      <Table size="small">
-                                        <TableHead>
-                                          <TableRow>
-                                            <TableCell>
-                                              <strong>Name</strong>
-                                            </TableCell>
-                                            <TableCell>
-                                              <strong>Status</strong>
-                                            </TableCell>
-                                            <TableCell align="center">
-                                              <strong>Actions</strong>
-                                            </TableCell>
-                                          </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                          {getBusStopsForLandmark(row.id).map(
-                                            (stop) => (
-                                              <TableRow key={stop.id}>
-                                                <TableCell>
-                                                  {stop.name}
-                                                </TableCell>
-                                                <TableCell>
-                                                  <Chip
-                                                    icon={
-                                                      stop.status ===
-                                                      "Validating" ? (
-                                                        <WarningIcon />
-                                                      ) : (
-                                                        <CheckCircleIcon />
-                                                      )
-                                                    }
-                                                    label={stop.status}
-                                                    color={
-                                                      stop.status === "Verified"
-                                                        ? "success"
-                                                        : "warning"
-                                                    }
-                                                    size="small"
-                                                    sx={{
-                                                      backgroundColor:
-                                                        isSelected
-                                                          ? stop.status ===
-                                                            "Validating"
-                                                            ? "#edd18f"
-                                                            : "#A5D6A7"
-                                                          : stop.status ===
-                                                            "Validating"
-                                                          ? "#FFE082"
-                                                          : "#E8F5E9",
-                                                      color: isSelected
-                                                        ? stop.status ===
-                                                          "Validating"
-                                                          ? "#9f3b03"
-                                                          : "#2E7D32"
-                                                        : stop.status ===
-                                                          "Validating"
+                                    <Table size="small">
+                                      <TableHead>
+                                        <TableRow>
+                                          <TableCell>
+                                            <strong>Name</strong>
+                                          </TableCell>
+                                          <TableCell>
+                                            <strong>Status</strong>
+                                          </TableCell>
+                                          <TableCell align="center">
+                                            <strong>Actions</strong>
+                                          </TableCell>
+                                        </TableRow>
+                                      </TableHead>
+                                      <TableBody>
+                                        {(busStopsByLandmark[row.id] || []).map((stop) => (
+                                            <TableRow key={stop.id}>
+                                              <TableCell>{stop.name}</TableCell>
+                                              <TableCell>
+                                                <Chip
+                                                  icon={
+                                                    stop.status ===
+                                                    "Validating" ? (
+                                                      <WarningIcon />
+                                                    ) : (
+                                                      <CheckCircleIcon />
+                                                    )
+                                                  }
+                                                  label={stop.status}
+                                                  color={
+                                                    stop.status === "Verified"
+                                                      ? "success"
+                                                      : "warning"
+                                                  }
+                                                  size="small"
+                                                  sx={{
+                                                    backgroundColor: isSelected
+                                                      ? stop.status ===
+                                                        "Validating"
+                                                        ? "#edd18f"
+                                                        : "#A5D6A7"
+                                                      : stop.status ===
+                                                        "Validating"
+                                                      ? "#FFE082"
+                                                      : "#E8F5E9",
+                                                    color: isSelected
+                                                      ? stop.status ===
+                                                        "Validating"
                                                         ? "#9f3b03"
-                                                        : "#2E7D32",
-                                                    }}
-                                                  />
-                                                </TableCell>
+                                                        : "#2E7D32"
+                                                      : stop.status ===
+                                                        "Validating"
+                                                      ? "#9f3b03"
+                                                      : "#2E7D32",
+                                                  }}
+                                                />
+                                              </TableCell>
 
-                                                <TableCell align="right">
-                                                  <Button
-                                                    size="small"
-                                                    color="primary"
-                                                    sx={{ mr: 1 }}
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      setBusStopToUpdate(stop);
-                                                      setBusStopUpdateModalOpen(
-                                                        true
-                                                      );
-                                                    }}
-                                                  >
-                                                    Update
-                                                  </Button>
-                                                  <Button
-                                                    size="small"
-                                                    color="error"
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      handleBusStopDeleteClick(
-                                                        stop
-                                                      );
-                                                    }}
-                                                  >
-                                                    Delete
-                                                  </Button>
-                                                </TableCell>
-                                              </TableRow>
-                                            )
-                                          )}
-                                        </TableBody>
-                                      </Table>
-                                    </TableContainer>
-                                  ) : (
-                                    <Typography
-                                      variant="body2"
-                                      sx={{
-                                        fontStyle: "italic",
-                                        color: "text.secondary",
-                                      }}
-                                    >
-                                      No bus stops added yet
-                                    </Typography>
-                                  )}
-                                </Box>
+                                              <TableCell align="right">
+                                                <Button
+                                                  size="small"
+                                                  color="primary"
+                                                  sx={{ mr: 1 }}
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setBusStopToUpdate(stop);
+                                                    setBusStopUpdateModalOpen(
+                                                      true
+                                                    );
+                                                  }}
+                                                >
+                                                  Update
+                                                </Button>
+                                                <Button
+                                                  size="small"
+                                                  color="error"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleBusStopDeleteClick(
+                                                      stop
+                                                    );
+                                                  }}
+                                                >
+                                                  Delete
+                                                </Button>
+                                              </TableCell>
+                                            </TableRow>
+                                          )
+                                        )}
+                                      </TableBody>
+                                    </Table>
+                                  </TableContainer>
+                                ) : (
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontStyle: "italic",
+                                      color: "text.secondary",
+                                    }}
+                                  >
+                                    No bus stops added yet
+                                  </Typography>
+                                )}
                               </Box>
-                            </Collapse>
-                          </TableCell>
-                        </TableRow>
-                      </React.Fragment>
-                    );
-                  })
+                            </Box>
+                          </Collapse>
+                        </TableCell>
+                      </TableRow>
+                    </React.Fragment>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} align="center">
@@ -616,66 +622,12 @@ const LandmarkListing = () => {
         </TableContainer>
 
         {/*************************************** Pagination    ****************************************/}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 1,
-            mt: 2,
-            position: "sticky",
-            bottom: 0,
-            backgroundColor: "white",
-            zIndex: 1,
-            p: 1,
-            borderTop: "1px solid #e0e0e0",
-          }}
-        >
-          <Button
-            onClick={() => handleChangePage(null, page - 1)}
-            disabled={page === 0}
-            sx={{ padding: "5px 10px", minWidth: 40 }}
-          >
-            &lt;
-          </Button>
-          {Array.from(
-            { length: Math.ceil(filteredData.length / rowsPerPage) },
-            (_, index) => index
-          )
-            .slice(
-              Math.max(0, page - 1),
-              Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
-            )
-            .map((pageNumber) => (
-              <Button
-                key={pageNumber}
-                onClick={() => handleChangePage(null, pageNumber)}
-                sx={{
-                  padding: "5px 10px",
-                  minWidth: 40,
-                  bgcolor:
-                    page === pageNumber
-                      ? "rgba(21, 101, 192, 0.2)"
-                      : "transparent",
-                  fontWeight: page === pageNumber ? "bold" : "normal",
-                  borderRadius: "5px",
-                  transition: "all 0.3s",
-                  "&:hover": {
-                    bgcolor: "rgba(21, 101, 192, 0.3)",
-                  },
-                }}
-              >
-                {pageNumber + 1}
-              </Button>
-            ))}
-          <Button
-            onClick={() => handleChangePage(null, page + 1)}
-            disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
-            sx={{ padding: "5px 10px", minWidth: 40 }}
-          >
-            &gt;
-          </Button>
-        </Box>
+        <PaginationControls
+          page={page}
+          onPageChange={(newPage) => handleChangePage(null, newPage)}
+          isLoading={isLoading}
+          hasNextPage={hasNextPage}
+        />
       </Box>
 
       <Box
@@ -730,7 +682,7 @@ const LandmarkListing = () => {
           <LandmarkAddForm
             boundary={boundary}
             onClose={() => setOpenCreateModal(false)}
-            refreshList={fetchLandmark}
+            refreshList={refreshList}
           />
         </DialogContent>
         <DialogActions>
@@ -749,8 +701,14 @@ const LandmarkListing = () => {
           {selectedLandmark && (
             <LandmarkUpdateForm
               onClose={() => setOpenUpdateModal(false)}
-              refreshList={fetchLandmark}
+              refreshList={refreshList}
               landmarkId={selectedLandmark.id}
+              landmarkData={{
+                name: selectedLandmark.name,
+                boundary: selectedLandmark.boundary,
+                status: selectedLandmark.status,
+                importance: selectedLandmark.importance,
+              }}
             />
           )}
         </DialogContent>
@@ -799,7 +757,7 @@ const LandmarkListing = () => {
           <BusStopAddForm
             location={location}
             onClose={() => setOpenBusStopModal(false)}
-            refreshList={fetchBusStop}
+            // refreshList={}
             landmarkId={selectedLandmark?.id || null}
           />
         </DialogContent>
