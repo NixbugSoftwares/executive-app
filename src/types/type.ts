@@ -43,7 +43,19 @@ export interface BusStop {
   status: string;
   parsedLocation?: [number, number] | null;
 }
-
+export interface Company {
+  id: number;
+  name: string;
+  contact_person: string;
+  location: string;
+  phone_number: string;
+  address: string;
+  email_id: string;
+  status: string;
+  companyType: string;
+  latitude: number;
+  longitude: number;
+}
 export interface SelectedLandmark {
   id: number;
   name: string;

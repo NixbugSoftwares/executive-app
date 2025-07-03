@@ -34,18 +34,9 @@ import {
   showSuccessToast,
   showErrorToast,
 } from "../../common/toastMessageHelper";
+import { Company } from "../../types/type";
 interface companyCardProps {
-  company: {
-    id: number;
-    name: string;
-    ownerName: string;
-    location: string;
-    phoneNumber: string;
-    address: string;
-    email: string;
-    status: string;
-    companyType: string;
-  };
+  company: Company;
 
   onUpdate: () => void;
   onDelete: (id: number) => void;
@@ -142,7 +133,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
         <Card sx={{ p: 2, bgcolor: "grey.100", mb: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <Typography variant="body2" color="textSecondary">
-              <b>Owner Name:</b> {company.ownerName}
+              <b>Owner Name:</b> {company.contact_person}
             </Typography>
           </Box>
 
@@ -175,13 +166,13 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <PhoneIcon color="action" sx={{ mr: 1 }} />
-            {company.phoneNumber ? (
+            {company.phone_number ? (
               <a
-                href={`tel:${company.phoneNumber.replace("tel:", "")}`}
+                href={`tel:${company.phone_number.replace("tel:", "")}`}
                 style={{ textDecoration: "none" }}
               >
                 <Typography variant="body2" color="primary">
-                  {company.phoneNumber.replace("tel:", "")}
+                  {company.phone_number.replace("tel:", "")}
                 </Typography>
               </a>
             ) : (
@@ -193,13 +184,13 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <EmailIcon color="action" sx={{ mr: 1 }} />
-            {company.email ? (
+            {company.email_id ? (
               <a
-                href={`mailto:${company.email}`}
+                href={`mailto:${company.email_id}`}
                 style={{ textDecoration: "none" }}
               >
                 <Typography variant="body2" color="primary">
-                  {company.email}
+                  {company.email_id}
                 </Typography>
               </a>
             ) : (

@@ -81,6 +81,16 @@ interface FareListParams {
   scope?: 1 | 2;
 }
 
+interface CompanyListParams {
+  limit?: number;
+  offset?: number;
+  id?: number;
+  name?: string;
+  address?: string;
+  contact_person?: string;
+  phone_number?: string;
+  email_id?: string;
+}
 
 
 //Logout API
@@ -777,32 +787,42 @@ export const fareDeleteApi = createAsyncThunk(
 //company list API
 export const companyListApi = createAsyncThunk(
   "/executive/company",
-  async (_, { rejectWithValue }) => {
+  async (params: CompanyListParams, { rejectWithValue }) => {
+    const {
+      limit,
+      offset,
+      id,
+      name,
+      address,
+      contact_person,
+      phone_number,
+      email_id,
+    } = params;
+
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(name && { name }),
+      ...(address && { address }),
+      ...(contact_person && { contact_person }),
+      ...(phone_number && { phone_number }),
+      ...(email_id && { email_id }),
+    };
     try {
       const response = await commonApi.apiCall(
         "get",
-        "/executive/company",
-        {},
+        "company",
+        queryParams,
         true,
         "application/json"
       );
-      console.log("Full API Response==================>", response);
-
-      // Check if response is directly an array
-      if (Array.isArray(response)) {
-        return response;
-      }
-
-      // Check if response.data exists
-      if (!response || !response.data) {
-        throw new Error("Invalid response format");
-      }
-
-      return response.data; // Ensure correct return
+      if (!response) throw new Error("No response received");
+      return { data: response };
     } catch (error: any) {
-      console.log("Error fetching role=====================>", error);
+      console.error("API Error:", error);
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch accounts"
+        error.detail || error.message || error || "Failed to fetch company list"
       );
     }
   }
@@ -815,7 +835,7 @@ export const companyCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/company",
+        "company",
         data,
         true,
         "application/www-form-urlencoded"
@@ -823,7 +843,7 @@ export const companyCreationApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "company creation failed"
+        error.detail || error.message || error || "company creation failed"
       );
     }
   }
@@ -839,7 +859,7 @@ export const companyUpdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        "/executive/company",
+        "company",
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -848,7 +868,7 @@ export const companyUpdationApi = createAsyncThunk(
     } catch (error: any) {
       console.error("Backend Error Response:", error.response?.data);
       return rejectWithValue(
-        error?.response?.data?.message || "Role update failed"
+        error.detail || error.message || error || "company update failed"
       );
     }
   }

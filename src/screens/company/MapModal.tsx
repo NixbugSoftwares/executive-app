@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState} from "react";
 import { Modal, Box, Typography, Button } from "@mui/material";
 import MapComponent from "./map";
-import { showErrorToast } from "../../common/toastMessageHelper";
 
 interface MapModalProps {
   open: boolean;
   onClose: () => void;
   onSelectLocation: (location: {
-    name: string;
+    // name: string;
     lat: number;
     lng: number;
   }) => void;
@@ -21,37 +20,21 @@ const MapModal: React.FC<MapModalProps> = ({
   initialCoordinates,
 }) => {
   const [selectedLocation, setSelectedLocation] = useState<{
-    name: string;
+    // name: string;
     lat: number;
     lng: number;
   } | null>(null);
 
   // Fetch location name when initialCoordinates changes
-  useEffect(() => {
-    if (open && initialCoordinates) {
-      const fetchLocationName = async (lat: number, lng: number) => {
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-          );
-          const data = await response.json();
-          setSelectedLocation({ name: data.display_name, lat, lng });
-        } catch (error) {
-          showErrorToast("Error fetching location name:" + error);
-        }
-      };
-
-      fetchLocationName(initialCoordinates.lat, initialCoordinates.lng);
-    }
-  }, [open, initialCoordinates]);
+  
 
   const handleLocationSelect = (coordinates: {
     lat: number;
     lng: number;
-    name: string;
+    // name: string;
   }) => {
     setSelectedLocation({
-      name: coordinates.name,
+      // name: coordinates.name,
       lat: coordinates.lat,
       lng: coordinates.lng,
     });
