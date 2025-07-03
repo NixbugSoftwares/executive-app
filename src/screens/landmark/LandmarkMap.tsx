@@ -33,7 +33,7 @@ import { getArea } from "ol/sphere";
 import Icon from "ol/style/Icon";
 import {
   showErrorToast,
-  showSuccessToast,
+  showInfoToast,
 } from "../../common/toastMessageHelper";
 import busstopimage from "../../assets/png/busstopimage.png";
 import { Landmark, BusStop } from "../../types/type";
@@ -431,7 +431,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const toggleBusStopAdding = () => {
     if (!mapInstance.current || !selectedLandmark) return;
     if (!isAddingBusStop) {
-      showSuccessToast("Select bus stop inside the boundary.");
+      showInfoToast("Select bus stop inside the boundary.");
     } else {
     }
     if (isAddingBusStop) {

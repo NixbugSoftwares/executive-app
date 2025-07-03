@@ -51,7 +51,6 @@ const LandmarkListing = () => {
   const [selectedLandmark, setSelectedLandmark] = useState<Landmark | null>(
     null
   );
-  const [busStopList, setBusStopList] = useState<BusStop[]>([]);
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openBusStopModal, setOpenBusStopModal] = useState(false);
   const [busStopToUpdate, setBusStopToUpdate] = useState<BusStop | null>(null);
@@ -76,7 +75,9 @@ const LandmarkListing = () => {
   const vectorSource = useRef(new VectorSource());
   const [isDrawing, setIsDrawing] = useState(false);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
-  const [busStopsByLandmark, setBusStopsByLandmark] = useState<{ [key: number]: BusStop[] }>({});
+  const [busStopsByLandmark, setBusStopsByLandmark] = useState<{
+    [key: number]: BusStop[];
+  }>({});
   //****************exctracting points of landmark and busstop**********************
   const extractRawPoints = (polygonString: string): string => {
     if (!polygonString) return "";
@@ -102,23 +103,23 @@ const LandmarkListing = () => {
       .unwrap()
       .then((res) => {
         console.log("Fetch Response||||||:", res);
-        
-      const items = res.data || [];
-      const formattedLandmarks = items.map((landmark: any) => ({
-        id: landmark.id,
-        name: landmark.name,
-        boundary: extractRawPoints(landmark.boundary),
-        importance:
-          landmark.importance === 1
-            ? "Low"
-            : landmark.importance === 2
-            ? "Medium"
-            : "High",
-        status: landmark.status === 1 ? "Validating" : "Verified",
-      }));
-      setLandmarkList(formattedLandmarks);
-      setHasNextPage(items.length === rowsPerPage);
-    })
+
+        const items = res.data || [];
+        const formattedLandmarks = items.map((landmark: any) => ({
+          id: landmark.id,
+          name: landmark.name,
+          boundary: extractRawPoints(landmark.boundary),
+          importance:
+            landmark.importance === 1
+              ? "Low"
+              : landmark.importance === 2
+              ? "Medium"
+              : "High",
+          status: landmark.status === 1 ? "Validating" : "Verified",
+        }));
+        setLandmarkList(formattedLandmarks);
+        setHasNextPage(items.length === rowsPerPage);
+      })
       .catch((error) => {
         console.error("Fetch Error:", error);
         showErrorToast(
@@ -130,14 +131,9 @@ const LandmarkListing = () => {
       })
       .finally(() => setIsLoading(false));
   }, []);
-const handleRowClick = (landmark: Landmark) => {
-  if (isDrawing) return;
-  setSelectedLandmark(landmark);
-  setExpandedRow(expandedRow === landmark.id ? null : landmark.id);
 
-  // Fetch bus stops for this landmark if not already loaded
-  if (!busStopsByLandmark[landmark.id]) {
-    dispatch(busStopListApi({ landmark_id: landmark.id }))
+  const fetchBusStopsForLandmark = (landmarkId: number) => {
+    dispatch(busStopListApi({ landmark_id: landmarkId }))
       .unwrap()
       .then((res: any[]) => {
         const formattedBusStops = res.map((busStop: any) => ({
@@ -148,18 +144,27 @@ const handleRowClick = (landmark: Landmark) => {
           parsedLocation: parsePointString(busStop.location),
           status: busStop.status === 1 ? "Validating" : "Verified",
         }));
-        setBusStopsByLandmark(prev => ({
+        setBusStopsByLandmark((prev) => ({
           ...prev,
-          [landmark.id]: formattedBusStops,
+          [landmarkId]: formattedBusStops,
         }));
       })
       .catch((error) => {
-        showErrorToast(error.detail || error.message || error || "Failed to fetch bus stops");
+        showErrorToast(
+          error.detail || error.message || error || "Failed to fetch bus stops"
+        );
       });
-  }
-};
+  };
+  const handleRowClick = (landmark: Landmark) => {
+    if (isDrawing) return;
+    setSelectedLandmark(landmark);
+    setExpandedRow(expandedRow === landmark.id ? null : landmark.id);
+    if (!busStopsByLandmark[landmark.id]) {
+      fetchBusStopsForLandmark(landmark.id);
+    }
+  };
 
-   useEffect(() => {
+  useEffect(() => {
     const searchParams = {
       ...(debouncedSearch.id && { id: debouncedSearch.id }),
       ...(debouncedSearch.name && { name: debouncedSearch.name }),
@@ -167,9 +172,6 @@ const handleRowClick = (landmark: Landmark) => {
 
     fetchLandmark(page, searchParams);
   }, [page, debouncedSearch, fetchLandmark]);
-
-
- 
 
   //*************************DELETE landmark and busstop*****************************
   const handleLandmarkDelete = async () => {
@@ -200,18 +202,17 @@ const handleRowClick = (landmark: Landmark) => {
       showErrorToast("Error: Bus stop to delete is missing");
       return;
     }
-
     try {
       const formData = new FormData();
       formData.append("id", String(busStopToDelete.id));
       await dispatch(busStopDeleteApi(formData)).unwrap();
       setBusStopDeleteConfirmOpen(false);
+      fetchBusStopsForLandmark(busStopToDelete.landmark_id!);
     } catch (error: any) {
       showErrorToast(error);
     }
   };
 
- 
   const clearBoundaries = () => {
     vectorSource.current.clear();
   };
@@ -259,11 +260,12 @@ const handleRowClick = (landmark: Landmark) => {
     },
     []
   );
-const refreshList = (value: string) => {
+  const refreshList = (value: string) => {
     if (value === "refresh") {
-      fetchLandmark(page, debouncedSearch) 
+      fetchLandmark(page, debouncedSearch);
     }
   };
+
   return (
     <Box
       sx={{
@@ -494,7 +496,8 @@ const refreshList = (value: string) => {
                                   <strong>Bus Stops:</strong>
                                 </Typography>
 
-                                {(busStopsByLandmark[row.id] || []).length > 0 ? (
+                                {(busStopsByLandmark[row.id] || []).length >
+                                0 ? (
                                   <TableContainer
                                     component={Paper}
                                     sx={{ maxHeight: 300, overflow: "auto" }}
@@ -514,7 +517,8 @@ const refreshList = (value: string) => {
                                         </TableRow>
                                       </TableHead>
                                       <TableBody>
-                                        {(busStopsByLandmark[row.id] || []).map((stop) => (
+                                        {(busStopsByLandmark[row.id] || []).map(
+                                          (stop) => (
                                             <TableRow key={stop.id}>
                                               <TableCell>{stop.name}</TableCell>
                                               <TableCell>
@@ -664,7 +668,7 @@ const refreshList = (value: string) => {
             landmarks={landmarkList}
             isDrawing={isDrawing}
             onDrawingChange={handleDrawingChange}
-            busStops={busStopList}
+            busStops={selectedLandmark ? busStopsByLandmark[selectedLandmark.id] : []}
             onBusStopPointSelect={handlePointSelect}
           />
         </Box>
@@ -757,7 +761,9 @@ const refreshList = (value: string) => {
           <BusStopAddForm
             location={location}
             onClose={() => setOpenBusStopModal(false)}
-            // refreshList={}
+            refreshBusStops={() =>
+              selectedLandmark && fetchBusStopsForLandmark(selectedLandmark.id)
+            }
             landmarkId={selectedLandmark?.id || null}
           />
         </DialogContent>
@@ -774,16 +780,18 @@ const refreshList = (value: string) => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogContent>
-          {busStopToUpdate && (
-            <BusStopUpdateForm
-              onClose={() => setBusStopUpdateModalOpen(false)}
-              refreshList={fetchBusStop}
-              busStopId={busStopToUpdate.id}
-              location={busStopToUpdate.location}
-            />
-          )}
-        </DialogContent>
+  <DialogContent>
+    {busStopToUpdate && selectedLandmark && (
+  <BusStopUpdateForm
+    busStop={busStopToUpdate}
+    landmark={selectedLandmark}
+    onClose={() => setBusStopUpdateModalOpen(false)}
+    refreshBusStops={() =>
+      fetchBusStopsForLandmark(selectedLandmark.id)
+    }
+  />
+)}
+  </DialogContent>
         <DialogActions>
           <Button
             onClick={() => setBusStopUpdateModalOpen(false)}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   TextField,
   Button,
@@ -8,13 +8,14 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
-import { busStopUpdationApi, busStopListApi } from "../../slices/appSlice";
+import { busStopUpdationApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import MapModal from "./BUsStopMapModal";
 import {
   showSuccessToast,
   showErrorToast,
 } from "../../common/toastMessageHelper";
+import { Landmark } from "../../types/type";
 
 interface BusStop {
   id: number;
@@ -31,108 +32,81 @@ interface IBusStopFormInputs {
 
 interface IBusStopUpdateFormProps {
   onClose: () => void;
-  refreshList: (value: string) => void;
-  busStopId: number;
-  location?: string;
+  refreshBusStops: (value: string) => void;
+  busStop: BusStop;
+  landmark: Landmark;
 }
-
-const statusOptions = [
-  { label: "VALIDATING", value: "1" },
-  { label: "VERIFIED", value: "2" },
-];
 
 const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
   onClose,
-  refreshList,
-  busStopId,
-  location,
+  refreshBusStops,
+  busStop,
+  landmark,
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  const [landmarkData, setLandmarkData] = useState<IBusStopFormInputs | null>(
-    null
-  );
   const [mapModalOpen, setMapModalOpen] = useState(false);
-  const [updatedLocation, setUpdatedLocation] = useState(location || "");
-  const [allBusStops, setAllBusStops] = useState<BusStop[]>([]);
-
+  const [updatedLocation, setUpdatedLocation] = useState(busStop.location);
+  const statusTextToValue = (status: string) => {
+  if (status.toLowerCase() === "validating") return "1";
+  if (status.toLowerCase() === "verified") return "2";
+  return "";
+};
   const {
     register,
     handleSubmit,
     control,
-    reset,
+    setValue,
     formState: { errors },
   } = useForm<IBusStopFormInputs>({
     defaultValues: {
-      location: location || "",
+      name: busStop.name,
+      location: busStop.location,
+      status: statusTextToValue(busStop.status),
     },
   });
 
-  const handleSaveBoundary = (coordinates: string) => {
-    setUpdatedLocation(coordinates);
-    setMapModalOpen(false);
-  };
-
-  // Fetch landmark data on mount
-  useEffect(() => {
-    const fetchBusStopData = async () => {
-      try {
-        setLoading(true);
-        const busStops = await dispatch(busStopListApi()).unwrap();
-        setAllBusStops(busStops); // Store all bus stops
-
-        const busStop = busStops.find((r: any) => r.id === busStopId);
-
-        if (busStop) {
-          setLandmarkData(busStop);
-          reset({
-            name: busStop.name,
-            location: location || busStop.location,
-            status: busStop.status,
-          });
-          setUpdatedLocation(location || busStop.location);
-        }
-      } catch (error) {
-        showErrorToast("Error fetching bus stop data: " + error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBusStopData();
-  }, [busStopId, dispatch, reset, location]);
-
-  const handleLandmarkUpdate: SubmitHandler<IBusStopFormInputs> = async (
+  function ensureWktPoint(value: string): string {
+    if (/^POINT\(\s*-?\d+(\.\d+)?\s+-?\d+(\.\d+)?\s*\)$/i.test(value)) {
+      return value;
+    }
+    const match = value.match(/(-?\d+(\.\d+)?)[ ,]+(-?\d+(\.\d+)?)/);
+    if (match) {
+      return `POINT(${match[1]} ${match[3]})`;
+    }
+    return "";
+  }
+const statusOptions = [
+  { label: "Validating", value: "1" },
+  { label: "Verified", value: "2" },
+];
+  const handleBusStopUpdate: SubmitHandler<IBusStopFormInputs> = async (
     data
   ) => {
     try {
       setLoading(true);
 
       const formData = new FormData();
-      formData.append("id", busStopId.toString());
+      formData.append("id", busStop.id.toString());
       formData.append("name", data.name);
-      formData.append("location", data.location || updatedLocation);
+      formData.append("location", ensureWktPoint(data.location || updatedLocation));
       formData.append("status", data.status);
-      await dispatch(busStopUpdationApi({ busStopId, formData })).unwrap();
 
+      await dispatch(busStopUpdationApi({ busStopId: busStop.id, formData })).unwrap();
+      refreshBusStops("refresh");
       showSuccessToast("Bus Stop updated successfully!");
-      refreshList("refresh");
       onClose();
-    } catch {
-      showErrorToast("Failed to update Bus Stop. Please try again.");
+    } catch (error: any) {
+      showErrorToast(error);
     } finally {
       setLoading(false);
     }
   };
 
-  if (!landmarkData) {
-    return <CircularProgress />;
-  }
-
   return (
     <Box
       component="form"
-      onSubmit={handleSubmit(handleLandmarkUpdate)}
+      onSubmit={handleSubmit(handleBusStopUpdate)}
       sx={{
         display: "flex",
         flexDirection: "column",
@@ -162,7 +136,7 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
 
       <TextField
         label="Location"
-        {...register("location", { required: "Boundary is required" })}
+        {...register("location", { required: "Location is required" })}
         value={updatedLocation}
         InputProps={{ readOnly: true }}
         onClick={() => setMapModalOpen(true)}
@@ -172,9 +146,13 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
       <MapModal
         open={mapModalOpen}
         onClose={() => setMapModalOpen(false)}
-        initialLocation={updatedLocation}
-        onSave={handleSaveBoundary}
-        busStops={allBusStops}
+        busStopId={busStop.id}
+        landmarkId={landmark.id}
+        onSave={(newLocation) => {
+          setValue("location", newLocation);
+          setUpdatedLocation(newLocation);
+          setMapModalOpen(false);
+        }}
       />
 
       <Controller
@@ -209,7 +187,7 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
         {loading ? (
           <CircularProgress size={24} sx={{ color: "white" }} />
         ) : (
-        "Update Bus Stop"
+          "Update Bus Stop"
         )}
       </Button>
     </Box>
