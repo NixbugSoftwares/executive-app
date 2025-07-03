@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Table,
   TableBody,
@@ -20,10 +20,12 @@ import ChildCareIcon from "@mui/icons-material/ChildCare";
 import SchoolIcon from "@mui/icons-material/School";
 import { fareListApi } from "../../slices/appSlice";
 import type { AppDispatch } from "../../store/Store";
-import { showInfoToast } from "../../common/toastMessageHelper";
+import { showErrorToast } from "../../common/toastMessageHelper";
 import FareSkeletonPage from "./fareSkeletonPage";
 import { Fare } from "../../types/type";
-import localStorageHelper from "../../utils/localStorageHelper";
+import PaginationControls from "../../common/paginationControl";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
 
 const FareListingPage = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -33,69 +35,91 @@ const FareListingPage = () => {
     id: "",
     name: "",
   });
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const debounceRef = useRef<number | null>(null);
+
+  const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(0);
   const rowsPerPage = 10;
+  const [hasNextPage, setHasNextPage] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "create" | "view">("list");
-  const roleDetails = localStorageHelper.getItem("@roleDetails");
-  const canManageFare = roleDetails?.manage_fare || false;
-
-  const fetchGlobalFares = () => {
-    dispatch(fareListApi({ scope: 1 }))
-      .unwrap()
-      .then((res: any) => {
-        const formattedFares = res.data.map((fare: any) => ({
-          id: fare.id,
-          name: fare.name,
-          company_id: fare.company_id,
-          version: fare.version,
-          attributes: {
-            df_version: fare.attributes?.df_version || 1,
-            ticket_types: fare.attributes?.ticket_types || [],
-            currency_type: fare.attributes?.currency_type,
-            distance_unit: fare.attributes?.distance_unit || "m",
-            extra: fare.attributes?.extra || {},
-          },
-          function: fare.function,
-          scope: fare.scope,
-          created_on: fare.created_on,
-        }));
-        setFareList(formattedFares);
-      })
-      .catch((error) => {
-        console.error("Error fetching fares:", error);
-        showInfoToast(
-          error.message || "Failed to fetch fare list. Please try again."
-        );
-      });
-  };
-
-  useEffect(() => {
-    fetchGlobalFares();
-  }, []);
-
-  const handleSearchChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    field: keyof typeof search
-  ) => {
-    setSearch((prev) => ({ ...prev, [field]: e.target.value }));
-  };
-
-  const filteredData = fareList.filter(
-    (row) =>
-      row.id.toString().toLowerCase().includes(search.id.toLowerCase()) &&
-      row.name.toLowerCase().includes(search.name.toLowerCase())
+  const canManageFare = useSelector((state: RootState) =>
+    state.app.permissions.includes("manage_fare")
+  );
+  const fetchGlobalFares = useCallback(
+    (pageNumber: number, searchParams = {}) => {
+      const offset = pageNumber * rowsPerPage;
+      dispatch(
+        fareListApi({ limit: rowsPerPage, offset, scope: 1, ...searchParams })
+      )
+        .unwrap()
+        .then((res: any) => {
+          const items = res.data || [];
+          const formattedFares = items.map((fare: any) => ({
+            id: fare.id,
+            name: fare.name,
+            company_id: fare.company_id,
+            version: fare.version,
+            attributes: {
+              df_version: fare.attributes?.df_version || 1,
+              ticket_types: fare.attributes?.ticket_types || [],
+              currency_type: fare.attributes?.currency_type,
+              distance_unit: fare.attributes?.distance_unit || "m",
+              extra: fare.attributes?.extra || {},
+            },
+            function: fare.function,
+            scope: fare.scope,
+            created_on: fare.created_on,
+          }));
+          setFareList(formattedFares);
+          setHasNextPage(items.length === rowsPerPage);
+        })
+        .catch((error) => {
+          console.error("Error fetching fares:", error);
+          showErrorToast(
+            error || "Failed to fetch fare list. Please try again."
+          );
+        })
+        .finally(() => setIsLoading(false));
+    },
+    []
   );
 
-  const handleChangePage = (
-    _event: React.MouseEvent<HTMLButtonElement> | null,
-    newPage: number
-  ) => {
-    setPage(newPage);
-  };
+  const handleSearchChange = useCallback(
+    (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+      column: keyof typeof search
+    ) => {
+      const value = e.target.value;
+      setSearch((prev) => ({ ...prev, [column]: value }));
 
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = window.setTimeout(() => {
+        setDebouncedSearch((prev) => ({ ...prev, [column]: value }));
+        setPage(0);
+      }, 700);
+    },
+    []
+  );
+
+  const handleChangePage = useCallback(
+    (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+      setPage(newPage);
+    },
+    []
+  );
+
+  useEffect(() => {
+    const searchParams = {
+      ...(debouncedSearch.id && { id: debouncedSearch.id }),
+      ...(debouncedSearch.name && { name: debouncedSearch.name }),
+    };
+
+    fetchGlobalFares(page, searchParams);
+  }, [page, debouncedSearch, fetchGlobalFares]);
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      fetchGlobalFares();
+      fetchGlobalFares(page, debouncedSearch);
     }
   };
 
@@ -252,8 +276,6 @@ const FareListingPage = () => {
                     </b>
                   </TableCell>
 
-                 
-
                   {/* Version Header */}
                   <TableCell>
                     <b style={{ display: "block", textAlign: "center" }}>
@@ -271,141 +293,133 @@ const FareListingPage = () => {
               </TableHead>
 
               <TableBody>
-                {filteredData.length > 0 ? (
-                  filteredData
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((fare) => {
-                      const isSelected = selectedFare?.id === fare.id;
-                      return (
-                        <TableRow
-                          key={fare.id}
-                          hover
-                          selected={isSelected}
-                          onClick={() => {
-                            setSelectedFare(fare);
-                            setViewMode("view");
-                          }}
+                {fareList.length > 0 ? (
+                  fareList.map((fare) => {
+                    const isSelected = selectedFare?.id === fare.id;
+                    return (
+                      <TableRow
+                        key={fare.id}
+                        hover
+                        selected={isSelected}
+                        onClick={() => {
+                          setSelectedFare(fare);
+                          setViewMode("view");
+                        }}
+                        sx={{
+                          cursor: "pointer",
+                          backgroundColor: isSelected
+                            ? "#E3F2FD !important"
+                            : "inherit",
+                          "&:hover": { backgroundColor: "#E3F2FD" },
+                        }}
+                      >
+                        {/* ID */}
+                        <TableCell
                           sx={{
-                            cursor: "pointer",
-                            backgroundColor: isSelected
-                              ? "#E3F2FD !important"
-                              : "inherit",
-                            "&:hover": { backgroundColor: "#E3F2FD" },
+                            fontWeight: 500,
+                            textAlign: "center",
+                            height: 60,
                           }}
                         >
-                          {/* ID */}
-                          <TableCell
-                            sx={{ fontWeight: 500, textAlign: "center", height: 60 }}
-                          >
-                            {fare.id}
-                          </TableCell>
+                          {fare.id}
+                        </TableCell>
 
-                          {/* Name */}
-                          <TableCell
-                            sx={{ fontWeight: 500, textAlign: "center",  }}
-                          >
-                            {fare.name || (
-                              <Tooltip title="Name not available">
-                                <ErrorIcon color="disabled" />
-                              </Tooltip>
-                            )}
-                          </TableCell>
+                        {/* Name */}
+                        <TableCell
+                          sx={{ fontWeight: 500, textAlign: "center" }}
+                        >
+                          {fare.name || (
+                            <Tooltip title="Name not available">
+                              <ErrorIcon color="disabled" />
+                            </Tooltip>
+                          )}
+                        </TableCell>
 
-                          {/* Ticket Types - Block Style */}
-                          <TableCell>
-                            {fare.attributes.ticket_types?.length > 0 ? (
-                              <Box
-                                display="flex"
-                                gap={1}
-                              >
-                                {fare.attributes.ticket_types.map(
-                                  (type, index) => {
-                                    const typeConfig = {
-                                      adult: {
-                                        bg: "rgba(25, 118, 210, 0.1)",
-                                        color: "#1565c0",
-                                        icon: <PersonIcon fontSize="small" />,
-                                      },
-                                      child: {
-                                        bg: "rgba(255, 152, 0, 0.1)",
-                                        color: "#ef6c00",
-                                        icon: (
-                                          <ChildCareIcon fontSize="small" />
-                                        ),
-                                      },
-                                      default: {
-                                        bg: "rgba(76, 175, 80, 0.1)",
-                                        color: "#2e7d32",
-                                        icon: <SchoolIcon fontSize="small" />,
-                                      },
-                                    };
+                        {/* Ticket Types - Block Style */}
+                        <TableCell>
+                          {fare.attributes.ticket_types?.length > 0 ? (
+                            <Box display="flex" gap={1}>
+                              {fare.attributes.ticket_types.map(
+                                (type, index) => {
+                                  const typeConfig = {
+                                    adult: {
+                                      bg: "rgba(25, 118, 210, 0.1)",
+                                      color: "#1565c0",
+                                      icon: <PersonIcon fontSize="small" />,
+                                    },
+                                    child: {
+                                      bg: "rgba(255, 152, 0, 0.1)",
+                                      color: "#ef6c00",
+                                      icon: <ChildCareIcon fontSize="small" />,
+                                    },
+                                    default: {
+                                      bg: "rgba(76, 175, 80, 0.1)",
+                                      color: "#2e7d32",
+                                      icon: <SchoolIcon fontSize="small" />,
+                                    },
+                                  };
 
-                                    const typeKey = type.name
-                                      ?.toLowerCase()
-                                      .includes("adult")
-                                      ? "adult"
-                                      : type.name
-                                          ?.toLowerCase()
-                                          .includes("child")
-                                      ? "child"
-                                      : "default";
+                                  const typeKey = type.name
+                                    ?.toLowerCase()
+                                    .includes("adult")
+                                    ? "adult"
+                                    : type.name?.toLowerCase().includes("child")
+                                    ? "child"
+                                    : "default";
 
-                                    return (
-                                      <Chip
-                                        key={index}
-                                        size="small"
-                                        icon={typeConfig[typeKey].icon}
-                                        label={type.name || `Type ${index + 1}`}
-                                        sx={{
-                                          width: "100%",
-                                          maxWidth: "120px",
-                                          justifyContent: "flex-start",
-                                          borderRadius: "4px",
-                                          backgroundColor:
-                                            typeConfig[typeKey].bg,
+                                  return (
+                                    <Chip
+                                      key={index}
+                                      size="small"
+                                      icon={typeConfig[typeKey].icon}
+                                      label={type.name || `Type ${index + 1}`}
+                                      sx={{
+                                        width: "100%",
+                                        maxWidth: "120px",
+                                        justifyContent: "flex-start",
+                                        borderRadius: "4px",
+                                        backgroundColor: typeConfig[typeKey].bg,
+                                        color: typeConfig[typeKey].color,
+                                        "& .MuiChip-icon": {
                                           color: typeConfig[typeKey].color,
-                                          "& .MuiChip-icon": {
-                                            color: typeConfig[typeKey].color,
-                                            opacity: 0.8,
-                                            marginLeft: "8px",
-                                          },
-                                        }}
-                                      />
-                                    );
-                                  }
-                                )}
-                              </Box>
-                            ) : (
-                              <Tooltip title="No ticket types">
-                                <ErrorIcon color="disabled" />
-                              </Tooltip>
-                            )}
-                          </TableCell>
+                                          opacity: 0.8,
+                                          marginLeft: "8px",
+                                        },
+                                      }}
+                                    />
+                                  );
+                                }
+                              )}
+                            </Box>
+                          ) : (
+                            <Tooltip title="No ticket types">
+                              <ErrorIcon color="disabled" />
+                            </Tooltip>
+                          )}
+                        </TableCell>
 
-                         
+                        {/* Version */}
+                        <TableCell sx={{ textAlign: "center" }}>
+                          {fare.attributes.df_version || (
+                            <Tooltip title="Version not available">
+                              <ErrorIcon color="disabled" />
+                            </Tooltip>
+                          )}
+                        </TableCell>
 
-                          {/* Version */}
-                          <TableCell sx={{ textAlign: "center" }}>
-                            {fare.attributes.df_version || (
-                              <Tooltip title="Version not available">
-                                <ErrorIcon color="disabled" />
-                              </Tooltip>
-                            )}
-                          </TableCell>
-
-                          {/* Created On */}
-                          <TableCell sx={{ textAlign: "center" }}>
-                            {fare.created_on ? (
-                              new Date(fare.created_on).toLocaleDateString()
-                            ) : (
-                              <Tooltip title="Date not available">
-                                <ErrorIcon color="disabled" />
-                              </Tooltip>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
+                        {/* Created On */}
+                        <TableCell sx={{ textAlign: "center" }}>
+                          {fare.created_on ? (
+                            new Date(fare.created_on).toLocaleDateString()
+                          ) : (
+                            <Tooltip title="Date not available">
+                              <ErrorIcon color="disabled" />
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 ) : (
                   <TableRow>
                     <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
@@ -418,65 +432,12 @@ const FareListingPage = () => {
               </TableBody>
             </Table>
           </TableContainer>
-
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: 1,
-              p: 1,
-              borderTop: "1px solid #e0e0e0",
-              backgroundColor: "white",
-            }}
-          >
-            <Button
-              onClick={() => handleChangePage(null, page - 1)}
-              disabled={page === 0}
-              sx={{ padding: "5px 10px", minWidth: 40 }}
-            >
-              &lt;
-            </Button>
-            {Array.from(
-              { length: Math.ceil(filteredData.length / rowsPerPage) },
-              (_, index) => index
-            )
-              .slice(
-                Math.max(0, page - 1),
-                Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
-              )
-              .map((pageNumber) => (
-                <Button
-                  key={pageNumber}
-                  onClick={() => handleChangePage(null, pageNumber)}
-                  sx={{
-                    padding: "5px 10px",
-                    minWidth: 40,
-                    bgcolor:
-                      page === pageNumber
-                        ? "rgba(21, 101, 192, 0.2)"
-                        : "transparent",
-                    fontWeight: page === pageNumber ? "bold" : "normal",
-                    borderRadius: "5px",
-                    transition: "all 0.3s",
-                    "&:hover": {
-                      bgcolor: "rgba(21, 101, 192, 0.3)",
-                    },
-                  }}
-                >
-                  {pageNumber + 1}
-                </Button>
-              ))}
-            <Button
-              onClick={() => handleChangePage(null, page + 1)}
-              disabled={
-                page >= Math.ceil(filteredData.length / rowsPerPage) - 1
-              }
-              sx={{ padding: "5px 10px", minWidth: 40 }}
-            >
-              &gt;
-            </Button>
-          </Box>
+          <PaginationControls
+            page={page}
+            onPageChange={(newPage) => handleChangePage(null, newPage)}
+            isLoading={isLoading}
+            hasNextPage={hasNextPage}
+          />
         </Box>
       </Box>
     </>

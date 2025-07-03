@@ -574,37 +574,37 @@ const FareSkeletonPage = ({
                 </span>
               </Tooltip>
               <Tooltip
-                            title={
-                              !canManageFare
-                                ? "You don't have permission, contact the admin"
-                                : ""
-                            }
-                            arrow
-                            placement="top-start"
-                          >
-                            <span
-                              style={{
-                                cursor: !canManageFare ? "not-allowed" : "default",
-                              }}
-                            >
-                              <Button
-                                variant="contained"
-                                color="success"
-                                size="small"
-                                onClick={handleSubmit(handleFareUpdate)}
-                                startIcon={<EditIcon />}
-                                disabled={!canManageFare}
-                                sx={{
-                                  "&.Mui-disabled": {
-                                    backgroundColor: "#81c784 !important",
-                                    color: "#ffffff99",
-                                  },
-                                }}
-                              >
-                                Update
-                              </Button>
-                            </span>
-                          </Tooltip>
+                title={
+                  !canManageFare
+                    ? "You don't have permission, contact the admin"
+                    : ""
+                }
+                arrow
+                placement="top-start"
+              >
+                <span
+                  style={{
+                    cursor: !canManageFare ? "not-allowed" : "default",
+                  }}
+                >
+                  <Button
+                    variant="contained"
+                    color="success"
+                    size="small"
+                    onClick={handleSubmit(handleFareUpdate)}
+                    startIcon={<EditIcon />}
+                    disabled={!canManageFare}
+                    sx={{
+                      "&.Mui-disabled": {
+                        backgroundColor: "#81c784 !important",
+                        color: "#ffffff99",
+                      },
+                    }}
+                  >
+                    Update
+                  </Button>
+                </span>
+              </Tooltip>
             </>
           ) : (
             <Button

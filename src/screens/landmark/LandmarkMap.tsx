@@ -678,15 +678,20 @@ const MapComponent: React.FC<MapComponentProps> = ({
                     onClick={toggleBusStopAdding}
                     disabled={!canManageLandmark}
                     sx={{
-                      backgroundColor: isAddingBusStop
-                        ? "#a923d1 !important"
-                        : "#3f51b5 !important",
-                    }}
-                  >
-                    {isAddingBusStop ? "Cancel" : "Add Bus Stop"}
-                  </Button>
-                </span>
-              </Tooltip>
+                    backgroundColor: !canManageLandmark
+                  ? "#6c87b7 !important"
+                  : "#00008B",
+                color: "white",
+                "&.Mui-disabled": {
+                  backgroundColor: "#6c87b7 !important",
+                  color: "#ffffff99",
+                },
+                  }}
+                >
+                  {isAddingBusStop ? "Cancel" : "Add Bus Stop"}
+                </Button>
+              </span>
+            </Tooltip>
             </Box>
           )}
 
