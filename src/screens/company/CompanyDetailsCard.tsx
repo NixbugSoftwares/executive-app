@@ -93,9 +93,8 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
       showSuccessToast("Company deleted successfully!");
       handleCloseDetailCard();
       refreshList("refresh");
-    } catch (error) {
-      showErrorToast("Delete error: " + error);
-      showErrorToast("Failed to delete company. Please try again.");
+    } catch (error : any) {
+      showErrorToast(error || "Failed to delete company");
     }
   };
   return (

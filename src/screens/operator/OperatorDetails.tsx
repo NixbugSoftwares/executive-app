@@ -6,80 +6,91 @@ import {
   Button,
   Box,
   Avatar,
+  Tooltip,
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle,
   DialogContentText,
-  Tooltip,
+  DialogTitle,
 } from "@mui/material";
 import {
+  Edit as EditIcon,
   Delete as DeleteIcon,
+  ArrowBack as BackIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
+  AccountCircle as UserIcon,
   Person as PersonIcon,
 } from "@mui/icons-material";
-import BadgeIcon from "@mui/icons-material/Badge";
 import ToggleOnIcon from "@mui/icons-material/ToggleOn";
 import ToggleOffIcon from "@mui/icons-material/ToggleOff";
 import { useAppDispatch } from "../../store/Hooks";
 import { operatorDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
-import OperatorUpdateForm from "./UpdationForm";
-
-interface OperatorCardProps {
-  operator: {
-    id: number;
-    companyId: number;
-    companyName: string;
-    username: string;
-    fullName: string;
-    password: string;
-    gender: string;
-    email: string;
-    phoneNumber: string;
-    status: string;
-  };
-
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/toastMessageHelper";
+import FormModal from "../../common/formModal";
+import AccountUpdateForm from "./UpdationForm";
+import { Operator } from "../../types/type";
+interface AccountCardProps {
+  operator: Operator;
   onUpdate: () => void;
   onDelete: (id: number) => void;
   onBack: () => void;
   refreshList: (value: any) => void;
   canManageCompany: boolean;
-  oncloseDetailCard: () => void;
+  onCloseDetailCard: () => void;
 }
+const genderOptions = [
+  { label: "Female", value: 1 },
+  { label: "Male", value: 2 },
+  { label: "Transgender", value: 3 },
+  { label: "Other", value: 4 },
+];
 
-const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
+const statusOptions = [
+  { label: "Active", value: 1 },
+  { label: "Suspended", value: 2 },
+];
+
+const OperatorDetailsCard: React.FC<AccountCardProps> = ({
   operator,
   refreshList,
   onDelete,
   onBack,
   canManageCompany,
-  oncloseDetailCard,
+  onCloseDetailCard,
 }) => {
+  console.log("OperatorDetailsCard operator:", operator);
+  console.log("company_id:", operator.company_id);
+  
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const dispatch = useAppDispatch();
+  const [updateFormOpen, setUpdateFormOpen] = useState(false); 
+   const getGenderValue = (genderText: string): number | undefined => {
+    const option = genderOptions.find((opt) => opt.label === genderText);
+    return option?.value;
+  };
 
+  const getStatusValue = (statusText: string): number | undefined => {
+    const option = statusOptions.find((opt) => opt.label === statusText);
+    return option?.value;
+  };
   const handleAccountDelete = async () => {
-    if (!operator.id) {
-      console.error("Error: Account ID is missing");
-      return;
-    }
-
     try {
       const formData = new FormData();
       formData.append("id", String(operator.id));
-
-      const response = await dispatch(operatorDeleteApi(formData)).unwrap();
-      console.log("Account deleted:", response);
-
+      await dispatch(operatorDeleteApi(formData)).unwrap();
       setDeleteConfirmOpen(false);
-      localStorageHelper.removeStoredItem(`account_${operator.id}`);
+      localStorageHelper.removeStoredItem(`operator_${operator.id}`);
       onDelete(operator.id);
+      onCloseDetailCard();
       refreshList("refresh");
-    } catch (error) {
-      console.error("Delete error:", error);
+      showSuccessToast("Operator deleted successfully!");
+    } catch (error: any) {
+      showErrorToast(error);
     }
   };
 
@@ -87,7 +98,7 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
     <>
       <Card
         sx={{
-          maxWidth: 400,
+          maxWidth: 450,
           width: "100%",
           margin: "auto",
           boxShadow: 3,
@@ -103,35 +114,19 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
             mb: 2,
           }}
         >
-          <Avatar sx={{ width: 80, height: 80, bgcolor: "#187b48" }}>
-            <BadgeIcon fontSize="large" />
+          <Avatar sx={{ width: 80, height: 80, bgcolor: "darkblue" }}>
+            <UserIcon fontSize="large" />
           </Avatar>
           <Typography variant="h6" sx={{ mt: 1 }}>
-            <b>{operator.fullName}</b>
+            {operator.fullName}
           </Typography>
           <Typography variant="body2" color="textSecondary">
-            <b>ID:</b> {operator.id} | <b>username:</b> {operator.username}
+            ID: {operator.id} | @{operator.username}
           </Typography>
         </Box>
 
         {/* User Contact Info */}
         <Card sx={{ p: 2, bgcolor: "grey.100", mb: 2 }}>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-            <Typography variant="body2" color="textSecondary">
-              <b>Company Name:</b> {operator.companyName}
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-            <Typography variant="body2" color="textSecondary">
-              <b>Company ID: </b> {operator.companyId}
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-            <Typography variant="body2" color="textSecondary">
-              <b>Full name:</b> {operator.fullName || "Not added yet"}
-            </Typography>
-          </Box>
-
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <PhoneIcon color="action" sx={{ mr: 1 }} />
             {operator.phoneNumber ? (
@@ -152,13 +147,13 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <EmailIcon color="action" sx={{ mr: 1 }} />
-            {operator.email ? (
+            {operator.email_id ? (
               <a
-                href={`mailto:${operator.email}`}
+                href={`mailto:${operator.email_id}`}
                 style={{ textDecoration: "none" }}
               >
                 <Typography variant="body2" color="primary">
-                  {operator.email}
+                  {operator.email_id}
                 </Typography>
               </a>
             ) : (
@@ -195,16 +190,20 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
         </Card>
 
         {/* Action Buttons */}
-        <CardActions>
-          <Box
-            sx={{ display: "flex", gap: 1, justifyContent: "space-between" }}
-          >
+        <CardActions
+          sx={{
+            justifyContent: "space-between",
+            alignItems: "center",
+            mt: 2,
+          }}
+        >
+          <Box sx={{ display: "flex", gap: 1 }}>
             <Button
               variant="outlined"
               color="primary"
               size="small"
               onClick={onBack}
-              // startIcon={<BackIcon />}
+              startIcon={<BackIcon />}
             >
               Back
             </Button>
@@ -212,7 +211,7 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
             {/* Update Button with Tooltip */}
             <Tooltip
               title={
-                !canManageCompany
+                !canManageCompany 
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -229,11 +228,10 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
                   color="success"
                   size="small"
                   onClick={() => {
-                    console.log("Update button clicked"); // Debugging
                     setUpdateFormOpen(true);
                   }}
-                  // startIcon={<EditIcon />}
-                  disabled={!canManageCompany}
+                  startIcon={<EditIcon />}
+                  disabled={!canManageCompany }
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#81c784 !important",
@@ -246,7 +244,7 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
               </span>
             </Tooltip>
 
-            {/* Delete Button with Tooltip */}
+           
             <Tooltip
               title={
                 !canManageCompany
@@ -282,6 +280,27 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
           </Box>
         </CardActions>
       </Card>
+      <FormModal
+        open={updateFormOpen}
+        onClose={() => setUpdateFormOpen(false)}
+        // title="Update Account"
+      >
+        <AccountUpdateForm
+          operatorId={operator.id}
+          company_id={operator.company_id}
+          operatorData={{
+            fullName: operator.fullName,
+            phoneNumber: operator.phoneNumber.replace(/\D/g, "").replace(/^91/, ""),
+            email: operator.email_id,
+            gender: getGenderValue(operator.gender),
+            status: getStatusValue(operator.status),
+            company_id: operator.company_id,
+          }}
+          refreshList={refreshList}
+          onClose={() => setUpdateFormOpen(false)}
+          onCloseDetailCard={onCloseDetailCard}
+        />
+      </FormModal>
 
       {/* Delete Confirmation Modal */}
       <Dialog
@@ -306,23 +325,6 @@ const OperatorDetailsCard: React.FC<OperatorCardProps> = ({
             Confirm Delete
           </Button>
         </DialogActions>
-      </Dialog>
-
-      {/* Update Form Modal */}
-      <Dialog
-        open={updateFormOpen}
-        onClose={() => setUpdateFormOpen(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogContent>
-          <OperatorUpdateForm
-            refreshList={(value: any) => refreshList(value)}
-            operatorId={operator.id}
-            onClose={() => setUpdateFormOpen(false)}
-            onCloseDetailCard={oncloseDetailCard}
-          />
-        </DialogContent>
       </Dialog>
     </>
   );

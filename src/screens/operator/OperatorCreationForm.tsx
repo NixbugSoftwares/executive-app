@@ -13,18 +13,19 @@ import {
   CssBaseline,
   CircularProgress,
   MenuItem,
-  Autocomplete,
 } from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { useAppDispatch } from "../../store/Hooks";
 import {
   operatorCreationApi,
-  companyListApi,
   operatorRoleListApi,
   operatorRoleAssignApi,
 } from "../../slices/appSlice";
-import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/toastMessageHelper";
 
 interface IAccountFormInputs {
   username: string;
@@ -58,14 +59,15 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  const [companies, setCompanies] = useState<{ id: number; name: string }[]>([]);
-  const [roles, setRoles] = useState<{ id: number; name: string; company_id: number }[]>([]);
-  const [filteredRoles, setFilteredRoles] = useState<{ id: number; name: string; company_id: number }[]>([]);
+  const [roles, setRoles] = useState<
+    { id: number; name: string; company_id: number }[]
+  >([]);
+  const [filteredRoles, setFilteredRoles] = useState<
+    { id: number; name: string; company_id: number }[]
+  >([]);
   const [showPassword, setShowPassword] = useState(false);
   // Filter companies based on defaultCompanyId
-  const filteredCompanies = defaultCompanyId
-    ? companies.filter((company) => company.id === defaultCompanyId)
-    : companies;
+
   const {
     register,
     handleSubmit,
@@ -83,31 +85,18 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
   const selectedCompanyId = watch("companyId");
 
   useEffect(() => {
-    dispatch(operatorRoleListApi(selectedCompanyId))
+    dispatch(operatorRoleListApi({}))
       .unwrap()
-      .then((res: any[]) => {
-        const rolesWithCompany = res.map((role) => ({
-          id: role.id,
-          name: role.name,
-          company_id: role.company_id,
-        }));
-        setRoles(rolesWithCompany);
+      .then((res: { data: any[] }) => {
+        setRoles(
+          res.data.map((role) => ({
+            id: role.id,
+            name: role.name,
+            company_id: role.company_id,
+          }))
+        );
       })
-      .catch((err: any) => {
-        showErrorToast(err);
-      });
-  }, [dispatch]);
 
-  useEffect(() => {
-    dispatch(companyListApi())
-      .unwrap()
-      .then((res: any[]) => {
-        const companyList = res.map((company) => ({
-          id: company.id,
-          name: company.name,
-        }));
-        setCompanies(companyList);
-      })
       .catch((err: any) => {
         showErrorToast(err);
       });
@@ -196,38 +185,6 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
           sx={{ mt: 1 }}
           onSubmit={handleSubmit(handleAccountCreation)}
         >
-          {/* Company Name Field - Disabled if filtered to one company */}
-          <Controller
-            name="companyId"
-            control={control}
-            rules={{ required: "Company is required" }}
-            render={({ field }) => (
-              <Autocomplete
-                options={filteredCompanies}
-                getOptionLabel={(option) => option.name}
-                onChange={(_event, value) =>
-                  field.onChange(value ? value.id : null)
-                }
-                value={
-                  filteredCompanies.find((c) => c.id === field.value) || null
-                }
-                disabled={!!defaultCompanyId && filteredCompanies.length === 1}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    margin="normal"
-                    required
-                    fullWidth
-                    label="Company Name"
-                    error={!!errors.companyId}
-                    helperText={errors.companyId?.message}
-                    size="small"
-                  />
-                )}
-              />
-            )}
-          />
-
           <TextField
             margin="normal"
             required
@@ -254,7 +211,7 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton onClick={handleTogglePassword} edge="end">
-                    {showPassword ? < Visibility /> : <VisibilityOff />}
+                    {showPassword ? <Visibility /> : <VisibilityOff />}
                   </IconButton>
                 </InputAdornment>
               ),

@@ -112,3 +112,30 @@ export interface Fare {
   };
   created_on: string;
 }
+
+
+export interface OperatorRoleDetails{
+  manage_operator: boolean
+  manage_bus: boolean,
+  manage_route: boolean,
+  manage_schedule: boolean,
+  manage_role: boolean,
+  manage_company: boolean,
+  manage_fare: boolean,
+  manage_duty: boolean,
+  manage_service: boolean
+}
+
+
+export interface Operator {
+  id: number;
+  company_id: number;
+  companyName: string;
+  username: string;
+  fullName: string;
+  password: string;
+  gender: string;
+  email_id: string;
+  phoneNumber: string;
+  status: string;
+}

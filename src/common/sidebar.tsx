@@ -65,6 +65,7 @@ const Sidebar: React.FC = () => {
       location.pathname.startsWith("/executive/company/bus") ||
       location.pathname.startsWith("/executive/company/busroute") ||
       location.pathname.startsWith("/executive/company/fare"),
+
     [companyId, location.pathname]
   );
 
@@ -75,7 +76,7 @@ const Sidebar: React.FC = () => {
       if (companyId) {
         try {
           console.log("Fetching company name for ID:", companyId);
-          const response = await dispatch(companyListApi()).unwrap();
+          const response = await dispatch(companyListApi({limit: 1,offset: 0, id: Number(companyId) })).unwrap();
           console.log("API Response:", response);
           const companies = response.data || response;
           const company = companies.find(
@@ -119,11 +120,6 @@ const Sidebar: React.FC = () => {
             path: "/executive/landmark",
             icon: <RoomIcon />,
           },
-          // {
-          //   label: "Bus Stop",
-          //   path: "/executive/busstop",
-          //   icon: <ModeOfTravelIcon />,
-          // },
           {
             label: "Common Fare",
             path: "/executive/global-fare",
@@ -158,11 +154,11 @@ const Sidebar: React.FC = () => {
         path: `/executive/company/busroute${companyId ? `/${companyId}` : ""}`,
         icon: <RouteIcon />,
       },
-      // {
-      //   label: "Fare",
-      //   path: `/executive/company/fare${companyId ? `/${companyId}` : ""}`,
-      //   icon: <CorporateFareIcon />,
-      // },
+      {
+        label: "Fare",
+        path: `/executive/company/fare${companyId ? `/${companyId}` : ""}`,
+        icon: <CalculateIcon />,
+      },
     ],
     [companyId]
   );
