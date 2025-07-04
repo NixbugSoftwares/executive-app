@@ -13,6 +13,10 @@ import {
   DialogContentText,
   Tooltip,
 } from "@mui/material";
+
+import VerifiedIcon from "@mui/icons-material/Verified";
+import NewReleasesIcon from "@mui/icons-material/NewReleases";
+import BlockIcon from "@mui/icons-material/Block";
 import { Delete as DeleteIcon } from "@mui/icons-material";
 import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
 import { useAppDispatch } from "../../store/Hooks";
@@ -24,8 +28,6 @@ import { showSuccessToast } from "../../common/toastMessageHelper";
 interface BusCardProps {
   bus: {
     id: number;
-    companyId: number;
-    companyName: string;
     registrationNumber: string;
     name: string;
     capacity: number;
@@ -34,12 +36,14 @@ interface BusCardProps {
     insurance_upto: string;
     pollution_upto: string;
     fitness_upto: string;
+    road_tax_upto: string;
+    status: number;
   };
   refreshList: (value: any) => void;
   onUpdate: () => void;
   onDelete: (id: number) => void;
   onBack: () => void;
-  canManageCompany: boolean;
+  canManageBus: boolean;
   onCloseDetailCard: () => void;
 }
 
@@ -48,12 +52,13 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
   refreshList,
   onDelete,
   onBack,
-  canManageCompany,
+  canManageBus,
   onCloseDetailCard,
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const dispatch = useAppDispatch();
+  console.log("bus", bus);
 
   const formatUTCDateToLocal = (dateString: string | null): string => {
     if (!dateString || dateString.trim() === "") return "Not added yet";
@@ -78,8 +83,9 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
       showSuccessToast("Bus deleted successfully");
       onCloseDetailCard();
       refreshList("refresh");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Delete error:", error);
+      showSuccessToast(error || "Failed to delete bus. Please try again.");
     }
   };
 
@@ -87,7 +93,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
     <>
       <Card
         sx={{
-          maxWidth:400,
+          maxWidth: 400,
           width: "100%",
           margin: "auto",
           boxShadow: 3,
@@ -125,9 +131,6 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             }}
           >
             <Typography variant="body2" color="textSecondary">
-              <b>Company Name:</b> {bus.companyName}
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
               <b>Registration Number:</b> {bus.registrationNumber}
             </Typography>
             <Typography variant="body2" color="textSecondary">
@@ -145,7 +148,34 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             <Typography variant="body2" color="textSecondary">
               <b>Fitness Upto:</b> {formatUTCDateToLocal(bus.fitness_upto)}
             </Typography>
+            <Typography variant="body2" color="textSecondary">
+              <b>Road tax Upto:</b> {formatUTCDateToLocal(bus.road_tax_upto)}
+            </Typography>
           </Box>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1, gap: 1 }}>
+  {bus.status === 1 ? (
+    <>
+      <VerifiedIcon sx={{ color: "green", fontSize: 30 }} />
+      <Typography sx={{ color: "green", fontWeight: "bold" }}>
+        Active
+      </Typography>
+    </>
+  ) : bus.status === 2 ? (
+    <>
+      <NewReleasesIcon sx={{ color: "#FFA500", fontSize: 30 }} />
+      <Typography sx={{ color: "#FFA500", fontWeight: "bold" }}>
+        Maintenance
+      </Typography>
+    </>
+  ) : (
+    <>
+      <BlockIcon sx={{ color: "#d93550", fontSize: 30 }} />
+      <Typography sx={{ color: "#d93550", fontWeight: "bold" }}>
+        Suspended
+      </Typography>
+    </>
+  )}
+</Box>
         </Card>
 
         {/* Action Buttons */}
@@ -170,7 +200,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             {/* Update Button with Tooltip */}
             <Tooltip
               title={
-                !canManageCompany
+                !canManageBus
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -179,7 +209,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             >
               <span
                 style={{
-                  cursor: !canManageCompany ? "not-allowed" : "default",
+                  cursor: !canManageBus ? "not-allowed" : "default",
                 }}
               >
                 <Button
@@ -187,7 +217,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
                   color="success"
                   size="small"
                   onClick={() => setUpdateFormOpen(true)}
-                  disabled={!canManageCompany}
+                  disabled={!canManageBus}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#81c784 !important",
@@ -203,7 +233,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             {/* Delete Button with Tooltip */}
             <Tooltip
               title={
-                !canManageCompany
+                !canManageBus
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -212,7 +242,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             >
               <span
                 style={{
-                  cursor: !canManageCompany ? "not-allowed" : "default",
+                  cursor: !canManageBus ? "not-allowed" : "default",
                 }}
               >
                 <Button
@@ -221,7 +251,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
                   size="small"
                   onClick={() => setDeleteConfirmOpen(true)}
                   startIcon={<DeleteIcon />}
-                  disabled={!canManageCompany}
+                  disabled={!canManageBus}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#e57373 !important",
@@ -271,8 +301,20 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
       >
         <DialogContent>
           <BusUpdateForm
-            refreshList={(value: any) => refreshList(value)}
             busId={bus.id}
+            busData={{
+              id: bus.id,
+              registration_number: bus.registrationNumber,
+              name: bus.name,
+              capacity: bus.capacity,
+              manufactured_on: bus.manufactured_on,
+              insurance_upto: bus.insurance_upto,
+              pollution_upto: bus.pollution_upto,
+              fitness_upto: bus.fitness_upto,
+              road_tax_upto: bus.road_tax_upto,
+              status: bus.status,
+            }}
+            refreshList={(value: any) => refreshList(value)}
             onClose={() => setUpdateFormOpen(false)}
             onCloseDetailCard={onCloseDetailCard}
           />

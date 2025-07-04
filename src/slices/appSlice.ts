@@ -109,6 +109,16 @@ interface OperatorRoleListParams {
   name?: string;
   company_id?: number | null;
 }
+interface BusListParams {
+  limit?: number;
+  offset?: number;
+  company_id: number;
+  id?: number;
+  name?: string;
+  registration_number?: string;
+  capacity?: number;
+
+}
 //Logout API
 export const logoutApi = createAsyncThunk(
   "token",
@@ -1226,7 +1236,7 @@ export const busCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/company/bus",
+        "company/bus",
         data,
         true,
         "application/www-form-urlencoded"
@@ -1234,7 +1244,7 @@ export const busCreationApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Role creation failed"
+        error.detail || error.message || error || "Bus creation failed"
       );
     }
   }
@@ -1243,33 +1253,37 @@ export const busCreationApi = createAsyncThunk(
 //bus list Api
 export const busListApi = createAsyncThunk(
   "/executive/company/bus",
-  async (companyId: number | null, { rejectWithValue }) => {
+  async (params: BusListParams, { rejectWithValue }) => {
+    const { limit, offset, id, name, registration_number, capacity, company_id } =
+      params;
+    console.log("companyBusListApi called with:", params);
+
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(name && { name: name }),
+      ...(registration_number && { registration_number }),
+      ...(capacity && { capacity }),
+      ...(company_id && { company_id }),
+    };
     try {
-      const params = companyId ? { company_id: companyId } : {};
       const response = await commonApi.apiCall(
         "get",
-        "/executive/company/bus",
-        params,
+        "company/bus",
+        queryParams,
         true,
         "application/json"
       );
-      console.log("Full API Response==================>", response);
+      if (!response) throw new Error("No response received");
 
-      // Check if response is directly an array
-      if (Array.isArray(response)) {
-        return response;
-      }
-
-      // Check if response.data exists
-      if (!response || !response.data) {
-        throw new Error("Invalid response format");
-      }
-
-      return response.data; // Ensure correct return
+      return {
+        data: response.data || response,
+      };
     } catch (error: any) {
-      console.log("Error fetching operator=====================>", error);
+      console.error("API Error:", error);
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch accounts"
+        error.detail || error.message || error || "Failed to fetch Bus list"
       );
     }
   }
@@ -1285,7 +1299,7 @@ export const busUpdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        "/executive/company/bus",
+        "company/bus",
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -1294,7 +1308,7 @@ export const busUpdationApi = createAsyncThunk(
     } catch (error: any) {
       console.error("Backend Error Response:", error.response?.data); // Log the full error response
       return rejectWithValue(
-        error?.response?.data?.message || "Bus update failed"
+        error.detail || error.message || error || "Bus update failed"
       );
     }
   }

@@ -43,6 +43,9 @@ export interface BusStop {
   status: string;
   parsedLocation?: [number, number] | null;
 }
+
+
+
 export interface Company {
   id: number;
   name: string;
@@ -55,6 +58,43 @@ export interface Company {
   companyType: string;
   latitude: number;
   longitude: number;
+}
+export interface Operator {
+  id: number;
+  company_id: number;
+  companyName: string;
+  username: string;
+  fullName: string;
+  password: string;
+  gender: string;
+  email_id: string;
+  phoneNumber: string;
+  status: string;
+}
+export interface OperatorRoleDetails{
+  manage_operator: boolean
+  manage_bus: boolean,
+  manage_route: boolean,
+  manage_schedule: boolean,
+  manage_role: boolean,
+  manage_company: boolean,
+  manage_fare: boolean,
+  manage_duty: boolean,
+  manage_service: boolean
+}
+export interface Bus {
+  company_id: number;
+  id: number;
+  registrationNumber: string;
+  name: string;
+  capacity: number;
+  model: string;
+  manufactured_on: string;
+  insurance_upto: string;
+  pollution_upto: string;
+  fitness_upto: string;
+  road_tax_upto: string;
+  status: number;
 }
 export interface SelectedLandmark {
   id: number;
@@ -81,8 +121,6 @@ export interface SelectedLandmark {
   departureMinute?: number;
   departureAmPm?: "AM" | "PM";
 }
-
-
 export interface RouteLandmark {
   id: number;
   landmark_id: string;
@@ -111,31 +149,4 @@ export interface Fare {
     extra: Record<string, any>;
   };
   created_on: string;
-}
-
-
-export interface OperatorRoleDetails{
-  manage_operator: boolean
-  manage_bus: boolean,
-  manage_route: boolean,
-  manage_schedule: boolean,
-  manage_role: boolean,
-  manage_company: boolean,
-  manage_fare: boolean,
-  manage_duty: boolean,
-  manage_service: boolean
-}
-
-
-export interface Operator {
-  id: number;
-  company_id: number;
-  companyName: string;
-  username: string;
-  fullName: string;
-  password: string;
-  gender: string;
-  email_id: string;
-  phoneNumber: string;
-  status: string;
 }

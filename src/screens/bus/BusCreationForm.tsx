@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useForm, SubmitHandler, Controller } from "react-hook-form";
+import { useForm, SubmitHandler  } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { busCreationSchema } from "../auth/validations/authValidation";
 import {
@@ -10,7 +10,6 @@ import {
   Container,
   CssBaseline,
   CircularProgress,
-  Autocomplete,
 } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
 import { busCreationApi } from "../../slices/appSlice";
@@ -35,24 +34,19 @@ interface IOperatorCreationFormProps {
   onClose: () => void;
   refreshList: (value: any) => void;
   defaultCompanyId?: number;
-  companyList: { id: number; name: string }[];
 }
 
 const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
   onClose,
   refreshList,
   defaultCompanyId,
-  companyList,
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  const filteredCompanies = defaultCompanyId
-    ? companyList.filter((company) => company.id === defaultCompanyId)
-    : companyList;
+  
   const {
     register,
     handleSubmit,
-    control,
     formState: { errors },
   } = useForm<IAccountFormInputs>({
     resolver: yupResolver(busCreationSchema),
@@ -113,8 +107,8 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
       } else {
         showErrorToast("Bus creation failed. Please try again.");
       }
-    } catch (error) {
-      showErrorToast("Something went wrong. Please try again.");
+    } catch (error:any) {
+      showErrorToast(error||"Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -140,36 +134,7 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
           sx={{ mt: 1 }}
           onSubmit={handleSubmit(handleAccountCreation)}
         >
-          <Controller
-            name="companyId"
-            control={control}
-            rules={{ required: "Company is required" }}
-            render={({ field }) => (
-              <Autocomplete
-                options={filteredCompanies}
-                getOptionLabel={(option) => option.name}
-                onChange={(_event, value) =>
-                  field.onChange(value ? value.id : null)
-                }
-                value={
-                  filteredCompanies.find((c) => c.id === field.value) || null
-                }
-                disabled={!!defaultCompanyId && filteredCompanies.length === 1}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    margin="normal"
-                    required
-                    fullWidth
-                    label="Company Name"
-                    error={!!errors.companyId}
-                    helperText={errors.companyId?.message}
-                    size="small"
-                  />
-                )}
-              />
-            )}
-          />
+          
           <TextField
             margin="normal"
             required

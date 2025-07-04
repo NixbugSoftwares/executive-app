@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   TextField,
   Button,
@@ -10,140 +10,118 @@ import {
   MenuItem,
 } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
-import { busUpdationApi, busListApi } from "../../slices/appSlice";
+import { busUpdationApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
-import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/toastMessageHelper";
 
 type BusFormValues = {
   id: number;
   registration_number: string;
   name: string;
   capacity: number;
-  status?: string;
+  status: number;
   manufactured_on: string;
-  insurance_upto?: string | null;
-  pollution_upto?: string | null;
-  fitness_upto?: string | null;
+  insurance_upto?: string;
+  pollution_upto?: string;
+  fitness_upto?: string;
+  road_tax_upto?: string;
 };
 
 interface IOperatorUpdateFormProps {
+  busId: number;
+  busData: BusFormValues;
   onClose: () => void;
   refreshList: (value: any) => void;
-  busId: number;
   onCloseDetailCard(): void;
 }
 
 const statusOptions = [
   { label: "Active", value: 1 },
-  { label: "Suspended", value: 2 },
+  { label: "Maintananace", value: 2 },
+  { label: "Suspended", value: 3 },
 ];
 
-
+const extractDateOnly = (dateString?: string): string => {
+  if (!dateString || dateString === "-") return "";
+  try {
+    return new Date(dateString).toISOString().slice(0, 10); 
+  } catch {
+    return "";
+  }
+};
 const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
   onClose,
   refreshList,
   busId,
+  busData,
   onCloseDetailCard,
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  const [busData, setBusData] = useState<BusFormValues | null>(null);
 
   const {
     register,
     handleSubmit,
     control,
-    reset,
     formState: { errors },
   } = useForm<BusFormValues>();
 
-  // Convert UTC date to local date string (YYYY-MM-DD)
-  const formatUTCDateToLocal = (dateString: string | null): string | null => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    return date.toISOString().split("T")[0];
-  };
-
-  // Fetch bus data and reset form
-  useEffect(() => {
-    const fetchBusData = async () => {
-      try {
-        setLoading(true);
-        const busses = await dispatch(busListApi(null)).unwrap();
-        const bus = busses.find((b: any) => b.id === busId);
-
-        if (bus) {
-          setBusData(bus);
-          reset({
-            ...bus,
-            manufactured_on: formatUTCDateToLocal(bus.manufactured_on),
-            insurance_upto: formatUTCDateToLocal(bus.insurance_upto),
-            pollution_upto: formatUTCDateToLocal(bus.pollution_upto),
-            fitness_upto: formatUTCDateToLocal(bus.fitness_upto),
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching bus data:", error);
-        showSuccessToast("Failed to fetch bus data. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBusData();
-  }, [busId, dispatch, reset]);
+  console.log("busData+++++++++++===>", busData);
 
   // Handle bus update
   const handleBusUpdate: SubmitHandler<BusFormValues> = async (data) => {
     try {
       setLoading(true);
-
-      // Convert local date strings to UTC format
-      const formatDateToUTC = (dateString: string | null): string | null => {
-        if (!dateString) return null;
-        return new Date(dateString).toISOString();
+      const formatDateToUTC = (dateString: string | undefined): string => {
+        return dateString ? new Date(dateString).toISOString() : "";
       };
-
       const formData = new FormData();
-      formData.append("id", busId.toString()); 
+      formData.append("id", busId.toString());
       formData.append("registration_number", data.registration_number);
       formData.append("name", data.name);
       formData.append("capacity", data.capacity.toString());
-      formData.append("manufactured_on", formatDateToUTC(data.manufactured_on) || "");
-      if (data.insurance_upto) formData.append("insurance_upto", formatDateToUTC(data.insurance_upto) || "");
-      if (data.pollution_upto) formData.append("pollution_upto", formatDateToUTC(data.pollution_upto) || "");
-      if (data.fitness_upto) formData.append("fitness_upto", formatDateToUTC(data.fitness_upto) || "");
-      formData.append("status", data.status?.toString() || "1"); // Default to "Active" if not provided
+      if (data.manufactured_on)
+        formData.append(
+          "manufactured_on",
+          formatDateToUTC(data.manufactured_on)
+        );
+      if (data.insurance_upto)
+        formData.append("insurance_upto", formatDateToUTC(data.insurance_upto));
+      if (data.pollution_upto)
+        formData.append("pollution_upto", formatDateToUTC(data.pollution_upto));
+      if (data.fitness_upto)
+        formData.append("fitness_upto", formatDateToUTC(data.fitness_upto));
+      if (data.road_tax_upto)
+        formData.append("road_tax_upto", formatDateToUTC(data.road_tax_upto));
+      formData.append("status", data.status.toString());
       console.log("FormData being sent:", {
-        id: busId, // Log busId for debugging
+        id: busId,
         registration_number: data.registration_number,
         name: data.name,
         capacity: data.capacity,
         manufactured_on: formatDateToUTC(data.manufactured_on),
-        insurance_upto: formatDateToUTC(data.insurance_upto??null),
-        pollution_upto: formatDateToUTC(data.pollution_upto??null),
-        fitness_upto: formatDateToUTC(data.fitness_upto??null),
+        insurance_upto: formatDateToUTC(data.insurance_upto),
+        pollution_upto: formatDateToUTC(data.pollution_upto),
+        fitness_upto: formatDateToUTC(data.fitness_upto),
         status: data.status,
       });
 
       await dispatch(busUpdationApi({ busId, formData })).unwrap();
-      
+
       showSuccessToast("Bus updated successfully!");
       onCloseDetailCard();
       refreshList("refresh");
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating bus:", error);
-      showErrorToast("Failed to update bus. Please try again.");
+      showErrorToast(error || "Failed to update bus. Please try again.");
     } finally {
       setLoading(false);
     }
   };
-
-  if (!busData) {
-    return <CircularProgress />;
-  }
-
   return (
     <Container component="main" maxWidth="xs">
       <CssBaseline />
@@ -168,6 +146,7 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             margin="normal"
             required
             fullWidth
+            defaultValue={busData.registration_number}
             label="Registration Number"
             {...register("registration_number")}
             error={!!errors.registration_number}
@@ -178,6 +157,7 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             margin="normal"
             required
             fullWidth
+            defaultValue={busData.name}
             label="Bus Name"
             {...register("name")}
             error={!!errors.name}
@@ -188,16 +168,18 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             margin="normal"
             required
             fullWidth
+            defaultValue={busData.capacity}
             label="Capacity"
             {...register("capacity")}
             error={!!errors.capacity}
             helperText={errors.capacity?.message}
             size="small"
           />
-          
+
           <Controller
             name="status"
             control={control}
+            defaultValue={busData.status}
             render={({ field }) => (
               <TextField
                 margin="normal"
@@ -216,13 +198,14 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
               </TextField>
             )}
           />
-          
+
           <TextField
             margin="normal"
             required
             fullWidth
             label="Manufactured On"
             type="date"
+            defaultValue={extractDateOnly(busData.manufactured_on)}
             InputLabelProps={{ shrink: true }}
             {...register("manufactured_on")}
             error={!!errors.manufactured_on}
@@ -234,6 +217,7 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             fullWidth
             label="Insurance Upto"
             type="date"
+            defaultValue={extractDateOnly(busData.insurance_upto)}
             InputLabelProps={{ shrink: true }}
             {...register("insurance_upto")}
             error={!!errors.insurance_upto}
@@ -245,6 +229,7 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             fullWidth
             label="Pollution Upto"
             type="date"
+            defaultValue={extractDateOnly(busData.pollution_upto)}
             InputLabelProps={{ shrink: true }}
             {...register("pollution_upto")}
             error={!!errors.pollution_upto}
@@ -256,10 +241,23 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             fullWidth
             label="Fitness Upto"
             type="date"
+            defaultValue={extractDateOnly(busData.fitness_upto)}
             InputLabelProps={{ shrink: true }}
             {...register("fitness_upto")}
             error={!!errors.fitness_upto}
             helperText={errors.fitness_upto?.message}
+            size="small"
+          />
+          <TextField
+            margin="normal"
+            fullWidth
+            label=" Road Tax Upto"
+            type="date"
+            defaultValue={extractDateOnly(busData.road_tax_upto)}
+            InputLabelProps={{ shrink: true }}
+            {...register("road_tax_upto")}
+            error={!!errors.road_tax_upto}
+            helperText={errors.road_tax_upto?.message}
             size="small"
           />
           <Button
@@ -270,7 +268,11 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             sx={{ mt: 3, mb: 2, bgcolor: "darkblue" }}
             disabled={loading}
           >
-            {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Update Bus"}
+            {loading ? (
+              <CircularProgress size={24} sx={{ color: "white" }} />
+            ) : (
+              "Update Bus"
+            )}
           </Button>
         </Box>
       </Box>
