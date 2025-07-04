@@ -32,14 +32,15 @@ import {
 import { SelectedLandmark } from "../../types/type";
 
 interface BusRouteCreationProps {
-  companyId: number | null;
   landmarks: SelectedLandmark[];
+  companyId: number;
   onLandmarkRemove: (id: number) => void;
   onSuccess: () => void;
   onCancel: () => void;
   onClearRoute?: () => void;
   mapRef: React.RefObject<any>;
   onStartingTimeChange: (time: string) => void;
+  refreshList: (value: any) => void;
   onClose?: () => void;
 }
 
@@ -49,15 +50,16 @@ interface BusRouteFormInputs {
 }
 
 const BusRouteCreation = ({
-  companyId,
   landmarks,
+  companyId,
   onLandmarkRemove,
   onSuccess,
   onCancel,
   onClearRoute,
   mapRef,
-  onClose,
   onStartingTimeChange,
+  refreshList,
+  onClose,
 }: BusRouteCreationProps) => {
   const dispatch = useAppDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -69,7 +71,6 @@ const BusRouteCreation = ({
   const {
     register,
     handleSubmit,
-    reset,
     setValue,
     formState: { errors },
   } = useForm<BusRouteFormInputs>();
@@ -158,18 +159,15 @@ const BusRouteCreation = ({
   const handleRouteCreation: SubmitHandler<BusRouteFormInputs> = async (
     data
   ) => {
-    if (!companyId) {
-      showErrorToast("Company ID is missing");
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
       const routeFormData = new FormData();
-      routeFormData.append("company_id", companyId.toString());
       routeFormData.append("name", data.name);
       routeFormData.append("starting_time", data.starting_time);
+      routeFormData.append("company_id", companyId.toString());
+      console.log("starting_time", data.starting_time);
+      console.log("name", data.name);
 
       const routeResponse = await dispatch(
         routeCreationApi(routeFormData)
@@ -179,8 +177,6 @@ const BusRouteCreation = ({
       const sortedLandmarks = [...landmarks].sort(
         (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
       );
-
-      // Calculate deltas using the new function
       const arrivalDeltas = calculateTimeDeltas(
         data.starting_time,
         sortedLandmarks,
@@ -217,10 +213,11 @@ const BusRouteCreation = ({
 
         return dispatch(routeLandmarkCreationApi(landmarkFormData)).unwrap();
       });
+      console.log("Landmark promises:", landmarkPromises);
 
       await Promise.all(landmarkPromises);
       showSuccessToast("Route and landmarks created successfully");
-      reset();
+      refreshList("refresh");
       onSuccess();
       if (onClearRoute) onClearRoute();
       if (
@@ -230,18 +227,13 @@ const BusRouteCreation = ({
         mapRef.current.toggleAddLandmarkMode();
       }
       if (onClose) onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in route creation process:", error);
-      showErrorToast(
-        error instanceof Error
-          ? error.message
-          : "Failed to create route and landmarks"
-      );
+      showErrorToast(error || "Failed to create route and landmarks");
     } finally {
       setIsSubmitting(false);
     }
   };
-
   function formatTimeForDisplayIST(isoString: string, showDayLabel = true) {
     const date = new Date(isoString);
     date.setTime(date.getTime() + (5 * 60 + 30) * 60 * 1000);
@@ -305,7 +297,6 @@ const BusRouteCreation = ({
 
         <TextField
           margin="normal"
-          required
           fullWidth
           label="Route Name"
           {...register("name", { required: "Route name is required" })}
@@ -407,22 +398,28 @@ const BusRouteCreation = ({
               backgroundColor: "action.hover",
               borderRadius: 1,
               my: 2,
+              border: "1px dashed",
+              borderColor: "divider",
             }}
           >
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-              No landmarks selected yet
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ mb: 1, fontWeight: 500 }}
+            >
+              No landmarks selected
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
               Please select landmarks from the map to create your route
             </Typography>
-            {/* <Typography
+            <Typography
               variant="caption"
               color="info"
               fontSize="0.75rem"
               fontWeight="bold"
             >
               Only verified landmarks will be displayed
-            </Typography> */}
+            </Typography>
           </Box>
         ) : (
           <List
@@ -513,7 +510,8 @@ const BusRouteCreation = ({
                             <span>
                               Arrive:{" "}
                               {formatTimeForDisplayIST(
-                                landmark.arrivalTime.fullTime
+                                landmark.arrivalTime.fullTime,
+                                index !== 0 // false for first, true for others
                               )}
                             </span>
                           </Box>
@@ -528,7 +526,8 @@ const BusRouteCreation = ({
                             <span>
                               Depart:{" "}
                               {formatTimeForDisplayIST(
-                                landmark.departureTime.fullTime
+                                landmark.departureTime.fullTime,
+                                index !== 0 // false for first, true for others
                               )}
                             </span>
                           </Box>

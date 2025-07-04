@@ -87,13 +87,13 @@ const BusRouteDetailsPage = ({
     null
   );
   const [updatedRouteName, setUpdatedRouteName] = useState(routeName);
-  const [localHour, setLocalHour] = useState<number>(12);
+  const [localHour, setLocalHour] = useState<number>(6);
   const [localMinute, setLocalMinute] = useState<number>(0);
   const [amPm, setAmPm] = useState<string>("AM");
-  const [arrivalHour, setArrivalHour] = useState<number>(12);
+  const [arrivalHour, setArrivalHour] = useState<number>(6);
   const [arrivalMinute, setArrivalMinute] = useState<number>(0);
   const [arrivalAmPm, setArrivalAmPm] = useState<string>("AM");
-  const [departureHour, setDepartureHour] = useState<number>(12);
+  const [departureHour, setDepartureHour] = useState<number>(6);
   const [departureMinute, setDepartureMinute] = useState<number>(0);
   const [departureAmPm, setDepartureAmPm] = useState<string>("AM");
   const [startingDayOffset, _setStartingDayOffset] = useState<number>(0);
@@ -126,8 +126,8 @@ const BusRouteDetailsPage = ({
       });
       setRouteLandmarks(sortedLandmarks);
       updateParentMapLandmarks(sortedLandmarks);
-    } catch (error) {
-      showErrorToast("Failed to fetch route landmarks");
+    } catch (error: any) {
+      showErrorToast(error||"Failed to fetch route landmarks");
     } finally {
       setIsLoading(false);
     }
@@ -170,8 +170,7 @@ const BusRouteDetailsPage = ({
       }
 
       const startDate = new Date(timeString);
-      const delta = parseInt(deltaSeconds, 10); // Delta is already in seconds
-
+      const delta = parseInt(deltaSeconds, 10); 
       // Add delta seconds to starting time
       const resultDate = new Date(startDate.getTime() + delta * 1000);
 
@@ -336,19 +335,19 @@ const BusRouteDetailsPage = ({
       showSuccessToast("New landmarks added successfully");
       setNewLandmarks([]);
       fetchRouteLandmarks();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding landmarks:", error);
       showErrorToast(
-        error instanceof Error ? error.message : "Failed to add new landmarks"
+        error|| "Failed to add new landmarks"
       );
     }
   };
 
   const fetchLandmark = () => {
-    dispatch(landmarkListApi())
+    dispatch(landmarkListApi({}))
       .unwrap()
-      .then((res: any[]) => {
-        setLandmarks(res);
+      .then((res) => {
+        setLandmarks(res.data);
       })
       .catch((err: any) => {
         console.error("Error fetching landmarks", err);
@@ -500,8 +499,8 @@ const BusRouteDetailsPage = ({
       showSuccessToast("Route details updated successfully");
       setEditMode(false);
       onBack();
-    } catch (error) {
-      showErrorToast("Failed to update route details");
+    } catch (error:any) {
+      showErrorToast(error||"Failed to update route details");
     }
   };
 
@@ -571,10 +570,10 @@ const BusRouteDetailsPage = ({
       showSuccessToast("Landmark updated successfully");
       fetchRouteLandmarks();
       setEditingLandmark(null);
-    } catch (error) {
+    } catch (error:any) {
       console.error("Update error:", error);
       showErrorToast(
-        error instanceof Error ? error.message : "Failed to update landmark"
+        error || "Failed to update landmark"
       );
     }
   };
@@ -596,9 +595,9 @@ const BusRouteDetailsPage = ({
 
     showSuccessToast("Landmark removed from route successfully");
     fetchRouteLandmarks();
-  } catch (error) {
+  } catch (error:any) {
     showErrorToast(
-      error instanceof Error ? error.message : "Failed to remove landmark from route"
+      error|| "Failed to remove landmark from route"
     );
   } finally {
     setDeleteConfirmOpen(false);

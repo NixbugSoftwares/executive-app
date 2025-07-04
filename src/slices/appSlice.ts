@@ -62,6 +62,7 @@ interface LandmarkListParams {
   limit?: number;
   offset?: number;
   id?: number;
+  ids?:[number];
   name?: string;
   location?: string;
 }
@@ -119,6 +120,23 @@ interface BusListParams {
   capacity?: number;
 
 }
+interface RouteListParams {
+  limit?: number;
+  offset?: number;
+  id?: number;
+  name?: string;
+  company_id?: number;
+}
+
+
+
+
+
+
+
+
+
+
 //Logout API
 export const logoutApi = createAsyncThunk(
   "token",
@@ -500,11 +518,12 @@ export const roleAssignUpdateApi = createAsyncThunk(
 export const landmarkListApi = createAsyncThunk(
   "/executive/landmark",
   async (params: LandmarkListParams, { rejectWithValue }) => {
-    const { limit, offset, id, name, location } = params;
+    const { limit, offset, id, ids, name, location } = params;
     const queryParams = {
       limit,
       offset,
       ...(id && { id }),
+      ...(ids && { ids }),
       ...(name && { name }),
       ...(location && { location }),
     };
@@ -1345,7 +1364,7 @@ export const routeCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/company/route",
+        "company/route",
         data,
         true,
         "application/www-form-urlencoded"
@@ -1353,7 +1372,7 @@ export const routeCreationApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "route creation failed"
+        error.detail || error.message || error || "route creation failed"
       );
     }
   }
@@ -1366,7 +1385,7 @@ export const routeLandmarkCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/company/route/landmark",
+        "company/route/landmark",
         data,
         true,
         "application/www-form-urlencoded"
@@ -1374,7 +1393,7 @@ export const routeLandmarkCreationApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "route-landmark creation failed"
+        error.detail || error.message || error || "route-landmark creation failed"
       );
     }
   }
@@ -1383,34 +1402,35 @@ export const routeLandmarkCreationApi = createAsyncThunk(
 //route list Api
 
 export const busRouteListApi = createAsyncThunk(
-  "/executive/company/route",
-  async (companyId: number | null, { rejectWithValue }) => {
+  "/company/route",
+  async (params: RouteListParams, { rejectWithValue }) => {
+    const{limit,offset,id,name,company_id}=params;
+    console.log("companyBusListApi called with:", params);
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(name && { name: name }),
+      ...(company_id && { company_id }), 
+    }
     try {
-      const params = companyId ? { company_id: companyId } : {};
+      
       const response = await commonApi.apiCall(
         "get",
-        "/executive/company/route",
-        params,
+        "company/route",
+        queryParams,
         true,
         "application/json"
       );
-      console.log("Full API Response==================>", response);
+      if (!response) throw new Error("No response received");
 
-      // Check if response is directly an array
-      if (Array.isArray(response)) {
-        return response;
-      }
-
-      // Check if response.data exists
-      if (!response || !response.data) {
-        throw new Error("Invalid response format");
-      }
-
-      return response.data; // Ensure correct return
+      return {
+        data: response.data || response,
+      };
     } catch (error: any) {
-      console.log("Error fetching routes=====================>", error);
+      console.error("API Error:", error);
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch routes"
+        error.detail || error.message || "Failed to fetch Bus list"
       );
     }
   }
@@ -1425,7 +1445,7 @@ export const busRouteLandmarkListApi = createAsyncThunk(
       const params = routeId ? { route_id: routeId } : {};
       const response = await commonApi.apiCall(
         "get",
-        "/executive/company/route/landmark",
+        "company/route/landmark",
         params,
         true,
         "application/json"
@@ -1449,7 +1469,7 @@ export const busRouteLandmarkListApi = createAsyncThunk(
         error
       );
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch route landmarks"
+        error.detail || error.message || "Failed to fetch route landmarks"
       );
     }
   }
@@ -1462,7 +1482,7 @@ export const routeDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/company/route",
+        "company/route",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -1471,7 +1491,7 @@ export const routeDeleteApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Account deletion failed"
+        error.detail || error.message || "Account deletion failed"
       );
     }
   }
@@ -1484,7 +1504,7 @@ export const routeLandmarkDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/company/route/landmark",
+        "company/route/landmark",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -1493,7 +1513,7 @@ export const routeLandmarkDeleteApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Account deletion failed"
+        error.detail || error.message || "Account deletion failed"
       );
     }
   }
@@ -1509,7 +1529,7 @@ export const routeUpdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        "/executive/company/route",
+        "company/route",
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -1518,7 +1538,7 @@ export const routeUpdationApi = createAsyncThunk(
     } catch (error: any) {
       console.error("Backend Error Response:", error.response?.data); // Log the full error response
       return rejectWithValue(
-        error?.response?.data?.message || "route update failed"
+        error.detail || error.message || "route update failed"
       );
     }
   }
@@ -1534,7 +1554,7 @@ export const routeLandmarkUpdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        "/executive/company/route/landmark",
+        "company/route/landmark",
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -1543,7 +1563,7 @@ export const routeLandmarkUpdationApi = createAsyncThunk(
     } catch (error: any) {
       console.error("Backend Error Response:", error.response?.data); // Log the full error response
       return rejectWithValue(
-        error?.response?.data?.message || "Route-landmark update failed"
+        error.detail || error.message || "Route-landmark update failed"
       );
     }
   }

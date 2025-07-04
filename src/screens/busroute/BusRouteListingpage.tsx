@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Table,
   TableBody,
@@ -6,7 +6,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Button,
   Box,
   Stack,
@@ -18,23 +17,25 @@ import {
   DialogActions,
   Tooltip,
 } from "@mui/material";
-import { useDispatch } from "react-redux";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
 import {
   busRouteLandmarkListApi,
   busRouteListApi,
   routeDeleteApi,
 } from "../../slices/appSlice";
 import { AppDispatch } from "../../store/Store";
-import { useParams, useLocation } from "react-router-dom";
 import MapComponent from "./BusRouteMap";
 import BusRouteCreation from "./BusRouteCreationPage";
 import {
   showErrorToast,
   showSuccessToast,
 } from "../../common/toastMessageHelper";
-import localStorageHelper from "../../utils/localStorageHelper";
 import BusRouteDetailsPage from "./BusRouteDetails";
 import { SelectedLandmark, RouteLandmark } from "../../types/type";
+import PaginationControls from "../../common/paginationControl";
+import { useLocation, useParams } from "react-router-dom";
 interface Route {
   id: number;
   companyId: number;
@@ -44,14 +45,13 @@ interface Route {
 
 const BusRouteListing = () => {
   const { companyId } = useParams();
-  const location = useLocation();
-  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(
-    companyId ? parseInt(companyId) : null
-  );
+    const location = useLocation();
+    const [filterCompanyId, setFilterCompanyId] = useState<number>(
+      companyId ? parseInt(companyId) : 0
+    );
   const [showCreationForm, setShowCreationForm] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const [routeList, setRouteList] = useState<Route[]>([]);
-  const [search, setSearch] = useState({ id: "", name: "", location: "" });
   const [landmarks, setLandmarks] = useState<SelectedLandmark[]>([]);
   const [routeToDelete, setRouteToDelete] = useState<Route | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -60,10 +60,7 @@ const BusRouteListing = () => {
     name: string;
     starting_time: string;
   } | null>(null);
-  const [page, setPage] = useState(0);
-  const rowsPerPage = 10;
-  const roleDetails = localStorageHelper.getItem("@roleDetails");
-  const canManageRoutes = roleDetails?.manage_route || false;
+
   const mapRef = useRef<{
     clearRoutePath: () => void;
     toggleAddLandmarkMode?: () => void;
@@ -77,13 +74,20 @@ const BusRouteListing = () => {
     SelectedLandmark[]
   >([]);
   const [routeStartingTime, setRouteStartingTime] = useState("");
-  const handleStartingTimeChange = (time: string) => {
-    setRouteStartingTime(time);
-  };
-
-  useEffect(() => {
+  const [search, setSearch] = useState({ id: "", name: "" });
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const debounceRef = useRef<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const rowsPerPage = 10;
+  const canManageRoutes = useSelector((state: RootState) =>
+    state.app.permissions.includes("manage_route")
+  );
+   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const urlCompanyId = companyId || queryParams.get("companyId");
+  
     if (urlCompanyId) {
       const id = parseInt(urlCompanyId);
       if (!isNaN(id)) {
@@ -92,28 +96,37 @@ const BusRouteListing = () => {
     }
   }, [companyId, location.search]);
 
-  const fetchRoute = () => {
-    dispatch(busRouteListApi(filterCompanyId))
-      .unwrap()
-      .then((res: any[]) => {
-        const formattedRoutes = res.map((routes: any) => ({
-          id: routes.id,
-          companyId: routes.company_id,
-          name: routes.name,
-          starting_time: routes.starting_time,
-        }));
-        console.log("formattedRoutes", formattedRoutes);
-
-        setRouteList(formattedRoutes);
-      })
-      .catch((err: any) => {
-        console.error("Error fetching routes", err);
-      });
+  const handleStartingTimeChange = (time: string) => {
+    setRouteStartingTime(time);
   };
 
-  useEffect(() => {
-    fetchRoute();
-  }, []);
+  const fetchRoute = useCallback(
+    (pageNumber: number, searchParams = {}) => {
+      setIsLoading(true);
+      const offSet = pageNumber * rowsPerPage;
+      dispatch(
+        busRouteListApi({ limit: rowsPerPage, offset: offSet, ...searchParams, company_id: filterCompanyId })
+      )
+        .unwrap()
+        .then((res) => {
+          const items = res.data || [];
+          console.log("items", items);
+          const formattedRoute = items.map((route: any) => ({
+            id: route.id,
+            name: route.name,
+            starting_time: route.starting_time,
+          }));
+          setRouteList(formattedRoute);
+          setHasNextPage(items.length === rowsPerPage);
+        })
+        .catch((error) => {
+          console.error("Fetch Error:", error);
+          showErrorToast(error || "Failed to fetch Bus Route list");
+        })
+        .finally(() => setIsLoading(false));
+    },
+    [dispatch]
+  );
 
   useEffect(() => {
     const fetchRouteLandmarks = async () => {
@@ -151,29 +164,38 @@ const BusRouteListing = () => {
     };
   }, []);
 
-  const handleSearchChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    column: keyof typeof search
-  ) => {
-    setSearch((prev) => ({
-      ...prev,
-      [column]: (e.target as HTMLInputElement).value,
-    }));
-  };
+  const handleSearchChange = useCallback(
+    (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+      column: keyof typeof search
+    ) => {
+      const value = e.target.value;
+      setSearch((prev) => ({ ...prev, [column]: value }));
 
-  const filteredData = routeList.filter((row) => {
-    const id = row.id ? row.id.toString().toLowerCase() : "";
-    const name = row.name ? row.name.toLowerCase() : "";
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = window.setTimeout(() => {
+        setDebouncedSearch((prev) => ({ ...prev, [column]: value }));
+        setPage(0);
+      }, 700);
+    },
+    []
+  );
 
-    const searchId = search.id ? search.id.toLowerCase() : "";
-    const searchName = search.name ? search.name.toLowerCase() : "";
+  const handleChangePage = useCallback(
+    (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+      setPage(newPage);
+    },
+    []
+  );
 
-    return id.includes(searchId) && name.includes(searchName);
-  });
+  useEffect(() => {
+    const searchParams: any = {
+      ...(debouncedSearch.id && { id: debouncedSearch.id }),
+      ...(debouncedSearch.name && { name: debouncedSearch.name }),
+    };
 
-  const handleChangePage = (_event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
+    fetchRoute(page, searchParams);
+  }, [page, debouncedSearch, fetchRoute]);
 
   const toggleCreationForm = () => {
     setShowCreationForm(!showCreationForm);
@@ -185,7 +207,6 @@ const BusRouteListing = () => {
   const handleRouteCreated = () => {
     setShowCreationForm(true);
     setLandmarks([]);
-    fetchRoute();
   };
 
   const handleAddLandmark = (landmark: SelectedLandmark) => {
@@ -211,22 +232,29 @@ const BusRouteListing = () => {
     setDeleteConfirmOpen(true);
   };
 
-  const handleRouteDelete = async () => {
-    if (!routeToDelete) return;
+ const handleRouteDelete = async () => {
+  if (!routeToDelete) return;
 
-    try {
-      const formData = new FormData();
-      formData.append("id", routeToDelete.id.toString());
-      await dispatch(routeDeleteApi(formData)).unwrap();
-      showSuccessToast("Route deleted successfully");
-      fetchRoute();
-    } catch (error) {
-      showErrorToast("Failed to delete route");
-    } finally {
-      setDeleteConfirmOpen(false);
-      setRouteToDelete(null);
+  try {
+    const formData = new FormData();
+    formData.append("id", routeToDelete.id.toString());
+    const result = await dispatch(routeDeleteApi(formData)).unwrap();
+    
+    if (result && result.error) {
+      throw new Error(result.error);
     }
-  };
+
+    showSuccessToast("Route deleted successfully");
+    fetchRoute(page, debouncedSearch);
+  } catch (error:any) {
+    showErrorToast(
+      (error || "Failed to delete route")
+    );
+  } finally {
+    setDeleteConfirmOpen(false);
+    setRouteToDelete(null);
+  }
+};
 
   const handleAddLandmarkEdit = (landmark: SelectedLandmark) => {
     setNewRouteLandmarks((prev) => [...prev, landmark]);
@@ -235,7 +263,7 @@ const BusRouteListing = () => {
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      fetchRoute();
+      fetchRoute(page, debouncedSearch);
     }
   };
 
@@ -299,17 +327,17 @@ const BusRouteListing = () => {
               </Button>
             </Box>
             <BusRouteCreation
-              companyId={filterCompanyId}
               landmarks={landmarks}
+              companyId={filterCompanyId}
               onLandmarkRemove={handleRemoveLandmark}
               onSuccess={handleRouteCreated}
               onCancel={toggleCreationForm}
               onClearRoute={() => mapRef.current?.clearRoutePath()}
               mapRef={mapRef}
               onStartingTimeChange={handleStartingTimeChange}
+              refreshList={refreshList}
               onClose={() => {
                 setShowCreationForm(false);
-                setLandmarks([]);
               }}
             />
           </>
@@ -353,16 +381,24 @@ const BusRouteListing = () => {
                     onClick={toggleCreationForm}
                     disabled={!canManageRoutes}
                   >
-                    Create Routes
+                    Add New Routes
                   </Button>
                 </span>
               </Tooltip>
             </Stack>
 
-            <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
-              <Table sx={{ borderCollapse: "collapse", width: "100%" }}>
+            <TableContainer
+              sx={{
+        flex: 1,
+        maxHeight: "calc(100vh - 180px)", 
+        overflowY: "auto",
+        borderRadius: 2,
+        border: "1px solid #e0e0e0",
+      }}
+            >
+              <Table stickyHeader>
                 <TableHead>
-                  <TableRow>
+                  <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
                     <TableCell sx={{ width: "20%" }}>
                       <Box
                         display="flex"
@@ -416,73 +452,81 @@ const BusRouteListing = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredData.length > 0 ? (
-                    filteredData
-                      .slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage
-                      )
-                      .map((row) => (
-                        <TableRow key={row.id} hover>
-                          <TableCell>{row.id}</TableCell>
-                          <TableCell
-                            sx={{
-                              cursor: "pointer",
-                            }}
-                            onClick={() =>
-                              setSelectedRoute({
-                                id: row.id,
-                                name: row.name,
-                                starting_time: row.starting_time,
-                              })
+                  {routeList.length > 0 ? (
+                    routeList.map((row) => (
+                      <TableRow key={row.id} hover>
+                        <TableCell>{row.id}</TableCell>
+                        <TableCell
+                          sx={{
+                            cursor: "pointer",
+                          }}
+                          onClick={() =>
+                            setSelectedRoute({
+                              id: row.id,
+                              name: row.name,
+                              starting_time: row.starting_time,
+                            })
+                          }
+                        >
+                          {row.name}
+                        </TableCell>
+                        <TableCell sx={{ textAlign: "center", boxShadow: 1 }}>
+                          <Tooltip
+                            title={
+                              !canManageRoutes
+                                ? "You don't have permission, contact the admin"
+                                : " DELETE the route"
                             }
+                            placement="top-end"
                           >
-                            {row.name}
-                          </TableCell>
-                          <TableCell sx={{ textAlign: "center", boxShadow: 1 }}>
-                            <Tooltip
-                              title={
-                                !canManageRoutes
-                                  ? "You don't have permission, contact the admin"
-                                  : " DELETE the route"
-                              }
-                              placement="top-end"
+                            <span
+                              style={{
+                                cursor: !canManageRoutes
+                                  ? "not-allowed"
+                                  : "default",
+                              }}
                             >
-                              <span
-                                style={{
-                                  cursor: !canManageRoutes
-                                    ? "not-allowed"
-                                    : "default",
+                              <Button
+                                variant="contained"
+                                color="error"
+                                size="small"
+                                startIcon={<DeleteIcon />}
+                                disabled={!canManageRoutes}
+                                onClick={() => handleDeleteClick(row)}
+                                sx={{
+                                  ml: "auto",
+                                  mr: 2,
+                                  mb: 2,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                  textTransform: "none",
+                                  borderRadius: 2,
+                                  fontWeight: 500,
+                                  boxShadow: "none",
+                                  backgroundColor: !canManageRoutes
+                                    ? "#f46a6a"
+                                    : "#d32f2f",
+                                  color: "#fff",
+                                  "&:hover": {
+                                    backgroundColor: !canManageRoutes
+                                      ? "#f46a6a"
+                                      : "#b71c1c",
+                                    boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+                                  },
+                                  "&.Mui-disabled": {
+                                    backgroundColor: "#f46a6a",
+                                    color: "#ffffff99",
+                                  },
                                 }}
                               >
-                                <Button
-                                  variant="contained"
-                                  color="error"
-                                  size="small"
-                                  sx={{
-                                    ml: "auto",
-                                    mr: 2,
-                                    mb: 2,
-                                    display: "block",
-                                    backgroundColor: !canManageRoutes
-                                      ? "#f46a6a  !important" // light red for disabled
-                                      : "#d32f2f", // MUI error main red
-                                    color: "white",
-                                    "&.Mui-disabled": {
-                                      backgroundColor: "#f46a6a  !important", // light red when disabled
-                                      color: "#ffffff99",
-                                    },
-                                  }}
-                                  disabled={!canManageRoutes}
-                                  onClick={() => handleDeleteClick(row)}
-                                >
-                                  Delete
-                                </Button>
-                              </span>
-                            </Tooltip>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                                Delete
+                              </Button>
+                            </span>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))
                   ) : (
                     <TableRow>
                       <TableCell colSpan={3} align="center">
@@ -493,68 +537,25 @@ const BusRouteListing = () => {
                 </TableBody>
               </Table>
             </TableContainer>
-
-            {/* Pagination */}
             <Box
-              sx={{
-                display: "flex",
-                justifyContent: "right",
-                alignItems: "right",
-                gap: 1,
-                mt: 1,
-                mr: 20,
-              }}
-            >
-              <Button
-                onClick={() => handleChangePage(null, page - 1)}
-                disabled={page === 0}
-                sx={{ padding: "5px 10px", minWidth: 40 }}
-              >
-                &lt;
-              </Button>
-              {Array.from(
-                { length: Math.ceil(filteredData.length / rowsPerPage) },
-                (_, index) => index
-              )
-                .slice(
-                  Math.max(0, page - 1),
-                  Math.min(
-                    page + 2,
-                    Math.ceil(filteredData.length / rowsPerPage)
-                  )
-                )
-                .map((pageNumber) => (
-                  <Button
-                    key={pageNumber}
-                    onClick={() => handleChangePage(null, pageNumber)}
-                    sx={{
-                      padding: "5px 10px",
-                      minWidth: 40,
-                      bgcolor:
-                        page === pageNumber
-                          ? "rgba(21, 101, 192, 0.2)"
-                          : "transparent",
-                      fontWeight: page === pageNumber ? "bold" : "normal",
-                      borderRadius: "5px",
-                      transition: "all 0.3s",
-                      "&:hover": {
-                        bgcolor: "rgba(21, 101, 192, 0.3)",
-                      },
-                    }}
-                  >
-                    {pageNumber + 1}
-                  </Button>
-                ))}
-              <Button
-                onClick={() => handleChangePage(null, page + 1)}
-                disabled={
-                  page >= Math.ceil(filteredData.length / rowsPerPage) - 1
-                }
-                sx={{ padding: "5px 10px", minWidth: 40 }}
-              >
-                &gt;
-              </Button>
-            </Box>
+      sx={{
+        position: "absolute",
+        left: 0,
+        bottom: 0,
+        width: "100%",
+        bgcolor: "#fff",
+        borderTop: "1px solid #e0e0e0",
+        zIndex: 2,
+        p: 1,
+      }}
+    >
+      <PaginationControls
+        page={page}
+        onPageChange={(newPage) => handleChangePage(null, newPage)}
+        isLoading={isLoading}
+        hasNextPage={hasNextPage}
+      />
+    </Box>
           </>
         )}
       </Box>
