@@ -23,7 +23,9 @@ import RoomIcon from "@mui/icons-material/Room";
 import EngineeringIcon from "@mui/icons-material/Engineering";
 import RouteIcon from "@mui/icons-material/Route";
 import CalculateIcon from "@mui/icons-material/Calculate";
-// import CorporateFareIcon from "@mui/icons-material/CorporateFare";
+import AssignmentIndRoundedIcon from '@mui/icons-material/AssignmentIndRounded';
+import AssignmentTurnedInRoundedIcon from '@mui/icons-material/AssignmentTurnedInRounded';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
 import BusinessIcon from "@mui/icons-material/Business";
 import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew";
@@ -159,6 +161,25 @@ const Sidebar: React.FC = () => {
         path: `/executive/company/fare${companyId ? `/${companyId}` : ""}`,
         icon: <CalculateIcon />,
       },
+      {
+        label: "Service",
+        path: `/executive/company/service${companyId ? `/${companyId}` : ""}`,
+        icon: <AssignmentIndRoundedIcon />,
+      },
+
+      {
+        label:"Schedule"
+        ,path:`/executive/company/schedule${companyId ? `/${companyId}` : ""}`
+        ,icon:<ScheduleIcon/>
+      },
+
+      {
+        label:"Duty"
+        ,path:`/executive/company/duty${companyId ? `/${companyId}` : ""}`
+        ,icon:<AssignmentTurnedInRoundedIcon/>
+      },
+
+
     ],
     [companyId]
   );

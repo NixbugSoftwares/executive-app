@@ -44,8 +44,6 @@ export interface BusStop {
   parsedLocation?: [number, number] | null;
 }
 
-
-
 export interface Company {
   id: number;
   name: string;
@@ -149,4 +147,58 @@ export interface Fare {
     extra: Record<string, any>;
   };
   created_on: string;
+}
+
+
+export interface Service{
+  id:number
+  name:string
+  company_id:number
+  bus_id:number
+  route_id:number
+  fare_id:number
+  status:string
+  ticket_mode:string
+  created_mode:string
+  starting_date:string
+  remarks:string
+}
+
+export interface Schedule{
+  id:number
+  service_id:number
+  name:string
+  permit_no:string
+  trigger_mode:number
+  ticket_mode:number
+  frequency:number[] 
+  bus_id:number
+  route_id:number
+  fare_id:number
+}
+
+export interface Duty{
+  id:number
+  operator_id:number
+  service_id:number
+  operatorName:string
+  serviceName:string
+  status:string
+  type:string
+}
+
+
+export interface PaperTicket {
+  id: number;
+  service_id: number;
+  duty_id: number;
+  sequence_id: number;
+  pickup_point: number;
+  dropping_point: number;
+  pickupName: string;
+  droppingName: string;
+  amount: number;
+  distance: number;
+  ticket_types: { name: string; count: number; }[];
+  created_on: string | null;
 }

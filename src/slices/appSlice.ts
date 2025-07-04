@@ -129,9 +129,49 @@ interface RouteListParams {
   company_id?: number;
 }
 
+interface ServiceListParams {
+  limit?: number;
+  offset?: number;
+  company_id?: number;
+  id?: string;
+  name?: string;
+  ticket_mode?: number;
+  created_mode?: number;
+  status?: number;
+  status_list?: number[];
+}
 
+interface ScheduleListParams {
+  limit?: number;
+  offset?: number;
+  id?: string;
+  name?: string;
+  permit_no?: string;
+  trigger_mode?: number;
+  ticket_mode?: number;
+  company_id?: number;
+}
 
+interface DutyListParams {
+  limit?: number;
+  offset?: number;
+  id?: number;
+  name?: string;
+  status?: number;
+  type?: number;
+  company_id?: number;
+}
 
+interface paperTicketListParams {
+  limit?: number;
+  offset?: number;
+  id?: number;
+  service_id?: number;
+  pickup_point?:number;
+  dropping_point?:number;
+  amount?: number;  
+  company_id?: number;
+}
 
 //Logout API
 export const logoutApi = createAsyncThunk(
@@ -1562,6 +1602,401 @@ export const routeLandmarkUpdationApi = createAsyncThunk(
       console.error("Backend Error Response:", error.response?.data); // Log the full error response
       return rejectWithValue(
         error.detail || error.message || "Route-landmark update failed"
+      );
+    }
+  }
+);
+
+
+//*******************************************Service**************************************************
+
+//service listing Api
+export const serviceListingApi = createAsyncThunk(
+  "/service",
+  async (params: ServiceListParams, { rejectWithValue }) => {
+    const { limit, offset, id, company_id, name, created_mode, ticket_mode, status, status_list  } =
+      params;
+
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(company_id && { company_id }),
+      ...(name && { name: name }),
+      ...(created_mode && { created_mode }),
+      ...(ticket_mode && { ticket_mode }),
+      ...(status && { status }),
+      ...(status_list && { status_list }),
+    };
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "company/service",
+        queryParams,
+        true,
+        "application/json"
+      );
+      if (!response) throw new Error("No response received");
+
+      return {
+        data: response.data || response,
+      };
+    } catch (error: any) {
+      console.error("API Error:", error);
+      return rejectWithValue(
+        error.detail || error.message || error|| "Failed to fetch service list"
+      );
+    }
+  }
+)
+
+//service creation Api
+export const serviceCreationApi = createAsyncThunk(
+  "/company/service",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "post",
+        "company/service",
+        data,
+        true,
+        "application/x-www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.detail || error.message ||error || "Service creation failed"
+      );
+    }
+  }
+);
+
+//service updation Api
+export const serviceupdationApi = createAsyncThunk(
+  "/company/service",
+  async (
+    { formData }: { serviceId: number; formData: FormData },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await commonApi.apiCall(
+        "patch",
+        `company/service`,
+        formData,
+        true,
+        "application/x-www-form-urlencoded" 
+      );
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data); 
+      return rejectWithValue(
+        error.detail || error.message ||error ||  "Service update failed"
+      );
+    }
+  }
+);
+
+//service Deletion Api
+export const serviceDeleteApi = createAsyncThunk(
+  "/company/service",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "delete",
+        "company/service",
+        data,
+        true,
+        "application/x-www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.detail || error.message ||error ||  "Service deletion failed"
+      );
+    }
+  }
+);
+
+
+//*******************************************Schedule**************************************************
+
+//schedule listing api
+export const scheduleListingApi = createAsyncThunk(
+  "/schedule",
+  async (params: ScheduleListParams, { rejectWithValue }) => {
+    const { limit, offset, id, name, permit_no , trigger_mode, ticket_mode, company_id  } =
+      params;
+
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(name && { name: name }),
+      ...(permit_no && { permit_no }),
+      ...(ticket_mode && { ticket_mode }),
+      ...(trigger_mode && { trigger_mode }),
+      ...(company_id && { company_id }),
+    };
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "company/schedule",
+        queryParams,
+        true,
+        "application/json"
+      );
+      if (!response) throw new Error("No response received");
+
+      return {
+        data: response.data || response,
+      };
+    } catch (error: any) {
+      console.error("API Error:", error);
+      return rejectWithValue(
+        error.detail || error.message ||error || 
+          "Failed to fetch schedule list"
+      );
+    }
+  }
+)
+
+//schedule creation Api
+export const scheduleCreationApi = createAsyncThunk(
+  "/company/schedule",
+  async (data: any, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "post",
+        "company/schedule",
+        data, 
+        true,
+        "application/json" 
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.detail || error.message ||error ||  "Schedule creation failed"
+      );
+    }
+  }
+);
+
+//schedule updation Api
+export const scheduleUpdationApi = createAsyncThunk(
+  "/company/schedule",
+  async (data: any, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "patch",
+        "company/schedule",
+        data, 
+        true,
+        "application/json" 
+      );
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data); // Log the full error response
+      return rejectWithValue(
+        error.detail || error.message ||error ||  "Schedule update failed"
+      );
+    }
+  }
+);
+
+//schedule deletion Api
+export const scheduleDeleteApi = createAsyncThunk(
+  "/company/schedule",
+  async (id: number, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "delete",
+        "company/schedule",
+        id, 
+        true,
+        "application/json"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.detail || error.message ||error ||  "Schedule deletion failed"
+      );
+    }
+  }
+);
+
+//*******************************************Duty**************************************************  
+
+//duty listing Api
+export const dutyListingApi = createAsyncThunk(
+  "/duty",
+  async (params: DutyListParams, { rejectWithValue }) => {
+    const { limit, offset, id, name, status, type, company_id } = params;
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(name && { name }),
+      ...(status && { status }),
+      ...(type && { type }),
+      ...(company_id && { company_id }),
+    };
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "company/service/duty",
+        queryParams,
+        true,
+        "application/json"
+      );
+      if (!response) throw new Error("No response received");
+      return {
+        data: response.data || response,
+      };
+    } catch (error: any) {
+      console.error("API Error:", error);
+      return rejectWithValue(
+        error.detail || error.message ||error ||
+          "Failed to fetch duty list"
+      );
+    }
+  }
+);
+
+//duty creation Api
+export const dutyCreationApi = createAsyncThunk(
+  "/company/service/duty",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "post",
+        "company/service/duty",
+        data,
+        true,
+        "application/x-www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        
+        error.detail || error.message ||error || "Duty creation failed"
+      );
+    }
+  }
+);
+
+//duty updation Api
+export const dutyupdationApi = createAsyncThunk(
+  "/company/service/duty",
+  async (
+    { formData }: { dutyId: number; formData: FormData },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await commonApi.apiCall(
+        "patch",
+        `company/service/duty`,
+        formData,
+        true,
+        "application/x-www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data);
+      return rejectWithValue(
+        
+        error.detail || error.message ||error || "Duty update failed"
+      );
+    }
+  }
+);
+
+//duty Deletion Api
+export const dutyDeleteApi = createAsyncThunk(
+  "/company/service/duty",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "delete",
+        "company/service/duty",
+        data,
+        true,
+        "application/x-www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        
+        error.detail || error.message ||error || "Duty deletion failed"
+      );
+    }
+  }
+)
+
+//*********************************************paper ticket**************************************
+
+//Paper ticket listing Api
+export const paperTicketListingApi = createAsyncThunk(
+  "/paper-ticket",
+  async (params: paperTicketListParams, { rejectWithValue }) => {
+    const { limit, offset, id, service_id, pickup_point, dropping_point, amount } = params;
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(service_id && { service_id }),
+      ...(pickup_point && { pickup_point }),
+      ...(dropping_point && { dropping_point }),
+      ...(amount && { amount }),
+    };
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "company/service/paper_ticket",
+        queryParams,
+        true,
+        "application/json"
+      );
+      if (!response) throw new Error("No response received");
+      return {
+        data: response.data || response,
+      };
+    } catch (error: any) {
+      console.error("API Error:", error);
+      return rejectWithValue(
+        error.detail || error.message ||error ||
+          "Failed to fetch paper ticket list"
+      );
+    }
+  }
+);
+//for landmark
+export const landmarkNameApi = createAsyncThunk(
+  "/landmark",
+  async (params: LandmarkListParams, { rejectWithValue }) => {
+    const { limit, offset, id, name } = params;
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(name && { name }),
+    };
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "landmark",
+        queryParams,
+        true,
+        "application/json"
+      );
+      if (!response) throw new Error("No response received");
+      return {
+        data: response.data || response,
+      };
+    } catch (error: any) {
+      console.error("API Error:", error);
+      return rejectWithValue(
+        error.detail || error.message ||error ||
+          "Failed to fetch landmark list"
       );
     }
   }
