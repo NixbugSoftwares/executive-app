@@ -80,6 +80,7 @@ interface FareListParams {
   id?: number;
   name?: string;
   scope?: 1 | 2;
+  company_id?: number;
 }
 
 interface CompanyListParams {
@@ -127,11 +128,6 @@ interface RouteListParams {
   name?: string;
   company_id?: number;
 }
-
-
-
-
-
 
 
 
@@ -730,6 +726,7 @@ export const fareListApi = createAsyncThunk(
       id,
       name,
       scope, 
+      company_id
     } = params;
 
     const queryParams = {
@@ -738,6 +735,7 @@ export const fareListApi = createAsyncThunk(
       ...(id && { id }),
       ...(name && { name }),
       ...(scope && { scope }),
+      ...(company_id && { company_id }),
     };
     try {
       const response = await commonApi.apiCall(

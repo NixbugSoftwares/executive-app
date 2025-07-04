@@ -23,7 +23,7 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import CodeEditor from "./textEditor";
+import CodeEditor from "./CompanyFareTextEditor";
 import {
   useForm,
   Controller,
@@ -36,7 +36,11 @@ import {
   showSuccessToast,
 } from "../../common/toastMessageHelper";
 import { Fare } from "../../types/type";
-import { fareDeleteApi, fareupdationApi, fareCreationApi } from "../../slices/appSlice";
+import {
+  fareDeleteApi,
+  fareupdationApi,
+  fareCreationApi,
+} from "../../slices/appSlice";
 interface TicketType {
   id: number;
   name: string;
@@ -62,6 +66,7 @@ interface FareSkeletonPageProps {
   fareToEdit?: Fare | null;
   mode: "create" | "view";
   canManageFare: boolean;
+  companyId: number;
 }
 
 const defaultTicketTypes = [
@@ -70,12 +75,13 @@ const defaultTicketTypes = [
   { id: 3, name: "Student" },
 ];
 
-const FareSkeletonPage = ({
+const CompanyFareSkeletonPage = ({
   onCancel,
   refreshList,
   fareToEdit,
   mode,
   canManageFare,
+  companyId,
 }: FareSkeletonPageProps) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
@@ -213,6 +219,8 @@ const FareSkeletonPage = ({
     try {
       setLoading(true);
       const formData = new FormData();
+      formData.append("company_id", String(companyId));
+      formData.append("scope", "2");
       formData.append("name", data.name);
       formData.append("function", fareFunction);
       formData.append("attributes", JSON.stringify(data.attributes));
@@ -223,7 +231,7 @@ const FareSkeletonPage = ({
       showSuccessToast("Fare created successfully");
     } catch (error: any) {
       console.error("Error creating fare:", error);
-      showErrorToast(error|| "Error creating fare");
+      showErrorToast(error || "Error creating fare");
     } finally {
       setLoading(false);
     }
@@ -246,7 +254,7 @@ const FareSkeletonPage = ({
       showSuccessToast("Fare updated successfully");
     } catch (error: any) {
       console.error("Error updating fare:", error);
-      showErrorToast(error|| "Error updating fare");
+      showErrorToast(error || "Error updating fare");
     } finally {
       setLoading(false);
     }
@@ -699,4 +707,4 @@ const FareSkeletonPage = ({
   );
 };
 
-export default FareSkeletonPage;
+export default CompanyFareSkeletonPage;

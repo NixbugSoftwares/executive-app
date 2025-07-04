@@ -16,6 +16,7 @@ const CRole = lazy(() => import("../screens/operatorRole/Role"));
 const BusRoute = lazy(() => import("../screens/busroute/BusRoute"));
 const GlobalFare = lazy(() => import("../screens/fare/Fare"));
 const Bus = lazy(() => import("../screens/bus/Bus"));
+const CompanyFare= lazy(()=> import ("../screens/companyFare/CompanyFare"))
 
 const LoadingIndicator = memo(() => (
   <div
@@ -51,6 +52,10 @@ const HomeRouter: React.FC = () => {
 
         <Route path="/executive/company/role" element={<CRole />} />
         <Route path="/executive/company/role/:companyId" element={<CRole />} />
+        
+        <Route path="/executive/company/bus" element={<Bus />} />
+        <Route path="/executive/company/bus/:companyId" element={<Bus />} />
+        
 
         <Route path="/executive/company/busroute" element={<BusRoute />} />
         <Route
@@ -58,11 +63,9 @@ const HomeRouter: React.FC = () => {
           element={<BusRoute />}
         />
 
-        {/* <Route path="/executive/company/fare" element={<Fare />} />
-        <Route path="/executive/company/fare/:companyId" element={<Fare />} /> */}
+        <Route path="/executive/company/fare" element={<CompanyFare />} />
+        <Route path="/executive/company/fare/:companyId" element={<CompanyFare />} />
 
-        <Route path="/executive/company/bus" element={<Bus />} />
-        <Route path="/executive/company/bus/:companyId" element={<Bus />} />
 
         <Route
           path="*"

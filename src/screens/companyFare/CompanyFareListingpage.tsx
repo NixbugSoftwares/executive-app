@@ -21,13 +21,19 @@ import SchoolIcon from "@mui/icons-material/School";
 import { fareListApi } from "../../slices/appSlice";
 import type { AppDispatch } from "../../store/Store";
 import { showErrorToast } from "../../common/toastMessageHelper";
-import FareSkeletonPage from "./fareSkeletonPage";
+import CompanyFareSkeletonPage from "./CompanyFareSkeletonPage";
 import { Fare } from "../../types/type";
 import PaginationControls from "../../common/paginationControl";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
+import { useLocation, useParams } from "react-router-dom";
 
-const FareListingPage = () => {
+const CompanyFareListingPage = () => {
+  const { companyId } = useParams();
+  const location = useLocation();
+  const [filterCompanyId, setFilterCompanyId] = useState<number>(
+    companyId ? parseInt(companyId) : 0
+  );
   const dispatch = useDispatch<AppDispatch>();
   const [fareList, setFareList] = useState<Fare[]>([]);
   const [selectedFare, setSelectedFare] = useState<Fare | null>(null);
@@ -46,43 +52,72 @@ const FareListingPage = () => {
   const canManageFare = useSelector((state: RootState) =>
     state.app.permissions.includes("manage_fare")
   );
-  const fetchGlobalFares = useCallback(
-    (pageNumber: number, searchParams = {}) => {
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const urlCompanyId = companyId || queryParams.get("companyId");
+
+    if (urlCompanyId) {
+      const id = parseInt(urlCompanyId);
+      if (!isNaN(id)) {
+        setFilterCompanyId(id);
+      }
+    }
+  }, [companyId, location.search]);
+
+  const fetchCompanyFares = useCallback(
+    async (pageNumber: number, searchParams = {}) => {
       const offset = pageNumber * rowsPerPage;
-      dispatch(
-        fareListApi({ limit: rowsPerPage, offset, scope: 1, ...searchParams })
-      )
-        .unwrap()
-        .then((res: any) => {
-          const items = res.data || [];
-          const formattedFares = items.map((fare: any) => ({
-            id: fare.id,
-            name: fare.name,
-            company_id: fare.company_id,
-            version: fare.version,
-            attributes: {
-              df_version: fare.attributes?.df_version || 1,
-              ticket_types: fare.attributes?.ticket_types || [],
-              currency_type: fare.attributes?.currency_type,
-              distance_unit: fare.attributes?.distance_unit || "m",
-              extra: fare.attributes?.extra || {},
-            },
-            function: fare.function,
-            scope: fare.scope,
-            created_on: fare.created_on,
-          }));
-          setFareList(formattedFares);
-          setHasNextPage(items.length === rowsPerPage);
-        })
-        .catch((error) => {
-          console.error("Error fetching fares:", error);
-          showErrorToast(
-            error || "Failed to fetch fare list. Please try again."
-          );
-        })
-        .finally(() => setIsLoading(false));
+      setIsLoading(true);
+      try {
+        const localRes = await dispatch(
+          fareListApi({
+            limit: rowsPerPage,
+            offset,
+            scope: 2,
+            ...searchParams,
+            company_id: filterCompanyId,
+          })
+        ).unwrap();
+
+        const globalRes = await dispatch(
+          fareListApi({ limit: rowsPerPage, offset, scope: 1, ...searchParams })
+        ).unwrap();
+
+        const localFares = localRes.data || [];
+        const globalFares = globalRes.data || [];
+
+        const allFares = [...localFares, ...globalFares].filter(
+          (fare, index, self) =>
+            index === self.findIndex((f) => f.id === fare.id)
+        );
+
+        const formattedFares = allFares.map((fare: any) => ({
+          id: fare.id,
+          name: fare.name,
+          company_id: fare.company_id,
+          version: fare.version,
+          attributes: {
+            df_version: fare.attributes?.df_version || 1,
+            ticket_types: fare.attributes?.ticket_types || [],
+            currency_type: fare.attributes?.currency_type,
+            distance_unit: fare.attributes?.distance_unit || "m",
+            extra: fare.attributes?.extra || {},
+          },
+          function: fare.function,
+          scope: fare.scope,
+          created_on: fare.created_on,
+        }));
+
+        setFareList(formattedFares);
+        setHasNextPage(allFares.length === rowsPerPage);
+      } catch (error: any) {
+        console.error("Error fetching fares:", error);
+        showErrorToast(error || "Failed to fetch fare list. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
     },
-    []
+    [dispatch, filterCompanyId]
   );
 
   const handleSearchChange = useCallback(
@@ -114,18 +149,17 @@ const FareListingPage = () => {
       ...(debouncedSearch.id && { id: debouncedSearch.id }),
       ...(debouncedSearch.name && { name: debouncedSearch.name }),
     };
-
-    fetchGlobalFares(page, searchParams);
-  }, [page, debouncedSearch, fetchGlobalFares]);
+    fetchCompanyFares(page, searchParams);
+  }, [page, debouncedSearch, fetchCompanyFares]);
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      fetchGlobalFares(page, debouncedSearch);
+      fetchCompanyFares(page, debouncedSearch);
     }
   };
 
   if (viewMode === "create" || viewMode === "view") {
     return (
-      <FareSkeletonPage
+      <CompanyFareSkeletonPage
         onCancel={() => {
           setViewMode("list");
           setSelectedFare(null);
@@ -134,6 +168,7 @@ const FareListingPage = () => {
         fareToEdit={viewMode === "view" ? selectedFare : null}
         mode={viewMode}
         canManageFare={canManageFare}
+        companyId={filterCompanyId}
       />
     );
   }
@@ -166,7 +201,9 @@ const FareListingPage = () => {
               alignItems: "center",
             }}
           >
-            <Typography variant="h6">Global Faressss</Typography>
+            <Typography variant="h6">
+              {filterCompanyId ? "Company Fares" : "Global Fares"}
+            </Typography>
             <Tooltip
               title={
                 !canManageFare
@@ -444,4 +481,4 @@ const FareListingPage = () => {
   );
 };
 
-export default FareListingPage;
+export default CompanyFareListingPage;
