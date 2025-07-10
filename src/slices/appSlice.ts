@@ -65,6 +65,7 @@ interface LandmarkListParams {
   ids?:[number];
   name?: string;
   location?: string;
+  status?: number;
 }
 
 interface BusStopListParams {
@@ -347,7 +348,7 @@ export const accountDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/account",
+        "account",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -356,7 +357,7 @@ export const accountDeleteApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.detail?.response?.data?.message || "Account deletion failed"
+        error.detail || error.message || error || "Account deletion failed"
       );
     }
   }
@@ -554,7 +555,7 @@ export const roleAssignUpdateApi = createAsyncThunk(
 export const landmarkListApi = createAsyncThunk(
   "/executive/landmark",
   async (params: LandmarkListParams, { rejectWithValue }) => {
-    const { limit, offset, id, ids, name, location } = params;
+    const { limit, offset, id, ids, name, location, status } = params;
     const queryParams = {
       limit,
       offset,
@@ -562,6 +563,7 @@ export const landmarkListApi = createAsyncThunk(
       ...(ids && { ids }),
       ...(name && { name }),
       ...(location && { location }),
+      ...(status && { status }),
     };
     try {
       const response = await commonApi.apiCall(
@@ -1938,7 +1940,7 @@ export const dutyDeleteApi = createAsyncThunk(
 export const paperTicketListingApi = createAsyncThunk(
   "/paper-ticket",
   async (params: paperTicketListParams, { rejectWithValue }) => {
-    const { limit, offset, id, service_id, pickup_point, dropping_point, amount } = params;
+    const { limit, offset, id, service_id, pickup_point, dropping_point, amount,company_id } = params;
     const queryParams = {
       limit,
       offset,
@@ -1947,6 +1949,7 @@ export const paperTicketListingApi = createAsyncThunk(
       ...(pickup_point && { pickup_point }),
       ...(dropping_point && { dropping_point }),
       ...(amount && { amount }),
+      ...(company_id && { company_id }),
     };
     try {
       const response = await commonApi.apiCall(

@@ -41,7 +41,7 @@ interface AccountCardProps {
     username: string;
     gender: string;
     designation: string;
-    email: string;
+    email_id: string;
     phoneNumber: string;
     status: string;
   };
@@ -160,13 +160,13 @@ const getGenderValue = (genderText: string): number | undefined => {
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <EmailIcon color="action" sx={{ mr: 1 }} />
-            {account.email ? (
+            {account.email_id ? (
               <a
-                href={`mailto:${account.email}`}
+                href={`mailto:${account.email_id}`}
                 style={{ textDecoration: "none" }}
               >
                 <Typography variant="body2" color="primary">
-                  {account.email}
+                  {account.email_id}
                 </Typography>
               </a>
             ) : (
@@ -340,8 +340,10 @@ const getGenderValue = (genderText: string): number | undefined => {
             accountData={{
               username: account.username,
               fullName: account.fullName,
-              email: account.email,
-              phoneNumber: account.phoneNumber,
+              email: account.email_id,
+              phoneNumber: account.phoneNumber
+              .replace(/\D/g, "")
+              .replace(/^91/, ""),
               designation: account.designation,
             gender: getGenderValue(account.gender),
             status: getStatusValue(account.status),

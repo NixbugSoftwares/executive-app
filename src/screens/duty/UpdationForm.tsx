@@ -36,6 +36,7 @@ interface IOperatorUpdateFormProps {
   onClose: () => void;
   refreshList: (value: any) => void;
   onCloseDetailCard(): void;
+  companyId: number;
 }
 
 const statusOptions = [
@@ -70,6 +71,7 @@ const DutyUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
   dutyId,
   onCloseDetailCard,
   dutyData,
+  companyId
 }) => {
   console.log("DutyUpdateForm props:", { dutyId, dutyData });
 
@@ -143,6 +145,7 @@ const DutyUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
           offset,
           name: searchText,
           status_list: [1, 2],
+          company_id: companyId
         })
       )
         .unwrap()

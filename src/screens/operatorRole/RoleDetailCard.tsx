@@ -78,7 +78,7 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
       refreshList("refresh");
       showSuccessToast("Role deleted successfully!");
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error|| "Failed to delete role. Please try again.");
     }
   };
   return (
@@ -115,7 +115,7 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {/* List all permissions */}
-            
+
             <Chip
               label={`Manage Operators: ${
                 role.roleDetails.manage_operator ? "Yes" : "No"
@@ -151,7 +151,7 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
               color={role.roleDetails.manage_fare ? "success" : "error"}
               variant="outlined"
             />
-            
+
             <Chip
               label={`Manage Schedule: ${
                 role.roleDetails.manage_schedule ? "Yes" : "No"
@@ -159,7 +159,7 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
               color={role.roleDetails.manage_schedule ? "success" : "error"}
               variant="outlined"
             />
-            
+
             <Chip
               label={`Manage Company: ${
                 role.roleDetails.manage_company ? "Yes" : "No"
@@ -167,7 +167,7 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
               color={role.roleDetails.manage_company ? "success" : "error"}
               variant="outlined"
             />
-            
+
             <Chip
               label={`Manage Service: ${
                 role.roleDetails.manage_service ? "Yes" : "No"
@@ -326,6 +326,11 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
             onCloseDetailCard={onCloseDetailCard}
           />
         </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setUpdateFormOpen(false)} color="error">
+            Cancel
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   );

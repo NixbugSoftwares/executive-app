@@ -159,7 +159,7 @@ const MapComponent = React.forwardRef(
   };
 }, []);
 const fetchLandmark = (locationaskey: string) => {
-  dispatch(landmarkListApi({location:locationaskey}))
+  dispatch(landmarkListApi({location:locationaskey, status:2 }))
     .unwrap()
     .then((res) => {
       const formattedLandmarks = res.data.map((landmark: any) => ({

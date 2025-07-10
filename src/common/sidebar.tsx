@@ -10,7 +10,6 @@ import {
   Typography,
   Divider,
   IconButton,
-  Avatar,
   Collapse,
   styled,
 } from "@mui/material";
@@ -31,9 +30,11 @@ import BusinessIcon from "@mui/icons-material/Business";
 import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import PersonIcon from '@mui/icons-material/Person';
+import ExpandLess from "@mui/icons-material/ExpandLess";
+import ExpandMore from "@mui/icons-material/ExpandMore";
 import { useTheme, useMediaQuery } from "@mui/material";
 import LogoutConfirmationModal from "./logoutModal";
-import LoggedInUser from "./UserDetails";
 import { companyListApi } from "../slices/appSlice";
 import type { AppDispatch } from "../store/Store";
 import { useDispatch } from "react-redux";
@@ -52,12 +53,11 @@ const Sidebar: React.FC = () => {
   const { companyId } = useParams();
   const [isOpen, setIsOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [isUserSectionOpen, setIsUserSectionOpen] = useState(false);
   const [isCompanySectionOpen, setIsCompanySectionOpen] = useState(false);
   const [companyName, setCompanyName] = useState("");
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
-
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   // Memoized company check
   const isCompanySelected = useMemo(
     () =>
@@ -382,37 +382,76 @@ const Sidebar: React.FC = () => {
           ))}
         </Box>
 
-        <Box sx={{ mt: "auto", p: 2 }}>
+        <Box sx={{ px: 2, pt: 1, pb: 0, borderTop: "1px solid #eee", mt: "auto" }}>
           <List>
             <ListItem disablePadding>
               <ListItemButton
-                onClick={() => setIsUserSectionOpen(!isUserSectionOpen)}
+                onClick={() => setUserMenuOpen((prev) => !prev)}
+                sx={{
+                  borderRadius: 1,
+                  minHeight: 40,
+                  justifyContent: "center",
+                  px: 1,
+                  py: 0.5,
+                }}
               >
-                <ListItemIcon>
-                  <Avatar sx={{ bgcolor: "primary.main" }}>
-                    <AccountCircleOutlinedIcon />
-                  </Avatar>
+                <ListItemIcon sx={{ minWidth: 32 }}>
                 </ListItemIcon>
-                <ListItemText primary="User" />
-                {isUserSectionOpen ? <ExpandMoreIcon /> : <ExpandLessIcon />}
+                <ListItemText
+                  primary="User"
+                  primaryTypographyProps={{
+                    fontSize: "0.95rem",
+                    fontWeight: 500,
+                  }}
+                  sx={{ m: 0 }}
+                />
+                {userMenuOpen ? <ExpandMore /> : <ExpandLess />}
               </ListItemButton>
             </ListItem>
-
-            <Collapse in={isUserSectionOpen} timeout="auto" unmountOnExit>
-              <Box sx={{ pl: 4, pr: 2 }}>
-                <LoggedInUser />
+            <Collapse in={userMenuOpen} timeout="auto" unmountOnExit>
+              <List component="div" disablePadding>
                 <ListItem disablePadding>
-                  <ListItemButton onClick={() => setIsLogoutModalOpen(true)}>
-                    <ListItemIcon>
-                      <PowerSettingsNewIcon color="error" />
+                  <ListItemButton
+                    onClick={() => {
+                      navigate("/profile");
+                      if (isSmallScreen) setIsOpen(false);
+                      setUserMenuOpen(false);
+                    }}
+                    sx={{
+                      pl: 4,
+                      backgroundColor:
+                        location.pathname === "/profile"
+                          ? "primary.light"
+                          : "inherit",
+                      "&:hover": {
+                        backgroundColor: "#E3F2FD",
+                      },
+                      borderRadius: 1,
+                      mb: 1,
+                      minHeight: 36,
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <PersonIcon />
                     </ListItemIcon>
-                    <ListItemText
-                      primary="Logout"
-                      sx={{ color: "error.main" }}
-                    />
+                    <ListItemText primary="Profile" />
                   </ListItemButton>
                 </ListItem>
-              </Box>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    onClick={() => {
+                      setIsLogoutModalOpen(true);
+                      setUserMenuOpen(false);
+                    }}
+                    sx={{ pl: 4, minHeight: 36 }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <PowerSettingsNewIcon color="error" />
+                    </ListItemIcon>
+                    <ListItemText primary="Logout" sx={{ color: "error.main" }} />
+                  </ListItemButton>
+                </ListItem>
+              </List>
             </Collapse>
           </List>
         </Box>

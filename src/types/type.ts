@@ -9,9 +9,10 @@ export interface Account {
   password?: string;
   gender: string;
   designation: string;
-  email: string;
+  email_id: string;
   phoneNumber: string;
   status: string;
+  created_on  : string;
 }
 
 export interface RoleDetails {

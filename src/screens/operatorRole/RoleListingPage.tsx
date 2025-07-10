@@ -32,8 +32,8 @@ interface Role {
 const RoleListingTable = () => {
   const { companyId } = useParams();
   const [filterCompanyId, setFilterCompanyId] = useState<number | null>(
-      companyId ? parseInt(companyId) : null
-    );
+    companyId ? parseInt(companyId) : null
+  );
   const dispatch = useDispatch<AppDispatch>();
   const [roleList, setRoleList] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
@@ -48,7 +48,7 @@ const RoleListingTable = () => {
   const canManageCompany = useSelector((state: RootState) =>
     state.app.permissions.includes("manage_company")
   );
-useEffect(() => {
+  useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const urlCompanyId = companyId || queryParams.get("companyId");
 
@@ -64,7 +64,12 @@ useEffect(() => {
       setIsLoading(true);
       const offset = pageNumber * rowsPerPage;
       dispatch(
-        operatorRoleListApi({ limit: rowsPerPage, offset, company_id: filterCompanyId, ...searchParams })
+        operatorRoleListApi({
+          limit: rowsPerPage,
+          offset,
+          company_id: filterCompanyId,
+          ...searchParams,
+        })
       )
         .unwrap()
         .then((res) => {
@@ -89,7 +94,7 @@ useEffect(() => {
         })
         .catch((error) => {
           showErrorToast(
-            error.message || "Failed to fetch role list. Please try again."
+            error || "Failed to fetch role list. Please try again."
           );
         })
         .finally(() => setIsLoading(false));
@@ -192,28 +197,28 @@ useEffect(() => {
           }
           placement="top-end"
         >
-            <Button
-              sx={{
-                ml: "auto",
-                mr: 2,
-                mb: 2,
-                display: "block",
-                backgroundColor: !canManageCompany
-                  ? "#6c87b7 !important"
-                  : "#00008B",
-                color: "white",
-                "&.Mui-disabled": {
-                  backgroundColor: "#6c87b7 !important",
-                  color: "#ffffff99",
-                },
-              }}
-              variant="contained"
-              disabled={!canManageCompany}
-              onClick={() => setOpenCreateModal(true)}
-              style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}
-            >
-              Add New Role
-            </Button>
+          <Button
+            sx={{
+              ml: "auto",
+              mr: 2,
+              mb: 2,
+              display: "block",
+              backgroundColor: !canManageCompany
+                ? "#6c87b7 !important"
+                : "#00008B",
+              color: "white",
+              "&.Mui-disabled": {
+                backgroundColor: "#6c87b7 !important",
+                color: "#ffffff99",
+              },
+            }}
+            variant="contained"
+            disabled={!canManageCompany}
+            onClick={() => setOpenCreateModal(true)}
+            style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}
+          >
+            Add New Role
+          </Button>
         </Tooltip>
 
         <TableContainer

@@ -7,7 +7,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   TextField,
   Box,
   Button,
@@ -326,10 +325,16 @@ const OperatorListingTable = () => {
           </Tooltip>
         </Box>
 
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 600 }}>
+        <TableContainer sx={{
+            flex: 1,
+            maxHeight: "calc(100vh - 100px)",
+            overflowY: "auto",
+            borderRadius: 2,
+            border: "1px solid #e0e0e0",
+          }}>
+          <Table stickyHeader>
             <TableHead>
-              <TableRow>
+              <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
                 {["ID", "Full Name", "Phone", "Email", "Gender"].map(
                   (header) => (
                     <TableCell key={header}>

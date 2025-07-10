@@ -501,6 +501,7 @@ const DutyListingTable = () => {
             refreshList={(value: any) => refreshList(value)}
             canManageDuty={canManageDuty}
             onCloseDetailCard={() => setSelectedDuty(null)}
+            companyId={filterCompanyId}
           />
         </Box>
       )}

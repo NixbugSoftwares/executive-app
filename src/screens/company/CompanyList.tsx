@@ -8,7 +8,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   TextField,
   Box,
   Button,
@@ -151,15 +150,13 @@ const CompanyListingTable = () => {
         display: "flex",
         flexDirection: { xs: "column", md: "row" },
         width: "100%",
-        height: "100vh",
+        height: "100%",
         gap: 2,
       }}
     >
       <Box
         sx={{
-          flex: selectedCompany
-            ? { xs: "0 0 100%", md: "0 0 65%" }
-            : "0 0 100%",
+          flex: selectedCompany ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
           maxWidth: selectedCompany ? { xs: "100%", md: "65%" } : "100%",
           transition: "all 0.3s ease",
           height: "100%",
@@ -203,10 +200,16 @@ const CompanyListingTable = () => {
           </span>
         </Tooltip>
 
-        <TableContainer component={Paper}>
-          <Table>
+        <TableContainer sx={{
+            flex: 1,
+            maxHeight: "calc(100vh - 100px)",
+            overflowY: "auto",
+            borderRadius: 2,
+            border: "1px solid #e0e0e0",
+          }}>
+          <Table stickyHeader >
             <TableHead>
-              <TableRow>
+              <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
                 <TableCell>
                   <b
                     style={{
@@ -312,7 +315,7 @@ const CompanyListingTable = () => {
                       fontSize: selectedCompany ? "0.8rem" : "1rem",
                     }}
                   >
-                    Phone Number
+                    Phone 
                   </b>
                   <TextField
                     variant="outlined"

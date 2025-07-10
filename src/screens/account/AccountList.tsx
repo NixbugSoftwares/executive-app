@@ -78,11 +78,13 @@ const AccountListingTable = () => {
               : account.gender === 3
               ? "Transgender"
               : "Other",
-          email_id: account.email_id || account.email,
+          email_id: account.email_id ,
           phoneNumber: account.phone_number || account.phoneNumber || "",
           status: account.status === 1 ? "Active" : "Suspended",
           designation: account.designation || "",
         }));
+        console.log("email_id",formattedAccounts.map((account:Account) => account.email_id));
+        
 
         setAccountList(formattedAccounts);
         setHasNextPage(items.length === rowsPerPage);
@@ -463,8 +465,8 @@ const AccountListingTable = () => {
                     </TableCell>
                     <TableCell>
                       <Typography noWrap>
-                        {row.email ? (
-                          row.email
+                        {row.email_id ? (
+                          row.email_id
                         ) : (
                           <Tooltip
                             title="Email not added yet"

@@ -18,7 +18,7 @@ import {
 
 import { Delete as DeleteIcon } from "@mui/icons-material";
 import AssignmentIndRoundedIcon from "@mui/icons-material/AssignmentIndRounded";
-import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
+import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
 import { useAppDispatch } from "../../store/Hooks";
 import {
   serviceDeleteApi,
@@ -28,7 +28,10 @@ import {
 } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import ServiceUpdateForm from "./ServiceUpdation";
-import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/toastMessageHelper";
 import { useNavigate } from "react-router-dom";
 interface ServiceCardProps {
   service: {
@@ -126,27 +129,31 @@ const ServiceDetailsCard: React.FC<ServiceCardProps> = ({
   const fetchRouteName = async () => {
     try {
       const id = service.route_id;
-      const response = await dispatch(busRouteListApi({ id, company_id:companyId })).unwrap();
+      const response = await dispatch(
+        busRouteListApi({ id, company_id: companyId })
+      ).unwrap();
       setRouteName(response.data[0].name);
       console.log("Route Name Response:", response.data[0].name);
 
       return response.data[0].name;
-    } catch (error:any) {
+    } catch (error: any) {
       console.error("Error fetching route name:", error);
-      showErrorToast( error|| "Route not found"); 
+      showErrorToast(error || "Route not found");
     }
   };
   const fetchBusName = async () => {
     try {
       const id = service.bus_id;
-      const response = await dispatch(busListApi({ id, company_id:companyId })).unwrap();
+      const response = await dispatch(
+        busListApi({ id, company_id: companyId })
+      ).unwrap();
       setBusName(response.data[0].name);
       console.log("Bus Name Response:", response.data[0].name);
 
       return response.data[0].name;
-    } catch (error:any) {
+    } catch (error: any) {
       console.error("Error fetching bus name:", error);
-      showErrorToast( error|| "Bus not found"); 
+      showErrorToast(error || "Bus not found");
     }
   };
 
@@ -158,9 +165,9 @@ const ServiceDetailsCard: React.FC<ServiceCardProps> = ({
       console.log("Fare Name Response:", response.data[0].name);
 
       return response.data[0].name;
-    } catch (error:any) {
+    } catch (error: any) {
       console.error("Error fetching fare name:", error);
-      showErrorToast( error|| "Fare not found");
+      showErrorToast(error || "Fare not found");
     }
   };
   useEffect(() => {
@@ -192,9 +199,9 @@ const ServiceDetailsCard: React.FC<ServiceCardProps> = ({
       showSuccessToast("service deleted successfully");
       onCloseDetailCard();
       refreshList("refresh");
-    } catch (error:any) {
+    } catch (error: any) {
       console.error("Delete error:", error);
-      showErrorToast(error||"Service deletion failed. Please try again.");
+      showErrorToast(error || "Service deletion failed. Please try again.");
     }
   };
   console.log(service.status);
@@ -350,10 +357,14 @@ const ServiceDetailsCard: React.FC<ServiceCardProps> = ({
               variant="outlined"
               color="secondary"
               sx={{ width: "300px" }}
-              onClick={() => navigate(`/ticket?service_id=${service.id}`)}
+              onClick={() =>
+                navigate(
+                  `/executive/company/papper-ticket/${companyId}?service_id=${service.id}`
+                )
+              }
             >
               <ConfirmationNumberIcon sx={{ mr: 1 }} />
-              View All Tickets
+              View All Ticketss
             </Button>
           </Box>
         </Card>
@@ -504,6 +515,12 @@ const ServiceDetailsCard: React.FC<ServiceCardProps> = ({
             onCloseDetailCard={onCloseDetailCard}
           />
         </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setUpdateFormOpen(false)} color="error">
+            Cancel
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   );

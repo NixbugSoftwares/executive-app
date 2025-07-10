@@ -89,9 +89,9 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
       } else {
         showErrorToast("Role creation failed. Please try again.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating role:", error);
-      showErrorToast("Failed to create role. Please try again.");
+      showErrorToast(error||"Failed to create role. Please try again.");
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -29,6 +29,12 @@ interface PaperTicketListingTableProps {
 const PaperTicketListingTable: React.FC<PaperTicketListingTableProps> = ({
   serviceId,
 }) => {
+  
+   const { companyId } = useParams();
+    const location = useLocation();
+    const [filterCompanyId, setFilterCompanyId] = useState<number>(
+      companyId ? parseInt(companyId) : 0
+    );
   const dispatch = useDispatch<AppDispatch>();
   const [paperTicketList, setPaperTicketList] = useState<PaperTicket[]>([]);
   const [selectedPaperTicket, setSelectedPaperTicket] = useState<PaperTicket | null>(null);
@@ -46,7 +52,17 @@ const PaperTicketListingTable: React.FC<PaperTicketListingTableProps> = ({
   const [hasNextPage, setHasNextPage] = useState(false);
   const rowsPerPage = 10;
   const navigate = useNavigate();
+useEffect(() => {
+  const queryParams = new URLSearchParams(location.search);
+  const urlCompanyId = companyId || queryParams.get("companyId");
 
+  if (urlCompanyId) {
+    const id = parseInt(urlCompanyId);
+    if (!isNaN(id)) {
+      setFilterCompanyId(id);
+    }
+  }
+}, [companyId, location.search]);
   const fetchTicketList = useCallback(
     async (pageNumber: number, searchParams = {}) => {
       setIsLoading(true);
@@ -54,7 +70,7 @@ const PaperTicketListingTable: React.FC<PaperTicketListingTableProps> = ({
       
       try {
         const res = await dispatch(
-          paperTicketListingApi({ limit: rowsPerPage, offset, ...searchParams })
+          paperTicketListingApi({ limit: rowsPerPage, offset, ...searchParams, company_id: filterCompanyId, service_id: serviceId })
         ).unwrap();
         const items = Array.isArray(res.data) ? res.data : [];
         const nameRequests = items.map(async (ticket: any) => {
@@ -123,7 +139,7 @@ const PaperTicketListingTable: React.FC<PaperTicketListingTableProps> = ({
     [dispatch, rowsPerPage]
   );
 
-  const handleSearchByName = useCallback(async () => {
+  const handleSearch = useCallback(async () => {
     const searchParams: any = {
       ...(debouncedSearch.id && { id: debouncedSearch.id }),
       ...(debouncedSearch.amount && { amount: debouncedSearch.amount }),
@@ -188,8 +204,8 @@ const PaperTicketListingTable: React.FC<PaperTicketListingTableProps> = ({
   }, [page, debouncedSearch, fetchTicketList, serviceId, dispatch]);
 
   useEffect(() => {
-    handleSearchByName();
-  }, [page, debouncedSearch, handleSearchByName]);
+    handleSearch();
+  }, [page, debouncedSearch, handleSearch]);
 
   // Rest of your component remains the same...
   const handleRowClick = (paperTicket: PaperTicket) => {
@@ -241,7 +257,7 @@ const PaperTicketListingTable: React.FC<PaperTicketListingTableProps> = ({
       >
         <Box sx={{ mb: 2, display: "flex", alignItems: "center" }}>
           <Button
-            onClick={() => navigate("/service")}
+            onClick={() => navigate(`/executive/company/service/${filterCompanyId}?service_id=${serviceId}`)}
             startIcon={<ArrowBackIcon />}
             variant="outlined"
             sx={{

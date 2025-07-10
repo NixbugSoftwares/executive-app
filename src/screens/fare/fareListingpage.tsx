@@ -166,7 +166,7 @@ const FareListingPage = () => {
               alignItems: "center",
             }}
           >
-            <Typography variant="h6">Global Faressss</Typography>
+            <Typography variant="h6">Global Fares</Typography>
             <Tooltip
               title={
                 !canManageFare
@@ -196,7 +196,7 @@ const FareListingPage = () => {
                   onClick={() => setViewMode("create")}
                   disabled={!canManageFare}
                 >
-                  Create New Fare
+                  Add New Fare
                 </Button>
               </span>
             </Tooltip>

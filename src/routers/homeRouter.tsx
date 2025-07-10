@@ -16,11 +16,12 @@ const CRole = lazy(() => import("../screens/operatorRole/Role"));
 const BusRoute = lazy(() => import("../screens/busroute/BusRoute"));
 const GlobalFare = lazy(() => import("../screens/fare/Fare"));
 const Bus = lazy(() => import("../screens/bus/Bus"));
-const CompanyFare= lazy(()=> import ("../screens/companyFare/CompanyFare"))
+const CompanyFare = lazy(() => import("../screens/companyFare/CompanyFare"));
 const Service = lazy(() => import("../screens/service/service"));
 const Schedule = lazy(() => import("../screens/schedule/schedule"));
 const Duty = lazy(() => import("../screens/duty/duty"));
-
+const PapperTicket = lazy(() => import("../screens/ticket/ticket"));
+const Profile=lazy(() => import("../common/profile/profile"));
 
 const LoadingIndicator = memo(() => (
   <div
@@ -56,10 +57,9 @@ const HomeRouter: React.FC = () => {
 
         <Route path="/executive/company/role" element={<CRole />} />
         <Route path="/executive/company/role/:companyId" element={<CRole />} />
-        
+
         <Route path="/executive/company/bus" element={<Bus />} />
         <Route path="/executive/company/bus/:companyId" element={<Bus />} />
-        
 
         <Route path="/executive/company/busroute" element={<BusRoute />} />
         <Route
@@ -68,18 +68,33 @@ const HomeRouter: React.FC = () => {
         />
 
         <Route path="/executive/company/fare" element={<CompanyFare />} />
-        <Route path="/executive/company/fare/:companyId" element={<CompanyFare />} />
+        <Route
+          path="/executive/company/fare/:companyId"
+          element={<CompanyFare />}
+        />
 
         <Route path="/executive/service" element={<Service />} />
-        <Route path="/executive/company/service/:companyId" element={<Service />} />
+        <Route
+          path="/executive/company/service/:companyId"
+          element={<Service />}
+        />
 
         <Route path="/executive/schedule" element={<Schedule />} />
-        <Route path="/executive/company/schedule/:companyId" element={<Schedule />} />
+        <Route
+          path="/executive/company/schedule/:companyId"
+          element={<Schedule />}
+        />
 
         <Route path="/executive/duty" element={<Duty />} />
         <Route path="/executive/company/duty/:companyId" element={<Duty />} />
 
+        <Route path="/executive/papper-ticket" element={<PapperTicket />} />
+        <Route
+          path="/executive/company/papper-ticket/:companyId"
+          element={<PapperTicket />}
+        />
 
+        <Route path="/profile" element={<Profile />} />
         <Route
           path="*"
           element={<Navigate to="/executive/account" replace />}

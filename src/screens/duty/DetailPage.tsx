@@ -38,6 +38,7 @@ interface DutyCardProps {
   onBack: () => void;
   canManageDuty: boolean;
   onCloseDetailCard: () => void;
+  companyId: number;
 }
 const statusMap: Record<string, { label: string; color: string; bg: string }> =
   {
@@ -80,6 +81,7 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
   onBack,
   canManageDuty,
   onCloseDetailCard,
+  companyId,
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
@@ -326,8 +328,15 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
             refreshList={(value: any) => refreshList(value)}
             onClose={() => setUpdateFormOpen(false)}
             onCloseDetailCard={onCloseDetailCard}
+            companyId={companyId}
           />
         </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setUpdateFormOpen(false)} color="error">
+            Cancel
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   );

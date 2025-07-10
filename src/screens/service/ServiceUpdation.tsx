@@ -118,9 +118,9 @@ const ServiceUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
       onCloseDetailCard();
       refreshList("refresh");
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating service:", error);
-      showErrorToast("Failed to update service. Please try again.");
+      showErrorToast(error||"Failed to update service. Please try again.");
     } finally {
       setLoading(false);
     }

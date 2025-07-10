@@ -129,15 +129,6 @@ const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
       <Button type="submit" variant="contained" sx={{ bgcolor: "darkblue" }} fullWidth disabled={loading}>
         {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Update Role"}
       </Button>
-      <Button
-        variant="outlined"
-        color="error"
-        fullWidth
-        onClick={onClose}
-        sx={{ mt: 2 }}
-      >
-        Cancel
-      </Button>
     </Box>
   );
 };

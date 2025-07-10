@@ -319,6 +319,12 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             onCloseDetailCard={onCloseDetailCard}
           />
         </DialogContent>
+        
+                <DialogActions>
+                          <Button onClick={() => setUpdateFormOpen(false)} color="error">
+                            Cancel
+                          </Button>
+                        </DialogActions>
       </Dialog>
     </>
   );

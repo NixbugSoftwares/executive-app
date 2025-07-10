@@ -240,6 +240,7 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
       setLoading(true);
 
       const scheduleForm = {
+        company_id: companyId,
         name: data.name,
         route_id: data.route_id,
         bus_id: data.bus_id,
@@ -255,14 +256,14 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
       ).unwrap();
 
       if (response?.id) {
-        showSuccessToast("Service created successfully!");
+        showSuccessToast("schedule created successfully!");
         refreshList("refresh");
         onClose();
       } else {
-        showErrorToast("Service creation failed. Please try again.");
+        showErrorToast("schedule creation failed. Please try again.");
       }
-    } catch (error) {
-      showErrorToast("Something went wrong. Please try again.");
+    } catch (error:any) {
+      showErrorToast(error || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -306,7 +307,7 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
         }}
       >
         <Typography component="h1" variant="h5">
-          Service Creation
+          Schedule Creation
         </Typography>
         <Box
           component="form"
@@ -539,7 +540,7 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
             {loading ? (
               <CircularProgress size={24} sx={{ color: "white" }} />
             ) : (
-              "Create Service"
+              "Create Schedule"
             )}
           </Button>
         </Box>

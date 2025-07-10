@@ -77,6 +77,8 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
   onCloseDetailCard,
   canManageExecutive,
 }) => {
+  console.log("accountData", accountData);
+  
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
@@ -143,9 +145,12 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       if (data.password) formData.append("password", data.password);
       formData.append("gender", data.gender?.toString() || "");
       if (data.fullName) formData.append("full_name", data.fullName);
-      if (data.phoneNumber)
+       if (data.phoneNumber)
         formData.append("phone_number", `+91${data.phoneNumber}`);
-      if (data.email) formData.append("email_id", data.email);
+      if (data.email) {
+      console.log("Email is being sent:", data.email);
+      formData.append("email_id", data.email);
+    }
       if (data.designation) formData.append("designation", data.designation);
       if (data.status) formData.append("status", data.status.toString());
       const accountResponse = await dispatch(
@@ -249,41 +254,27 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             helperText={errors.fullName?.message}
             size="small"
           />
-          <Controller
+           <Controller
             name="phoneNumber"
             control={control}
-            render={({ field }) => {
-              let cleanValue = field.value || accountData.phoneNumber || "";
-              cleanValue = cleanValue
-                .replace(/^tel:/, "")
-                .replace(/[^0-9]/g, "");
-
-              if (cleanValue.startsWith("91") && cleanValue.length > 10) {
-                cleanValue = cleanValue.slice(2);
-              }
-              if (cleanValue.length > 10) {
-                cleanValue = cleanValue.slice(-10);
-              }
-
-              return (
-                <TextField
-                  margin="normal"
-                  fullWidth
-                  label="Phone Number"
-                  placeholder="eg: +911234567890"
-                  size="small"
-                  error={!!errors.phoneNumber}
-                  helperText={errors.phoneNumber?.message}
-                  value={cleanValue ? `+91${cleanValue}` : ""}
-                  onChange={(e) => {
-                    let value = e.target.value.replace(/\D/g, "");
-                    if (value.startsWith("91")) value = value.slice(2);
-                    if (value.length > 10) value = value.slice(0, 10);
-                    field.onChange(value || "");
-                  }}
-                />
-              );
-            }}
+            render={({ field }) => (
+              <TextField
+                margin="normal"
+                fullWidth
+                label="Phone Number"
+                placeholder="eg:+911234567890"
+                size="small"
+                error={!!errors.phoneNumber}
+                helperText={errors.phoneNumber?.message}
+                value={field.value ? `+91${field.value}` : ""}
+                onChange={(e) => {
+                  let value = e.target.value.replace(/\D/g, "");
+                  if (value.startsWith("91")) value = value.slice(2);
+                  if (value.length > 10) value = value.slice(0, 10);
+                  field.onChange(value || "");
+                }}
+              />
+            )}
           />
 
           <TextField
