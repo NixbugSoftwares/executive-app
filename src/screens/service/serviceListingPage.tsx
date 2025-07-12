@@ -66,11 +66,11 @@ type SearchFilter = {
 };
 
 const ServiceListingTable = () => {
-   const { companyId } = useParams();
-    const location = useLocation();
-    const [filterCompanyId, setFilterCompanyId] = useState<number>(
-      companyId ? parseInt(companyId) : 0
-    );
+  const { companyId } = useParams();
+  const location = useLocation();
+  const [filterCompanyId, setFilterCompanyId] = useState<number>(
+    companyId ? parseInt(companyId) : 0
+  );
   const dispatch = useDispatch<AppDispatch>();
   const [serviceList, setServiceList] = useState<Service[]>([]);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -91,17 +91,17 @@ const ServiceListingTable = () => {
     state.app.permissions.includes("manage_service")
   );
   const [openCreateModal, setOpenCreateModal] = useState(false);
-useEffect(() => {
-  const queryParams = new URLSearchParams(location.search);
-  const urlCompanyId = companyId || queryParams.get("companyId");
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const urlCompanyId = companyId || queryParams.get("companyId");
 
-  if (urlCompanyId) {
-    const id = parseInt(urlCompanyId);
-    if (!isNaN(id)) {
-      setFilterCompanyId(id);
+    if (urlCompanyId) {
+      const id = parseInt(urlCompanyId);
+      if (!isNaN(id)) {
+        setFilterCompanyId(id);
+      }
     }
-  }
-}, [companyId, location.search]);
+  }, [companyId, location.search]);
   const fetchServiceList = useCallback(
     (pageNumber: number, searchParams: Partial<SearchFilter> = {}) => {
       setIsLoading(true);
@@ -322,7 +322,7 @@ useEffect(() => {
                     isSelect: true,
                     options: ["Hybrid", "Digital", "Conventional"],
                   },
-                  
+
                   {
                     key: "created_mode",
                     isSelect: true,
@@ -394,7 +394,15 @@ useEffect(() => {
                   >
                     <TableCell sx={{ textAlign: "center" }}>{row.id}</TableCell>
                     <TableCell>
-                      <Typography noWrap>{row.name}</Typography>
+                      <Typography noWrap>
+                        <Tooltip title={row.name} placement="bottom">
+                          <Typography noWrap>
+                            {row.name.length > 15
+                              ? `${row.name.substring(0, 15)}...`
+                              : row.name}
+                          </Typography>
+                        </Tooltip>
+                      </Typography>
                     </TableCell>
                     <TableCell>
                       <Chip
@@ -434,23 +442,23 @@ useEffect(() => {
                           textAlign: "center",
                           backgroundColor:
                             row.ticket_mode === "Hybrid"
-                              ? "rgba(0, 150, 136, 0.15)" 
+                              ? "rgba(0, 150, 136, 0.15)"
                               : row.ticket_mode === "Digital"
-                              ? "rgba(33, 150, 243, 0.15)" 
-                              : "rgba(255, 87, 34, 0.15)", 
+                              ? "rgba(33, 150, 243, 0.15)"
+                              : "rgba(255, 87, 34, 0.15)",
                           color:
                             row.ticket_mode === "Hybrid"
-                              ? "#009688" 
+                              ? "#009688"
                               : row.ticket_mode === "Digital"
-                              ? "#2196F3" 
-                              : "#FF5722", 
+                              ? "#2196F3"
+                              : "#FF5722",
                           fontWeight: 600,
                           fontSize: "0.75rem",
                           borderRadius: "8px",
                         }}
                       />
                     </TableCell>
-                    
+
                     <TableCell>
                       <Chip
                         label={row.created_mode}
@@ -460,12 +468,12 @@ useEffect(() => {
                           textAlign: "center",
                           backgroundColor:
                             row.created_mode === "Manual"
-                              ? "rgba(255, 152, 0, 0.15)" 
-                              : "rgba(63, 81, 181, 0.15)", 
+                              ? "rgba(255, 152, 0, 0.15)"
+                              : "rgba(63, 81, 181, 0.15)",
                           color:
                             row.created_mode === "Manual"
-                              ? "#FF9800" 
-                              : "#3F51B5", 
+                              ? "#FF9800"
+                              : "#3F51B5",
                           fontWeight: 600,
                           fontSize: "0.75rem",
                           borderRadius: "8px",

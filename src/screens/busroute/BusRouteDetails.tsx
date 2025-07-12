@@ -1323,7 +1323,6 @@ const BusRouteDetailsPage = ({
         </DialogActions>
       </Dialog>
 
-      {/* sectionfor add ne landmark move to dummy data page */}
     </Box>
   );
 };

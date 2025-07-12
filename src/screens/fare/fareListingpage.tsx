@@ -232,6 +232,7 @@ const FareListingPage = () => {
                     >
                       <b>ID</b>
                       <TextField
+                        type="number"
                         variant="outlined"
                         size="small"
                         placeholder="Search"
@@ -325,14 +326,15 @@ const FareListingPage = () => {
                         </TableCell>
 
                         {/* Name */}
-                        <TableCell
-                          sx={{ fontWeight: 500, textAlign: "center" }}
-                        >
-                          {fare.name || (
-                            <Tooltip title="Name not available">
-                              <ErrorIcon color="disabled" />
-                            </Tooltip>
-                          )}
+                        <TableCell>
+                          {/* Name */}
+                          <Tooltip title={fare.name} placement="bottom">
+                            <Typography noWrap>
+                              {fare.name.length > 20
+                                ? `${fare.name.substring(0, 20)}...`
+                                : fare.name}
+                            </Typography>
+                          </Tooltip>
                         </TableCell>
 
                         {/* Ticket Types - Block Style */}

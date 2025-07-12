@@ -173,7 +173,7 @@ const DutyListingTable = () => {
         setHasNextPage(items.length === rowsPerPage);
       } catch (error: any) {
         console.error("Fetch Error:", error);
-        showErrorToast(error|| "Failed to fetch Duty list");
+        showErrorToast(error || "Failed to fetch Duty list");
       } finally {
         setIsLoading(false);
       }
@@ -452,11 +452,23 @@ const DutyListingTable = () => {
                       />
                     </TableCell>
 
-                    <TableCell>
-                      <Typography noWrap>{row.operatorName}</Typography>
+                    <TableCell sx={{ textAlign: "center" }} >
+                      <Tooltip title={row.operatorName} placement="bottom">
+                        <Typography noWrap>
+                          {row.operatorName.length > 15
+                            ? `${row.operatorName.substring(0, 15)}...`
+                            : row.operatorName}
+                        </Typography>
+                      </Tooltip>
                     </TableCell>
-                    <TableCell>
-                      <Typography noWrap>{row.serviceName}</Typography>
+                    <TableCell sx={{ textAlign: "center" }}>
+                      <Tooltip title={row.serviceName} placement="bottom">
+                        <Typography noWrap>
+                          {row.serviceName.length > 15
+                            ? `${row.serviceName.substring(0, 15)}...`
+                            : row.serviceName}
+                        </Typography>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))

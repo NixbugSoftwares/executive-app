@@ -16,6 +16,7 @@ import {
   DialogContentText,
   DialogActions,
   Tooltip,
+  Typography,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useDispatch, useSelector } from "react-redux";
@@ -45,10 +46,10 @@ interface Route {
 
 const BusRouteListing = () => {
   const { companyId } = useParams();
-    const location = useLocation();
-    const [filterCompanyId, setFilterCompanyId] = useState<number>(
-      companyId ? parseInt(companyId) : 0
-    );
+  const location = useLocation();
+  const [filterCompanyId, setFilterCompanyId] = useState<number>(
+    companyId ? parseInt(companyId) : 0
+  );
   const [showCreationForm, setShowCreationForm] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const [routeList, setRouteList] = useState<Route[]>([]);
@@ -84,10 +85,10 @@ const BusRouteListing = () => {
   const canManageRoutes = useSelector((state: RootState) =>
     state.app.permissions.includes("manage_route")
   );
-   useEffect(() => {
+  useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const urlCompanyId = companyId || queryParams.get("companyId");
-  
+
     if (urlCompanyId) {
       const id = parseInt(urlCompanyId);
       if (!isNaN(id)) {
@@ -105,7 +106,12 @@ const BusRouteListing = () => {
       setIsLoading(true);
       const offSet = pageNumber * rowsPerPage;
       dispatch(
-        busRouteListApi({ limit: rowsPerPage, offset: offSet, ...searchParams, company_id: filterCompanyId })
+        busRouteListApi({
+          limit: rowsPerPage,
+          offset: offSet,
+          ...searchParams,
+          company_id: filterCompanyId,
+        })
       )
         .unwrap()
         .then((res) => {
@@ -232,29 +238,27 @@ const BusRouteListing = () => {
     setDeleteConfirmOpen(true);
   };
 
- const handleRouteDelete = async () => {
-  if (!routeToDelete) return;
+  const handleRouteDelete = async () => {
+    if (!routeToDelete) return;
 
-  try {
-    const formData = new FormData();
-    formData.append("id", routeToDelete.id.toString());
-    const result = await dispatch(routeDeleteApi(formData)).unwrap();
-    
-    if (result && result.error) {
-      throw new Error(result.error);
+    try {
+      const formData = new FormData();
+      formData.append("id", routeToDelete.id.toString());
+      const result = await dispatch(routeDeleteApi(formData)).unwrap();
+
+      if (result && result.error) {
+        throw new Error(result.error);
+      }
+
+      showSuccessToast("Route deleted successfully");
+      fetchRoute(page, debouncedSearch);
+    } catch (error: any) {
+      showErrorToast(error || "Failed to delete route");
+    } finally {
+      setDeleteConfirmOpen(false);
+      setRouteToDelete(null);
     }
-
-    showSuccessToast("Route deleted successfully");
-    fetchRoute(page, debouncedSearch);
-  } catch (error:any) {
-    showErrorToast(
-      (error || "Failed to delete route")
-    );
-  } finally {
-    setDeleteConfirmOpen(false);
-    setRouteToDelete(null);
-  }
-};
+  };
 
   const handleAddLandmarkEdit = (landmark: SelectedLandmark) => {
     setNewRouteLandmarks((prev) => [...prev, landmark]);
@@ -389,12 +393,12 @@ const BusRouteListing = () => {
 
             <TableContainer
               sx={{
-        flex: 1,
-        maxHeight: "calc(100vh - 180px)", 
-        overflowY: "auto",
-        borderRadius: 2,
-        border: "1px solid #e0e0e0",
-      }}
+                flex: 1,
+                maxHeight: "calc(100vh - 180px)",
+                overflowY: "auto",
+                borderRadius: 2,
+                border: "1px solid #e0e0e0",
+              }}
             >
               <Table stickyHeader>
                 <TableHead>
@@ -468,8 +472,15 @@ const BusRouteListing = () => {
                             })
                           }
                         >
-                          {row.name}
+                          <Tooltip title={row.name} placement="bottom">
+                            <Typography noWrap>
+                              {row.name.length > 15
+                                ? `${row.name.substring(0, 15)}...`
+                                : row.name}
+                            </Typography>
+                          </Tooltip>
                         </TableCell>
+
                         <TableCell sx={{ textAlign: "center", boxShadow: 1 }}>
                           <Tooltip
                             title={
@@ -538,24 +549,24 @@ const BusRouteListing = () => {
               </Table>
             </TableContainer>
             <Box
-      sx={{
-        position: "absolute",
-        left: 0,
-        bottom: 0,
-        width: "100%",
-        bgcolor: "#fff",
-        borderTop: "1px solid #e0e0e0",
-        zIndex: 2,
-        p: 1,
-      }}
-    >
-      <PaginationControls
-        page={page}
-        onPageChange={(newPage) => handleChangePage(null, newPage)}
-        isLoading={isLoading}
-        hasNextPage={hasNextPage}
-      />
-    </Box>
+              sx={{
+                position: "absolute",
+                left: 0,
+                bottom: 0,
+                width: "100%",
+                bgcolor: "#fff",
+                borderTop: "1px solid #e0e0e0",
+                zIndex: 2,
+                p: 1,
+              }}
+            >
+              <PaginationControls
+                page={page}
+                onPageChange={(newPage) => handleChangePage(null, newPage)}
+                isLoading={isLoading}
+                hasNextPage={hasNextPage}
+              />
+            </Box>
           </>
         )}
       </Box>

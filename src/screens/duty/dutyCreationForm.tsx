@@ -130,7 +130,7 @@ const DutyCreationForm: React.FC<IOperatorCreationFormProps> = ({
           offset,
           name: searchText,
           company_id: companyId,
-          status_list: [1, 2],
+          // status_list: [1, 2],
         })
       )
         .unwrap()

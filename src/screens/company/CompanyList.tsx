@@ -15,6 +15,7 @@ import {
   DialogActions,
   DialogContent,
   Chip,
+  Typography,
 } from "@mui/material";
 import { useDispatch } from "react-redux";
 import { companyListApi } from "../../slices/appSlice";
@@ -221,6 +222,7 @@ const CompanyListingTable = () => {
                     ID
                   </b>
                   <TextField
+                  type="number"
                     variant="outlined"
                     size="small"
                     placeholder="Search"
@@ -411,8 +413,21 @@ const CompanyListingTable = () => {
                       }}
                     >
                       <TableCell>{company.id}</TableCell>
-                      <TableCell>{company.name}</TableCell>
-                      <TableCell>{company.address}</TableCell>
+                      <TableCell> <Tooltip title={company.name} placement="bottom">
+                          <Typography noWrap>
+                            {company.name.length > 15
+                              ? `${company.name.substring(0, 15)}...`
+                              : company.name}
+                          </Typography>
+                        </Tooltip>
+                        </TableCell>
+                      <TableCell><Tooltip title={company.address} placement="bottom">
+                                                <Typography noWrap>
+                                                  {company.address.length > 10
+                                                    ? `${company.address.substring(0, 10)}...`
+                                                    : company.address}
+                                                </Typography>
+                                              </Tooltip></TableCell>
                       <TableCell>
                         {company.phone_number
                           ? company.phone_number
@@ -422,7 +437,13 @@ const CompanyListingTable = () => {
                       </TableCell>
                       <TableCell>
                         {company.email_id ? (
-                          company.email_id
+                          <Tooltip title={company.email_id} placement="bottom">
+                                                    <Typography noWrap>
+                                                      {company.email_id.length > 15
+                                                        ? `${company.email_id.substring(0, 15)}...`
+                                                        : company.email_id}
+                                                    </Typography>
+                                                  </Tooltip>
                         ) : (
                           <Tooltip
                             title=" Email not added yet"
@@ -495,7 +516,7 @@ const CompanyListingTable = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} align="center">
-                    No accounts found.
+                    No company found.
                   </TableCell>
                 </TableRow>
               )}

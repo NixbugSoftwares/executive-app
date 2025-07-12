@@ -429,41 +429,52 @@ const OperatorListingTable = () => {
                     >
                       <TableCell>{row.id}</TableCell>
                       <TableCell>
-                        {row.fullName ? (
-                          row.fullName
-                        ) : (
-                          <Tooltip
-                            title=" Full Name not added yet"
-                            placement="bottom"
-                          >
-                            <ErrorIcon sx={{ color: "#737d72 " }} />
-                          </Tooltip>
-                        )}
-                      </TableCell>
+                      {row.fullName ? (
+                        <Tooltip title={row.fullName} placement="bottom">
+                          <Typography noWrap>
+                            {row.fullName.length > 15
+                              ? `${row.fullName.substring(0, 15)}...`
+                              : row.fullName}
+                          </Typography>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip
+                          title="Full Name not added yet"
+                          placement="bottom"
+                        >
+                          <ErrorIcon sx={{ color: "#737d72" }} />
+                        </Tooltip>
+                      )}
+                    </TableCell>
                       <TableCell>
-                        {row.phoneNumber ? (
-                          row.phoneNumber.replace("tel:", "")
-                        ) : (
-                          <Tooltip
-                            title=" Phone Number not added yet"
-                            placement="bottom"
-                          >
-                            <ErrorIcon sx={{ color: "#737d72" }} />
-                          </Tooltip>
-                        )}
-                      </TableCell>
+                      {row.phoneNumber ? (
+                        <Typography noWrap>
+                          {row.phoneNumber.replace(/\D/g, "").slice(-10)}
+                        </Typography>
+                      ) : (
+                        <Tooltip
+                          title="Phone Number not added yet"
+                          placement="bottom"
+                        >
+                          <ErrorIcon sx={{ color: "#737d72" }} />
+                        </Tooltip>
+                      )}
+                    </TableCell>
                       <TableCell>
-                        {row.email_id ? (
-                          row.email_id
-                        ) : (
-                          <Tooltip
-                            title=" Email not added yet"
-                            placement="bottom"
-                          >
-                            <ErrorIcon sx={{ color: "#737d72 " }} />
-                          </Tooltip>
-                        )}
-                      </TableCell>
+                      {row.email_id ? (
+                        <Tooltip title={row.email_id} placement="bottom">
+                          <Typography noWrap>
+                            {row.email_id.length > 20
+                              ? `${row.email_id.substring(0, 20)}...`
+                              : row.email_id}
+                          </Typography>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip title="Email not added yet" placement="bottom">
+                          <ErrorIcon sx={{ color: "#737d72" }} />
+                        </Tooltip>
+                      )}
+                    </TableCell>
                       <TableCell>{row.gender}</TableCell>
                     </TableRow>
                   );

@@ -10,6 +10,7 @@ import {
   Box,
   TextField,
   Tooltip,
+  Typography,
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -121,7 +122,7 @@ const RoleListingTable = () => {
 
   const tableHeaders = [
     { key: "id", label: "ID" },
-    { key: "Rolename", label: "Role Name" },
+    { key: "Rolename", label: "Name" },
   ];
   const permissionKeys = [
     "Executive",
@@ -269,7 +270,17 @@ const RoleListingTable = () => {
                       }}
                     >
                       <TableCell>{row.id}</TableCell>
-                      <TableCell>{row.name}</TableCell>
+                      <TableCell>
+                          <Tooltip title={row.name} placement="bottom">
+                            <Typography noWrap>
+                              {row.name.length > 15
+                                ? `${row.name.substring(0, 15)}...`
+                                : row.name}
+                            </Typography>
+                          </Tooltip>
+                       
+                          
+                      </TableCell>
                       {permissionFields.map((key) => (
                         <TableCell key={key} align="center">
                           {row.roleDetails && row.roleDetails[key as keyof RoleDetails] ? (

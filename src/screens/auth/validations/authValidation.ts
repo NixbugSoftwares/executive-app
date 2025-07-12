@@ -298,13 +298,20 @@ export const operatorRoleCreationSchema = yup.object().shape({
 
 //******************************************************Company Bus Creation *********************************************** */
 export const busCreationSchema = yup.object().shape({
-  companyId: yup.number().required("Company is required"),
-  registrationNumber: yup.string().min(4).max(16).required("Registration number is required"),
-  name: yup.string().min(4).max(64).required("Bus name is required"),
-  capacity: yup.number().min(1).max(120).required("Capacity is required"),
-  manufactured_on: yup.string().required("Manufacture date is required"),
-  insurance_upto: yup.string().nullable(),
-  pollution_upto: yup.string().nullable(),
-  fitness_upto: yup.string().nullable(),
-  road_tax_upto: yup.string().nullable(),
+  registrationNumber: yup
+  .string()
+  .required("Registration number is required")
+  .max(16, "Registration number must be at most 16 characters")
+  .matches(
+    /^[A-Z0-9]+$/,
+    "Only uppercase letters and digits are allowed without spaces"
+  ),
+
+  name: yup.string().required().min(4).max(32),
+  capacity: yup.number().required().min(1).max(120),
+  manufactured_on: yup.string().required(),
+  insurance_upto: yup.string().nullable().notRequired(),
+  pollution_upto: yup.string().nullable().notRequired(),
+  fitness_upto: yup.string().nullable().notRequired(),
+  road_tax_upto: yup.string().nullable().notRequired(),
 });

@@ -27,6 +27,7 @@ import {
   Close,
   Edit,
   CalendarToday,
+  Work,
 } from "@mui/icons-material";
 import Diversity3Icon from "@mui/icons-material/Diversity3";
 import { useDispatch } from "react-redux";
@@ -56,6 +57,7 @@ interface IAccountFormInputs {
   phoneNumber?: string;
   email_id?: string;
   gender?: number;
+  designation?: string;
   role?: number;
   roleAssignmentId?: number;
   status?: number;
@@ -183,6 +185,7 @@ const ProfilePage: React.FC = () => {
           gender: user.gender,
           role: role,
           roleAssignmentId: roleAssignmentId,
+          designation: user.designation,
         });
       }
     } catch (error: any) {
@@ -223,6 +226,8 @@ const ProfilePage: React.FC = () => {
         formData.append("gender", data.gender?.toString() || "");
       if (editingField === "role" && data.role)
         formData.append("role", data.role.toString());
+      if (editingField === "designation" && data.designation)
+        formData.append("designation", data.designation);
       const accountResponse = await dispatch(
         accountupdationApi({ accountId: userId, formData })
       ).unwrap();
@@ -388,6 +393,22 @@ const ProfilePage: React.FC = () => {
                   helperText={errors.phoneNumber?.message}
                 />
               )}
+
+              {field === "designation" && (
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  defaultValue={value}
+                  {...register(field as "designation", {
+                    required: `${label} is required`,
+                  })}
+                  error={!!errors[field as keyof typeof errors]}
+                  helperText={errors[field as keyof typeof errors]?.message}
+                />
+              )}
+
+
               {field === "gender" && (
                 <FormControl fullWidth size="small">
                   <Select
@@ -544,7 +565,7 @@ const ProfilePage: React.FC = () => {
                 border: `4px solid ${theme.palette.primary.light}`,
               }}
             >
-              {profile.fullName.charAt(0)}
+              {profile.fullName.charAt(0).toUpperCase()}
             </Avatar>
 
             <Typography variant="h5" fontWeight={700}>
@@ -663,6 +684,12 @@ const ProfilePage: React.FC = () => {
               "Phone",
               profile.phoneNumber,
               <Phone />
+            )}
+            {renderEditableField(
+              "designation",
+              "Designation",
+              profile.designation,
+              <Work />
             )}
             {renderEditableField(
               "gender",

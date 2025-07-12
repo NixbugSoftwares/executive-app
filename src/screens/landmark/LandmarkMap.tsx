@@ -31,13 +31,11 @@ import { Style, Stroke, Fill, Text } from "ol/style";
 import { Refresh } from "@mui/icons-material";
 import { getArea } from "ol/sphere";
 import Icon from "ol/style/Icon";
-import {
-  showErrorToast,
-  showInfoToast,
-} from "../../common/toastMessageHelper";
+import { showErrorToast, showInfoToast } from "../../common/toastMessageHelper";
 import busstopimage from "../../assets/png/busstopimage.png";
 import { Landmark, BusStop } from "../../types/type";
-
+import { useAppDispatch } from "../../store/Hooks";
+import { landmarkListApi } from "../../slices/appSlice";
 interface MapComponentProps {
   onDrawEnd: (coordinates: string) => void;
   isOpen: boolean;
@@ -48,7 +46,6 @@ interface MapComponentProps {
   handleCloseRowClick: () => void;
   clearBoundaries: () => void;
   vectorSource: React.MutableRefObject<VectorSource>;
-  landmarks?: Landmark[];
   isDrawing: boolean;
   onDrawingChange: (isDrawing: boolean) => void;
   busStops?: BusStop[];
@@ -63,11 +60,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onUpdateClick,
   onDeleteClick,
   handleCloseRowClick,
-  landmarks,
   onDrawingChange,
   busStops,
   onBusStopPointSelect,
 }) => {
+  console.log("selectedLandmark", selectedLandmark);
+  console.log("selectedBoundary", selectedBoundary);
+  
+  
+  const dispatch = useAppDispatch();
   const mapRef = useRef<HTMLDivElement | null>(null);
   const vectorSource = useRef(new VectorSource());
   const mapInstance = useRef<Map | null>(null);
@@ -84,6 +85,95 @@ const MapComponent: React.FC<MapComponentProps> = ({
   );
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showAllBoundaries, setShowAllBoundaries] = useState(false);
+  const [landmarks, setLandmarks] = useState<Landmark[]>([]);
+const isProgrammaticMove = useRef(false);
+
+ const [shouldFitView, setShouldFitView] = useState(false);
+
+   //*********************Initialize the map********************
+const initializeMap = () => {
+  if (!mapRef.current) return null;
+
+  const map = new Map({
+    controls: [],
+    layers: [
+      new TileLayer({ source: new OSM() }),
+      new VectorLayer({ source: vectorSource.current }),
+    ],
+    target: mapRef.current,
+    view: new View({
+      center: fromLonLat([76.9366, 8.5241]),
+      zoom: 10,
+      minZoom: 3,
+      maxZoom: 18,
+    }),
+  });
+
+  map.on("pointermove", (event) => {
+    const coords = toLonLat(event.coordinate);
+    setMousePosition(`${coords[0].toFixed(7)},${coords[1].toFixed(7)} `);
+  });
+
+  map.on("moveend", () => {
+    if (!isProgrammaticMove.current) {
+      fetchLandmarksInView();
+    }
+    isProgrammaticMove.current = false;
+  });
+
+  return map;
+};
+
+ useEffect(() => {
+  if (!mapInstance.current) {
+    mapInstance.current = initializeMap();
+    fetchLandmarksInView();
+  }
+
+  if (isOpen) {
+    setTimeout(() => {
+      mapInstance.current?.updateSize();
+      fetchLandmarksInView();
+    }, 500);
+  }
+
+  return () => {
+    // Clean up event listeners when component unmounts
+    if (mapInstance.current) {
+      mapInstance.current.un('moveend', fetchLandmarksInView);
+    }
+  };
+}, [isOpen, onDrawEnd, navigate]);
+
+const fetchLandmarksInView = async () => {
+  if (!mapInstance.current || isProgrammaticMove.current || selectedLandmark) return;
+  
+  const centerRaw = mapInstance.current.getView().getCenter();
+  if (!centerRaw) return;
+  
+  const center = toLonLat(centerRaw);
+  const [lon, lat] = center;
+  const locationaskey = `POINT(${lon} ${lat})`;
+
+  try {
+    const response = await dispatch(
+      landmarkListApi({ location: locationaskey, limit: 100 })
+    ).unwrap();
+    setLandmarks(response.data);
+  } catch (error: any) {
+    showErrorToast(error);
+  }
+};
+  const parseWKTPoint = (wkt: string): [number, number] | null => {
+    try {
+      const cleaned = wkt.replace("POINT(", "").replace(")", "").trim();
+      const [lon, lat] = cleaned.split(" ").map(Number);
+      return [lon, lat];
+    } catch (e) {
+      console.error("Invalid WKT Point:", wkt);
+      return null;
+    }
+  };
 
   const clearBoundaries = () => {
     vectorSource.current.clear();
@@ -100,52 +190,34 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
-  //*********************Initialize the map********************
-  const initializeMap = () => {
-    if (!mapRef.current) return null;
 
-    const map = new Map({
-      controls: [],
-      layers: [
-        new TileLayer({ source: new OSM() }),
-        new VectorLayer({ source: vectorSource.current }),
-      ],
-      target: mapRef.current,
-      view: new View({
-        center: fromLonLat([76.9366, 8.5241]),
-        zoom: 10,
-        minZoom: 3,
-        maxZoom: 18,
-      }),
-    });
+const handleLocationIconClick = async () => {
+  if (!mapInstance.current) return;
+  
+  const newShowAllValue = !showAllBoundaries;
+  setShowAllBoundaries(newShowAllValue);
+  
+  if (newShowAllValue) {
+    await fetchLandmarksInView();
+    setShouldFitView(true); // Trigger fit on next render
+  }
+};
 
-    map.on("pointermove", (event) => {
-      const coords = toLonLat(event.coordinate);
-      setMousePosition(`${coords[0].toFixed(7)},${coords[1].toFixed(7)} `);
-    });
+//***************Update the map when the selected boundary changes************
+useEffect(() => {
+  if ((selectedBoundary || selectedLandmark?.boundary) && mapInstance.current) {
+    const boundary = selectedBoundary || selectedLandmark?.boundary;
+    if (!boundary) return;
 
-    return map;
-  };
+    isProgrammaticMove.current = true;
 
-  useEffect(() => {
-    if (!mapInstance.current) {
-      mapInstance.current = initializeMap();
-    }
-
-    if (isOpen) {
-      setTimeout(() => {
-        mapInstance.current?.updateSize();
-      }, 500);
-    }
-  }, [isOpen, onDrawEnd, navigate]);
-
-  //***************Update the map when the selected boundary changes************
-  useEffect(() => {
-    if (selectedBoundary && mapInstance.current) {
-      const coordinates = selectedBoundary
+    try {
+      const coordinates = boundary
+        .replace("POLYGON((", "")
+        .replace("))", "")
         .split(",")
-        .map((coord) => coord.trim().split(" ").map(Number))
-        .map((coord) => fromLonLat(coord));
+        .map(coord => coord.trim().split(" ").map(Number))
+        .map(coord => fromLonLat(coord));
 
       const polygon = new Polygon([coordinates]);
       vectorSource.current.clear();
@@ -155,150 +227,178 @@ const MapComponent: React.FC<MapComponentProps> = ({
       mapInstance.current.getView().fit(extent, {
         padding: [50, 50, 50, 50],
         duration: 1000,
+        callback: () => {
+          // Reset the flag after animation completes
+          isProgrammaticMove.current = false;
+        }
       });
+    } catch (error) {
+      console.error("Error parsing boundary:", error);
+      isProgrammaticMove.current = false;
     }
-  }, [selectedBoundary]);
+  }
+}, [selectedBoundary, selectedLandmark]);
 
-  // Combined display logic for landmarks and bus stops
-  useEffect(() => {
-    if (!mapInstance.current) return;
-  
-    vectorSource.current.clear();
-    const features: ol.Feature[] = [];
-  
-    // If we have a selected boundary, show only that
-    if (selectedBoundary) {
+//*****************Combined display logic for landmarks and bus stops*********
+useEffect(() => {
+  const parseWKTBoundary = (wkt: string): [number, number][] => {
+    const cleaned = wkt.replace("POLYGON((", "").replace("))", "");
+    return cleaned.split(",").map((pair) => {
+      const [lon, lat] = pair.trim().split(" ").map(Number);
+      return fromLonLat([lon, lat]) as [number, number];
+    });
+  };
+
+  if (!mapInstance.current) return;
+
+  vectorSource.current.clear();
+  const features: ol.Feature[] = [];
+
+  // 1. Show specific boundary from selectedBoundary string
+  if (selectedBoundary) {
+    try {
       const coordinates = selectedBoundary
         .split(",")
         .map((coord) => coord.trim().split(" ").map(Number))
         .map((coord) => fromLonLat(coord));
-  
+
       const polygon = new Polygon([coordinates]);
       const feature = new ol.Feature(polygon);
-  
+
       feature.setStyle(
         new Style({
-          stroke: new Stroke({
-            color: "rgb(255, 149, 0)",
-            width: 3,
-          }),
-          fill: new Fill({
-            color: "rgba(221, 201, 75, 0.3)",
-          }),
+          stroke: new Stroke({ color: "rgb(255, 149, 0)", width: 3 }),
+          fill: new Fill({ color: "rgba(221, 201, 75, 0.3)" }),
         })
       );
-  
+
       features.push(feature);
+    } catch (error) {
+      console.error("Error parsing selectedBoundary:", error);
     }
-    // If showAllBoundaries is enabled, show all landmarks
-    else if (showAllBoundaries && landmarks) {
-      landmarks.forEach((landmark) => {
-        if (landmark.boundary) {
-          try {
-            const coordinates = landmark.boundary
-              .split(",")
-              .map((coord) => coord.trim().split(" ").map(Number))
-              .map((coord) => fromLonLat(coord));
-  
-            const polygon = new Polygon([coordinates]);
-            const feature = new ol.Feature(polygon);
-  
-            // Different style for the selected landmark if it exists
-            const isSelected = selectedLandmark?.id === landmark.id;
-            feature.setStyle(
-              new Style({
-                stroke: new Stroke({
-                  color: isSelected ? "rgb(255, 149, 0)" : "rgba(0, 0, 255, 0.7)",
-                  width: isSelected ? 3 : 2,
-                }),
-                fill: new Fill({
-                  color: isSelected ? "rgba(221, 201, 75, 0.3)" : "rgba(0, 0, 255, 0.1)",
-                }),
-              })
-            );
-  
-            features.push(feature);
-          } catch (error) {
-            console.error(`Error processing landmark ${landmark.id}:`, error);
-          }
-        }
+  }
+
+  // 2. Show all landmarks if toggle is active
+  else if (showAllBoundaries && landmarks.length > 0) {
+    landmarks.forEach((landmark) => {
+      if (!landmark.boundary) return;
+      try {
+        const coordinates = parseWKTBoundary(landmark.boundary);
+        const polygon = new Polygon([coordinates]);
+        const feature = new ol.Feature(polygon);
+
+        const isSelected = selectedLandmark?.id === landmark.id;
+
+        feature.setStyle(
+          new Style({
+            stroke: new Stroke({
+              color: isSelected ? "rgb(255, 149, 0)" : "rgba(0, 0, 255, 0.7)",
+              width: isSelected ? 3 : 2,
+            }),
+            fill: new Fill({
+              color: isSelected
+                ? "rgba(221, 201, 75, 0.3)"
+                : "rgba(0, 0, 255, 0.1)",
+            }),
+          })
+        );
+
+        features.push(feature);
+      } catch (err) {
+        console.error(`Error processing landmark ${landmark.id}:`, err);
+      }
+    });
+  }
+
+  // 3. Show selected landmark only (if not all)
+  else if (selectedLandmark?.boundary && !showAllBoundaries) {
+    try {
+      const coordinates = parseWKTBoundary(selectedLandmark.boundary);
+      const polygon = new Polygon([coordinates]);
+      const feature = new ol.Feature(polygon);
+
+      feature.setStyle(
+        new Style({
+          stroke: new Stroke({ color: "rgb(255, 149, 0)", width: 3 }),
+          fill: new Fill({ color: "rgba(221, 201, 75, 0.3)" }),
+        })
+      );
+
+      features.push(feature);
+    } catch (err) {
+      console.error("Error parsing selectedLandmark boundary:", err);
+    }
+  }
+
+  // 4. Bus Stops inside selected landmark
+  if (busStops && selectedLandmark && !showAllBoundaries) {
+    busStops
+      .filter(
+        (stop) =>
+          stop.landmark_id === selectedLandmark.id &&
+          stop.location?.startsWith("POINT(")
+      )
+      .forEach((stop) => {
+        const parsed = parseWKTPoint(stop.location);
+        if (!parsed) return;
+
+        const [lon, lat] = parsed;
+        const coordinates = fromLonLat([lon, lat]);
+        const point = new Point(coordinates);
+        const busStopFeature = new ol.Feature(point);
+
+        busStopFeature.setStyle(
+          new Style({
+            image: new Icon({
+              src: busstopimage,
+              scale: 0.1,
+              anchor: [0.5, 1],
+            }),
+            text: new Text({
+              text: stop.name || "Bus Stop",
+              font: "bold 12px Arial",
+              fill: new Fill({ color: "#000" }),
+              stroke: new Stroke({ color: "#FFF", width: 3 }),
+              offsetY: -25,
+              textAlign: "center",
+            }),
+          })
+        );
+
+        features.push(busStopFeature);
       });
-    }
-    // Show selected landmark (if not showing all boundaries)
-    else if (selectedLandmark?.boundary && !showAllBoundaries) {
-      const coordinates = selectedLandmark.boundary
-        .split(",")
-        .map((coord) => coord.trim().split(" ").map(Number))
-        .map((coord) => fromLonLat(coord));
-  
-      const polygon = new Polygon([coordinates]);
-      const feature = new ol.Feature(polygon);
-  
-      feature.setStyle(
-        new Style({
-          stroke: new Stroke({
-            color: "rgb(255, 149, 0)",
-            width: 3,
-          }),
-          fill: new Fill({
-            color: "rgba(221, 201, 75, 0.3)",
-          }),
-        })
-      );
-  
-      features.push(feature);
-    }
-  
-    // Add bus stops for the selected landmark (if not showing all boundaries)
-    if (busStops && selectedLandmark && !showAllBoundaries) {
-      busStops
-        .filter(stop => stop.landmark_id === selectedLandmark.id && stop.parsedLocation)
-        .forEach(stop => {
-          const [lon, lat] = stop.parsedLocation!;
-          const coordinates = fromLonLat([lon, lat]);
-          const point = new Point(coordinates);
-          const busStopFeature = new ol.Feature(point);
-  
-          busStopFeature.setStyle(
-            new Style({
-              image: new Icon({
-                src: busstopimage,
-                scale: 0.1,
-                anchor: [0.5, 1],
-              }),
-              text: new Text({
-                text: stop.name || 'Bus Stop', 
-                font: 'bold 12px Arial',
-                fill: new Fill({
-                  color: '#000000'
-                }),
-                stroke: new Stroke({
-                  color: '#FFFFFF',
-                  width: 3
-                }),
-                offsetY: -25, 
-                textAlign: 'center'
-              })
-            })
-          );
-          features.push(busStopFeature);
-        });
-    }
-  
-    // Add all features to the vector source
-    if (features.length > 0) {
-      vectorSource.current.addFeatures(features);
-      
-      // Fit view to show all features
+  }
+
+  // 5. Add all features
+  if (features.length > 0) {
+    vectorSource.current.addFeatures(features);
+
+    // Only fit view if we explicitly want to (for selected boundaries/landmarks)
+    // or when first showing all landmarks
+    if ((selectedBoundary || selectedLandmark) || 
+        (showAllBoundaries && shouldFitView)) {
       const extent = vectorSource.current.getExtent();
       if (extent[0] !== Infinity) {
+        isProgrammaticMove.current = true;
         mapInstance.current.getView().fit(extent, {
           padding: [50, 50, 50, 50],
           duration: 1000,
+          callback: () => {
+            isProgrammaticMove.current = false;
+            setShouldFitView(false); // Reset after fitting
+          }
         });
       }
     }
-  }, [showAllBoundaries, landmarks, selectedBoundary, selectedLandmark, busStops]);
+  }
+}, [
+  showAllBoundaries,
+  landmarks,
+  selectedBoundary,
+  selectedLandmark,
+  busStops,
+  shouldFitView
+]);
 
   //************************check for overlaps*********************
   const checkForOverlaps = (newPolygon: Polygon): boolean => {
@@ -641,13 +741,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
                   disabled={!canManageLandmark}
                   sx={{
                     backgroundColor: !canManageLandmark
-                  ? "#6c87b7 !important"
-                  : "#00008B",
-                color: "white",
-                "&.Mui-disabled": {
-                  backgroundColor: "#6c87b7 !important",
-                  color: "#ffffff99",
-                },
+                      ? "#6c87b7 !important"
+                      : "#00008B",
+                    color: "white",
+                    "&.Mui-disabled": {
+                      backgroundColor: "#6c87b7 !important",
+                      color: "#ffffff99",
+                    },
                   }}
                 >
                   {isDrawing ? "Disable " : "Add Landmark"}
@@ -678,20 +778,20 @@ const MapComponent: React.FC<MapComponentProps> = ({
                     onClick={toggleBusStopAdding}
                     disabled={!canManageLandmark}
                     sx={{
-                    backgroundColor: !canManageLandmark
-                  ? "#6c87b7 !important"
-                  : "#00008B",
-                color: "white",
-                "&.Mui-disabled": {
-                  backgroundColor: "#6c87b7 !important",
-                  color: "#ffffff99",
-                },
-                  }}
-                >
-                  {isAddingBusStop ? "Cancel" : "Add Bus Stop"}
-                </Button>
-              </span>
-            </Tooltip>
+                      backgroundColor: !canManageLandmark
+                        ? "#6c87b7 !important"
+                        : "#00008B",
+                      color: "white",
+                      "&.Mui-disabled": {
+                        backgroundColor: "#6c87b7 !important",
+                        color: "#ffffff99",
+                      },
+                    }}
+                  >
+                    {isAddingBusStop ? "Cancel" : "Add Bus Stop"}
+                  </Button>
+                </span>
+              </Tooltip>
             </Box>
           )}
 
@@ -713,11 +813,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
               }
               arrow
             >
-              <IconButton
-                onClick={() => {
-                  setShowAllBoundaries(!showAllBoundaries);
-                }}
-              >
+              <IconButton onClick={handleLocationIconClick}>
                 {showAllBoundaries ? (
                   <LocationOnIcon sx={{ color: "blue" }} />
                 ) : (

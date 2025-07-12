@@ -78,13 +78,15 @@ const AccountListingTable = () => {
               : account.gender === 3
               ? "Transgender"
               : "Other",
-          email_id: account.email_id ,
+          email_id: account.email_id,
           phoneNumber: account.phone_number || account.phoneNumber || "",
           status: account.status === 1 ? "Active" : "Suspended",
           designation: account.designation || "",
         }));
-        console.log("email_id",formattedAccounts.map((account:Account) => account.email_id));
-        
+        console.log(
+          "email_id",
+          formattedAccounts.map((account: Account) => account.email_id)
+        );
 
         setAccountList(formattedAccounts);
         setHasNextPage(items.length === rowsPerPage);
@@ -144,7 +146,9 @@ const AccountListingTable = () => {
     const searchParams = {
       ...(debouncedSearch.id && { id: debouncedSearch.id }),
       ...(debouncedSearch.fullName && { fullName: debouncedSearch.fullName }),
-      ...(debouncedSearch.designation && { designation: debouncedSearch.designation }),
+      ...(debouncedSearch.designation && {
+        designation: debouncedSearch.designation,
+      }),
       ...(debouncedSearch.gender && { gender: genderBackendValue }),
       ...(debouncedSearch.email_id && { email_id: debouncedSearch.email_id }),
       ...(debouncedSearch.phoneNumber && {
@@ -291,7 +295,7 @@ const AccountListingTable = () => {
                     width: "120px",
                     minWidth: "120px",
                     textAlign: "center",
-                    backgroundColor: "#fafafa", 
+                    backgroundColor: "#fafafa",
                     fontWeight: 600,
                     fontSize: "0.875rem",
                     borderBottom: "1px solid #ddd",
@@ -312,7 +316,6 @@ const AccountListingTable = () => {
                 >
                   Gender
                 </TableCell>
-                
               </TableRow>
               {/* Search Row */}
               <TableRow>
@@ -393,8 +396,6 @@ const AccountListingTable = () => {
                   />
                 </TableCell>
 
-
-
                 <TableCell>
                   <Select
                     value={search.gender}
@@ -436,46 +437,51 @@ const AccountListingTable = () => {
                   >
                     <TableCell sx={{ textAlign: "center" }}>{row.id}</TableCell>
                     <TableCell>
-                      <Typography noWrap>
-                        {row.fullName ? (
-                          row.fullName
-                        ) : (
-                          <Tooltip
-                            title="Full Name not added yet"
-                            placement="bottom"
-                          >
-                            <ErrorIcon sx={{ color: "#737d72 " }} />
-                          </Tooltip>
-                        )}
-                      </Typography>
+                      {row.fullName ? (
+                        <Tooltip title={row.fullName} placement="bottom">
+                          <Typography noWrap>
+                            {row.fullName.length > 15
+                              ? `${row.fullName.substring(0, 15)}...`
+                              : row.fullName}
+                          </Typography>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip
+                          title="Full Name not added yet"
+                          placement="bottom"
+                        >
+                          <ErrorIcon sx={{ color: "#737d72" }} />
+                        </Tooltip>
+                      )}
                     </TableCell>
                     <TableCell>
-                      <Typography noWrap>
-                        {row.phoneNumber ? (
-                          row.phoneNumber.replace("tel:", "")
-                        ) : (
-                          <Tooltip
-                            title="Phone Number not added yet"
-                            placement="bottom"
-                          >
-                            <ErrorIcon sx={{ color: "#737d72" }} />
-                          </Tooltip>
-                        )}
-                      </Typography>
+                      {row.phoneNumber ? (
+                        <Typography noWrap>
+                          {row.phoneNumber.replace(/\D/g, "").slice(-10)}
+                        </Typography>
+                      ) : (
+                        <Tooltip
+                          title="Phone Number not added yet"
+                          placement="bottom"
+                        >
+                          <ErrorIcon sx={{ color: "#737d72" }} />
+                        </Tooltip>
+                      )}
                     </TableCell>
                     <TableCell>
-                      <Typography noWrap>
-                        {row.email_id ? (
-                          row.email_id
-                        ) : (
-                          <Tooltip
-                            title="Email not added yet"
-                            placement="bottom"
-                          >
-                            <ErrorIcon sx={{ color: "#737d72 " }} />
-                          </Tooltip>
-                        )}
-                      </Typography>
+                      {row.email_id ? (
+                        <Tooltip title={row.email_id} placement="bottom">
+                          <Typography noWrap>
+                            {row.email_id.length > 20
+                              ? `${row.email_id.substring(0, 20)}...`
+                              : row.email_id}
+                          </Typography>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip title="Email not added yet" placement="bottom">
+                          <ErrorIcon sx={{ color: "#737d72" }} />
+                        </Tooltip>
+                      )}
                     </TableCell>
 
                     <TableCell>
@@ -490,7 +496,7 @@ const AccountListingTable = () => {
                             <ErrorIcon sx={{ color: "#737d72 " }} />
                           </Tooltip>
                         )}
-                      </Typography> 
+                      </Typography>
                     </TableCell>
                     <TableCell sx={{ textAlign: "center" }}>
                       {row.gender}

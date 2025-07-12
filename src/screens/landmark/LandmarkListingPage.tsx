@@ -297,6 +297,7 @@ const LandmarkListing = () => {
                   >
                     <b>ID</b>
                     <TextField
+                    type="number"
                       variant="outlined"
                       size="small"
                       placeholder="Search"
@@ -520,7 +521,21 @@ const LandmarkListing = () => {
                                         {(busStopsByLandmark[row.id] || []).map(
                                           (stop) => (
                                             <TableRow key={stop.id}>
-                                              <TableCell>{stop.name}</TableCell>
+                                              <TableCell>
+                                                <Tooltip
+                                                  title={stop.name}
+                                                  placement="bottom"
+                                                >
+                                                  <Typography noWrap>
+                                                    {stop.name.length > 15
+                                                      ? `${stop.name.substring(
+                                                          0,
+                                                          15
+                                                        )}...`
+                                                      : stop.name}
+                                                  </Typography>
+                                                </Tooltip>
+                                              </TableCell>
                                               <TableCell>
                                                 <Chip
                                                   icon={
@@ -665,10 +680,11 @@ const LandmarkListing = () => {
             handleCloseRowClick={handleCloseRowClick}
             clearBoundaries={clearBoundaries}
             vectorSource={vectorSource}
-            landmarks={landmarkList}
             isDrawing={isDrawing}
             onDrawingChange={handleDrawingChange}
-            busStops={selectedLandmark ? busStopsByLandmark[selectedLandmark.id] : []}
+            busStops={
+              selectedLandmark ? busStopsByLandmark[selectedLandmark.id] : []
+            }
             onBusStopPointSelect={handlePointSelect}
           />
         </Box>
@@ -780,18 +796,18 @@ const LandmarkListing = () => {
         maxWidth="sm"
         fullWidth
       >
-  <DialogContent>
-    {busStopToUpdate && selectedLandmark && (
-  <BusStopUpdateForm
-    busStop={busStopToUpdate}
-    landmark={selectedLandmark}
-    onClose={() => setBusStopUpdateModalOpen(false)}
-    refreshBusStops={() =>
-      fetchBusStopsForLandmark(selectedLandmark.id)
-    }
-  />
-)}
-  </DialogContent>
+        <DialogContent>
+          {busStopToUpdate && selectedLandmark && (
+            <BusStopUpdateForm
+              busStop={busStopToUpdate}
+              landmark={selectedLandmark}
+              onClose={() => setBusStopUpdateModalOpen(false)}
+              refreshBusStops={() =>
+                fetchBusStopsForLandmark(selectedLandmark.id)
+              }
+            />
+          )}
+        </DialogContent>
         <DialogActions>
           <Button
             onClick={() => setBusStopUpdateModalOpen(false)}

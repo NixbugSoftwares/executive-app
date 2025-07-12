@@ -156,8 +156,8 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
         landmarkListApi({ location: locationaskey })
       ).unwrap();
       setLandmarks(response.data);
-    } catch (error) {
-      showErrorToast("Error fetching landmarks:" + error);
+    } catch (error: any) {
+      showErrorToast( error);
     }
   };
   useEffect(() => {
@@ -196,8 +196,6 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
             if (coordinates.length >= 3) {
               const polygon = new Polygon([coordinates]);
               const feature = new Feature(polygon);
-
-              // Skip styling for the initial boundary (it's already styled in initialVectorSource)
               if (landmark.boundary !== initialBoundary) {
                 boundariesSource.current.addFeature(feature);
               }
@@ -428,9 +426,9 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
       } else {
         alert("Location not found. Please try a different query.");
       }
-    } catch (error) {
-      showErrorToast("Geocoding error: " + error);
-      alert("Error searching for location. Please try again.");
+    } catch (error:any) {
+      showErrorToast(  error);
+      
     }
   };
 
