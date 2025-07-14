@@ -327,7 +327,6 @@ const FareListingPage = () => {
 
                         {/* Name */}
                         <TableCell>
-                          {/* Name */}
                           <Tooltip title={fare.name} placement="bottom">
                             <Typography noWrap>
                               {fare.name.length > 20

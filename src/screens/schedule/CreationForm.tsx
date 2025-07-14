@@ -200,6 +200,7 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
           limit: rowsPerPage,
           offset,
           name: searchText,
+          company_id: companyId,
         })
       )
         .unwrap()

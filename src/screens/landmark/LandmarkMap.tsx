@@ -64,8 +64,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   busStops,
   onBusStopPointSelect,
 }) => {
-  console.log("selectedLandmark", selectedLandmark);
-  console.log("selectedBoundary", selectedBoundary);
   
   
   const dispatch = useAppDispatch();

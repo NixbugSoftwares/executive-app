@@ -198,7 +198,6 @@ const AccountListingTable = () => {
           }
           placement="top-end"
         >
-          <span>
             <Button
               sx={{
                 ml: "auto",
@@ -223,7 +222,6 @@ const AccountListingTable = () => {
             >
               Add New Executive
             </Button>
-          </span>
         </Tooltip>
         <TableContainer
           sx={{

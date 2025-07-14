@@ -26,8 +26,6 @@ import PaginationControls from "../../common/paginationControl";
 import FormModal from "../../common/formModal";
 import { RoleDetails } from "../../types/type";
 
-
-
 interface Role {
   id: number;
   name: string;
@@ -78,11 +76,11 @@ const RoleListingTable = () => {
           setHasNextPage(items.length === rowsPerPage);
         })
         .catch((errorMessage) => {
-    showErrorToast(errorMessage); // errorMessage is already a string
-  })
-  .finally(() => {
-    setIsLoading(false);
-  });
+          showErrorToast(errorMessage); // errorMessage is already a string
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     },
     [dispatch]
   );
@@ -235,6 +233,7 @@ const RoleListingTable = () => {
                       onChange={(e) =>
                         handleSearchChange(e, key as keyof typeof search)
                       }
+                      type={key === "id" ? "number" : "text"}
                       fullWidth
                       sx={{
                         "& .MuiInputBase-root": {
@@ -271,19 +270,18 @@ const RoleListingTable = () => {
                     >
                       <TableCell>{row.id}</TableCell>
                       <TableCell>
-                          <Tooltip title={row.name} placement="bottom">
-                            <Typography noWrap>
-                              {row.name.length > 15
-                                ? `${row.name.substring(0, 15)}...`
-                                : row.name}
-                            </Typography>
-                          </Tooltip>
-                       
-                          
+                        <Tooltip title={row.name} placement="bottom">
+                          <Typography noWrap>
+                            {row.name.length > 15
+                              ? `${row.name.substring(0, 15)}...`
+                              : row.name}
+                          </Typography>
+                        </Tooltip>
                       </TableCell>
                       {permissionFields.map((key) => (
                         <TableCell key={key} align="center">
-                          {row.roleDetails && row.roleDetails[key as keyof RoleDetails] ? (
+                          {row.roleDetails &&
+                          row.roleDetails[key as keyof RoleDetails] ? (
                             <CheckCircleIcon sx={{ color: "#228B22" }} />
                           ) : (
                             <CancelIcon sx={{ color: "#DE3163" }} />

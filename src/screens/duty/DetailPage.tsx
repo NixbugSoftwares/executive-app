@@ -31,6 +31,7 @@ interface DutyCardProps {
     status: string;
     type: string;
     service_id: number;
+    created_on: string;
   };
   refreshList: (value: any) => void;
   onUpdate: () => void;
@@ -63,7 +64,11 @@ const statusMap: Record<string, { label: string; color: string; bg: string }> =
       bg: "rgba(158, 158, 158, 0.12)",
     }, // Grey
   };
-
+const formatUTCDateToLocal = (dateString: string | null): string => {
+  if (!dateString || dateString.trim() === "") return "Not added yet";
+  const date = new Date(dateString);
+  return isNaN(date.getTime()) ? "Not added yet" : date.toLocaleDateString();
+};
 const typeMap: Record<string, { label: string; color: string; bg: string }> = {
   Driver: { label: "Driver", color: "#388E3C", bg: "rgba(76, 175, 80, 0.12)" }, // Green
   Conductor: {
@@ -195,6 +200,9 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
                 }}
                 size="small"
               />
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              <b>Created On:</b> {formatUTCDateToLocal(duty.created_on)}
             </Typography>
           </Box>
         </Card>

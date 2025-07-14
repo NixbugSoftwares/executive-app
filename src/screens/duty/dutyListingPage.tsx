@@ -152,6 +152,7 @@ const DutyListingTable = () => {
                     : duty.type === 3
                     ? "Kili"
                     : "Other",
+                    created_on: duty.created_on
               };
             } catch (error) {
               console.error(

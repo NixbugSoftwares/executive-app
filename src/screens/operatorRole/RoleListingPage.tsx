@@ -247,6 +247,7 @@ const RoleListingTable = () => {
                       onChange={(e) =>
                         handleSearchChange(e, key as keyof typeof search)
                       }
+                      type={key === "id" ? "number" : "text"}
                       fullWidth
                       sx={{
                         "& .MuiInputBase-root": {

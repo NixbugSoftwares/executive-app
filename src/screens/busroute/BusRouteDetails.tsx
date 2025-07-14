@@ -116,6 +116,7 @@ const BusRouteDetailsPage = ({
         console.log(`Landmark #${idx + 1}:`, {
           id: lm.id,
           name: lm.name,
+          landmark_id: lm.landmark_id,
           sequence_id: lm.sequence_id,
           arrival_delta: lm.arrival_delta,
           departure_delta: lm.departure_delta,
@@ -132,7 +133,43 @@ const BusRouteDetailsPage = ({
       setIsLoading(false);
     }
   };
+const fetchLandmark = () => {
+    dispatch(landmarkListApi({}))
+      .unwrap()
+      .then((res) => {
+        setLandmarks(res.data);
+      })
+      .catch((err: any) => {
+        console.error("Error fetching landmarks", err);
+      });
+  };
 
+  const processLandmarks = (landmarks: RouteLandmark[]): RouteLandmark[] => {
+    return landmarks
+      .sort((a, b) => (a.sequence_id || 0) - (b.sequence_id || 0))
+      .map((landmark, index) => ({
+        ...landmark,
+        sequence_id: index + 1,
+      }));
+  };
+
+  useEffect(() => {
+    fetchRouteLandmarks();
+    fetchLandmark();
+  }, [routeId]);
+
+  useEffect(() => {
+    return () => {
+      onLandmarksUpdate([]);
+    };
+  }, []);
+
+  const getLandmarkName = (landmarkId: string) => {
+  console.log('Getting landmark name for ID:', landmarkId);
+  const landmark = landmarks.find((l) => l.id === Number(landmarkId));
+  console.log('Found landmark:', landmark);
+  return landmark ? landmark.name : "Unknown Landmark";
+};
   const formatDuration = (seconds: number) => {
     if (isNaN(seconds) || seconds < 0) return "N/A";
     const h = Math.floor(seconds / 3600);
@@ -343,41 +380,7 @@ const BusRouteDetailsPage = ({
     }
   };
 
-  const fetchLandmark = () => {
-    dispatch(landmarkListApi({}))
-      .unwrap()
-      .then((res) => {
-        setLandmarks(res.data);
-      })
-      .catch((err: any) => {
-        console.error("Error fetching landmarks", err);
-      });
-  };
-
-  const processLandmarks = (landmarks: RouteLandmark[]): RouteLandmark[] => {
-    return landmarks
-      .sort((a, b) => (a.sequence_id || 0) - (b.sequence_id || 0))
-      .map((landmark, index) => ({
-        ...landmark,
-        sequence_id: index + 1,
-      }));
-  };
-
-  useEffect(() => {
-    fetchRouteLandmarks();
-    fetchLandmark();
-  }, [routeId]);
-
-  useEffect(() => {
-    return () => {
-      onLandmarksUpdate([]);
-    };
-  }, []);
-
-  const getLandmarkName = (landmarkId: string) => {
-    const landmark = landmarks.find((l) => l.id === Number(landmarkId));
-    return landmark ? landmark.name : "Unknown Landmark";
-  };
+  
 
   const handleLandmarkEditClick = (landmark: RouteLandmark) => {
     const startDate = new Date(routeStartingTime);
