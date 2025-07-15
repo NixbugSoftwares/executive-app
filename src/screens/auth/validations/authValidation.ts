@@ -178,8 +178,7 @@ export const landMarkAddSchema = yup.object().shape({
   .min(4, "landmark name must be at least 4 characters")
   .max(32, "landmark name cannot exceed 32 characters"),
   boundary: yup.string().required("Boundary is required"),
-  status: yup.string().required("Status is required"),
-  importance: yup.string().required("Importance is required"),
+  type:yup.string().optional(),
 })
 
 

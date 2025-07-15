@@ -62,10 +62,44 @@ const BusStopUpdateMap: React.FC<BusStopUpdateMapProps> = ({
   const [selectedPoint, setSelectedPoint] = useState<[number, number] | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectionMode, setSelectionMode] = useState(false);
-
-  // Fetched data
   const [busStop, setBusStop] = useState<BusStop | null>(null);
   const [landmark, setLandmark] = useState<Landmark | null>(null);
+
+  // WKT point parser
+const parseWKTPoint = (wkt: string): [number, number] | null => {
+  if (!wkt) return null;
+  const pointRegex = /POINT\s*\(\s*(-?\d+\.?\d*)\s+(-?\d+\.?\d*)\s*\)/i;
+  const match = wkt.match(pointRegex);
+  if (!match) {
+    console.error("Invalid POINT format:", wkt);
+    return null;
+  }
+  const lon = parseFloat(match[1]);
+  const lat = parseFloat(match[2]);
+  if (isNaN(lon) || isNaN(lat)) {
+    console.error("Invalid coordinates in POINT:", wkt);
+    return null;
+  }
+  return [lon, lat];
+};
+
+// Improved WKT polygon parser
+const parseWKTPolygon = (wkt: string): [number, number][] | null => {
+  if (!wkt) return null;
+  const polygonRegex = /POLYGON\s*\(\s*\(\s*([^)]+)\s*\)\s*\)/i;
+  const match = wkt.match(polygonRegex);
+  if (!match) {
+    console.error("Invalid POLYGON format:", wkt);
+    return null;
+  }
+  const coordPairs = match[1].split(',').map(pair => pair.trim());
+  return coordPairs
+    .map(pair => {
+      const [lon, lat] = pair.split(/\s+/).map(Number);
+      return [lon, lat] as [number, number]; 
+    })
+    .filter(([lon, lat]) => !isNaN(lon) && !isNaN(lat));
+};
 
   // Fetch bus stop and landmark by ID
   useEffect(() => {
@@ -73,15 +107,19 @@ const BusStopUpdateMap: React.FC<BusStopUpdateMapProps> = ({
       dispatch(busStopListApi({ id: busStopId }))
         .unwrap()
         .then((res: BusStop[]) => {
+          console.log("res", res);
+          
           if (res && res.length > 0) setBusStop(res[0]);
         })
+        
         .catch(() => showErrorToast("Failed to fetch bus stop"));
     }
     if (landmarkId) {
       dispatch(landmarkListApi({ id: landmarkId }))
         .unwrap()
         .then((res: any) => {
-          // Adjust if your API returns an array or object
+          console.log("res landmark", res);
+          
           if (Array.isArray(res.data) && res.data.length > 0) setLandmark(res.data[0]);
           else if (res.data) setLandmark(res.data);
         })
@@ -89,15 +127,6 @@ const BusStopUpdateMap: React.FC<BusStopUpdateMapProps> = ({
     }
   }, [busStopId, landmarkId, dispatch]);
 
-  // Parse WKT POINT string to coordinates
-  const parsePointString = (pointString: string): [number, number] | null => {
-    if (!pointString) return null;
-    const matches = pointString.match(/POINT\(([^)]+)\)/);
-    if (!matches) return null;
-    const coords = matches[1].split(" ");
-    if (coords.length !== 2) return null;
-    return [parseFloat(coords[0]), parseFloat(coords[1])];
-  };
 
   // Draw initial marker and boundary
   useEffect(() => {
@@ -131,59 +160,61 @@ const BusStopUpdateMap: React.FC<BusStopUpdateMapProps> = ({
 
   // Draw marker and boundary when data is loaded or changed
   useEffect(() => {
-    if (!mapInstance.current) return;
-    vectorSource.current.clear();
-    setSelectedPoint(null);
-    
-    if (landmark?.boundary) {
-  let coordsString = landmark.boundary;
-  // Handle WKT POLYGON format
-  const wktMatch = coordsString.match(/POLYGON\s*\(\(([^)]+)\)\)/i);
-  if (wktMatch) {
-    coordsString = wktMatch[1];
-  }
-  const boundaryCoords = coordsString
-    .split(",")
-    .map((coord) => coord.trim().split(" ").map(Number))
-    .map((coord) => fromLonLat(coord));
-  const polygon = new Polygon([boundaryCoords]);
-  const boundaryFeature = new Feature(polygon);
-  boundaryFeature.setStyle(
-    new Style({
-      fill: new Fill({ color: "rgba(221, 201, 75, 0.5)" }),
-      stroke: new Stroke({ color: "rgb(255, 149, 0)", width: 2 }),
-    })
-  );
-  vectorSource.current.addFeature(boundaryFeature);
-}
-    // Draw bus stop marker
-    if (busStop?.location) {
-      const coords = parsePointString(busStop.location);
-      if (coords) {
-        const [lon, lat] = coords;
-        const coordinates = fromLonLat([lon, lat]);
-        const point = new Point(coordinates);
-        const feature = new Feature(point);
-        feature.setStyle(
-          new Style({
-            image: new Icon({
-              src: busstopimage,
-              scale: 0.15,
-              anchor: [0.5, 1],
-            }),
-          })
-        );
-        vectorSource.current.addFeature(feature);
+  if (!mapInstance.current) return;
+  
+  vectorSource.current.clear();
+  setSelectedPoint(null);
 
-        // Center map on the bus stop
-        mapInstance.current.getView().animate({
-          center: coordinates,
-          zoom: 16,
-        });
-        setSelectedPoint([lon, lat]);
-      }
+  // Draw landmark boundary
+  if (landmark?.boundary) {
+    const polygonCoords = parseWKTPolygon(landmark.boundary);
+    if (polygonCoords) {
+      const transformedCoords = polygonCoords.map(coord => fromLonLat(coord));
+      const polygon = new Polygon([transformedCoords]);
+      const boundaryFeature = new Feature(polygon);
+      
+      boundaryFeature.setStyle(
+        new Style({
+          fill: new Fill({ color: "rgba(221, 201, 75, 0.3)" }),
+          stroke: new Stroke({ color: "rgb(255, 149, 0)", width: 2 }),
+        })
+      );
+      
+      vectorSource.current.addFeature(boundaryFeature);
     }
-  }, [busStop, landmark]);
+  }
+
+  // Draw bus stop marker
+  if (busStop?.location) {
+    const pointCoords = parseWKTPoint(busStop.location);
+    if (pointCoords) {
+      const [lon, lat] = pointCoords;
+      const coordinates = fromLonLat([lon, lat]);
+      const point = new Point(coordinates);
+      const feature = new Feature(point);
+      
+      feature.setStyle(
+        new Style({
+          image: new Icon({
+            src: busstopimage,
+            scale: 0.1,
+            anchor: [0.5, 1],
+          }),
+          
+        })
+      );
+      
+      vectorSource.current.addFeature(feature);
+      setSelectedPoint([lon, lat]);
+      
+      // Center map on the bus stop
+      mapInstance.current.getView().animate({
+        center: coordinates,
+        zoom: 16,
+      });
+    }
+  }
+}, [busStop, landmark]);
 
   // Handle click events when in selection mode
   useEffect(() => {
@@ -193,8 +224,6 @@ const BusStopUpdateMap: React.FC<BusStopUpdateMapProps> = ({
       const coordinate = event.coordinate;
       const lonLat = toLonLat(coordinate);
       setSelectedPoint([lonLat[0], lonLat[1]]);
-
-      // Clear previous features and redraw boundary
       vectorSource.current.clear();
 
       // Draw landmark boundary

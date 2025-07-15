@@ -55,8 +55,8 @@ const AccountListingTable = () => {
   const rowsPerPage = 10;
   const [hasNextPage, setHasNextPage] = useState(false);
   const [openCreateModal, setOpenCreateModal] = useState(false);
-  const canManageExecutive = useSelector((state: RootState) =>
-    state.app.permissions.includes("manage_executive")
+  const canCreateExecutive = useSelector((state: RootState) =>
+    state.app.permissions.includes("create_executive")
   );
 
   // Function to fetch accounts
@@ -72,22 +72,17 @@ const AccountListingTable = () => {
           username: account.username,
           gender:
             account.gender === 1
-              ? "Female"
+              ? "Other"
               : account.gender === 2
-              ? "Male"
+              ? "Female"
               : account.gender === 3
-              ? "Transgender"
-              : "Other",
+              ? "Male"
+              : "Transgender",
           email_id: account.email_id,
           phoneNumber: account.phone_number || account.phoneNumber || "",
           status: account.status === 1 ? "Active" : "Suspended",
           designation: account.designation || "",
         }));
-        console.log(
-          "email_id",
-          formattedAccounts.map((account: Account) => account.email_id)
-        );
-
         setAccountList(formattedAccounts);
         setHasNextPage(items.length === rowsPerPage);
       })
@@ -191,37 +186,37 @@ const AccountListingTable = () => {
         <Tooltip
           title={
             <span>
-              {!canManageExecutive
+              {!canCreateExecutive
                 ? "You don't have permission, contact the admin"
                 : "Click to open the account creation form"}
             </span>
           }
           placement="top-end"
         >
-            <Button
-              sx={{
-                ml: "auto",
-                mr: 2,
-                mb: 2,
-                backgroundColor: !canManageExecutive
-                  ? "#6c87b7 !important"
-                  : "#00008B",
-                color: "white !important",
-                display: "flex",
-                justifyContent: "flex-end",
-                "&.Mui-disabled": {
-                  color: "#fff !important",
-                },
-              }}
-              variant="contained"
-              onClick={() => setOpenCreateModal(true)}
-              disabled={!canManageExecutive}
-              style={{
-                cursor: !canManageExecutive ? "not-allowed" : "pointer",
-              }}
-            >
-              Add New Executive
-            </Button>
+          <Button
+            sx={{
+              ml: "auto",
+              mr: 2,
+              mb: 2,
+              backgroundColor: !canCreateExecutive
+                ? "#6c87b7 !important"
+                : "#00008B",
+              color: "white !important",
+              display: "flex",
+              justifyContent: "flex-end",
+              "&.Mui-disabled": {
+                color: "#fff !important",
+              },
+            }}
+            variant="contained"
+            onClick={() => setOpenCreateModal(true)}
+            disabled={!canCreateExecutive}
+            style={{
+              cursor: !canCreateExecutive ? "not-allowed" : "pointer",
+            }}
+          >
+            Add New Executive
+          </Button>
         </Tooltip>
         <TableContainer
           sx={{
@@ -542,7 +537,6 @@ const AccountListingTable = () => {
             onDelete={() => {}}
             onBack={() => setSelectedAccount(null)}
             refreshList={(value: any) => refreshList(value)}
-            canManageExecutive={canManageExecutive}
             onCloseDetailCard={() => setSelectedAccount(null)}
           />
         </Box>

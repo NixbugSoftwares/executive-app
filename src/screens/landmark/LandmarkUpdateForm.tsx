@@ -19,8 +19,7 @@ import {
 interface ILandmarkFormInputs {
   name: string;
   boundary: string;
-  status: string;
-  importance: string;
+  type:string
 }
 
 interface ILandmarkUpdateFormProps {
@@ -31,31 +30,26 @@ interface ILandmarkUpdateFormProps {
   landmarkData?: ILandmarkFormInputs; 
 }
 
-const statusOptions = [
-  { label: "VALIDATING", value: "1" },
-  { label: "VERIFIED", value: "2" },
-];
 
-const importanceOptions = [
-  { label: "LOW", value: 1 },
-  { label: "MEDIUM", value: 2 },
-  { label: "HIGH", value: 3 },
+const typeOptions = [
+  { label: "LOCAL", value: 1 },
+  { label: "VILLAGE", value: 2 },
+  { label: "DISTRICT", value: 3 },
+  { label: "STATE", value: 4 },
+  { label: "NATIONAL", value: 5 },
 ];
-const statusValueMap: Record<string, string> = {
-  "Validating": "1",
-  "VALIDATING": "1",
-  "Verified": "2",
-  "VERIFIED": "2",
+const typeValueMap: Record<string, string> = {
+  "LOCAL": "1",
+  "Local": "1",
+  "VILLAGE": "2",
+  "village": "2",
+  "DISTRICT": "3",
+  "District": "3",
+  "STATE": "4",
+  "State": "4",
+  "NATIONAL": "5", 
+  "National": "5",
 };
-const importanceValueMap: Record<string, string> = {
-  "Low": "1",
-  "LOW": "1",
-  "Medium": "2",
-  "MEDIUM": "2",
-  "High": "3",
-  "HIGH": "3",
-};
-
 function toWKTPolygon(boundary: string) {
   if (!boundary) return "";
   if (boundary.trim().startsWith("POLYGON")) return boundary;
@@ -69,8 +63,6 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
   boundary,
   landmarkData
 }) => {
-  console.log("landmark dataaaaaaaaaaaa", landmarkData);
-  
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
@@ -86,8 +78,7 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
     defaultValues: {
     name: landmarkData?.name || "",
     boundary: landmarkData?.boundary,
-    status: statusValueMap[landmarkData?.status ?? ""] || "",
-    importance: importanceValueMap[landmarkData?.importance ?? ""] || "",
+    type: typeValueMap[landmarkData?.type ?? ""] || "",
   },
   });
 
@@ -105,12 +96,8 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       formData.append("id", landmarkId.toString());
       formData.append("name", data.name);
       formData.append("boundary", toWKTPolygon(data.boundary || updatedBoundary));
-      formData.append("status", data.status);
-      formData.append("importance", data.importance);
-console.log("boundary", data.boundary || updatedBoundary);
-
+      formData.append("type", data.type);
       await dispatch(landmarkUpdationApi({ landmarkId, formData })).unwrap();
-
       showSuccessToast("Landmark updated successfully!");
       refreshList("refresh");
       onClose();
@@ -174,19 +161,19 @@ console.log("boundary", data.boundary || updatedBoundary);
       />
 
       <Controller
-        name="status"
+        name="type"
         control={control}
         render={({ field }) => (
           <TextField
             margin="normal"
             fullWidth
             select
-            label="Status"
+            label="type"
             {...field}
-            error={!!errors.status}
+            error={!!errors.type}
             size="small"
           >
-            {statusOptions.map((option) => (
+            {typeOptions.map((option) => (
               <MenuItem key={option.value} value={option.value}>
                 {option.label}
               </MenuItem>
@@ -195,27 +182,7 @@ console.log("boundary", data.boundary || updatedBoundary);
         )}
       />
 
-      <Controller
-        name="importance"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            margin="normal"
-            fullWidth
-            select
-            label="Importance"
-            {...field}
-            error={!!errors.importance}
-            size="small"
-          >
-            {importanceOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
-        )}
-      />
+     
 
       <Button
         type="submit"

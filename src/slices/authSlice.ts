@@ -23,7 +23,7 @@ export const LoginApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "token",
+        "entebus/account/token",
         data,
         false,
         "multipart/form-data"

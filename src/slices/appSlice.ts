@@ -65,7 +65,7 @@ interface LandmarkListParams {
   ids?:[number];
   name?: string;
   location?: string;
-  status?: number;
+  type?: string;
 }
 
 interface BusStopListParams {
@@ -181,7 +181,7 @@ export const logoutApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "token",
+        "entebus/account/token",
         data,
         true,
         "application/json"
@@ -214,7 +214,7 @@ export const loggedinUserRoleDetails = createAsyncThunk<
     return matchedRole ? [matchedRole] : [];
   } catch (error: any) {
     return rejectWithValue(
-      error?.detail?.response?.data?.message || "Failed to fetch Role"
+      error.detail || "Failed to fetch Role"
     );
   }
 });
@@ -225,7 +225,7 @@ export const loggedinuserAPI = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "get",
-        "account",
+        "entebus/account",
         { executive_id },
         true,
         "application/json"
@@ -253,7 +253,7 @@ export const accountCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "account",
+        "entebus/account",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -295,7 +295,7 @@ export const accountListApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "get",
-        "account",
+        "entebus/account",
         queryParams,
         true,
         "application/json"
@@ -323,7 +323,7 @@ export const accountupdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        `account`,
+        `entebus/account`,
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -348,7 +348,7 @@ export const accountDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "account",
+        "entebus/account",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -555,7 +555,7 @@ export const roleAssignUpdateApi = createAsyncThunk(
 export const landmarkListApi = createAsyncThunk(
   "/executive/landmark",
   async (params: LandmarkListParams, { rejectWithValue }) => {
-    const { limit, offset, id, ids, name, location, status } = params;
+    const { limit, offset, id, ids, name, location, type } = params;
     const queryParams = {
       limit,
       offset,
@@ -563,7 +563,7 @@ export const landmarkListApi = createAsyncThunk(
       ...(ids && { ids }),
       ...(name && { name }),
       ...(location && { location }),
-      ...(status && { status }),
+      ...(type && { type }),
     };
     try {
       const response = await commonApi.apiCall(
@@ -673,7 +673,7 @@ export const busStopListApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "get",
-        "bus_stop",
+        "landmark/bus_stop",
         queryParams,
         true,
         "application/json"
@@ -697,7 +697,7 @@ export const busStopCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "bus_stop",
+        "landmark/bus_stop",
         data,
         true,
         "application/www-form-urlencoded"
@@ -721,7 +721,7 @@ export const busStopUpdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        "bus_stop",
+        "landmark/bus_stop",
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -743,7 +743,7 @@ export const busStopDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "bus_stop",
+        "landmark/bus_stop",
         data,
         true,
         "application/x-www-form-urlencoded"

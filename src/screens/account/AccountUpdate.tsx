@@ -48,18 +48,18 @@ interface IAccountUpdateFormProps {
   refreshList: (value: any) => void;
   onCloseDetailCard(): void;
   accountData?: IAccountFormInputs;
-  canManageExecutive?: boolean;
+  canUpdateExecutive?: boolean;
 }
 interface IOption {
   label: string;
   value: number;
 }
 // Gender options mapping
-const genderOptions: IOption[] = [
-  { label: "Female", value: 1 },
-  { label: "Male", value: 2 },
-  { label: "Transgender", value: 3 },
-  { label: "Other", value: 4 },
+const genderOptions = [
+  { label: "Other", value: 1 },
+  { label: "Female", value: 2 },
+  { label: "Male", value: 3 },
+  { label: "Transgender", value: 4 },
 ];
 
 const statusOptions: IOption[] = [
@@ -75,7 +75,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
   onClose,
   refreshList,
   onCloseDetailCard,
-  canManageExecutive,
+  canUpdateExecutive,
 }) => {
   console.log("accountData", accountData);
   
@@ -161,7 +161,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
         onClose();
         return;
       }
-      if (canManageExecutive && data.role) {
+      if (canUpdateExecutive && data.role) {
         try {
           if (data.roleAssignmentId) {
             await dispatch(
@@ -294,7 +294,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             helperText={errors.email?.message}
             size="small"
           />
-          {canManageExecutive && (
+          {canUpdateExecutive && (
             <Controller
               name="role"
               control={control}
@@ -355,7 +355,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             size="small"
           />
 
-          {canManageExecutive && !isLoggedInUser && (
+          {canUpdateExecutive && !isLoggedInUser && (
             <Controller
               name="status"
               control={control}

@@ -33,6 +33,8 @@ import {
   showErrorToast,
   showSuccessToast,
 } from "../../common/toastMessageHelper";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
 
 interface AccountCardProps {
   account: {
@@ -49,14 +51,13 @@ interface AccountCardProps {
   onDelete: (id: number) => void;
   onBack: () => void;
   refreshList: (value: any) => void;
-  canManageExecutive: boolean;
   onCloseDetailCard: () => void;
 }
 const genderOptions = [
-  { label: "Female", value: 1 },
-  { label: "Male", value: 2 },
-  { label: "Transgender", value: 3 },
-  { label: "Other", value: 4 },
+  { label: "Other", value: 1 },
+  { label: "Female", value: 2 },
+  { label: "Male", value: 3 },
+  { label: "Transgender", value: 4 },
 ];
 
 const statusOptions = [
@@ -71,7 +72,6 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
   refreshList,
   onDelete,
   onBack,
-  canManageExecutive,
   onCloseDetailCard,
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -79,6 +79,12 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
   const dispatch = useAppDispatch();
   const isLoggedInUser = account.id === userId;
 
+  const canUpdateExecutive = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_executive")
+  );
+  const canDeleteExecutive = useSelector((state: RootState) =>
+    state.app.permissions.includes("delete_executive")
+  );
   const handleCloseModal = () => {
     setUpdateFormOpen(false);
   };
@@ -230,7 +236,7 @@ const getGenderValue = (genderText: string): number | undefined => {
             {/* Update Button with Tooltip */}
             <Tooltip
               title={
-                !canManageExecutive && !isLoggedInUser
+                !canUpdateExecutive && !isLoggedInUser
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -239,7 +245,7 @@ const getGenderValue = (genderText: string): number | undefined => {
             >
               <span
                 style={{
-                  cursor: !canManageExecutive ? "not-allowed" : "default",
+                  cursor: !canUpdateExecutive ? "not-allowed" : "default",
                 }}
               >
                 <Button
@@ -250,7 +256,7 @@ const getGenderValue = (genderText: string): number | undefined => {
                     setUpdateFormOpen(true);
                   }}
                   startIcon={<EditIcon />}
-                  disabled={!canManageExecutive && !isLoggedInUser}
+                  disabled={!canUpdateExecutive && !isLoggedInUser}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#81c784 !important",
@@ -267,7 +273,7 @@ const getGenderValue = (genderText: string): number | undefined => {
             {!isLoggedInUser && (
               <Tooltip
                 title={
-                  !canManageExecutive
+                  !canDeleteExecutive
                     ? "You don't have permission, contact the admin"
                     : ""
                 }
@@ -276,7 +282,7 @@ const getGenderValue = (genderText: string): number | undefined => {
               >
                 <span
                   style={{
-                    cursor: !canManageExecutive ? "not-allowed" : "default",
+                    cursor: !canDeleteExecutive ? "not-allowed" : "default",
                   }}
                 >
                   <Button
@@ -285,7 +291,7 @@ const getGenderValue = (genderText: string): number | undefined => {
                     size="small"
                     onClick={() => setDeleteConfirmOpen(true)}
                     startIcon={<DeleteIcon />}
-                    disabled={!canManageExecutive}
+                    disabled={!canDeleteExecutive}
                     sx={{
                       "&.Mui-disabled": {
                         backgroundColor: "#e57373 !important",
@@ -351,7 +357,7 @@ const getGenderValue = (genderText: string): number | undefined => {
             onClose={() => setUpdateFormOpen(false)}
             onCloseDetailCard={onCloseDetailCard}
             refreshList={(value: any) => refreshList(value)}
-            canManageExecutive={canManageExecutive}
+            canUpdateExecutive={canUpdateExecutive}
           />
         </DialogContent>
         <DialogActions>

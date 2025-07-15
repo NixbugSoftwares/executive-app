@@ -1,5 +1,5 @@
-import React, {  useState } from "react";
-import { useForm, SubmitHandler,  } from "react-hook-form";
+import React, { useState } from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
 import {
   Box,
   TextField,
@@ -18,7 +18,7 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { useAppDispatch } from "../../store/Hooks";
-import { LoginApi,  } from "../../slices/authSlice";
+import { LoginApi } from "../../slices/authSlice";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { loginSchema } from "./validations/authValidation";
 import {
@@ -67,7 +67,6 @@ const LoginPage: React.FC = () => {
         };
         const access_token = response?.access_token;
         const expiresAt = Date.now() + response?.expires_in * 1000;
-        
 
         localStorageHelper.storeItem("@token", access_token);
         localStorageHelper.storeItem("@token_expires", expiresAt);
@@ -95,7 +94,10 @@ const LoginPage: React.FC = () => {
           loggedinUserRoleDetails(assignedRole.roleId)
         ).unwrap();
 
-        console.log("roleDetails=================================", roleListingResponse[0]);
+        console.log(
+          "roleDetails=================================",
+          roleListingResponse[0]
+        );
 
         if (roleListingResponse.length > 0) {
           dispatch(setRoleDetails(roleListingResponse[0]));
@@ -104,15 +106,16 @@ const LoginPage: React.FC = () => {
           dispatch(setRoleDetails(roleDetails));
 
           const permissions = Object.entries(roleDetails)
-            .filter(
-              ([key, value]) => key.startsWith("manage_") && value === true
-            )
+            .filter(([_, value]) => value === true)
             .map(([key]) => key);
 
           localStorage.setItem("@permissions", JSON.stringify(permissions));
           dispatch(setPermissions(permissions));
-          console.log("Permissions=================================s:", permissions);
-          
+          console.log(
+            "Permissions=================================s:",
+            permissions
+          );
+
           if (permissions) {
             localStorage.setItem("@permissions", JSON.stringify(permissions));
             dispatch(setPermissions(permissions));
@@ -158,8 +161,6 @@ const LoginPage: React.FC = () => {
               sx={{ mt: 1 }}
               onSubmit={handleSubmit(handleLogin)}
             >
-              
-
               <TextField
                 margin="normal"
                 required

@@ -34,6 +34,7 @@ export interface Landmark {
   boundary: string;
   status: string;
   importance: string;
+  type: string;
 }
 
 export interface BusStop {
@@ -42,7 +43,6 @@ export interface BusStop {
   landmark_id: number;
   location: string;
   status: string;
-  parsedLocation?: [number, number] | null;
 }
 
 export interface Company {

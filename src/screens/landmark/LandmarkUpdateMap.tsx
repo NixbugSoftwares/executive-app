@@ -252,8 +252,6 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
 };
 
 
-
-
   const startDrawing = () => {
     if (!mapInstance.current) return;
 
@@ -356,7 +354,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
     mapInstance.current.addInteraction(draw);
   };
 
-  
+
   const handleConfirm = () => {
     if (updatedCoordinates) {
       onSave(updatedCoordinates);
