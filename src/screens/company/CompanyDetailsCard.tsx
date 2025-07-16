@@ -35,6 +35,8 @@ import {
   showErrorToast,
 } from "../../common/toastMessageHelper";
 import { Company } from "../../types/type";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
 interface companyCardProps {
   company: Company;
 
@@ -42,7 +44,6 @@ interface companyCardProps {
   onDelete: (id: number) => void;
   onBack: () => void;
   refreshList: (value: any) => void;
-  canManageCompany: boolean;
   handleCloseDetailCard: () => void;
 }
 
@@ -51,21 +52,27 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
   refreshList,
   onDelete,
   onBack,
-  canManageCompany,
   handleCloseDetailCard,
 }) => {
+  console.log("company", company);
+  
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const dispatch = useAppDispatch();
-
+const canUpdateCompany = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_company")
+  );
+  const canDeleteCompany = useSelector((state: RootState) =>
+    state.app.permissions.includes("delete_company")
+  );
   const handleCloseModal = () => {
     setUpdateFormOpen(false);
   };
 
   const extractCoordinates = (location: string) => {
     if (!location) return null;
-    const regex = /POINT\(([\d.]+) ([\d.]+)\)/;
+    const regex = /POINT\s*\(\s*([\d.-]+)\s+([\d.-]+)\s*\)/;
     const match = location.match(regex);
 
     if (match) {
@@ -273,7 +280,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
             {/* Update Button with Tooltip */}
             <Tooltip
               title={
-                !canManageCompany
+                !canUpdateCompany
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -282,7 +289,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
             >
               <span
                 style={{
-                  cursor: !canManageCompany ? "not-allowed" : "default",
+                  cursor: !canUpdateCompany ? "not-allowed" : "default",
                 }}
               >
                 <Button
@@ -293,7 +300,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
                     setUpdateFormOpen(true);
                   }}
                   startIcon={<EditIcon />}
-                  disabled={!canManageCompany}
+                  disabled={!canUpdateCompany}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#81c784 !important",
@@ -309,7 +316,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
             {/* Delete Button with Tooltip */}
             <Tooltip
               title={
-                !canManageCompany
+                !canDeleteCompany
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -318,7 +325,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
             >
               <span
                 style={{
-                  cursor: !canManageCompany ? "not-allowed" : "default",
+                  cursor: !canDeleteCompany ? "not-allowed" : "default",
                 }}
               >
                 <Button
@@ -327,7 +334,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
                   size="small"
                   onClick={() => setDeleteConfirmOpen(true)}
                   startIcon={<DeleteIcon />}
-                  disabled={!canManageCompany}
+                  disabled={!canDeleteCompany}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#e57373 !important",

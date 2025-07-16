@@ -6,11 +6,10 @@ interface MapModalProps {
   open: boolean;
   onClose: () => void;
   onSelectLocation: (location: {
-    // name: string;
     lat: number;
     lng: number;
   }) => void;
-  initialCoordinates?: { lat: number; lng: number }; // Add initialCoordinates prop
+  initialCoordinates?: { lat: number; lng: number }; 
 }
 
 const MapModal: React.FC<MapModalProps> = ({
@@ -20,21 +19,15 @@ const MapModal: React.FC<MapModalProps> = ({
   initialCoordinates,
 }) => {
   const [selectedLocation, setSelectedLocation] = useState<{
-    // name: string;
     lat: number;
     lng: number;
   } | null>(null);
 
-  // Fetch location name when initialCoordinates changes
-  
-
   const handleLocationSelect = (coordinates: {
     lat: number;
     lng: number;
-    // name: string;
   }) => {
     setSelectedLocation({
-      // name: coordinates.name,
       lat: coordinates.lat,
       lng: coordinates.lng,
     });

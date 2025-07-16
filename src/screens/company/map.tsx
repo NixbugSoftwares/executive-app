@@ -13,7 +13,6 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  // Removed: TextField,
 } from "@mui/material";
 import Feature from "ol/Feature";
 import Point from "ol/geom/Point";
@@ -24,7 +23,6 @@ interface MapComponentProps {
   onSelectLocation?: (coordinates: {
     lat: number;
     lng: number;
-    //  name: string;
   }) => void;
   isOpen: boolean;
   initialCoordinates?: { lat: number; lng: number };
@@ -43,11 +41,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [markerLayer, setMarkerLayer] = useState<VectorLayer<
     VectorSource<Feature<Point>>
   > | null>(null);
-  //  const [locationName, setLocationName] = useState<string>("");
-
-  // fetchLocationName function
-
-  // Initialize the map and add a marker for initialCoordinates
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -73,8 +66,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       mapInstance.current = map;
     }
-
-    // Add a marker for initialCoordinates
     if (initialCoordinates && mapInstance.current) {
       const marker = new Feature({
         geometry: new Point(
@@ -95,18 +86,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
           }),
         }),
       });
-
       if (markerLayer) {
         mapInstance.current.removeLayer(markerLayer);
       }
-
       mapInstance.current.addLayer(newMarkerLayer);
       setMarkerLayer(newMarkerLayer);
 
-      // Removed: fetch and set the location name
     }
 
-    // Update map size when modal is opened
     if (isOpen) {
       setTimeout(() => {
         mapInstance.current?.updateSize();
@@ -114,7 +101,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   }, [isOpen, initialCoordinates]);
 
-  // Handle map clicks when marking is enabled
   useEffect(() => {
     if (!mapInstance.current || !onSelectLocation) return;
 
@@ -122,12 +108,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     const handleMapClick = async (event: any) => {
       if (!isMarkingEnabled) return;
-
       const coords = toLonLat(event.coordinate);
-      // Removed: const name = await fetchLocationName(coords[1], coords[0]);
-      // Removed: setLocationName(name);
       onSelectLocation({ lat: coords[1], lng: coords[0] });
-
       const marker = new Feature({
         geometry: new Point(event.coordinate),
       });
@@ -161,7 +143,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     };
   }, [isMarkingEnabled, markerLayer, onSelectLocation]);
 
-  // Removed: handleSearch function
+
 
   // Change map type
   const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
@@ -244,19 +226,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
           <strong>{mousePosition}</strong>
         </Typography>
       </Box>
-
-      {/* <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
-        <TextField
-          fullWidth
-          label="Search Location"
-          value={locationName}
-          onChange={(e) => setLocationName(e.target.value)}
-        />
-        <Button variant="contained" onClick={handleSearch}>
-          Search
-        </Button>
-      </Box> */}
-
       <Box ref={mapRef} width="100%" height="500px" flex={1} />
     </Box>
   );

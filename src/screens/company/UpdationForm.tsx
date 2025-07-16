@@ -44,8 +44,9 @@ const statusOptions = [
 ];
 
 const typeOptions = [
-  { label: "Privet", value: 1 },
-  { label: "Government", value: 2 },
+  { label: "Other", value: 1 },
+  { label: "Privet", value: 2 },
+  { label: "Government", value: 3 },
 ];
 
 const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
@@ -80,8 +81,7 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
         const items = res.data;
         const company = items.find((company) => company.id === companyId);
         if (company) {
-          // Parse the location string into latitude and longitude
-          const locationRegex = /POINT\(([\d.]+) ([\d.]+)\)/;
+          const locationRegex = /POINT\s*\(\s*([\d.-]+)\s+([\d.-]+)\s*\)/;
           const match = company.location.match(locationRegex);
           const latitude = match ? parseFloat(match[2]) : undefined;
           const longitude = match ? parseFloat(match[1]) : undefined;

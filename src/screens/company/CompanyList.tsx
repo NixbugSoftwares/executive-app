@@ -54,8 +54,8 @@ const CompanyListingTable = () => {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [openCreateModal, setOpenCreateModal] = useState(false);
 
-  const canManageCompany = useSelector((state: RootState) =>
-    state.app.permissions.includes("manage_company")
+  const canCreateCompany = useSelector((state: RootState) =>
+    state.app.permissions.includes("create_company")
   );
   const navigate = useNavigate();
   // Function to fetch accounts
@@ -73,13 +73,16 @@ const CompanyListingTable = () => {
           contact_person: company.contact_person ?? "-",
           phone_number: company.phone_number ?? "-",
           email_id: company.email_id ?? "-",
-          companyType: company.type === 1 ? "private" : "government",
+          companyType: company.type === 1? "Other" : company.type === 2 ? "private" : 
+          company.type === 3 ? "government": "",
           status:
             company.status === 1
               ? "Validating"
               : company.status === 2
               ? "Verified"
-              : "Suspended",
+              : company.status === 3
+              ? "Suspended"
+              : "",
         }));
         setCompanyList(formattedAccounts);
         setHasNextPage(items.length === rowsPerPage);
@@ -168,14 +171,14 @@ const CompanyListingTable = () => {
       >
         <Tooltip
           title={
-            !canManageCompany
+            !canCreateCompany
               ? "You don't have permission, contact the admin"
               : "click to open the company creation form"
           }
           placement="top-end"
         >
           <span
-            style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}
+            style={{ cursor: !canCreateCompany ? "not-allowed" : "default" }}
           >
             <Button
               sx={{
@@ -183,7 +186,7 @@ const CompanyListingTable = () => {
                 mr: 2,
                 mb: 2,
                 display: "block",
-                backgroundColor: !canManageCompany
+                backgroundColor: !canCreateCompany
                   ? "#6c87b7 !important"
                   : "#00008B",
                 color: "white",
@@ -194,7 +197,7 @@ const CompanyListingTable = () => {
               }}
               variant="contained"
               onClick={() => setOpenCreateModal(true)}
-              disabled={!canManageCompany}
+              disabled={!canCreateCompany}
             >
               Create Company
             </Button>
@@ -554,7 +557,6 @@ const CompanyListingTable = () => {
             onDelete={() => {}}
             onBack={() => setSelectedCompany(null)}
             refreshList={(value: any) => refreshList(value)}
-            canManageCompany={canManageCompany}
             handleCloseDetailCard={handleCloseDetailCard}
           />
         </Box>
