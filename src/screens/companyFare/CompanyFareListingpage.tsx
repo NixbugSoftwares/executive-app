@@ -49,8 +49,8 @@ const CompanyFareListingPage = () => {
   const rowsPerPage = 10;
   const [hasNextPage, setHasNextPage] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "create" | "view">("list");
-  const canManageFare = useSelector((state: RootState) =>
-    state.app.permissions.includes("manage_fare")
+  const canCreateFare = useSelector((state: RootState) =>
+    state.app.permissions.includes("create_fare")
   );
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -73,7 +73,6 @@ const CompanyFareListingPage = () => {
           fareListApi({
             limit: rowsPerPage,
             offset,
-            scope: 2,
             ...searchParams,
             company_id: filterCompanyId,
           })
@@ -167,7 +166,6 @@ const CompanyFareListingPage = () => {
         refreshList={refreshList}
         fareToEdit={viewMode === "view" ? selectedFare : null}
         mode={viewMode}
-        canManageFare={canManageFare}
         companyId={filterCompanyId}
       />
     );
@@ -206,13 +204,13 @@ const CompanyFareListingPage = () => {
             </Typography>
             <Tooltip
               title={
-                !canManageFare
+                !canCreateFare
                   ? "You don't have permission, contact the admin"
                   : "click to open the create fare page"
               }
             >
               <span
-                style={{ cursor: !canManageFare ? "not-allowed" : "default" }}
+                style={{ cursor: !canCreateFare ? "not-allowed" : "default" }}
               >
                 <Button
                   sx={{
@@ -220,7 +218,7 @@ const CompanyFareListingPage = () => {
                     mr: 2,
                     mb: 2,
                     display: "block",
-                    backgroundColor: !canManageFare
+                    backgroundColor: !canCreateFare
                       ? "#6c87b7 !important"
                       : "#00008B",
                     color: "white",
@@ -231,7 +229,7 @@ const CompanyFareListingPage = () => {
                   }}
                   variant="contained"
                   onClick={() => setViewMode("create")}
-                  disabled={!canManageFare}
+                  disabled={!canCreateFare}
                 >
                   Create New Fare
                 </Button>
