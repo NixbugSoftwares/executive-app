@@ -44,7 +44,7 @@ const FareListingPage = () => {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "create" | "view">("list");
   const canManageFare = useSelector((state: RootState) =>
-    state.app.permissions.includes("manage_fare")
+    state.app.permissions.includes("update_fare")
   );
   const fetchGlobalFares = useCallback(
     (pageNumber: number, searchParams = {}) => {
@@ -55,6 +55,8 @@ const FareListingPage = () => {
         .unwrap()
         .then((res: any) => {
           const items = res.data || [];
+          console.log("items", items);
+          
           const formattedFares = items.map((fare: any) => ({
             id: fare.id,
             name: fare.name,
@@ -133,7 +135,6 @@ const FareListingPage = () => {
         refreshList={refreshList}
         fareToEdit={viewMode === "view" ? selectedFare : null}
         mode={viewMode}
-        canManageFare={canManageFare}
       />
     );
   }

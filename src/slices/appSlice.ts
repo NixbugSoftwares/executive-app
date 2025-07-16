@@ -804,59 +804,61 @@ export const fareListApi = createAsyncThunk(
 //fare creation API
 export const fareCreationApi = createAsyncThunk(
   "/executive/company/fare",
-  async (data: FormData, { rejectWithValue }) => {
+  async (data: any, { rejectWithValue }) => {
     try {
       const response = await commonApi.apiCall(
         "post",
         "company/fare",
         data,
         true,
-        "application/x-www-form-urlencoded"
+        "application/json" 
       );
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error.detail || error.message || error || "Account creation failed"
+        error.detail || error.message || error || "Fare creation failed"
       );
     }
   }
 );
 
+
 //fare updation API
 export const fareupdationApi = createAsyncThunk(
   "/executive/company/fare",
   async (
-    { formData }: { fareId: number; formData: URLSearchParams },
+    {  fareUpdate }: { fareId: number; fareUpdate: any },
     { rejectWithValue }
   ) => {
     try {
       const response = await commonApi.apiCall(
         "patch",
         `company/fare`,
-        formData,
+        fareUpdate,
         true,
-        "application/x-www-form-urlencoded" // Use the correct content type
+        "application/json" 
       );
       return response;
     } catch (error: any) {
-      console.error("Backend Error Response:", error.response?.data); // Log the full error response
+      console.error("Backend Error Response:", error.response?.data);
       return rejectWithValue(
         error.detail || error.message || error || "Fare update failed"
       );
     }
   }
 );
+
 //fare delete API
 export const fareDeleteApi = createAsyncThunk(
   "executive/company/fare",
-  async (data: FormData, { rejectWithValue }) => {
+  async ({  fareId }: { fareId: number;}, { rejectWithValue }) => {
     try {
       const response = await commonApi.apiCall(
         "delete",
         "company/fare",
-        data,
+        fareId,
         true,
-        "application/x-www-form-urlencoded"
+        "application/jason"
       );
       return response;
     } catch (error: any) {

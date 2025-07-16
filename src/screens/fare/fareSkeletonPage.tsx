@@ -36,7 +36,13 @@ import {
   showSuccessToast,
 } from "../../common/toastMessageHelper";
 import { Fare } from "../../types/type";
-import { fareDeleteApi, fareupdationApi, fareCreationApi } from "../../slices/appSlice";
+import {
+  fareDeleteApi,
+  fareupdationApi,
+  fareCreationApi,
+} from "../../slices/appSlice";
+import { RootState } from "../../store/Store";
+import { useSelector } from "react-redux";
 interface TicketType {
   id: number;
   name: string;
@@ -61,7 +67,6 @@ interface FareSkeletonPageProps {
   refreshList: (value: any) => void;
   fareToEdit?: Fare | null;
   mode: "create" | "view";
-  canManageFare: boolean;
 }
 
 const defaultTicketTypes = [
@@ -75,7 +80,6 @@ const FareSkeletonPage = ({
   refreshList,
   fareToEdit,
   mode,
-  canManageFare,
 }: FareSkeletonPageProps) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
@@ -90,12 +94,16 @@ const FareSkeletonPage = ({
   const [output, setOutput] = useState("");
   const [_fareToDelete, setFareToDelete] = useState<number | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-
+  const canUpdateFare = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_fare")
+  );
+  const canDeleteFare = useSelector((state: RootState) =>
+    state.app.permissions.includes("delete_fare")
+  );
   useEffect(() => {
     if (fareToEdit) {
       setFareFunction(fareToEdit.function);
     } else {
-      // Default function template for new fares
       setFareFunction(`function getFare(ticket_type, distance, extra) {
   const base_fare_distance = 2.5;
   const base_fare = 10;
@@ -212,18 +220,18 @@ const FareSkeletonPage = ({
   const handleFareCreation: SubmitHandler<FareInputs> = async (data) => {
     try {
       setLoading(true);
-      const formData = new FormData();
-      formData.append("name", data.name);
-      formData.append("function", fareFunction);
-      formData.append("attributes", JSON.stringify(data.attributes));
-
-      await dispatch(fareCreationApi(formData)).unwrap();
+      const fareCreate = {
+        name: data.name,
+        function: fareFunction,
+        attributes: data.attributes,
+      };
+      await dispatch(fareCreationApi(fareCreate)).unwrap();
       onCancel();
       refreshList("refresh");
       showSuccessToast("Fare created successfully");
     } catch (error: any) {
       console.error("Error creating fare:", error);
-      showErrorToast(error|| "Error creating fare");
+      showErrorToast(error || "Error creating fare");
     } finally {
       setLoading(false);
     }
@@ -232,21 +240,21 @@ const FareSkeletonPage = ({
   const handleFareUpdate: SubmitHandler<FareInputs> = async (data) => {
     try {
       setLoading(true);
-      const formData = new URLSearchParams();
-      formData.append("id", String(fareToEdit?.id));
-      formData.append("name", data.name);
-      formData.append("function", fareFunction);
-      formData.append("attributes", JSON.stringify(data.attributes));
-
+      const fareUpdate = {
+        id: fareToEdit?.id,
+        name: data.name,
+        function: fareFunction,
+        attributes: data.attributes,
+      };
       await dispatch(
-        fareupdationApi({ fareId: fareToEdit!.id, formData })
+        fareupdationApi({ fareId: fareToEdit!.id, fareUpdate })
       ).unwrap();
       onCancel();
       refreshList("refresh");
       showSuccessToast("Fare updated successfully");
     } catch (error: any) {
       console.error("Error updating fare:", error);
-      showErrorToast(error|| "Error updating fare");
+      showErrorToast(error || "Error updating fare");
     } finally {
       setLoading(false);
     }
@@ -262,16 +270,14 @@ const FareSkeletonPage = ({
 
     try {
       setLoading(true);
-      const formData = new FormData();
-      formData.append("id", String(fareToEdit.id));
 
-      await dispatch(fareDeleteApi(formData)).unwrap();
+      await dispatch(fareDeleteApi({ fareId: fareToEdit.id })).unwrap();
       onCancel();
       refreshList("refresh");
       showSuccessToast("Fare deleted successfully");
     } catch (error: any) {
       console.error("Error deleting fare:", error);
-      showErrorToast(error|| "Error deleting fare");
+      showErrorToast(error || "Error deleting fare");
     } finally {
       setLoading(false);
     }
@@ -539,7 +545,7 @@ const FareSkeletonPage = ({
             <>
               <Tooltip
                 title={
-                  !canManageFare
+                  !canDeleteFare
                     ? "You don't have permission, contact the admin"
                     : ""
                 }
@@ -548,7 +554,7 @@ const FareSkeletonPage = ({
               >
                 <span
                   style={{
-                    cursor: !canManageFare ? "not-allowed" : "default",
+                    cursor: !canDeleteFare ? "not-allowed" : "default",
                   }}
                 >
                   <Button
@@ -560,7 +566,7 @@ const FareSkeletonPage = ({
                       handleDeleteFare(fareToEdit!.id);
                     }}
                     startIcon={<DeleteIcon />}
-                    disabled={!canManageFare}
+                    disabled={!canDeleteFare}
                     sx={{
                       "&.Mui-disabled": {
                         backgroundColor: "#e57373 !important",
@@ -574,7 +580,7 @@ const FareSkeletonPage = ({
               </Tooltip>
               <Tooltip
                 title={
-                  !canManageFare
+                  !canUpdateFare
                     ? "You don't have permission, contact the admin"
                     : ""
                 }
@@ -583,7 +589,7 @@ const FareSkeletonPage = ({
               >
                 <span
                   style={{
-                    cursor: !canManageFare ? "not-allowed" : "default",
+                    cursor: !canUpdateFare ? "not-allowed" : "default",
                   }}
                 >
                   <Button
@@ -592,7 +598,7 @@ const FareSkeletonPage = ({
                     size="small"
                     onClick={handleSubmit(handleFareUpdate)}
                     startIcon={<EditIcon />}
-                    disabled={!canManageFare}
+                    disabled={!canUpdateFare}
                     sx={{
                       "&.Mui-disabled": {
                         backgroundColor: "#81c784 !important",
