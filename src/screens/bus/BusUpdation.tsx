@@ -47,7 +47,7 @@ const statusOptions = [
 const extractDateOnly = (dateString?: string): string => {
   if (!dateString || dateString === "-") return "";
   try {
-    return new Date(dateString).toISOString().slice(0, 10); 
+    return new Date(dateString).toISOString().slice(0, 10);
   } catch {
     return "";
   }
@@ -152,7 +152,9 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             error={!!errors.registration_number}
             helperText={errors.registration_number?.message}
             size="small"
+            InputProps={{ readOnly: true }}
           />
+
           <TextField
             margin="normal"
             required

@@ -101,50 +101,31 @@ const BusRouteDetailsPage = ({
   const [departureDayOffset, setDepartureDayOffset] = useState<number>(0);
   const lastLandmark = routeLandmarks[routeLandmarks.length - 1];
 
-  const fetchRouteLandmarks = async () => {
+     const fetchRouteLandmarks = async () => {
     setIsLoading(true);
     try {
-      const response = await dispatch(
-        busRouteLandmarkListApi(routeId)
-      ).unwrap();
+      const response = await dispatch(busRouteLandmarkListApi(routeId)).unwrap();
 
       const processedLandmarks = processLandmarks(response);
       const sortedLandmarks = processedLandmarks.sort(
         (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
       );
-      sortedLandmarks.forEach((lm, idx) => {
-        console.log(`Landmark #${idx + 1}:`, {
-          id: lm.id,
-          name: lm.name,
-          landmark_id: lm.landmark_id,
-          sequence_id: lm.sequence_id,
-          arrival_delta: lm.arrival_delta,
-          departure_delta: lm.departure_delta,
-          distance_from_start: lm.distance_from_start,
-          arrivalTime: lm.arrivalTime,
-          departureTime: lm.departureTime,
-        });
-      });
+
       setRouteLandmarks(sortedLandmarks);
       updateParentMapLandmarks(sortedLandmarks);
+      const landmarkIds = sortedLandmarks.map((lm) => Number(lm.landmark_id)).filter(Boolean);
+      const landmarkRes = await dispatch(
+        landmarkListApi({ ids: landmarkIds }) 
+      ).unwrap();
+
+      setLandmarks(landmarkRes.data);
     } catch (error: any) {
-      showErrorToast(error||"Failed to fetch route landmarks");
+      showErrorToast(error || "Failed to fetch route landmarks");
     } finally {
       setIsLoading(false);
     }
   };
-const fetchLandmark = () => {
-    dispatch(landmarkListApi({}))
-      .unwrap()
-      .then((res) => {
-        setLandmarks(res.data);
-      })
-      .catch((err: any) => {
-        console.error("Error fetching landmarks", err);
-      });
-  };
-
-  const processLandmarks = (landmarks: RouteLandmark[]): RouteLandmark[] => {
+const processLandmarks = (landmarks: RouteLandmark[]): RouteLandmark[] => {
     return landmarks
       .sort((a, b) => (a.sequence_id || 0) - (b.sequence_id || 0))
       .map((landmark, index) => ({
@@ -155,7 +136,6 @@ const fetchLandmark = () => {
 
   useEffect(() => {
     fetchRouteLandmarks();
-    fetchLandmark();
   }, [routeId]);
 
   useEffect(() => {
@@ -164,12 +144,16 @@ const fetchLandmark = () => {
     };
   }, []);
 
-  const getLandmarkName = (landmarkId: string) => {
-  console.log('Getting landmark name for ID:', landmarkId);
-  const landmark = landmarks.find((l) => l.id === Number(landmarkId));
-  console.log('Found landmark:', landmark);
-  return landmark ? landmark.name : "Unknown Landmark";
-};
+  useEffect(() => {
+    return () => {
+      onLandmarksUpdate([]);
+    };
+  }, []);
+
+const getLandmarkName = (landmarkId: string | number) => {
+    const landmark = landmarks.find((l) => l.id === Number(landmarkId));
+    return landmark ? landmark.name : "Unknown Landmark";
+  };
   const formatDuration = (seconds: number) => {
     if (isNaN(seconds) || seconds < 0) return "N/A";
     const h = Math.floor(seconds / 3600);

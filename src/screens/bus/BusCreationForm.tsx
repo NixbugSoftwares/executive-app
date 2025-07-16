@@ -19,7 +19,7 @@ import {
 } from "../../common/toastMessageHelper";
 
 interface IAccountFormInputs {
-  companyId: number;
+  company_id: number;
   registrationNumber: string;
   name: string;
   capacity: number;
@@ -51,7 +51,7 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
   } = useForm<IAccountFormInputs>({
     resolver: yupResolver(busCreationSchema),
     defaultValues: {
-      companyId: defaultCompanyId || undefined,
+      company_id: defaultCompanyId || undefined,
     },
   });
 
@@ -67,7 +67,7 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
       };
 
       const formData = new FormData();
-      const companyIdToUse = defaultCompanyId || data.companyId;
+      const companyIdToUse = defaultCompanyId || data.company_id;
       if (companyIdToUse) {
         formData.append("company_id", companyIdToUse.toString());
       }

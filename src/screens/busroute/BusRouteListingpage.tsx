@@ -82,8 +82,11 @@ const BusRouteListing = () => {
   const [page, setPage] = useState(0);
   const [hasNextPage, setHasNextPage] = useState(false);
   const rowsPerPage = 10;
-  const canManageRoutes = useSelector((state: RootState) =>
-    state.app.permissions.includes("manage_route")
+  const canCreateRoutes = useSelector((state: RootState) =>
+    state.app.permissions.includes("create_route")
+  );
+  const canDeleteRoutes = useSelector((state: RootState) =>
+    state.app.permissions.includes("delete_route")
   );
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -298,7 +301,6 @@ const BusRouteListing = () => {
             routeName={selectedRoute.name}
             routeStartingTime={`1970-01-01T${selectedRoute.starting_time}`}
             refreshList={(value: any) => refreshList(value)}
-            routeManagePermission={canManageRoutes}
             onBack={() => {
               setSelectedRoute(null);
               setMapLandmarks([]);
@@ -355,7 +357,7 @@ const BusRouteListing = () => {
             >
               <Tooltip
                 title={
-                  !canManageRoutes
+                  !canCreateRoutes
                     ? "You don't have permission, contact the admin"
                     : "click to open the route creation form"
                 }
@@ -363,7 +365,7 @@ const BusRouteListing = () => {
               >
                 <span
                   style={{
-                    cursor: !canManageRoutes ? "not-allowed" : "default",
+                    cursor: !canCreateRoutes ? "not-allowed" : "default",
                   }}
                 >
                   <Button
@@ -372,7 +374,7 @@ const BusRouteListing = () => {
                       mr: 2,
                       mb: 2,
                       display: "block",
-                      backgroundColor: !canManageRoutes
+                      backgroundColor: !canCreateRoutes
                         ? "#6c87b7 !important"
                         : "#00008B",
                       color: "white",
@@ -383,7 +385,7 @@ const BusRouteListing = () => {
                     }}
                     variant="contained"
                     onClick={toggleCreationForm}
-                    disabled={!canManageRoutes}
+                    disabled={!canCreateRoutes}
                   >
                     Add New Routes
                   </Button>
@@ -484,7 +486,7 @@ const BusRouteListing = () => {
                         <TableCell sx={{ textAlign: "center", boxShadow: 1 }}>
                           <Tooltip
                             title={
-                              !canManageRoutes
+                              !canDeleteRoutes
                                 ? "You don't have permission, contact the admin"
                                 : " DELETE the route"
                             }
@@ -492,7 +494,7 @@ const BusRouteListing = () => {
                           >
                             <span
                               style={{
-                                cursor: !canManageRoutes
+                                cursor: !canDeleteRoutes
                                   ? "not-allowed"
                                   : "default",
                               }}
@@ -502,7 +504,7 @@ const BusRouteListing = () => {
                                 color="error"
                                 size="small"
                                 startIcon={<DeleteIcon />}
-                                disabled={!canManageRoutes}
+                                disabled={!canDeleteRoutes}
                                 onClick={() => handleDeleteClick(row)}
                                 sx={{
                                   ml: "auto",
@@ -515,12 +517,12 @@ const BusRouteListing = () => {
                                   borderRadius: 2,
                                   fontWeight: 500,
                                   boxShadow: "none",
-                                  backgroundColor: !canManageRoutes
+                                  backgroundColor: !canDeleteRoutes
                                     ? "#f46a6a"
                                     : "#d32f2f",
                                   color: "#fff",
                                   "&:hover": {
-                                    backgroundColor: !canManageRoutes
+                                    backgroundColor: !canDeleteRoutes
                                       ? "#f46a6a"
                                       : "#b71c1c",
                                     boxShadow: "0 2px 5px rgba(0,0,0,0.2)",

@@ -23,7 +23,9 @@ import { useAppDispatch } from "../../store/Hooks";
 import { busDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import BusUpdateForm from "./BusUpdation";
-import { showSuccessToast } from "../../common/toastMessageHelper";
+import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
 
 interface BusCardProps {
   bus: {
@@ -43,7 +45,6 @@ interface BusCardProps {
   onUpdate: () => void;
   onDelete: (id: number) => void;
   onBack: () => void;
-  canManageBus: boolean;
   onCloseDetailCard: () => void;
 }
 
@@ -52,13 +53,17 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
   refreshList,
   onDelete,
   onBack,
-  canManageBus,
   onCloseDetailCard,
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const dispatch = useAppDispatch();
-  console.log("bus", bus);
+  const canUpdateBus = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_bus")
+  );
+  const canDeleteBus = useSelector((state: RootState) =>
+    state.app.permissions.includes("delete_bus")
+  );
 
   const formatUTCDateToLocal = (dateString: string | null): string => {
     if (!dateString || dateString.trim() === "") return "Not added yet";
@@ -85,7 +90,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
       refreshList("refresh");
     } catch (error: any) {
       console.error("Delete error:", error);
-      showSuccessToast(error || "Failed to delete bus. Please try again.");
+      showErrorToast(error || "Failed to delete bus. Please try again.");
     }
   };
 
@@ -200,7 +205,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             {/* Update Button with Tooltip */}
             <Tooltip
               title={
-                !canManageBus
+                !canUpdateBus
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -209,7 +214,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             >
               <span
                 style={{
-                  cursor: !canManageBus ? "not-allowed" : "default",
+                  cursor: !canUpdateBus ? "not-allowed" : "default",
                 }}
               >
                 <Button
@@ -217,7 +222,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
                   color="success"
                   size="small"
                   onClick={() => setUpdateFormOpen(true)}
-                  disabled={!canManageBus}
+                  disabled={!canUpdateBus}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#81c784 !important",
@@ -233,7 +238,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             {/* Delete Button with Tooltip */}
             <Tooltip
               title={
-                !canManageBus
+                !canDeleteBus
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -242,7 +247,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             >
               <span
                 style={{
-                  cursor: !canManageBus ? "not-allowed" : "default",
+                  cursor: !canDeleteBus ? "not-allowed" : "default",
                 }}
               >
                 <Button
@@ -251,7 +256,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
                   size="small"
                   onClick={() => setDeleteConfirmOpen(true)}
                   startIcon={<DeleteIcon />}
-                  disabled={!canManageBus}
+                  disabled={!canDeleteBus}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#e57373 !important",

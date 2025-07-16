@@ -45,8 +45,8 @@ const BusListingTable = () => {
   const [page, setPage] = useState(0);
   const [hasNextPage, setHasNextPage] = useState(false);
   const rowsPerPage = 10;
-  const canManageBus = useSelector((state: RootState) =>
-    state.app.permissions.includes("manage_company")
+  const canCreateBus = useSelector((state: RootState) =>
+    state.app.permissions.includes("create_bus")
   );
   const [openCreateModal, setOpenCreateModal] = useState(false);
 
@@ -164,7 +164,7 @@ const BusListingTable = () => {
       >
         <Tooltip
           title={
-            !canManageBus
+            !canCreateBus
               ? "You don't have permission, contact the admin"
               : "Click to open the Bus creation form"
           }
@@ -175,15 +175,15 @@ const BusListingTable = () => {
               ml: "auto",
               mr: 2,
               mb: 2,
-              backgroundColor: !canManageBus ? "#6c87b7 !important" : "#00008B",
+              backgroundColor: !canCreateBus ? "#6c87b7 !important" : "#00008B",
               color: "white",
               display: "flex",
               justifyContent: "flex-end",
             }}
             variant="contained"
             onClick={() => setOpenCreateModal(true)}
-            disabled={!canManageBus}
-            style={{ cursor: !canManageBus ? "not-allowed" : "pointer" }}
+            disabled={!canCreateBus}
+            style={{ cursor: !canCreateBus ? "not-allowed" : "pointer" }}
           >
             Add New Bus
           </Button>
@@ -357,7 +357,6 @@ const BusListingTable = () => {
             onDelete={() => {}}
             onBack={() => setSelectedBus(null)}
             refreshList={(value: any) => refreshList(value)}
-            canManageBus={canManageBus}
             onCloseDetailCard={() => setSelectedBus(null)}
           />
         </Box>

@@ -62,7 +62,7 @@ interface LandmarkListParams {
   limit?: number;
   offset?: number;
   id?: number;
-  ids?:[number];
+  ids?: number[];
   name?: string;
   location?: string;
   type?: string;
@@ -1380,7 +1380,7 @@ export const busDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/company/bus",
+        "company/bus",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -1389,7 +1389,7 @@ export const busDeleteApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Account deletion failed"
+        error.detail || error.message || error || "Bus deletion failed"
       );
     }
   }

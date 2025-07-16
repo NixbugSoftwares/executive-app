@@ -286,7 +286,7 @@ const OperatorListingTable = () => {
             gap: 2,
             mb: 2,
             mt: 1,
-            justifyContent: "space-between",
+            justifyContent: "right",
           }}
         >
           <Tooltip
