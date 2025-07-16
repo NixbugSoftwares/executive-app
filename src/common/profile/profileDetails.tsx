@@ -90,13 +90,13 @@ const ProfilePage: React.FC = () => {
   const getGender = (value: number): string => {
     switch (value) {
       case 1:
-        return "Female";
+        return " Other";
       case 2:
-        return "Male";
+        return "Female";
       case 3:
-        return "Transgender";
+        return "Male";
       default:
-        return "Other";
+        return "Transgender";
     }
   };
   const getStatus = (value: number): string => {

@@ -34,20 +34,21 @@ import {
 import FormModal from "../../common/formModal";
 import AccountUpdateForm from "./UpdationForm";
 import { Operator } from "../../types/type";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
 interface AccountCardProps {
   operator: Operator;
   onUpdate: () => void;
   onDelete: (id: number) => void;
   onBack: () => void;
   refreshList: (value: any) => void;
-  canManageCompany: boolean;
   onCloseDetailCard: () => void;
 }
 const genderOptions = [
-  { label: "Female", value: 1 },
-  { label: "Male", value: 2 },
-  { label: "Transgender", value: 3 },
-  { label: "Other", value: 4 },
+  { label: "Other", value: 1 },
+  { label: "Female", value: 2 },
+  { label: "Male", value: 3 },
+  { label: "Transgender", value: 4 },
 ];
 
 const statusOptions = [
@@ -60,15 +61,17 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
   refreshList,
   onDelete,
   onBack,
-  canManageCompany,
   onCloseDetailCard,
 }) => {
-  console.log("OperatorDetailsCard operator:", operator);
-  console.log("company_id:", operator.company_id);
-  
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const dispatch = useAppDispatch();
   const [updateFormOpen, setUpdateFormOpen] = useState(false); 
+    const canUpdateOperator = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_operator")
+  );
+  const canDeleteOperator = useSelector((state: RootState) =>
+    state.app.permissions.includes("delete_operator")
+  );
    const getGenderValue = (genderText: string): number | undefined => {
     const option = genderOptions.find((opt) => opt.label === genderText);
     return option?.value;
@@ -211,7 +214,7 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
             {/* Update Button with Tooltip */}
             <Tooltip
               title={
-                !canManageCompany 
+                !canUpdateOperator 
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -220,7 +223,7 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
             >
               <span
                 style={{
-                  cursor: !canManageCompany ? "not-allowed" : "default",
+                  cursor: !canUpdateOperator ? "not-allowed" : "default",
                 }}
               >
                 <Button
@@ -231,7 +234,7 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
                     setUpdateFormOpen(true);
                   }}
                   startIcon={<EditIcon />}
-                  disabled={!canManageCompany }
+                  disabled={!canUpdateOperator }
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#81c784 !important",
@@ -247,7 +250,7 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
            
             <Tooltip
               title={
-                !canManageCompany
+                !canDeleteOperator
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -256,7 +259,7 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
             >
               <span
                 style={{
-                  cursor: !canManageCompany ? "not-allowed" : "default",
+                  cursor: !canDeleteOperator ? "not-allowed" : "default",
                 }}
               >
                 <Button
@@ -265,7 +268,7 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
                   size="small"
                   onClick={() => setDeleteConfirmOpen(true)}
                   startIcon={<DeleteIcon />}
-                  disabled={!canManageCompany}
+                  disabled={!canDeleteOperator}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#e57373 !important",

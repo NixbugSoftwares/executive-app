@@ -88,8 +88,8 @@ const OperatorListingTable = () => {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [openCreateModal, setOpenCreateModal] = useState(false);
 
-  const canManageCompany = useSelector((state: RootState) =>
-    state.app.permissions.includes("manage_company")
+  const canCreateOperator = useSelector((state: RootState) =>
+    state.app.permissions.includes("create_operator")
   );
   const fetchAccounts = useCallback((pageNumber: number, searchParams = {}) => {
     const offset = pageNumber * rowsPerPage;
@@ -112,12 +112,12 @@ const OperatorListingTable = () => {
           password: "",
           gender:
             operator.gender === 1
-              ? "Female"
+              ? "Other"
               : operator.gender === 2
-              ? "Male"
+              ? "Female"
               : operator.gender === 3
-              ? "Transgender"
-              : "Other",
+              ? "Male"
+              : "Transgender",
           email_id: operator.email_id,
           phoneNumber: operator.phone_number || "",
           status: operator.status === 1 ? "Active" : "Suspended",
@@ -218,7 +218,7 @@ const OperatorListingTable = () => {
   };
   const handleAddOperatorClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!canManageCompany) return;
+    if (!canCreateOperator) return;
 
     if (filterCompanyId) {
       checkRolesExist();
@@ -291,14 +291,14 @@ const OperatorListingTable = () => {
         >
           <Tooltip
             title={
-              !canManageCompany
+              !canCreateOperator
                 ? "You don't have permission, contact the admin"
                 : "Click to open the operator creation form"
             }
             placement="top-end"
           >
             <span
-              style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}
+              style={{ cursor: !canCreateOperator ? "not-allowed" : "default" }}
             >
               <Button
                 sx={{
@@ -306,7 +306,7 @@ const OperatorListingTable = () => {
                   mr: 2,
                   mb: 2,
                   display: "block",
-                  backgroundColor: !canManageCompany
+                  backgroundColor: !canCreateOperator
                     ? "#6c87b7 !important"
                     : "#00008B",
                   color: "white",
@@ -317,7 +317,7 @@ const OperatorListingTable = () => {
                 }}
                 variant="contained"
                 onClick={handleAddOperatorClick}
-                disabled={!canManageCompany}
+                disabled={!canCreateOperator}
               >
                 Add Operator
               </Button>
@@ -515,7 +515,6 @@ const OperatorListingTable = () => {
             onDelete={() => {}}
             onBack={() => setSelectedOperator(null)}
             refreshList={refreshList}
-            canManageCompany={canManageCompany}
             onCloseDetailCard={handleCloseDetailCard}
           />
         </Box>

@@ -53,11 +53,11 @@ interface IOption {
   value: number;
 }
 
-const genderOptions: IOption[] = [
-  { label: "Female", value: 1 },
-  { label: "Male", value: 2 },
-  { label: "Transgender", value: 3 },
-  { label: "Other", value: 4 },
+const genderOptions = [
+  { label: "Other", value: 1 },
+  { label: "Female", value: 2 },
+  { label: "Male", value: 3 },
+  { label: "Transgender", value: 4 },
 ];
 
 const statusOptions: IOption[] = [
@@ -90,12 +90,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
   const handleTogglePassword = () => {
     setShowPassword((prev) => !prev);
   };
-  console.log("operatorData>>>>>>>>>>>>>>>>>>>>>>>>>", operatorData);
-  console.log("operatorId>>>>>>>>>>>>>>>>>>>>>>>>>", operatorId);
-  console.log("company_id>>>>>>>>>>>>>>>>>>>>>>>>>", company_id);
-  
   useEffect(() => {
-    // Fetch available roles
     dispatch(operatorRoleListApi({ company_id }))
       .unwrap()
       .then((res: { data: any[] }) => {
@@ -148,7 +143,10 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       if ( data.status) {
         formData.append("status", data.status.toString());
       }
-
+ console.log("📦 FormData being sent:");
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}: ${value}`);
+    }
       // Update operator
       const operatorResponse = await dispatch(
         operatorUpdationApi({ operatorId, formData })

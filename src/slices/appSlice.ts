@@ -1013,7 +1013,7 @@ export const operatorListApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "get",
-        "company/operator",
+        "company/account",
         queryParams,
         true,
         "application/json"
@@ -1036,10 +1036,10 @@ export const operatorCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "company/operator",
+        "company/account",
         data,
         true,
-        "application/x-www-form-urlencoded" // Use the correct content type for form data"
+        "application/x-www-form-urlencoded" 
       );
       return response;
     } catch (error: any) {
@@ -1060,7 +1060,7 @@ export const operatorUpdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        `company/operator`,
+        `company/account`,
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -1082,7 +1082,7 @@ export const operatorDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "company/operator",
+        "company/account",
         data,
         true,
         "multipart/form-data"
@@ -1213,15 +1213,14 @@ export const fetchOperatorRoleMappingApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "get",
-        "company/operator/role",
+        "company/account/role",
         { operator_id },
         true,
         "application/json"
       );
 
-      // Handle case where response is an array (like your Postman example)
       if (Array.isArray(response) && response.length > 0) {
-        return response[0]; // Return first mapping (assuming one operator has one role)
+        return response[0]; 
       }
       return response;
     } catch (error: any) {
@@ -1242,12 +1241,11 @@ export const operatorRoleAssignApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "company/operator/role",
+        "company/account/role",
         { operator_id, role_id },
         true,
         "multipart/form-data"
       );
-      console.log("slice Responseyyyyyy==================>", response);
 
       return response;
     } catch (error: any) {
@@ -1272,7 +1270,7 @@ export const operatorRoleAssignUpdateApi = createAsyncThunk(
 
       const response = await commonApi.apiCall(
         "patch",
-        "company/operator/role",
+        "company/account/role",
         formData,
         true,
         "application/x-www-form-urlencoded" // Use the correct content type
