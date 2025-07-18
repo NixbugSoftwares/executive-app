@@ -183,6 +183,7 @@ export interface Schedule{
 
 export interface Duty{
   id:number
+  company_id:number
   operator_id:number
   service_id:number
   operatorName:string

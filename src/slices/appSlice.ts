@@ -135,6 +135,7 @@ interface ServiceListParams {
   offset?: number;
   company_id?: number;
   id?: string;
+  name?: string;
   ticket_mode?: number;
   status?: number;
   status_list?: number[];
@@ -1614,7 +1615,7 @@ export const routeLandmarkUpdationApi = createAsyncThunk(
 export const serviceListingApi = createAsyncThunk(
   "/service",
   async (params: ServiceListParams, { rejectWithValue }) => {
-    const { limit, offset, id, company_id,  ticket_mode, status, status_list  } =
+    const { limit, offset, id, company_id, name,  ticket_mode, status, status_list  } =
       params;
 
     const queryParams = {
@@ -1622,6 +1623,7 @@ export const serviceListingApi = createAsyncThunk(
       offset,
       ...(id && { id }),
       ...(company_id && { company_id }),
+      ...(name && { name }),
       ...(ticket_mode && { ticket_mode }),
       ...(status && { status }),
       ...(status_list && { status_list }),
@@ -1950,7 +1952,7 @@ export const paperTicketListingApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "get",
-        "company/service/paper_ticket",
+        "company/service/ticket/paper",
         queryParams,
         true,
         "application/json"

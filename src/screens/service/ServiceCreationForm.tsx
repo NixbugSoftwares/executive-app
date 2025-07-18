@@ -81,7 +81,7 @@ const ServiceCreationForm: React.FC<IOperatorCreationFormProps> = ({
     defaultValues: {
       ticket_mode: "1",
       created_mode: "1",
-      starting_at: new Date().toISOString().split("T")[0], // Set default to today
+      starting_at: new Date().toISOString().split("T")[0], 
     },
   });
 
@@ -141,13 +141,12 @@ const ServiceCreationForm: React.FC<IOperatorCreationFormProps> = ({
     setLoading(true);
     const offset = pageNumber * rowsPerPage;
     try {
-      // Single API call to fetch all relevant fares
       const res = await dispatch(
         fareListApi({
           limit: rowsPerPage,
           offset,
           name: searchText,
-          company_id: companyId, // Just pass company_id to get both company and local fares
+          company_id: companyId, 
         })
       ).unwrap();
 
@@ -279,8 +278,6 @@ const ServiceCreationForm: React.FC<IOperatorCreationFormProps> = ({
       }
     }
   };
-
-  // Get today's date in YYYY-MM-DD format for date validation
   const today = new Date().toISOString().split("T")[0];
 
   return (

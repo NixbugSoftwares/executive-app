@@ -1150,7 +1150,7 @@ const getLandmarkName = (landmarkId: string | number) => {
               <Typography>
                 Landmark: {getLandmarkName(editingLandmark.landmark_id)}
               </Typography>
-              <Typography>ID: {editingLandmark.id}</Typography>
+              <Typography>ID: {editingLandmark.landmark_id}</Typography>
               <Box mb={2}>
                 <Alert severity="info">
                   1. For the starting landmark, arrival and departure time must

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import {
   Box,
@@ -18,10 +18,7 @@ import {
   fareListApi,
   busListApi,
 } from "../../slices/appSlice";
-import {
-  showErrorToast,
-  showSuccessToast,
-} from "../../common/toastMessageHelper";
+import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
 import { Schedule } from "../../types/type";
 
 interface IOperatorCreationFormProps {
@@ -87,12 +84,7 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
 
   const rowsPerPage = 10;
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    formState: { errors },
-  } = useForm<Schedule>({
+  const { register, handleSubmit, control, formState: { errors } } = useForm<Schedule>({
     defaultValues: {
       ticketing_mode: 1,
       triggering_mode: 1,
@@ -100,123 +92,137 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
     },
   });
 
-  const fetchBusList = useCallback(
-    (pageNumber: number, searchText = "") => {
+  
+    const memoizedBusList = useMemo(
+      () => dropdownData.busList,
+      [dropdownData.busList]
+    );
+    const memoizedRouteList = useMemo(
+      () => dropdownData.routeList,
+      [dropdownData.routeList]
+    );
+    const memoizedFareList = useMemo(
+      () => dropdownData.fareList,
+      [dropdownData.fareList]
+    );
+  
+    const fetchBusList = useCallback(
+      (pageNumber: number, searchText = "") => {
+        const offset = pageNumber * rowsPerPage;
+        dispatch(
+          busListApi({
+            limit: rowsPerPage,
+            offset,
+            name: searchText,
+            company_id: companyId,
+          })
+        )
+          .unwrap()
+          .then((res) => {
+            const items = res.data || [];
+            const formattedBusList = items.map((bus: any) => ({
+              id: bus.id,
+              name: bus.name ?? "-",
+            }));
+            setDropdownData((prev) => ({
+              ...prev,
+              busList:
+                pageNumber === 0
+                  ? formattedBusList
+                  : [...prev.busList, ...formattedBusList],
+            }));
+            setHasMore((prev) => ({
+              ...prev,
+              bus: items.length === rowsPerPage,
+            }));
+          })
+          .catch((error) => {
+            showErrorToast(error.message || "Failed to fetch Bus list");
+          });
+      },
+      [dispatch, companyId]
+    );
+  
+    const fetchFareList = useCallback(
+    async (pageNumber: number, searchText = "") => {
       setLoading(true);
       const offset = pageNumber * rowsPerPage;
-      dispatch(
-        busListApi({
-          limit: rowsPerPage,
-          offset,
-          name: searchText,
-          company_id: companyId,
-        })
-      )
-        .unwrap()
-        .then((res) => {
-          const items = res.data || [];
-          const formattedBusList = items.map((bus: any) => ({
-            id: bus.id,
-            name: bus.name ?? "-",
-          }));
-          setDropdownData((prev) => ({
-            ...prev,
-            busList:
-              pageNumber === 0
-                ? formattedBusList
-                : [...prev.busList, ...formattedBusList],
-          }));
-        })
-        .catch((error) => {
-          showErrorToast(error.message || "Failed to fetch Bus list");
-        })
-        .finally(() => setLoading(false));
+      try {
+        const res = await dispatch(
+          fareListApi({
+            limit: rowsPerPage,
+            offset,
+            name: searchText,
+            company_id: companyId, 
+          })
+        ).unwrap();
+  
+        const fares = res.data || [];
+        
+        const formattedFareList = fares.map((fare: any) => ({
+          id: fare.id,
+          name: fare.name ?? "-",
+        }));
+  
+        setDropdownData((prev) => ({
+          ...prev,
+          fareList:
+            pageNumber === 0
+              ? formattedFareList
+              : [...prev.fareList, ...formattedFareList],
+        }));
+      } catch (error: any) {
+        showErrorToast(error?.message || "Failed to fetch Fare list");
+      } finally {
+        setLoading(false);
+      }
     },
-    [dispatch]
+    [dispatch, companyId, rowsPerPage]
   );
-
-  const fetchFareList = useCallback(
-  async (pageNumber: number, searchText = "") => {
-    setLoading(true);
-    const offset = pageNumber * rowsPerPage;
-    try {
-      // Single API call to fetch all relevant fares
-      const res = await dispatch(
-        fareListApi({
-          limit: rowsPerPage,
-          offset,
-          name: searchText,
-          company_id: companyId, // Just pass company_id to get both company and local fares
-        })
-      ).unwrap();
-
-      const fares = res.data || [];
-      
-      const formattedFareList = fares.map((fare: any) => ({
-        id: fare.id,
-        name: fare.name ?? "-",
-      }));
-
-      setDropdownData((prev) => ({
-        ...prev,
-        fareList:
-          pageNumber === 0
-            ? formattedFareList
-            : [...prev.fareList, ...formattedFareList],
-      }));
-    } catch (error: any) {
-      showErrorToast(error?.message || "Failed to fetch Fare list");
-    } finally {
-      setLoading(false);
-    }
-  },
-  [dispatch, companyId, rowsPerPage]
-);
-
-  const fetchRouteList = useCallback(
-    (pageNumber: number, searchText = "") => {
-      setLoading(true);
-      const offset = pageNumber * rowsPerPage;
-      dispatch(
-        busRouteListApi({
-          limit: rowsPerPage,
-          offset,
-          name: searchText,
-          company_id: companyId,
-        })
-      )
-        .unwrap()
-        .then((res) => {
-          const items = res.data || [];
-          const formattedList = items.map((item: any) => ({
-            id: item.id,
-            name: item.name ?? "-",
-          }));
-          setDropdownData((prev) => ({
-            ...prev,
-            routeList:
-              pageNumber === 0
-                ? formattedList
-                : [...prev.routeList, ...formattedList],
-          }));
-          setHasMore((prev) => ({
-            ...prev,
-            route: items.length === rowsPerPage,
-          }));
-        })
-        .catch((error) => {
-          showErrorToast(error.message || "Failed to fetch Route list");
-        })
-        .finally(() => setLoading(false));
-    },
-    [dispatch]
-  );
-
-  useEffect(() => {
-    fetchBusList(0);
-    fetchFareList(0);
-    fetchRouteList(0);
-  }, [fetchBusList, fetchFareList, fetchRouteList]);
+  
+    const fetchRouteList = useCallback(
+      (pageNumber: number, searchText = "") => {
+        const offset = pageNumber * rowsPerPage;
+        dispatch(
+          busRouteListApi({
+            limit: rowsPerPage,
+            offset,
+            name: searchText,
+            company_id: companyId,
+          })
+        )
+          .unwrap()
+          .then((res) => {
+            const items = res.data || [];
+            const formattedList = items.map((item: any) => ({
+              id: item.id,
+              name: item.name ?? "-",
+            }));
+            setDropdownData((prev) => ({
+              ...prev,
+              routeList:
+                pageNumber === 0
+                  ? formattedList
+                  : [...prev.routeList, ...formattedList],
+            }));
+            setHasMore((prev) => ({
+              ...prev,
+              route: items.length === rowsPerPage,
+            }));
+          })
+          .catch((error: any) => {
+            showErrorToast(error || "Failed to fetch Route list");
+          });
+      },
+      [dispatch, companyId]
+    );
+  
+    useEffect(() => {
+      fetchBusList(0);
+      fetchFareList(0);
+      fetchRouteList(0);
+    }, [fetchBusList, fetchFareList, fetchRouteList]);
+  
 
   const handleAccountCreation: SubmitHandler<Schedule> = async (data) => {
     try {
@@ -233,61 +239,109 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
         frequency: data.frequency,
       };
 
-      const response = await dispatch(
-        scheduleCreationApi(scheduleForm)
-      ).unwrap();
+      const response = await dispatch(scheduleCreationApi(scheduleForm)).unwrap();
 
       if (response?.id) {
-        showSuccessToast("schedule created successfully!");
+        showSuccessToast("Schedule created successfully!");
         refreshList("refresh");
         onClose();
       } else {
-        showErrorToast("schedule creation failed. Please try again.");
+        showErrorToast("Schedule creation failed. Please try again.");
       }
-    } catch (error:any) {
-      showErrorToast(error || "Something went wrong. Please try again.");
+    } catch (error: any) {
+      showErrorToast(error?.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleScroll = (
-    event: React.UIEvent<HTMLElement>,
-    type: "bus" | "route" | "fare"
-  ) => {
-    const element = event.currentTarget;
-    if (
-      element.scrollHeight - element.scrollTop === element.clientHeight &&
-      hasMore[type]
-    ) {
-      const newPage = page[type] + 1;
-      setPage((prev) => ({ ...prev, [type]: newPage }));
+  const handleScroll = useCallback(
+    (event: React.UIEvent<HTMLElement>, type: "bus" | "route" | "fare") => {
+      const element = event.currentTarget;
+      if (
+        element.scrollHeight - element.scrollTop === element.clientHeight &&
+        hasMore[type]
+      ) {
+        const newPage = page[type] + 1;
+        setPage(prev => ({ ...prev, [type]: newPage }));
 
-      switch (type) {
-        case "bus":
-          fetchBusList(newPage, searchParams.bus);
-          break;
-        case "route":
-          fetchRouteList(newPage, searchParams.route);
-          break;
-        case "fare":
-          fetchFareList(newPage, searchParams.fare);
-          break;
+        switch (type) {
+          case "bus":
+            fetchBusList(newPage, searchParams.bus);
+            break;
+          case "route":
+            fetchRouteList(newPage, searchParams.route);
+            break;
+          case "fare":
+            fetchFareList(newPage, searchParams.fare);
+            break;
+        }
       }
-    }
-  };
+    },
+    [fetchBusList, fetchRouteList, fetchFareList, hasMore, page, searchParams]
+  );
+
+  const renderAutocomplete = (
+    name: keyof Schedule,
+    label: string,
+    options: DropdownItem[],
+    type: "bus" | "route" | "fare"
+  ) => (
+    <Controller
+      name={name}
+      control={control}
+      rules={{ required: `${label} is required` }}
+      render={({ field }) => (
+        <Autocomplete
+          options={options}
+          getOptionLabel={(option) => option.name}
+          isOptionEqualToValue={(option, value) => option.id === value.id}
+          value={options.find((item) => item.id === field.value) || null}
+          onChange={(_, newValue) => field.onChange(newValue?.id)}
+          onInputChange={(_, newInputValue) => {
+            if (type === 'bus' || type === 'route' || type === 'fare') {
+              setSearchParams(prev => ({ ...prev, [type]: newInputValue }));
+              setPage(prev => ({ ...prev, [type]: 0 }));
+              type === 'bus' 
+                ? fetchBusList(0, newInputValue)
+                : type === 'route'
+                ? fetchRouteList(0, newInputValue)
+                : fetchFareList(0, newInputValue);
+            }
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label={`Select ${label}`}
+              margin="normal"
+              error={!!errors[name]}
+              helperText={errors[name]?.message}
+              required
+            />
+          )}
+          renderOption={(props, option) => (
+            <li {...props} key={option.id}>
+              {option.name}
+            </li>
+          )}
+          ListboxProps={{
+            onScroll: (event) => handleScroll(event, type),
+            style: { maxHeight: 200, overflow: "auto" },
+          }}
+        />
+      )}
+    />
+  );
 
   return (
     <Container component="main" maxWidth="xs">
       <CssBaseline />
-      <Box
-        sx={{
-          marginTop: 8,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
+      <Box sx={{
+        marginTop: 8,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+      }}>
         <Typography component="h1" variant="h5">
           Schedule Creation
         </Typography>
@@ -308,126 +362,10 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
             size="small"
           />
 
-          <Controller
-            name="route_id"
-            control={control}
-            rules={{ required: "Route is required" }}
-            render={({ field }) => (
-              <Autocomplete
-                options={dropdownData.routeList}
-                getOptionLabel={(option) => option.name}
-                value={
-                  dropdownData.routeList.find(
-                    (item) => item.id === field.value
-                  ) || null
-                }
-                onChange={(_, newValue) => field.onChange(newValue?.id)}
-                onInputChange={(_, newInputValue) => {
-                  setSearchParams((prev) => ({
-                    ...prev,
-                    route: newInputValue,
-                  }));
-                  setPage((prev) => ({ ...prev, route: 0 }));
-                  fetchRouteList(0, newInputValue);
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Select Route"
-                    margin="normal"
-                    error={!!errors.route_id}
-                    helperText={errors.route_id?.message}
-                    required
-                    InputProps={{
-                      ...params.InputProps,
-                    }}
-                  />
-                )}
-                ListboxProps={{
-                  onScroll: (event) => handleScroll(event, "route"),
-                  style: { maxHeight: 200, overflow: "auto" },
-                }}
-              />
-            )}
-          />
+          {renderAutocomplete("route_id", "Route", memoizedRouteList, "route")}
+          {renderAutocomplete("bus_id", "Bus", memoizedBusList, "bus")}
+          {renderAutocomplete("fare_id", "Fare", memoizedFareList, "fare")}
 
-          <Controller
-            name="bus_id"
-            control={control}
-            rules={{ required: "Bus is required" }}
-            render={({ field }) => (
-              <Autocomplete
-                options={dropdownData.busList}
-                getOptionLabel={(option) => option.name}
-                value={
-                  dropdownData.busList.find(
-                    (item) => item.id === field.value
-                  ) || null
-                }
-                onChange={(_, newValue) => field.onChange(newValue?.id)}
-                onInputChange={(_, newInputValue) => {
-                  setSearchParams((prev) => ({ ...prev, bus: newInputValue }));
-                  fetchBusList(0, newInputValue);
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Select Bus"
-                    margin="normal"
-                    error={!!errors.bus_id}
-                    helperText={errors.bus_id?.message}
-                    required
-                    InputProps={{
-                      ...params.InputProps,
-                    }}
-                  />
-                )}
-                ListboxProps={{
-                  onScroll: (event) => handleScroll(event, "bus"),
-                  style: { maxHeight: 200, overflow: "auto" },
-                }}
-              />
-            )}
-          />
-
-          <Controller
-            name="fare_id"
-            control={control}
-            rules={{ required: "Fare is required" }}
-            render={({ field }) => (
-              <Autocomplete
-                options={dropdownData.fareList}
-                getOptionLabel={(option) => option.name}
-                value={
-                  dropdownData.fareList.find(
-                    (item) => item.id === field.value
-                  ) || null
-                }
-                onChange={(_, newValue) => field.onChange(newValue?.id)}
-                onInputChange={(_, newInputValue) => {
-                  setSearchParams((prev) => ({ ...prev, fare: newInputValue }));
-                  fetchFareList(0, newInputValue);
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Select Fare"
-                    margin="normal"
-                    error={!!errors.fare_id}
-                    helperText={errors.fare_id?.message}
-                    required
-                    InputProps={{
-                      ...params.InputProps,
-                    }}
-                  />
-                )}
-                ListboxProps={{
-                  onScroll: (event) => handleScroll(event, "fare"),
-                  style: { maxHeight: 200, overflow: "auto" },
-                }}
-              />
-            )}
-          />
           <Controller
             name="frequency"
             control={control}
@@ -519,4 +457,4 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
   );
 };
 
-export default ScheduleCreationForm;
+export default React.memo(ScheduleCreationForm);

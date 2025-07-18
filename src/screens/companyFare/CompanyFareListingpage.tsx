@@ -110,7 +110,6 @@ const CompanyFareListingPage = () => {
         setFareList(formattedFares);
         setHasNextPage(allFares.length === rowsPerPage);
       } catch (error: any) {
-        console.error("Error fetching fares:", error);
         showErrorToast(error || "Failed to fetch fare list. Please try again.");
       } finally {
         setIsLoading(false);

@@ -21,7 +21,9 @@ import { useAppDispatch } from "../../store/Hooks";
 import { dutyDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import DutyUpdateForm from "./UpdationForm";
-import { showSuccessToast } from "../../common/toastMessageHelper";
+import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
+import { RootState } from "../../store/Store";
+import { useSelector } from "react-redux";
 
 interface DutyCardProps {
   duty: {
@@ -37,7 +39,6 @@ interface DutyCardProps {
   onUpdate: () => void;
   onDelete: (id: number) => void;
   onBack: () => void;
-  canManageDuty: boolean;
   onCloseDetailCard: () => void;
   companyId: number;
 }
@@ -64,11 +65,6 @@ const statusMap: Record<string, { label: string; color: string; bg: string }> =
       bg: "rgba(158, 158, 158, 0.12)",
     }, // Grey
   };
-const formatUTCDateToLocal = (dateString: string | null): string => {
-  if (!dateString || dateString.trim() === "") return "Not added yet";
-  const date = new Date(dateString);
-  return isNaN(date.getTime()) ? "Not added yet" : date.toLocaleDateString();
-};
 const typeMap: Record<string, { label: string; color: string; bg: string }> = {
   Driver: { label: "Driver", color: "#388E3C", bg: "rgba(76, 175, 80, 0.12)" }, // Green
   Conductor: {
@@ -84,7 +80,6 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
   refreshList,
   onDelete,
   onBack,
-  canManageDuty,
   onCloseDetailCard,
   companyId,
 }) => {
@@ -92,10 +87,33 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const dispatch = useAppDispatch();
   console.log("duty()()()()()()(()()", duty);
+const canUpdateDuty = useSelector((state: RootState) =>
+    state.app.permissions.includes("create_duty")
+  );
+  const canDeleteDuty = useSelector((state: RootState) =>
+    state.app.permissions.includes("create_duty")
+  );
+  const deleteDutyPermission =
+    canDeleteDuty && (duty.status === "Assigned" || duty.status === "Finished");
 
-  const canDeleteDuty =
-    canManageDuty && (duty.status === "Assigned" || duty.status === "Finished");
+const formatUTCDateToLocal = (dateString: string | null): string => {
+    if (!dateString || dateString.trim() === "") return "Not added yet";
 
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Not added yet";
+
+    const options: Intl.DateTimeFormatOptions = {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Kolkata",
+    };
+
+    return date.toLocaleString("en-IN", options);
+  };
   const handleBusDelete = async () => {
     if (!duty.id) {
       console.error("Error: Bus ID is missing");
@@ -115,7 +133,7 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
       refreshList("refresh");
     } catch (error: any) {
       console.error("Delete error:", error);
-      showSuccessToast(error || "Failed to delete duty. Please try again.");
+      showErrorToast(error || "Failed to delete duty. Please try again.");
     }
   };
 
@@ -229,7 +247,7 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
             {/* Update Button with Tooltip */}
             <Tooltip
               title={
-                !canManageDuty
+                !canUpdateDuty
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -238,7 +256,7 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
             >
               <span
                 style={{
-                  cursor: !canManageDuty ? "not-allowed" : "default",
+                  cursor: !canUpdateDuty ? "not-allowed" : "default",
                 }}
               >
                 <Button
@@ -246,7 +264,7 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
                   color="success"
                   size="small"
                   onClick={() => setUpdateFormOpen(true)}
-                  disabled={!canManageDuty}
+                  disabled={!canUpdateDuty}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#81c784 !important",
@@ -262,7 +280,7 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
             {/* Delete Button with Tooltip */}
             <Tooltip
               title={
-                !canDeleteDuty
+                !deleteDutyPermission
                   ? duty.status === "Started" || duty.status === "Terminated"
                     ? "Duty cannot be deleted after it has started or terminated"
                     : "You don't have permission, contact the admin"
@@ -272,7 +290,7 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
               placement="top-start"
             >
               <span
-                style={{ cursor: !canDeleteDuty ? "not-allowed" : "pointer" }}
+                style={{ cursor: !deleteDutyPermission ? "not-allowed" : "pointer" }}
               >
                 <Button
                   variant="contained"
@@ -280,7 +298,7 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
                   size="small"
                   onClick={() => setDeleteConfirmOpen(true)}
                   startIcon={<DeleteIcon />}
-                  disabled={!canDeleteDuty}
+                  disabled={!deleteDutyPermission}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#e57373 !important",
