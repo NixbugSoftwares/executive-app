@@ -94,8 +94,8 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
     formState: { errors },
   } = useForm<Schedule>({
     defaultValues: {
-      ticket_mode: 1,
-      trigger_mode: 1,
+      ticketing_mode: 1,
+      triggering_mode: 1,
       frequency: [],
     },
   });
@@ -136,60 +136,42 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
   );
 
   const fetchFareList = useCallback(
-    async (pageNumber: number, searchText = "") => {
-      setLoading(true);
-      const offset = pageNumber * rowsPerPage;
-      try {
-        // Fetch company fares
-        const companyRes = await dispatch(
-          fareListApi({
-            limit: rowsPerPage,
-            offset,
-            name: searchText,
-            scope: 2,
-            company_id: companyId,
-          })
-        ).unwrap();
+  async (pageNumber: number, searchText = "") => {
+    setLoading(true);
+    const offset = pageNumber * rowsPerPage;
+    try {
+      // Single API call to fetch all relevant fares
+      const res = await dispatch(
+        fareListApi({
+          limit: rowsPerPage,
+          offset,
+          name: searchText,
+          company_id: companyId, // Just pass company_id to get both company and local fares
+        })
+      ).unwrap();
 
-        // Fetch global fares
-        const globalRes = await dispatch(
-          fareListApi({
-            limit: rowsPerPage,
-            offset,
-            name: searchText,
-            scope: 1,
-          })
-        ).unwrap();
+      const fares = res.data || [];
+      
+      const formattedFareList = fares.map((fare: any) => ({
+        id: fare.id,
+        name: fare.name ?? "-",
+      }));
 
-        const companyFares = companyRes.data || [];
-        const globalFares = globalRes.data || [];
-
-        // Combine and deduplicate by id
-        const allFares = [...companyFares, ...globalFares].filter(
-          (fare, index, self) =>
-            index === self.findIndex((f) => f.id === fare.id)
-        );
-
-        const formattedFareList = allFares.map((fare: any) => ({
-          id: fare.id,
-          name: fare.name ?? "-",
-        }));
-
-        setDropdownData((prev) => ({
-          ...prev,
-          fareList:
-            pageNumber === 0
-              ? formattedFareList
-              : [...prev.fareList, ...formattedFareList],
-        }));
-      } catch (error: any) {
-        showErrorToast(error || "Failed to fetch Fare list");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [dispatch, companyId]
-  );
+      setDropdownData((prev) => ({
+        ...prev,
+        fareList:
+          pageNumber === 0
+            ? formattedFareList
+            : [...prev.fareList, ...formattedFareList],
+      }));
+    } catch (error: any) {
+      showErrorToast(error?.message || "Failed to fetch Fare list");
+    } finally {
+      setLoading(false);
+    }
+  },
+  [dispatch, companyId, rowsPerPage]
+);
 
   const fetchRouteList = useCallback(
     (pageNumber: number, searchText = "") => {
@@ -246,9 +228,8 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
         route_id: data.route_id,
         bus_id: data.bus_id,
         fare_id: data.fare_id,
-        permit_no: data.permit_no,
-        ticket_mode: data.ticket_mode,
-        trigger_mode: data.trigger_mode,
+        ticketing_mode: data.ticketing_mode,
+        triggering_mode: data.triggering_mode,
         frequency: data.frequency,
       };
 
@@ -325,18 +306,6 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
             error={!!errors.name}
             helperText={errors.name?.message}
             size="small"
-          />
-          <TextField
-            margin="normal"
-            fullWidth
-            label="Permit No"
-            {...register("permit_no", {
-              required: "Permit number is required",
-            })}
-            error={!!errors.permit_no}
-            helperText={errors.permit_no?.message}
-            size="small"
-            required
           />
 
           <Controller
@@ -485,7 +454,7 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
           />
 
           <Controller
-            name="ticket_mode"
+            name="ticketing_mode"
             control={control}
             render={({ field }) => (
               <TextField
@@ -494,8 +463,8 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
                 select
                 label="Ticket Mode"
                 {...field}
-                error={!!errors.ticket_mode}
-                helperText={errors.ticket_mode?.message}
+                error={!!errors.ticketing_mode}
+                helperText={errors.ticketing_mode?.message}
                 size="small"
               >
                 {ticketModeOptions.map((option) => (
@@ -508,7 +477,7 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
           />
 
           <Controller
-            name="trigger_mode"
+            name="triggering_mode"
             control={control}
             render={({ field }) => (
               <TextField
@@ -517,8 +486,8 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
                 select
                 label="Trigger Mode"
                 {...field}
-                error={!!errors.trigger_mode}
-                helperText={errors.trigger_mode?.message}
+                error={!!errors.triggering_mode}
+                helperText={errors.triggering_mode?.message}
                 size="small"
               >
                 {triggerOptions.map((option) => (

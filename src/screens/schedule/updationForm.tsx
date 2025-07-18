@@ -31,7 +31,6 @@ interface DropdownItem {
 type ScheduleFormValues = {
   id: number;
   name: string;
-  permit_no: string;
   ticket_mode: number;
   trigger_mode: number;
   bus_id: number;
@@ -141,31 +140,21 @@ const ScheduleUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
 
         if (type === "fare") {
           // Special handling for fare - make two API calls
-          const [companyRes, globalRes] = await Promise.all([
+          const [companyRes] = await Promise.all([
             dispatch(
               fareListApi({
                 limit: rowsPerPage,
                 offset,
                 name: searchText,
-                scope: 2,
                 company_id: companyId,
-              })
-            ).unwrap(),
-            dispatch(
-              fareListApi({
-                limit: rowsPerPage,
-                offset,
-                name: searchText,
-                scope: 1,
               })
             ).unwrap(),
           ]);
 
           const companyFares = companyRes.data || [];
-          const globalFares = globalRes.data || [];
 
           // Combine and deduplicate by id
-          items = [...companyFares, ...globalFares].filter(
+          items = [...companyFares].filter(
             (fare, index, self) =>
               index === self.findIndex((f) => f.id === fare.id)
           );
@@ -340,14 +329,14 @@ const ScheduleUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
       const updationData = {
         id: scheduleId,
         name: data.name,
-        permit_no: data.permit_no,
-        ticket_mode: data.ticket_mode,
-        trigger_mode: data.trigger_mode,
+        ticketing_mode: data.ticket_mode,
+        triggering_mode: data.trigger_mode,
         bus_id: data.bus_id,
         fare_id: data.fare_id,
         route_id: data.route_id,
         frequency: data.frequency,
       };
+console.log("Updation Data:", updationData);
 
       await dispatch(scheduleUpdationApi(updationData)).unwrap();
 
@@ -406,22 +395,6 @@ const ScheduleUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
                 margin="normal"
                 error={!!errors.name}
                 helperText={errors.name?.message}
-              />
-            )}
-          />
-
-          <Controller
-            name="permit_no"
-            control={control}
-            rules={{ required: "Permit No is required" }}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                label="Permit No"
-                fullWidth
-                margin="normal"
-                error={!!errors.permit_no}
-                helperText={errors.permit_no?.message}
               />
             )}
           />

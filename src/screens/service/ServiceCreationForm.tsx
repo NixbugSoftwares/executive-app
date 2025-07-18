@@ -137,61 +137,42 @@ const ServiceCreationForm: React.FC<IOperatorCreationFormProps> = ({
   );
 
   const fetchFareList = useCallback(
-    async (pageNumber: number, searchText = "") => {
-      const offset = pageNumber * rowsPerPage;
-      try {
-        // Fetch company fares
-        const companyRes = await dispatch(
-          fareListApi({
-            limit: rowsPerPage,
-            offset,
-            name: searchText,
-            scope: 2,
-            company_id: companyId,
-          })
-        ).unwrap();
+  async (pageNumber: number, searchText = "") => {
+    setLoading(true);
+    const offset = pageNumber * rowsPerPage;
+    try {
+      // Single API call to fetch all relevant fares
+      const res = await dispatch(
+        fareListApi({
+          limit: rowsPerPage,
+          offset,
+          name: searchText,
+          company_id: companyId, // Just pass company_id to get both company and local fares
+        })
+      ).unwrap();
 
-        // Fetch global fares
-        const globalRes = await dispatch(
-          fareListApi({
-            limit: rowsPerPage,
-            offset,
-            name: searchText,
-            scope: 1,
-          })
-        ).unwrap();
+      const fares = res.data || [];
+      
+      const formattedFareList = fares.map((fare: any) => ({
+        id: fare.id,
+        name: fare.name ?? "-",
+      }));
 
-        const companyFares = companyRes.data || [];
-        const globalFares = globalRes.data || [];
-
-        // Combine and deduplicate by id
-        const allFares = [...companyFares, ...globalFares].filter(
-          (fare, index, self) =>
-            index === self.findIndex((f) => f.id === fare.id)
-        );
-
-        const formattedFareList = allFares.map((fare: any) => ({
-          id: fare.id,
-          name: fare.name ?? "-",
-        }));
-
-        setDropdownData((prev) => ({
-          ...prev,
-          fareList:
-            pageNumber === 0
-              ? formattedFareList
-              : [...prev.fareList, ...formattedFareList],
-        }));
-        setHasMore((prev) => ({
-          ...prev,
-          fare: allFares.length === rowsPerPage,
-        }));
-      } catch (error: any) {
-        showErrorToast(error || "Failed to fetch Fare list");
-      }
-    },
-    [dispatch, companyId]
-  );
+      setDropdownData((prev) => ({
+        ...prev,
+        fareList:
+          pageNumber === 0
+            ? formattedFareList
+            : [...prev.fareList, ...formattedFareList],
+      }));
+    } catch (error: any) {
+      showErrorToast(error?.message || "Failed to fetch Fare list");
+    } finally {
+      setLoading(false);
+    }
+  },
+  [dispatch, companyId, rowsPerPage]
+);
 
   const fetchRouteList = useCallback(
     (pageNumber: number, searchText = "") => {

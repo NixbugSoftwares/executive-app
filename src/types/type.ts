@@ -173,8 +173,8 @@ export interface Schedule{
   service_id:number
   name:string
   permit_no:string
-  trigger_mode:number
-  ticket_mode:number
+  triggering_mode:number
+  ticketing_mode:number
   frequency:number[] 
   bus_id:number
   route_id:number

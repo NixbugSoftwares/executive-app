@@ -79,8 +79,8 @@ const ScheduleListingTable = () => {
   const [page, setPage] = useState(0);
   const [hasNextPage, setHasNextPage] = useState(false);
   const rowsPerPage = 10;
-  const canManageSchedule = useSelector((state: RootState) =>
-    state.app.permissions.includes("manage_schedule")
+  const canCreateSchedule = useSelector((state: RootState) =>
+    state.app.permissions.includes("create_schedule")
   );
   const [openCreateModal, setOpenCreateModal] = useState(false);
 
@@ -130,18 +130,20 @@ const ScheduleListingTable = () => {
             route_id: schedule.route_id,
             fare_id: schedule.fare_id,
             bus_id: schedule.bus_id,
-            ticket_mode:
-              schedule.ticket_mode === 1
+            ticketing_mode:
+              schedule.ticketing_mode === 1
                 ? "Hybrid"
-                : schedule.ticket_mode === 2
+                : schedule.ticketing_mode === 2
                 ? "Digital"
-                : "Conventional",
-            trigger_mode:
-              schedule.trigger_mode === 1
+                : schedule.ticketing_mode === 3
+                ? "Conventional":"",
+            triggering_mode:
+              schedule.triggering_mode === 1
                 ? "Automatic"
-                : schedule.trigger_mode === 2
+                : schedule.triggering_mode === 2
                 ? "Manual"
-                : "Disabled",
+                : schedule.triggering_mode === 3
+                ? "Disabled":"",
             frequency: Array.isArray(schedule.frequency)
               ? schedule.frequency
               : [],
@@ -235,7 +237,7 @@ const ScheduleListingTable = () => {
       >
         <Tooltip
           title={
-            !canManageSchedule
+            !canCreateSchedule
               ? "You don't have permission, contact the admin"
               : "Click to open the Schedule creation form"
           }
@@ -246,7 +248,7 @@ const ScheduleListingTable = () => {
               ml: "auto",
               mr: 2,
               mb: 2,
-              backgroundColor: !canManageSchedule
+              backgroundColor: !canCreateSchedule
                 ? "#6c87b7 !important"
                 : "#00008B",
               color: "white",
@@ -255,8 +257,8 @@ const ScheduleListingTable = () => {
             }}
             variant="contained"
             onClick={() => setOpenCreateModal(true)}
-            disabled={!canManageSchedule}
-            style={{ cursor: !canManageSchedule ? "not-allowed" : "pointer" }}
+            disabled={!canCreateSchedule}
+            style={{ cursor: !canCreateSchedule ? "not-allowed" : "pointer" }}
           >
             Add New Schedule
           </Button>
@@ -277,7 +279,6 @@ const ScheduleListingTable = () => {
                 {[
                   { label: "ID", width: 80, key: "id" },
                   { label: "Name", width: 200, key: "name" },
-                  { label: "Permit Number", width: 160, key: "permit_number" },
                   { label: "Ticket Mode", width: 160, key: "ticket_mode" },
                   { label: "Trigger Mode", width: 160, key: "trigger_mode" },
                 ].map((col) => (
@@ -303,7 +304,6 @@ const ScheduleListingTable = () => {
                 {[
                   { key: "id", isNumber: true },
                   { key: "name", isNumber: false },
-                  { key: "permit_number", isNumber: false },
                   {
                     key: "ticket_mode",
                     isSelect: true,
@@ -391,25 +391,22 @@ const ScheduleListingTable = () => {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography noWrap>{row.permit_no}</Typography>
-                    </TableCell>
-                    <TableCell>
                       <Chip
-                        label={row.ticket_mode}
+                        label={row.ticketing_mode}
                         size="small"
                         sx={{
                           width: 100,
                           textAlign: "center",
                           backgroundColor:
-                            String(row.ticket_mode) === "Hybrid"
+                            String(row.ticketing_mode) === "Hybrid"
                               ? "rgba(0, 150, 136, 0.15)"
-                              : String(row.ticket_mode) === "Digital"
+                              : String(row.ticketing_mode) === "Digital"
                               ? "rgba(33, 150, 243, 0.15)"
                               : "rgba(255, 87, 34, 0.15)",
                           color:
-                            String(row.ticket_mode) === "Hybrid"
+                            String(row.ticketing_mode) === "Hybrid"
                               ? "#009688"
-                              : String(row.ticket_mode) === "Digital"
+                              : String(row.ticketing_mode) === "Digital"
                               ? "#2196F3"
                               : "#FF5722",
                           fontWeight: 600,
@@ -420,25 +417,25 @@ const ScheduleListingTable = () => {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={row.trigger_mode}
+                        label={row.triggering_mode}
                         size="small"
                         sx={{
                           width: 100,
                           textAlign: "center",
                           backgroundColor:
-                            String(row.trigger_mode) === "Automatic"
+                            String(row.triggering_mode) === "Automatic"
                               ? "rgba(33, 150, 243, 0.12)"
-                              : String(row.trigger_mode) === "Manual"
+                              : String(row.triggering_mode) === "Manual"
                               ? "rgba(255, 152, 0, 0.15)"
-                              : String(row.trigger_mode) === "Disabled"
+                              : String(row.triggering_mode) === "Disabled"
                               ? "rgba(244, 67, 54, 0.12)"
                               : "rgba(158, 158, 158, 0.12)",
                           color:
-                            String(row.trigger_mode) === "Automatic"
+                            String(row.triggering_mode) === "Automatic"
                               ? "#1976D2"
-                              : String(row.trigger_mode) === "Manual"
+                              : String(row.triggering_mode) === "Manual"
                               ? "#FF9800"
-                              : String(row.trigger_mode) === "Disabled"
+                              : String(row.triggering_mode) === "Disabled"
                               ? "#D32F2F"
                               : "#616161",
                           fontWeight: 600,
@@ -488,7 +485,6 @@ const ScheduleListingTable = () => {
             onDelete={() => {}}
             onBack={() => setSelectedSchedule(null)}
             refreshList={(value: any) => refreshList(value)}
-            canManageSchedule={canManageSchedule}
             onCloseDetailCard={() => setSelectedSchedule(null)}
             companyId={filterCompanyId}
           />

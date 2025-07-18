@@ -29,24 +29,15 @@ import {
   showErrorToast,
   showSuccessToast,
 } from "../../common/toastMessageHelper";
-
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
+import { Schedule } from "../../types/type";
 interface ServiceCardProps {
-  schedule: {
-    id: number;
-    name: string;
-    permit_no: string;
-    ticket_mode: number;
-    trigger_mode: number;
-    bus_id: number;
-    route_id: number;
-    fare_id: number;
-    frequency: number[];
-  };
+  schedule: Schedule;
   refreshList: (value: any) => void;
   onUpdate: () => void;
   onDelete: (id: number) => void;
   onBack: () => void;
-  canManageSchedule: boolean;
   onCloseDetailCard: () => void;
   companyId: number;
 }
@@ -101,7 +92,6 @@ const ScheduleDetailsCard: React.FC<ServiceCardProps> = ({
   refreshList,
   onDelete,
   onBack,
-  canManageSchedule,
   onCloseDetailCard,
   companyId,
 }) => {
@@ -112,6 +102,12 @@ const ScheduleDetailsCard: React.FC<ServiceCardProps> = ({
   const [routeName, setRouteName] = useState("Route not found");
   const [busName, setBusName] = useState("Bus not found");
   const [fareName, setFareName] = useState("Fare not found");
+  const canUpdateSchedule = useSelector((state: RootState) =>
+      state.app.permissions.includes("create_schedule")
+    );
+    const canDeleteSchedule = useSelector((state: RootState) =>
+        state.app.permissions.includes("create_schedule")
+      );
   const fetchRouteName = async () => {
     try {
       const id = schedule.route_id;
@@ -221,9 +217,6 @@ const ScheduleDetailsCard: React.FC<ServiceCardProps> = ({
             }}
           >
             <Typography variant="body1">
-              <b>Permit Number:</b> {schedule.permit_no}
-            </Typography>
-            <Typography variant="body1">
               <b>Route :</b> {routeName}
             </Typography>
             <Typography variant="body1">
@@ -239,12 +232,12 @@ const ScheduleDetailsCard: React.FC<ServiceCardProps> = ({
               <b>Ticket Mode:</b>
               <Chip
                 label={
-                  ticketModeMap[String(schedule.ticket_mode)]?.label ||
+                  ticketModeMap[String(schedule.ticketing_mode)]?.label ||
                   "Unknown"
                 }
                 sx={{
-                  bgcolor: ticketModeMap[String(schedule.ticket_mode)]?.bg,
-                  color: ticketModeMap[String(schedule.ticket_mode)]?.color,
+                  bgcolor: ticketModeMap[String(schedule.ticketing_mode)]?.bg,
+                  color: ticketModeMap[String(schedule.ticketing_mode)]?.color,
                   fontWeight: 600,
                   borderRadius: "12px",
                   px: 1.5,
@@ -262,12 +255,12 @@ const ScheduleDetailsCard: React.FC<ServiceCardProps> = ({
               <b>Trigger Mode:</b>
               <Chip
                 label={
-                  triggerModeMap[String(schedule.trigger_mode)]?.label ||
+                  triggerModeMap[String(schedule.triggering_mode)]?.label ||
                   "Unknown"
                 }
                 sx={{
-                  bgcolor: triggerModeMap[String(schedule.trigger_mode)]?.bg,
-                  color: triggerModeMap[String(schedule.trigger_mode)]?.color,
+                  bgcolor: triggerModeMap[String(schedule.triggering_mode)]?.bg,
+                  color: triggerModeMap[String(schedule.triggering_mode)]?.color,
                   fontWeight: 600,
                   borderRadius: "12px",
                   px: 1.5,
@@ -277,12 +270,20 @@ const ScheduleDetailsCard: React.FC<ServiceCardProps> = ({
                 size="small"
               />
             </Typography>
-            <Typography variant="body1">
-              <b>Active Days:</b>{" "}
-              {schedule.frequency && Array.isArray(schedule.frequency)
-                ? schedule.frequency.map((num) => dayMap[num] || num).join(", ")
-                : "Not set"}
-            </Typography>
+           <Typography variant="body1">
+  <b>Active Days:</b>
+  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 1 }}>
+    {schedule.frequency && Array.isArray(schedule.frequency) && schedule.frequency.length > 0 ? (
+      schedule.frequency.map((num) => (
+        <Chip key={num} label={dayMap[num] || num} size="small" />
+      ))
+    ) : (
+      <Typography variant="body2" color="text.secondary">
+        Not set
+      </Typography>
+    )}
+  </Box>
+</Typography>
           </Box>
         </Card>
 
@@ -308,7 +309,7 @@ const ScheduleDetailsCard: React.FC<ServiceCardProps> = ({
             {/* Update Button with Tooltip */}
             <Tooltip
               title={
-                !canManageSchedule
+                !canUpdateSchedule
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -317,7 +318,7 @@ const ScheduleDetailsCard: React.FC<ServiceCardProps> = ({
             >
               <span
                 style={{
-                  cursor: !canManageSchedule ? "not-allowed" : "default",
+                  cursor: !canUpdateSchedule ? "not-allowed" : "default",
                 }}
               >
                 <Button
@@ -325,7 +326,7 @@ const ScheduleDetailsCard: React.FC<ServiceCardProps> = ({
                   color="success"
                   size="small"
                   onClick={() => setUpdateFormOpen(true)}
-                  disabled={!canManageSchedule}
+                  disabled={!canUpdateSchedule}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#81c784 !important",
@@ -341,7 +342,7 @@ const ScheduleDetailsCard: React.FC<ServiceCardProps> = ({
             {/* Delete Button with Tooltip */}
             <Tooltip
               title={
-                !canManageSchedule
+                !canDeleteSchedule
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -350,7 +351,7 @@ const ScheduleDetailsCard: React.FC<ServiceCardProps> = ({
             >
               <span
                 style={{
-                  cursor: !canManageSchedule ? "not-allowed" : "default",
+                  cursor: !canDeleteSchedule ? "not-allowed" : "default",
                 }}
               >
                 <Button
@@ -359,7 +360,7 @@ const ScheduleDetailsCard: React.FC<ServiceCardProps> = ({
                   size="small"
                   onClick={() => setDeleteConfirmOpen(true)}
                   startIcon={<DeleteIcon />}
-                  disabled={!canManageSchedule}
+                  disabled={!canDeleteSchedule}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#e57373 !important",
@@ -412,9 +413,8 @@ const ScheduleDetailsCard: React.FC<ServiceCardProps> = ({
             scheduleData={{
               id: schedule.id,
               name: schedule.name,
-              permit_no: schedule.permit_no,
-              ticket_mode: schedule.ticket_mode,
-              trigger_mode: schedule.trigger_mode,
+              ticket_mode: schedule.ticketing_mode,
+              trigger_mode: schedule.triggering_mode,
               frequency: schedule.frequency,
               bus_id: schedule.bus_id,
               fare_id: schedule.fare_id,
