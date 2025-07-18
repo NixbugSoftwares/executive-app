@@ -130,7 +130,6 @@ const CompanyListingTable = () => {
   useEffect(() => {
     const searchParams = {
       ...(debouncedSearch.id && { id: debouncedSearch.id }),
-      ...(debouncedSearch.name && { name: debouncedSearch.name }),
       ...(debouncedSearch.contact_person && {
         contact_person: debouncedSearch.contact_person,
       }),

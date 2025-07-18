@@ -164,7 +164,7 @@ const BusRouteCreation = ({
     try {
       const routeFormData = new FormData();
       routeFormData.append("name", data.name);
-      routeFormData.append("starting_time", data.starting_time);
+      routeFormData.append("start_time", data.starting_time);
       routeFormData.append("company_id", companyId.toString());
       console.log("starting_time", data.starting_time);
       console.log("name", data.name);
@@ -196,7 +196,6 @@ const BusRouteCreation = ({
         const landmarkFormData = new FormData();
         landmarkFormData.append("route_id", routeId.toString());
         landmarkFormData.append("landmark_id", landmark.id.toString());
-        landmarkFormData.append("sequence_id", (index + 1).toString());
         landmarkFormData.append(
           "distance_from_start",
           landmark.distance_from_start?.toString() || "0"

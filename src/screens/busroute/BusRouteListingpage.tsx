@@ -41,7 +41,7 @@ interface Route {
   id: number;
   companyId: number;
   name: string;
-  starting_time: string;
+  start_time: string;
 }
 
 const BusRouteListing = () => {
@@ -59,7 +59,7 @@ const BusRouteListing = () => {
   const [selectedRoute, setSelectedRoute] = useState<{
     id: number;
     name: string;
-    starting_time: string;
+    start_time: string;
   } | null>(null);
 
   const mapRef = useRef<{
@@ -118,12 +118,13 @@ const BusRouteListing = () => {
       )
         .unwrap()
         .then((res) => {
+          console.log("API Response:", res);
+
           const items = res.data || [];
-          console.log("items", items);
           const formattedRoute = items.map((route: any) => ({
             id: route.id,
             name: route.name,
-            starting_time: route.starting_time,
+            start_time: route.start_time,
           }));
           setRouteList(formattedRoute);
           setHasNextPage(items.length === rowsPerPage);
@@ -299,7 +300,7 @@ const BusRouteListing = () => {
           <BusRouteDetailsPage
             routeId={selectedRoute.id}
             routeName={selectedRoute.name}
-            routeStartingTime={`1970-01-01T${selectedRoute.starting_time}`}
+            routeStartingTime={`1970-01-01T${selectedRoute.start_time}`}
             refreshList={(value: any) => refreshList(value)}
             onBack={() => {
               setSelectedRoute(null);
@@ -413,6 +414,7 @@ const BusRouteListing = () => {
                       >
                         <b>ID</b>
                         <TextField
+                          type="number"
                           variant="outlined"
                           size="small"
                           placeholder="Search"
@@ -470,7 +472,7 @@ const BusRouteListing = () => {
                             setSelectedRoute({
                               id: row.id,
                               name: row.name,
-                              starting_time: row.starting_time,
+                              start_time: row.start_time,
                             })
                           }
                         >

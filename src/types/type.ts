@@ -99,7 +99,7 @@ export interface SelectedLandmark {
   id: number;
   name: string;
   sequenceId?: number;
-  starting_time: string;
+  start_time: string;
 
   // Final UTC-converted times
   arrivalTime: { fullTime: string };
@@ -124,7 +124,7 @@ export interface RouteLandmark {
   id: number;
   landmark_id: string;
   name: string;
-  starting_time: string;
+  start_time: string;
   arrival_delta: string;
   departure_delta: string;
   arrivalTime: {  fullTime: string };
@@ -158,10 +158,13 @@ export interface Service{
   bus_id:number
   route_id:number
   fare_id:number
+  fareName:string
+  routeName:string
   status:string
   ticket_mode:string
   created_mode:string
-  starting_date:string
+  starting_at:string
+  ending_at:string
   remarks:string
 }
 

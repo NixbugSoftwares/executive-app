@@ -46,6 +46,8 @@ import {
   showSuccessToast,
 } from "../../common/toastMessageHelper";
 import { Landmark, RouteLandmark, SelectedLandmark } from "../../types/type";
+import { RootState } from "../../store/Store";
+import { useSelector } from "react-redux";
 
 interface BusRouteDetailsProps {
   routeId: number;
@@ -59,7 +61,6 @@ interface BusRouteDetailsProps {
   newLandmarks: SelectedLandmark[];
   setNewLandmarks: React.Dispatch<React.SetStateAction<SelectedLandmark[]>>;
   refreshList: (value: any) => void;
-  routeManagePermission: boolean;
 }
 
 const BusRouteDetailsPage = ({
@@ -73,8 +74,9 @@ const BusRouteDetailsPage = ({
   newLandmarks,
   setNewLandmarks,
   refreshList,
-  routeManagePermission,
 }: BusRouteDetailsProps) => {
+  console.log("starting_time", routeStartingTime);
+  
   const dispatch = useAppDispatch();
   const [routeLandmarks, setRouteLandmarks] = useState<RouteLandmark[]>([]);
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
@@ -100,7 +102,12 @@ const BusRouteDetailsPage = ({
   const [arrivalDayOffset, setArrivalDayOffset] = useState<number>(0);
   const [departureDayOffset, setDepartureDayOffset] = useState<number>(0);
   const lastLandmark = routeLandmarks[routeLandmarks.length - 1];
-
+const canUpdateRoutes = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_route")
+  );
+  // const canCreateRoutes = useSelector((state: RootState) =>
+  //     state.app.permissions.includes("create_route")
+  //   );
      const fetchRouteLandmarks = async () => {
     setIsLoading(true);
     try {
@@ -603,7 +610,7 @@ const getLandmarkName = (landmarkId: string | number) => {
 
         <Tooltip
           title={
-            !routeManagePermission
+            !canUpdateRoutes
               ? "You don't have permission, contact the admin"
               : editMode
               ? "Cancel editing this route"
@@ -613,20 +620,20 @@ const getLandmarkName = (landmarkId: string | number) => {
         >
           <span
             style={{
-              cursor: !routeManagePermission ? "not-allowed" : "pointer",
+              cursor: !canUpdateRoutes ? "not-allowed" : "pointer",
             }}
           >
             <Button
               variant={editMode ? "outlined" : "contained"}
               onClick={handleEditRoute}
-              disabled={!routeManagePermission}
+              disabled={!canUpdateRoutes}
               sx={{
-                backgroundColor: !routeManagePermission
+                backgroundColor: !canUpdateRoutes
                   ? "#6c87b7 !important"
                   : editMode
                   ? "transparent"
                   : "#3f51b5",
-                color: !routeManagePermission
+                color: !canUpdateRoutes
                   ? "#ffffff"
                   : editMode
                   ? "#3f51b5"

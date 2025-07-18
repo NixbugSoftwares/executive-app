@@ -135,9 +135,7 @@ interface ServiceListParams {
   offset?: number;
   company_id?: number;
   id?: string;
-  name?: string;
   ticket_mode?: number;
-  created_mode?: number;
   status?: number;
   status_list?: number[];
 }
@@ -1616,7 +1614,7 @@ export const routeLandmarkUpdationApi = createAsyncThunk(
 export const serviceListingApi = createAsyncThunk(
   "/service",
   async (params: ServiceListParams, { rejectWithValue }) => {
-    const { limit, offset, id, company_id, name, created_mode, ticket_mode, status, status_list  } =
+    const { limit, offset, id, company_id,  ticket_mode, status, status_list  } =
       params;
 
     const queryParams = {
@@ -1624,8 +1622,6 @@ export const serviceListingApi = createAsyncThunk(
       offset,
       ...(id && { id }),
       ...(company_id && { company_id }),
-      ...(name && { name: name }),
-      ...(created_mode && { created_mode }),
       ...(ticket_mode && { ticket_mode }),
       ...(status && { status }),
       ...(status_list && { status_list }),

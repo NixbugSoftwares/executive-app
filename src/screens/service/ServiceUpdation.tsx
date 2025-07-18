@@ -31,7 +31,6 @@ interface IOperatorUpdateFormProps {
   onClose: () => void;
   refreshList: (value: any) => void;
   onCloseDetailCard(): void;
-  
 }
 
 const statusOptions = [
@@ -39,6 +38,7 @@ const statusOptions = [
   { label: "Started", value: 2 },
   { label: "Terminated", value: 3 },
   { label: "Ended", value: 4 },
+  { label: "Audited", value: 5 },
 ];
 
 const ticketModeOptions = [
@@ -46,17 +46,24 @@ const ticketModeOptions = [
   { label: "Digital", value: 2 },
   { label: "Conventional", value: 3 },
 ];
-const allowedTransitions: Record<number, number[]> = {
-  1: [2, 3], // Created can move to Started or Terminated
-  2: [3, 4], // Started can move to Terminated or Ended
-  3: [], // Terminated is final - no further changes allowed
-  4: [], // Ended is final - no further changes allowed
+
+const INTERNAL_STATUS = {
+  STARTED: 2,
+  AUDITED: 5,
 };
+
+const allowedTransitions: Record<number, number[]> = {
+  1: [], // Created
+  2: [3, 4], // Started → Terminated, Ended
+  3: [2],    // Terminated → Started
+  4: [2],    // Ended → Started
+};
+
 const getStatusValue = (label: string) =>
-  statusOptions.find((opt) => opt.label === label)?.value ?? 1;
+  statusOptions.find((opt) => opt.label.toLowerCase() === label.toLowerCase())?.value ?? 1;
 
 const getTicketModeValue = (label: string) =>
-  ticketModeOptions.find((opt) => opt.label === label)?.value ?? 1;
+  ticketModeOptions.find((opt) => opt.label.toLowerCase() === label.toLowerCase())?.value ?? 1;
 
 const ServiceUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
   onClose,
@@ -67,11 +74,12 @@ const ServiceUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  const statusValue = getStatusValue(serviceData.status.toString());
+
+  const statusValue = getStatusValue(serviceData.status);
+  const ticketModeValue = getTicketModeValue(serviceData.ticket_mode);
+
   const [currentStatus, setCurrentStatus] = useState(statusValue);
-  const ticketModeValue = getTicketModeValue(
-    serviceData.ticket_mode.toString()
-  );
+
   const {
     register,
     handleSubmit,
@@ -79,39 +87,21 @@ const ServiceUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
     formState: { errors },
   } = useForm<ServiceFormValues>();
 
-  console.log("serviceData+++++++++++===>", serviceData);
   const isValidTransition = (current: number, next: number): boolean => {
-    // Same status is always allowed (no change)
     if (current === next) return true;
-
-    // Check if the next status is in allowed transitions for current status
     return allowedTransitions[current]?.includes(next) ?? false;
   };
 
-  // Handle bus update
-  const handleServiceUpdate: SubmitHandler<ServiceFormValues> = async (
-    data
-  ) => {
-    console.log("Data to be updated:", data);
-
+  const handleServiceUpdate: SubmitHandler<ServiceFormValues> = async (data) => {
     try {
       setLoading(true);
-      console.log("entering to update");
 
       const formData = new FormData();
       formData.append("id", serviceId.toString());
-      if (data.name) formData.append("name", data.name);
-      if (data.status) formData.append("status", data.status.toString());
-      if (data.ticket_mode)
-        formData.append("ticket_mode", data.ticket_mode.toString());
+      formData.append("status", parseInt(data.status).toString());
+      formData.append("ticket_mode", parseInt(data.ticket_mode).toString());
       if (data.remarks) formData.append("remark", data.remarks);
-      console.log("FormData being sent:", {
-        id: data.id,
-        name: data.name,
-        status: data.status,
-        ticket_mode: data.ticket_mode,
-        remark: data.remarks,
-      });
+
       await dispatch(serviceupdationApi({ serviceId, formData })).unwrap();
 
       showSuccessToast("Service updated successfully!");
@@ -120,11 +110,12 @@ const ServiceUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
       onClose();
     } catch (error: any) {
       console.error("Error updating service:", error);
-      showErrorToast(error||"Failed to update service. Please try again.");
+      showErrorToast(error || "Failed to update service. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <Container component="main" maxWidth="xs">
       <CssBaseline />
@@ -147,13 +138,10 @@ const ServiceUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
         >
           <TextField
             margin="normal"
-            required
             fullWidth
+            disabled
             defaultValue={serviceData.name}
             label="Service Name"
-            {...register("name")}
-            error={!!errors.name}
-            helperText={errors.name?.message}
             size="small"
           />
 
@@ -169,21 +157,18 @@ const ServiceUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
                 value={field.value}
                 onChange={(e) => {
                   const newStatus = parseInt(e.target.value, 10);
-
                   if (isValidTransition(currentStatus, newStatus)) {
                     field.onChange(e);
-                    setCurrentStatus(newStatus); 
+                    setCurrentStatus(newStatus);
                   } else {
                     showErrorToast(
                       `Invalid status transition from ${
-                        statusOptions.find((opt) => opt.value === currentStatus)
-                          ?.label
+                        statusOptions.find((opt) => opt.value === currentStatus)?.label ||
+                        (currentStatus === INTERNAL_STATUS.STARTED ? "Started" : "Audited")
                       } to ${
-                        statusOptions.find((opt) => opt.value === newStatus)
-                          ?.label
+                        statusOptions.find((opt) => opt.value === newStatus)?.label
                       }`
                     );
-                    // No need to reset field.value since we're controlling it
                   }
                 }}
                 error={!!errors.status}
@@ -240,7 +225,6 @@ const ServiceUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             )}
           />
 
-          {[3, 4].includes(currentStatus) && (
             <TextField
               margin="normal"
               fullWidth
@@ -253,7 +237,6 @@ const ServiceUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
               helperText={errors.remarks?.message}
               size="small"
             />
-          )}
 
           <Button
             type="submit"
