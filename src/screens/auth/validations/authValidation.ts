@@ -155,18 +155,86 @@ export const accountUpdationFormSchema = yup.object().shape({
 
 //*********************************************************Role creating validation schema********************************************** 
 export const roleCreationSchema = yup.object().shape({
-  name: yup.string().required("Role name is required")
-  .min(4, "landmark name must be at least 4 characters")
-  .max(32, "landmark name cannot exceed 32 characters"),
-  manageExecutive: yup.boolean(),
-  manageRole: yup.boolean(),
-  manageLandmark: yup.boolean(),
-  manageCompany: yup.boolean(),
-  manageVendor: yup.boolean(),
-  manageRoute: yup.boolean(),
-  manageSchedule: yup.boolean(),
-  manageService: yup.boolean(),
-  manageDuty: yup.boolean(),
+  name: yup.string()
+    .required("Role name is required")
+    .min(4, "Role name must be at least 4 characters")
+    .max(32, "Role name cannot exceed 32 characters"),
+  
+  // Token Management
+  manage_ex_token: yup.boolean(),
+  manage_op_token: yup.boolean(),
+  manage_ve_token: yup.boolean(),
+  
+  // Executive Permissions
+  create_executive: yup.boolean(),
+  update_executive: yup.boolean(),
+  delete_executive: yup.boolean(),
+  
+  // Landmark Permissions
+  create_landmark: yup.boolean(),
+  update_landmark: yup.boolean(),
+  delete_landmark: yup.boolean(),
+  
+  // Company Permissions
+  create_company: yup.boolean(),
+  update_company: yup.boolean(),
+  delete_company: yup.boolean(),
+  
+  // Operator Permissions
+  create_operator: yup.boolean(),
+  update_operator: yup.boolean(),
+  delete_operator: yup.boolean(),
+  
+  // Business Permissions
+  create_business: yup.boolean(),
+  update_business: yup.boolean(),
+  delete_business: yup.boolean(),
+  
+  // Route Permissions
+  create_route: yup.boolean(),
+  update_route: yup.boolean(),
+  delete_route: yup.boolean(),
+  
+  // Bus Permissions
+  create_bus: yup.boolean(),
+  update_bus: yup.boolean(),
+  delete_bus: yup.boolean(),
+  
+  // Vendor Permissions
+  create_vendor: yup.boolean(),
+  update_vendor: yup.boolean(),
+  delete_vendor: yup.boolean(),
+  
+  // Schedule Permissions
+  create_schedule: yup.boolean(),
+  update_schedule: yup.boolean(),
+  delete_schedule: yup.boolean(),
+  
+  // Service Permissions
+  create_service: yup.boolean(),
+  update_service: yup.boolean(),
+  delete_service: yup.boolean(),
+  
+  // Fare Permissions
+  create_fare: yup.boolean(),
+  update_fare: yup.boolean(),
+  delete_fare: yup.boolean(),
+  
+  // Duty Permissions
+  create_duty: yup.boolean(),
+  update_duty: yup.boolean(),
+  delete_duty: yup.boolean(),
+  
+  // Role Permissions
+  create_ex_role: yup.boolean(),
+  update_ex_role: yup.boolean(),
+  delete_ex_role: yup.boolean(),
+  create_op_role: yup.boolean(),
+  update_op_role: yup.boolean(),
+  delete_op_role: yup.boolean(),
+  create_ve_role: yup.boolean(),
+  update_ve_role: yup.boolean(),
+  delete_ve_role: yup.boolean(),
 });
 
 

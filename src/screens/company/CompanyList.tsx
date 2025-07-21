@@ -73,8 +73,14 @@ const CompanyListingTable = () => {
           contact_person: company.contact_person ?? "-",
           phone_number: company.phone_number ?? "-",
           email_id: company.email_id ?? "-",
-          companyType: company.type === 1? "Other" : company.type === 2 ? "private" : 
-          company.type === 3 ? "government": "",
+          companyType:
+            company.type === 1
+              ? "Other"
+              : company.type === 2
+              ? "private"
+              : company.type === 3
+              ? "government"
+              : "",
           status:
             company.status === 1
               ? "Validating"
@@ -159,7 +165,9 @@ const CompanyListingTable = () => {
     >
       <Box
         sx={{
-          flex: selectedCompany ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
+          flex: selectedCompany
+            ? { xs: "0 0 100%", md: "0 0 65%" }
+            : "0 0 100%",
           maxWidth: selectedCompany ? { xs: "100%", md: "65%" } : "100%",
           transition: "all 0.3s ease",
           height: "100%",
@@ -203,14 +211,16 @@ const CompanyListingTable = () => {
           </span>
         </Tooltip>
 
-        <TableContainer sx={{
+        <TableContainer
+          sx={{
             flex: 1,
             maxHeight: "calc(100vh - 100px)",
             overflowY: "auto",
             borderRadius: 2,
             border: "1px solid #e0e0e0",
-          }}>
-          <Table stickyHeader >
+          }}
+        >
+          <Table stickyHeader>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
                 <TableCell>
@@ -224,7 +234,7 @@ const CompanyListingTable = () => {
                     ID
                   </b>
                   <TextField
-                  type="number"
+                    type="number"
                     variant="outlined"
                     size="small"
                     placeholder="Search"
@@ -319,7 +329,7 @@ const CompanyListingTable = () => {
                       fontSize: selectedCompany ? "0.8rem" : "1rem",
                     }}
                   >
-                    Phone 
+                    Phone
                   </b>
                   <TextField
                     variant="outlined"
@@ -415,21 +425,25 @@ const CompanyListingTable = () => {
                       }}
                     >
                       <TableCell>{company.id}</TableCell>
-                      <TableCell> <Tooltip title={company.name} placement="bottom">
+                      <TableCell>
+                        {" "}
+                        <Tooltip title={company.name} placement="bottom">
                           <Typography noWrap>
                             {company.name.length > 15
                               ? `${company.name.substring(0, 15)}...`
                               : company.name}
                           </Typography>
                         </Tooltip>
-                        </TableCell>
-                      <TableCell><Tooltip title={company.address} placement="bottom">
-                                                <Typography noWrap>
-                                                  {company.address.length > 10
-                                                    ? `${company.address.substring(0, 10)}...`
-                                                    : company.address}
-                                                </Typography>
-                                              </Tooltip></TableCell>
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip title={company.address} placement="bottom">
+                          <Typography noWrap>
+                            {company.address.length > 10
+                              ? `${company.address.substring(0, 10)}...`
+                              : company.address}
+                          </Typography>
+                        </Tooltip>
+                      </TableCell>
                       <TableCell>
                         {company.phone_number
                           ? company.phone_number
@@ -440,12 +454,12 @@ const CompanyListingTable = () => {
                       <TableCell>
                         {company.email_id ? (
                           <Tooltip title={company.email_id} placement="bottom">
-                                                    <Typography noWrap>
-                                                      {company.email_id.length > 15
-                                                        ? `${company.email_id.substring(0, 15)}...`
-                                                        : company.email_id}
-                                                    </Typography>
-                                                  </Tooltip>
+                            <Typography noWrap>
+                              {company.email_id.length > 15
+                                ? `${company.email_id.substring(0, 15)}...`
+                                : company.email_id}
+                            </Typography>
+                          </Tooltip>
                         ) : (
                           <Tooltip
                             title=" Email not added yet"
