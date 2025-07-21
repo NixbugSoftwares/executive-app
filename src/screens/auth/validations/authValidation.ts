@@ -353,12 +353,49 @@ export const operatorCreationSchema = yup.object().shape({
 export const operatorRoleCreationSchema = yup.object().shape({
   name: yup.string().required("Role name is required"),
   companyId: yup.number().required("Company is required"),
-  manage_bus: yup.boolean(),
-  manage_route: yup.boolean(),
-  manage_schedule: yup.boolean(),
-  manage_role: yup.boolean(),
-  manage_operator: yup.boolean(),
-  manage_company: yup.boolean(),
+    // Token Management
+  manage_token: yup.boolean(),
+  
+  // Company Permissions
+  update_company: yup.boolean(),
+  
+  // Operator Permissions
+  create_operator: yup.boolean(),
+  update_operator: yup.boolean(),
+  delete_operator: yup.boolean(),
+  // Route Permissions
+  create_route: yup.boolean(),
+  update_route: yup.boolean(),
+  delete_route: yup.boolean(),
+  
+  // Bus Permissions
+  create_bus: yup.boolean(),
+  update_bus: yup.boolean(),
+  delete_bus: yup.boolean(),
+  // Schedule Permissions
+  create_schedule: yup.boolean(),
+  update_schedule: yup.boolean(),
+  delete_schedule: yup.boolean(),
+  
+  // Service Permissions
+  create_service: yup.boolean(),
+  update_service: yup.boolean(),
+  delete_service: yup.boolean(),
+  
+  // Fare Permissions
+  create_fare: yup.boolean(),
+  update_fare: yup.boolean(),
+  delete_fare: yup.boolean(),
+  
+  // Duty Permissions
+  create_duty: yup.boolean(),
+  update_duty: yup.boolean(),
+  delete_duty: yup.boolean(),
+  
+  // Role Permissions
+  create_role: yup.boolean(),
+  update_role: yup.boolean(),
+  delete_role: yup.boolean(),
 });
 
 

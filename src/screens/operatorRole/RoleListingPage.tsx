@@ -1,33 +1,35 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Box,
-  Button,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Button,
+  Box,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
-import { useDispatch, useSelector } from "react-redux";
-import { operatorRoleListApi } from "../../slices/appSlice";
-import type { AppDispatch, RootState } from "../../store/Store";
-import type { OperatorRoleDetails } from "../../types/type";
-import PaginationControls from "../../common/paginationControl";
-import { showErrorToast } from "../../common/toastMessageHelper";
 import RoleDetailsCard from "./RoleDetailCard";
-import RoleCreationForm from "./RoleCreatingForm";
+import RoleCreatingForm from "./RoleCreatingForm";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "../../store/Store";
+import { operatorRoleListApi } from "../../slices/appSlice";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
+import { showErrorToast } from "../../common/toastMessageHelper";
+import PaginationControls from "../../common/paginationControl";
 import FormModal from "../../common/formModal";
+import moment from "moment";
 import { useParams } from "react-router-dom";
 interface Role {
   id: number;
   name: string;
-  roleDetails: OperatorRoleDetails;
+  created_on: string;
+  updated_on: string;
+  roleDetails: any;
 }
 
 const RoleListingTable = () => {
@@ -46,8 +48,8 @@ const RoleListingTable = () => {
   const [isLoading, setIsLoading] = useState(false);
   const debounceRef = useRef<number | null>(null);
   const rowsPerPage = 10;
-  const canManageCompany = useSelector((state: RootState) =>
-    state.app.permissions.includes("manage_company")
+  const canCreateRole = useSelector((state: RootState) =>
+    state.app.permissions.includes("create_op_role")
   );
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -75,30 +77,26 @@ const RoleListingTable = () => {
         .unwrap()
         .then((res) => {
           const items = res.data || [];
+          console.log("items",items);
+          
           const formattedRoleList = items.map((role: any) => ({
             id: role.id,
             name: role.name,
+            created_on: role.created_on,
+            updated_on: role.updated_on|| "not updated",
             roleDetails: {
-              manage_operator: role.manage_operator,
-              manage_bus: role.manage_bus,
-              manage_route: role.manage_route,
-              manage_fare: role.manage_fare,
-              manage_schedule: role.manage_schedule,
-              manage_role: role.manage_role,
-              manage_company: role.manage_company,
-              manage_duty: role.manage_duty,
-              manage_service: role.manage_service,
+              ...role,
             },
           }));
           setRoleList(formattedRoleList);
           setHasNextPage(items.length === rowsPerPage);
         })
-        .catch((error) => {
-          showErrorToast(
-            error || "Failed to fetch role list. Please try again."
-          );
+        .catch((errorMessage) => {
+          showErrorToast(errorMessage);
         })
-        .finally(() => setIsLoading(false));
+        .finally(() => {
+          setIsLoading(false);
+        });
     },
     [dispatch]
   );
@@ -126,6 +124,7 @@ const RoleListingTable = () => {
     },
     []
   );
+
   const handleRowClick = (role: Role) => setSelectedRole(role);
 
   useEffect(() => {
@@ -138,51 +137,30 @@ const RoleListingTable = () => {
 
   const tableHeaders = [
     { key: "id", label: "ID" },
-    { key: "Rolename", label: " Name" },
+    { key: "Rolename", label: "Name" },
   ];
 
-  const permissionKeys = [
-    "Operator",
-    "Role",
-    "Bus",
-    "Route",
-    "Fare",
-    "Schedule",
-    "Company",
-    "Service",
-    "Duty",
-  ];
-
-  const permissionFields = [
-    "manage_operator",
-    "manage_role",
-    "manage_bus",
-    "manage_route",
-    "manage_fare",
-    "manage_schedule",
-    "manage_company",
-    "manage_service",
-    "manage_duty",
-  ];
   const refreshList = (value: string) => {
     if (value === "refresh") {
       fetchRoleList(page, debouncedSearch);
     }
   };
+
   return (
     <Box
       sx={{
         display: "flex",
         flexDirection: { xs: "column", md: "row" },
         width: "100%",
-        height: "100%",
+        height: "100vh",
         gap: 2,
       }}
     >
+      {/* Table Section */}
       <Box
         sx={{
-          flex: selectedRole ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
-          maxWidth: selectedRole ? { xs: "100%", md: "65%" } : "100%",
+          flex: selectedRole ? { xs: "0 0 100%", md: "0 0 50%" } : "0 0 100%",
+          maxWidth: selectedRole ? { xs: "100%", md: "50%" } : "100%",
           transition: "all 0.3s ease",
           height: "100%",
           display: "flex",
@@ -192,7 +170,7 @@ const RoleListingTable = () => {
       >
         <Tooltip
           title={
-            !canManageCompany
+            !canCreateRole
               ? "You don't have permission, contact the admin"
               : "Click to open the role creation form"
           }
@@ -204,7 +182,7 @@ const RoleListingTable = () => {
               mr: 2,
               mb: 2,
               display: "block",
-              backgroundColor: !canManageCompany
+              backgroundColor: !canCreateRole
                 ? "#6c87b7 !important"
                 : "#00008B",
               color: "white",
@@ -214,9 +192,9 @@ const RoleListingTable = () => {
               },
             }}
             variant="contained"
-            disabled={!canManageCompany}
+            disabled={!canCreateRole}
             onClick={() => setOpenCreateModal(true)}
-            style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}
+            style={{ cursor: !canCreateRole ? "not-allowed" : "default" }}
           >
             Add New Role
           </Button>
@@ -235,8 +213,20 @@ const RoleListingTable = () => {
             <TableHead>
               <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
                 {tableHeaders.map(({ key, label }) => (
-                  <TableCell key={key}>
-                    <b style={{ display: "block", textAlign: "center" }}>
+                  <TableCell
+                    key={key}
+                    sx={
+                      key === "id"
+                        ? {
+                            width: 100,
+                            maxWidth: 100,
+                            p: 1,
+                            textAlign: "center",
+                          } // slightly wider
+                        : { minWidth: 150, textAlign: "center" }
+                    }
+                  >
+                    <b style={{ display: "block", fontSize: "0.85rem" }}>
                       {label}
                     </b>
                     <TextField
@@ -251,60 +241,159 @@ const RoleListingTable = () => {
                       fullWidth
                       sx={{
                         "& .MuiInputBase-root": {
-                          height: 40,
-                          fontSize: selectedRole ? "0.8rem" : "1rem",
+                          height: 36,
+                          fontSize: "0.85rem",
                         },
                         "& .MuiInputBase-input": {
                           textAlign: "center",
+                          px: 1,
                         },
                       }}
+                      inputProps={
+                        key === "id"
+                          ? { style: { textAlign: "center" } }
+                          : undefined
+                      }
                     />
                   </TableCell>
                 ))}
-                {permissionKeys.map((perm) => (
-                  <TableCell key={perm} align="center">
-                    <b>Manage {perm}</b>
-                  </TableCell>
-                ))}
+
+                {/* Created Date Column */}
+                <TableCell sx={{ minWidth: 160, textAlign: "center" }}>
+                  <b style={{ fontSize: "0.85rem" }}>Created On</b>
+                </TableCell>
+                <TableCell sx={{ minWidth: 160, textAlign: "center" }}>
+                  <b style={{ fontSize: "0.85rem" }}>Last Updated at</b>
+                </TableCell>
               </TableRow>
             </TableHead>
+
             <TableBody>
               {roleList.length > 0 ? (
                 roleList.map((row) => {
                   const isSelected = selectedRole?.id === row.id;
                   return (
-                    <TableRow
-                      key={row.id}
-                      hover
-                      onClick={() => handleRowClick(row)}
-                      sx={{
-                        cursor: "pointer",
-                        backgroundColor: isSelected ? "#E3F2FD" : "inherit",
-                      }}
-                    >
-                      <TableCell>{row.id}</TableCell>
-                      <TableCell><Tooltip title={row.name} placement="bottom">
-                          <Typography noWrap>
-                            {row.name.length > 15
-                              ? `${row.name.substring(0, 15)}...`
-                              : row.name}
-                          </Typography>
-                        </Tooltip></TableCell>
-                      {permissionFields.map((key) => (
-                        <TableCell key={key} align="center">
-                          {row.roleDetails[key as keyof OperatorRoleDetails] ? (
-                            <CheckCircleIcon sx={{ color: "#228B22" }} />
-                          ) : (
-                            <CancelIcon sx={{ color: "#DE3163" }} />
-                          )}
+                    <React.Fragment key={row.id}>
+                      <TableRow
+                        hover
+                        onClick={() => handleRowClick(row)}
+                        sx={{
+                          cursor: "pointer",
+                          backgroundColor: isSelected ? "#E3F2FD" : "inherit",
+                        }}
+                      >
+                        <TableCell>{row.id}</TableCell>
+                        <TableCell>
+                          <Tooltip title={row.name} placement="bottom">
+                            <Typography noWrap>
+                              {row.name.length > 30
+                                ? `${row.name.substring(0, 30)}...`
+                                : row.name}
+                            </Typography>
+                          </Tooltip>
                         </TableCell>
-                      ))}
-                    </TableRow>
+                        <TableCell align="center">
+                          {moment(row.created_on)
+                            .local()
+                            .format("YYYY-MM-DD hh:mm A")}
+                        </TableCell>
+                        <TableCell align="center">
+                          {moment(row.updated_on)
+                            .local()
+                            .format("YYYY-MM-DD hh:mm A")}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        {/* <TableCell
+                          style={{ paddingBottom: 0, paddingTop: 0 }}
+                          colSpan={3}
+                        >
+                          <Collapse
+                            in={expandedGroups[row.id.toString()]}
+                            timeout="auto"
+                            unmountOnExit
+                          >
+                            <Box sx={{ margin: 1 }}>
+                              <Typography
+                                variant="subtitle2"
+                                gutterBottom
+                                component="div"
+                              >
+                                Permissions
+                              </Typography>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  gap: 1,
+                                }}
+                              >
+                                {permissionGroups.map((group) => (
+                                  <Box
+                                    key={group.groupName}
+                                    sx={{
+                                      border: "1px solid #e0e0e0",
+                                      borderRadius: 1,
+                                      p: 1,
+                                      minWidth: "120px",
+                                    }}
+                                  >
+                                    <Typography
+                                      variant="caption"
+                                      fontWeight="bold"
+                                    >
+                                      {group.groupName}
+                                    </Typography>
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        mt: 0.5,
+                                      }}
+                                    >
+                                      {group.permissions.map((permission) => (
+                                        <Box
+                                          key={permission.key}
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 0.5,
+                                          }}
+                                        >
+                                          <Typography variant="caption">
+                                            {permission.label}:
+                                          </Typography>
+                                          {row.roleDetails[permission.key] ? (
+                                            <CheckCircleIcon
+                                              sx={{
+                                                color: "#228B22",
+                                                fontSize: "14px",
+                                              }}
+                                            />
+                                          ) : (
+                                            <CancelIcon
+                                              sx={{
+                                                color: "#DE3163",
+                                                fontSize: "14px",
+                                              }}
+                                            />
+                                          )}
+                                        </Box>
+                                      ))}
+                                    </Box>
+                                  </Box>
+                                ))}
+                              </Box>
+                            </Box>
+                          </Collapse>
+                        </TableCell> */}
+                      </TableRow>
+                    </React.Fragment>
                   );
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={10} align="center">
+                  <TableCell colSpan={3} align="center">
                     No roles found.
                   </TableCell>
                 </TableRow>
@@ -321,11 +410,13 @@ const RoleListingTable = () => {
         />
       </Box>
 
+      {/* Side Panel for Role Details */}
       {selectedRole && (
         <Box
           sx={{
-            flex: { xs: "0 0 100%", md: "0 0 35%" },
-            maxWidth: { xs: "100%", md: "35%" },
+            flex: { xs: "0 0 100%", md: "0 0 50%" },
+            maxWidth: { xs: "100%", md: "50%" },
+            transition: "all 0.3s ease",
             bgcolor: "grey.100",
             p: 2,
             mt: { xs: 2, md: 0 },
@@ -336,11 +427,11 @@ const RoleListingTable = () => {
         >
           <RoleDetailsCard
             role={selectedRole}
-            canManageCompany={canManageCompany}
+            onBack={() => setSelectedRole(null)}
             onUpdate={() => {}}
             onDelete={() => {}}
-            onBack={() => setSelectedRole(null)}
             refreshList={(value: any) => refreshList(value)}
+            handleCloseDetailCard={() => setSelectedRole(null)}
             onCloseDetailCard={() => setSelectedRole(null)}
           />
         </Box>
@@ -350,10 +441,11 @@ const RoleListingTable = () => {
         open={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
       >
-        <RoleCreationForm
+        <RoleCreatingForm
           refreshList={refreshList}
           onClose={() => setOpenCreateModal(false)}
-          defaultCompanyId={filterCompanyId || undefined}
+                    defaultCompanyId={filterCompanyId || undefined}
+
         />
       </FormModal>
     </Box>

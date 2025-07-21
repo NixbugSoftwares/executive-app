@@ -1,87 +1,188 @@
 import React, { useState } from "react";
-import { TextField, Button, Box, Typography, Switch } from "@mui/material";
+import {
+  TextField,
+  Button,
+  Box,
+  Typography,
+  Switch,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  FormControlLabel,
+  Divider,
+  useTheme,
+} from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useAppDispatch } from "../../store/Hooks";
 import { operatorRoleCreationApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import { operatorRoleCreationSchema } from "../auth/validations/authValidation";
 import {
-  showErrorToast,
   showSuccessToast,
+  showErrorToast,
 } from "../../common/toastMessageHelper";
 
 type RoleFormValues = {
   name: string;
   companyId: number;
-  manage_bus?: boolean;
-  manage_route?: boolean;
-  manage_schedule?: boolean;
-  manage_role?: boolean;
-  manage_operator?: boolean;
-  manage_company?: boolean;
-  manage_fare?: boolean;
-  manage_service?: boolean;
-  manage_duty?: boolean;
+  manage_token?: boolean;
+      update_company?: boolean;
+      create_operator?: boolean;
+      update_operator?: boolean;
+      delete_operator?: boolean;
+      create_route?: boolean;
+      update_route?: boolean;
+      delete_route?: boolean;
+      create_bus?: boolean;
+      update_bus?: boolean;
+      delete_bus?: boolean;
+      create_schedule?: boolean;
+      update_schedule?: boolean;
+      delete_schedule?: boolean;
+      create_service?: boolean;
+      update_service?: boolean;
+      delete_service?: boolean;
+      create_fare?: boolean;
+      update_fare?: boolean;
+      delete_fare?: boolean;
+      create_duty?: boolean;
+      update_duty?: boolean;
+      delete_duty?: boolean;
+      create_role?: boolean;
+      update_role?: boolean;
+      delete_role?: boolean;
 };
 
 interface IRoleCreationFormProps {
   onClose: () => void;
   refreshList: (value: any) => void;
-  defaultCompanyId?: number;
+    defaultCompanyId?: number;
 }
+
+const permissionGroups = [
+  {
+    groupName: "Token Management",
+    permissions: [
+      { label: "Operator Token", key: "manage_token" },
+    ],
+  },
+  {
+    groupName: "Company",
+    permissions: [
+      { label: "Update", key: "update_company" },
+    ],
+  },
+  {
+    groupName: "Operator",
+    permissions: [
+      { label: "Create", key: "create_operator" },
+      { label: "Update", key: "update_operator" },
+      { label: "Delete", key: "delete_operator" },
+    ],
+  },
+  {
+    groupName: "Route",
+    permissions: [
+      { label: "Create", key: "create_route" },
+      { label: "Update", key: "update_route" },
+      { label: "Delete", key: "delete_route" },
+    ],
+  },
+  {
+    groupName: "Bus",
+    permissions: [
+      { label: "Create", key: "create_bus" },
+      { label: "Update", key: "update_bus" },
+      { label: "Delete", key: "delete_bus" },
+    ],
+  },
+  {
+    groupName: "Schedule",
+    permissions: [
+      { label: "Create", key: "create_schedule" },
+      { label: "Update", key: "update_schedule" },
+      { label: "Delete", key: "delete_schedule" },
+    ],
+  },
+  {
+    groupName: "Service",
+    permissions: [
+      { label: "Create", key: "create_service" },
+      { label: "Update", key: "update_service" },
+      { label: "Delete", key: "delete_service" },
+    ],
+  },
+  {
+    groupName: "Fare",
+    permissions: [
+      { label: "Create", key: "create_fare" },
+      { label: "Update", key: "update_fare" },
+      { label: "Delete", key: "delete_fare" },
+    ],
+  },
+  {
+    groupName: "Duty",
+    permissions: [
+      { label: "Create", key: "create_duty" },
+      { label: "Update", key: "update_duty" },
+      { label: "Delete", key: "delete_duty" },
+    ],
+  },
+  {
+    groupName: "Operator Role",
+    permissions: [
+      { label: "Create", key: "create_role" },
+      { label: "Update", key: "update_role" },
+      { label: "Delete", key: "delete_role" },
+    ],
+  },
+];
 
 const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
   onClose,
   refreshList,
-  defaultCompanyId,
+  defaultCompanyId
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
+  const theme = useTheme();
+
+  const defaultValues = permissionGroups.reduce((acc, group) => {
+    group.permissions.forEach((permission) => {
+      acc[permission.key as keyof RoleFormValues] = false;
+    });
+    return acc;
+  }, {} as Partial<RoleFormValues>);
+
+  defaultValues.name = "";
+
   const {
     register,
     handleSubmit,
     control,
     formState: { errors },
   } = useForm<RoleFormValues>({
-    resolver: yupResolver(operatorRoleCreationSchema),
-    defaultValues: {
-      name: "",
-      companyId: defaultCompanyId || undefined,
-      manage_bus: false,
-      manage_route: false,
-      manage_schedule: false,
-      manage_role: false,
-      manage_operator: false,
-      manage_company: false,
-      manage_fare: false,
-      manage_service: false, 
-      manage_duty: false, 
-    },
+    defaultValues: defaultValues as RoleFormValues,
   });
-  console.log("defaultCompanyId", defaultCompanyId);
 
   const handleRoleCreation: SubmitHandler<RoleFormValues> = async (data) => {
     setLoading(true);
+    
+  console.log("defaultCompanyId", defaultCompanyId);
+  
     try {
       const formData = new FormData();
+      formData.append("company_id", String(defaultCompanyId));
       formData.append("name", data.name);
-      const companyIdToUse = defaultCompanyId || data.companyId;
-      console.log("companyIdToUse", companyIdToUse);
+      permissionGroups.forEach((group) => {
+        group.permissions.forEach((permission) => {
+          formData.append(
+            permission.key,
+            String(data[permission.key as keyof RoleFormValues])
+          );
+        });
+      });
 
-      if (companyIdToUse) {
-        formData.append("company_id", String(companyIdToUse));
-      }
-      formData.append("manage_bus", String(data.manage_bus));
-      formData.append("manage_route", String(data.manage_route));
-      formData.append("manage_schedule", String(data.manage_schedule));
-      formData.append("manage_role", String(data.manage_role));
-      formData.append("manage_operator", String(data.manage_operator));
-      formData.append("manage_company", String(data.manage_company));
-      formData.append("manage_fare", String(data.manage_fare));
-
-      const response = await dispatch(
-        operatorRoleCreationApi(formData)
-      ).unwrap();
+      const response = await dispatch(operatorRoleCreationApi(formData)).unwrap();
       if (response?.id) {
         showSuccessToast("Role created successfully!");
         refreshList("refresh");
@@ -90,8 +191,7 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
         showErrorToast("Role creation failed. Please try again.");
       }
     } catch (error: any) {
-      console.error("Error creating role:", error);
-      showErrorToast(error||"Failed to create role. Please try again.");
+      showErrorToast(error || "Failed to create role. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -104,74 +204,137 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
       sx={{
         display: "flex",
         flexDirection: "column",
-        gap: 2,
-        width: 500,
-        margin: "auto",
-        mt: 10,
-        p: 3,
-        borderRadius: "8px",
-        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+        gap: 1,
+        width: "100%",
+        maxHeight: "70vh",
+        overflowY: "auto",
+        pr: 1,
       }}
     >
-      <Typography variant="h5" align="center" gutterBottom>
-        Create Role
+      <Typography variant="h6" gutterBottom>
+        Create New Role
       </Typography>
 
       <TextField
-        label="Role Name"
-        {...register("name")}
-        error={!!errors.name}
-        helperText={errors.name?.message}
-        variant="outlined"
-        size="small"
-      />
+  label="Role Name"
+  {...register("name", {
+    required: "Role name is required",
+    minLength: {
+      value: 4,
+      message: "Minimum 4 characters required",
+    },
+    maxLength: {
+      value: 32,
+      message: "Maximum 32 characters allowed",
+    },
+  })}
+  error={!!errors.name}
+  helperText={errors.name?.message}
+  variant="outlined"
+  size="small"
+  fullWidth
+  sx={{ mb: 2 }}
+/>
 
-      {/* Permission Toggles */}
-      {(
-        [
-          "manage_bus",
-          "manage_route",
-          "manage_schedule",
-          "manage_role",
-          "manage_operator",
-          "manage_company",
-          "manage_fare",
-          "manage_service", 
-          "manage_duty", 
-        ] as (keyof RoleFormValues)[]
-      ).map((field) => (
-        <Box
-          key={field}
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Typography>{field.replace("manage", "Manage ")}</Typography>
-          <Controller
-            name={field}
-            control={control}
-            render={({ field: { value, onChange } }) => (
-              <Switch
-                checked={!!value}
-                onChange={(e) => onChange(e.target.checked)}
-                color="success"
-              />
-            )}
-          />
-        </Box>
-      ))}
 
-      <Button
-        type="submit"
-        variant="contained"
-        color="primary"
-        fullWidth
-        disabled={loading}
+      <Divider sx={{ my: 1 }} />
+
+      <Typography variant="subtitle2" gutterBottom>
+        Permissions
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+          gap: 1,
+          mb: 2,
+        }}
       >
-        {loading ? "Creating..." : "Create Role"}
-      </Button>
+        {permissionGroups.map((group) => (
+          <Accordion
+            key={group.groupName}
+            defaultExpanded={false}
+            sx={{
+              boxShadow: "none",
+              border: `1px solid ${theme.palette.divider}`,
+              "&:before": { display: "none" },
+            }}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon fontSize="small" />}
+              sx={{
+                minHeight: "40px !important",
+                "& .MuiAccordionSummary-content": {
+                  my: 0.5,
+                },
+              }}
+            >
+              <Typography variant="body2" fontWeight="medium">
+                {group.groupName}
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={{ pt: 0, pb: 1 }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                {group.permissions.map((permission) => (
+                  <Controller
+                    key={permission.key}
+                    name={permission.key as keyof RoleFormValues}
+                    control={control}
+                    render={({ field }) => (
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            size="small"
+                            checked={!!field.value}
+                            onChange={(e) => field.onChange(e.target.checked)}
+                            color="primary"
+                          />
+                        }
+                        label={
+                          <Typography variant="caption">
+                            {permission.label}
+                          </Typography>
+                        }
+                        sx={{
+                          m: 0,
+                          justifyContent: "space-between",
+                          "& .MuiFormControlLabel-label": {
+                            flex: 1,
+                          },
+                        }}
+                      />
+                    )}
+                  />
+                ))}
+              </Box>
+            </AccordionDetails>
+          </Accordion>
+        ))}
+      </Box>
+
+      <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+        <Button
+          type="button"
+          variant="outlined"
+          size="small"
+          fullWidth
+          onClick={onClose}
+          disabled={loading}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          variant="contained"
+          size="small"
+          fullWidth
+          disabled={loading}
+          sx={{ bgcolor: "darkblue" }}
+        >
+          {loading ? "Creating..." : "Create Role"}
+        </Button>
+      </Box>
     </Box>
   );
 };
