@@ -135,8 +135,8 @@ interface ScheduleListParams {
   id?: string;
   name?: string;
   permit_no?: string;
-  trigger_mode?: number;
-  ticket_mode?: number;
+  triggering_mode?: number;
+  ticketing_mode?: number;
   company_id?: number;
 }
 
@@ -1712,7 +1712,7 @@ export const serviceDeleteApi = createAsyncThunk(
 export const scheduleListingApi = createAsyncThunk(
   "/schedule",
   async (params: ScheduleListParams, { rejectWithValue }) => {
-    const { limit, offset, id, name, permit_no , trigger_mode, ticket_mode, company_id  } =
+    const { limit, offset, id, name, permit_no , triggering_mode, ticketing_mode, company_id  } =
       params;
 
     const queryParams = {
@@ -1721,8 +1721,8 @@ export const scheduleListingApi = createAsyncThunk(
       ...(id && { id }),
       ...(name && { name: name }),
       ...(permit_no && { permit_no }),
-      ...(ticket_mode && { ticket_mode }),
-      ...(trigger_mode && { trigger_mode }),
+      ...(ticketing_mode && { ticketing_mode }),
+      ...(triggering_mode && { triggering_mode }),
       ...(company_id && { company_id }),
     };
     try {

@@ -77,7 +77,7 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
   } = useForm<IAccountFormInputs>({
     resolver: yupResolver(operatorCreationSchema),
     defaultValues: {
-      gender: 4,
+      gender: 1,
       companyId: defaultCompanyId || undefined,
     },
   });

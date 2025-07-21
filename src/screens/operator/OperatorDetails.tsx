@@ -63,6 +63,8 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
   onBack,
   onCloseDetailCard,
 }) => {
+  console.log("operator", operator);
+  
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const dispatch = useAppDispatch();
   const [updateFormOpen, setUpdateFormOpen] = useState(false); 

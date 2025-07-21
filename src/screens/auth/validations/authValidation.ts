@@ -402,6 +402,7 @@ export const operatorRoleCreationSchema = yup.object().shape({
 
 //******************************************************Company Bus Creation *********************************************** */
 export const busCreationSchema = yup.object().shape({
+  company_id: yup.number().required("Company is required"),
    registrationNumber: yup
     .string()
     .required("Registration number is required")

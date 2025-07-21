@@ -73,6 +73,8 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
   refreshList,
   onCloseDetailCard,
 }) => {
+  console.log("operatorData", operatorData);
+  
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);

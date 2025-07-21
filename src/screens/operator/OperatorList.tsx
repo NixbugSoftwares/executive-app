@@ -36,10 +36,10 @@ import { Operator } from "../../types/type";
 
 const getGenderBackendValue = (displayValue: string): string => {
   const genderMap: Record<string, string> = {
-    Female: "1",
-    Male: "2",
-    Transgender: "3",
-    Other: "4",
+    Other: "1",
+    Female: "2",
+    Male: "3",
+    Transgender: "4",
   };
   return genderMap[displayValue] || "";
 };
