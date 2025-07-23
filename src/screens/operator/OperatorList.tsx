@@ -18,6 +18,7 @@ import {
   Typography,
   DialogTitle,
   DialogActions,
+  CircularProgress,
 } from "@mui/material";
 import ErrorIcon from "@mui/icons-material/Error";
 import { SelectChangeEvent } from "@mui/material";
@@ -32,7 +33,6 @@ import { useLocation, useParams, useNavigate } from "react-router-dom";
 import PaginationControls from "../../common/paginationControl";
 import { showErrorToast } from "../../common/toastMessageHelper";
 import { Operator } from "../../types/type";
-
 
 const getGenderBackendValue = (displayValue: string): string => {
   const genderMap: Record<string, string> = {
@@ -82,7 +82,7 @@ const OperatorListingTable = () => {
   });
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const debounceRef = useRef<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
   const rowsPerPage = 10;
   const [hasNextPage, setHasNextPage] = useState(false);
@@ -325,13 +325,34 @@ const OperatorListingTable = () => {
           </Tooltip>
         </Box>
 
-        <TableContainer sx={{
+        <TableContainer
+          sx={{
             flex: 1,
             maxHeight: "calc(100vh - 100px)",
             overflowY: "auto",
             borderRadius: 2,
             border: "1px solid #e0e0e0",
-          }}>
+            position: "relative",
+          }}
+        >
+          {isLoading && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                zIndex: 1,
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          )}
           <Table stickyHeader>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
@@ -410,7 +431,11 @@ const OperatorListingTable = () => {
             </TableHead>
 
             <TableBody>
-              {operatorList.length > 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center"></TableCell>
+                </TableRow>
+              ) : operatorList.length > 0 ? (
                 operatorList.map((row) => {
                   const isSelected = selectedOperator?.id === row.id;
                   return (
@@ -429,52 +454,55 @@ const OperatorListingTable = () => {
                     >
                       <TableCell>{row.id}</TableCell>
                       <TableCell>
-                      {row.fullName ? (
-                        <Tooltip title={row.fullName} placement="bottom">
-                          <Typography noWrap>
-                            {row.fullName.length > 15
-                              ? `${row.fullName.substring(0, 15)}...`
-                              : row.fullName}
-                          </Typography>
-                        </Tooltip>
-                      ) : (
-                        <Tooltip
-                          title="Full Name not added yet"
-                          placement="bottom"
-                        >
-                          <ErrorIcon sx={{ color: "#737d72" }} />
-                        </Tooltip>
-                      )}
-                    </TableCell>
+                        {row.fullName ? (
+                          <Tooltip title={row.fullName} placement="bottom">
+                            <Typography noWrap>
+                              {row.fullName.length > 15
+                                ? `${row.fullName.substring(0, 15)}...`
+                                : row.fullName}
+                            </Typography>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip
+                            title="Full Name not added yet"
+                            placement="bottom"
+                          >
+                            <ErrorIcon sx={{ color: "#737d72" }} />
+                          </Tooltip>
+                        )}
+                      </TableCell>
                       <TableCell>
-                      {row.phoneNumber ? (
-                        <Typography noWrap>
-                          {row.phoneNumber.replace(/\D/g, "").slice(-10)}
-                        </Typography>
-                      ) : (
-                        <Tooltip
-                          title="Phone Number not added yet"
-                          placement="bottom"
-                        >
-                          <ErrorIcon sx={{ color: "#737d72" }} />
-                        </Tooltip>
-                      )}
-                    </TableCell>
-                      <TableCell>
-                      {row.email_id ? (
-                        <Tooltip title={row.email_id} placement="bottom">
+                        {row.phoneNumber ? (
                           <Typography noWrap>
-                            {row.email_id.length > 20
-                              ? `${row.email_id.substring(0, 20)}...`
-                              : row.email_id}
+                            {row.phoneNumber.replace(/\D/g, "").slice(-10)}
                           </Typography>
-                        </Tooltip>
-                      ) : (
-                        <Tooltip title="Email not added yet" placement="bottom">
-                          <ErrorIcon sx={{ color: "#737d72" }} />
-                        </Tooltip>
-                      )}
-                    </TableCell>
+                        ) : (
+                          <Tooltip
+                            title="Phone Number not added yet"
+                            placement="bottom"
+                          >
+                            <ErrorIcon sx={{ color: "#737d72" }} />
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {row.email_id ? (
+                          <Tooltip title={row.email_id} placement="bottom">
+                            <Typography noWrap>
+                              {row.email_id.length > 20
+                                ? `${row.email_id.substring(0, 20)}...`
+                                : row.email_id}
+                            </Typography>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip
+                            title="Email not added yet"
+                            placement="bottom"
+                          >
+                            <ErrorIcon sx={{ color: "#737d72" }} />
+                          </Tooltip>
+                        )}
+                      </TableCell>
                       <TableCell>{row.gender}</TableCell>
                     </TableRow>
                   );

@@ -1,7 +1,7 @@
 import React from "react";
 import { Sidebar } from "../../common";
 import { Box } from "@mui/material";
-import FareListingPage from "../fare/fareListingpage";
+import FareListingPage from "../globalfare/fareListingpage";
 const FarePage: React.FC = () => {
   return (
     <Box

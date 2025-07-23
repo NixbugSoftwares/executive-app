@@ -50,10 +50,11 @@ interface LandmarkListParams {
   limit?: number;
   offset?: number;
   id?: number;
-  ids?: number[];
+  id_list?: number[];
   name?: string;
   location?: string;
   type?: string;
+  type_list?: number[];
 }
 
 interface BusStopListParams {
@@ -542,15 +543,16 @@ export const roleAssignUpdateApi = createAsyncThunk(
 export const landmarkListApi = createAsyncThunk(
   "/executive/landmark",
   async (params: LandmarkListParams, { rejectWithValue }) => {
-    const { limit, offset, id, ids, name, location, type } = params;
+    const { limit, offset, id, id_list, name, location, type, type_list } = params;
     const queryParams = {
       limit,
       offset,
       ...(id && { id }),
-      ...(ids && { ids }),
+      ...(id_list && { id_list }),
       ...(name && { name }),
       ...(location && { location }),
       ...(type && { type }),
+      ...(type_list && { type_list }),
     };
     try {
       const response = await commonApi.apiCall(

@@ -122,8 +122,9 @@ const canUpdateRoutes = useSelector((state: RootState) =>
       updateParentMapLandmarks(sortedLandmarks);
       const landmarkIds = sortedLandmarks.map((lm) => Number(lm.landmark_id)).filter(Boolean);
       const landmarkRes = await dispatch(
-        landmarkListApi({ ids: landmarkIds }) 
+        landmarkListApi({ id_list: landmarkIds }) 
       ).unwrap();
+console.log("landmarkRes", landmarkRes);
 
       setLandmarks(landmarkRes.data);
     } catch (error: any) {

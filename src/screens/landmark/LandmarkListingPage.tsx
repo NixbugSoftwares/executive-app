@@ -21,6 +21,7 @@ import {
   IconButton,
   Select,
   MenuItem,
+  CircularProgress,
 } from "@mui/material";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
@@ -67,7 +68,7 @@ const LandmarkListing = () => {
   const [search, setSearch] = useState({ id: "", name: "", type: "" });
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const debounceRef = useRef<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
   const rowsPerPage = 10;
   const [hasNextPage, setHasNextPage] = useState(false);
@@ -302,7 +303,28 @@ const LandmarkListing = () => {
           overflowY: "auto",
         }}
       >
-        <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
+        <TableContainer
+          component={Paper}
+          sx={{ overflowX: "auto", position: "relative" }}
+        >
+          {isLoading && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                zIndex: 1,
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          )}
           <Table sx={{ borderCollapse: "collapse", width: "100%" }}>
             <TableHead>
               <TableRow>
@@ -374,7 +396,11 @@ const LandmarkListing = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {landmarkList.length > 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center"></TableCell>
+                </TableRow>
+              ) : landmarkList.length > 0 ? (
                 landmarkList.map((row) => {
                   const isSelected = selectedLandmark?.id === row.id;
 
@@ -517,7 +543,7 @@ const LandmarkListing = () => {
                                                     <Button
                                                       size="small"
                                                       color="primary"
-                                                      sx={{ mr: 1,  }}
+                                                      sx={{ mr: 1 }}
                                                       disabled={
                                                         !canUpdateLandmark ||
                                                         !canCreateLandmark
@@ -611,12 +637,15 @@ const LandmarkListing = () => {
         </TableContainer>
 
         {/*************************************** Pagination    ****************************************/}
-        <PaginationControls
+        
+        <Box sx={{}} >
+          <PaginationControls
           page={page}
           onPageChange={(newPage) => handleChangePage(null, newPage)}
           isLoading={isLoading}
           hasNextPage={hasNextPage}
         />
+          </Box>
       </Box>
 
       <Box

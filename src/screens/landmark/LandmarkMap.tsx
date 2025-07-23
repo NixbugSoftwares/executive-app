@@ -160,7 +160,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     try {
       const response = await dispatch(
-        landmarkListApi({ location: locationaskey })
+        landmarkListApi({ location: locationaskey, limit: 100 })
       ).unwrap();
       console.log("Landmarks in view:", response.data);
       setLandmarks(response.data);

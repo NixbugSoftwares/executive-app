@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   MenuItem,
   Select,
   Table,
@@ -70,7 +71,7 @@ const ServiceListingTable = () => {
   });
   const [debouncedSearch, setDebouncedSearch] = useState<SearchFilter>(search);
   const debounceRef = useRef<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [hasNextPage, setHasNextPage] = useState(false);
   const rowsPerPage = 10;
@@ -118,7 +119,7 @@ const ServiceListingTable = () => {
 
         const items = res?.data || [];
         console.log("API Response:", items);
-        
+
         const formattedServices = items.map((service: any) => ({
           id: service.id,
           name: service.name ?? "",
@@ -148,9 +149,6 @@ const ServiceListingTable = () => {
           ending_at: service.ending_at ?? "",
           remarks: service.remark ?? "",
         }));
-        console.log("Formatted Services:", formattedServices);
-        
-
         setServiceList(formattedServices);
         setHasNextPage(items.length === rowsPerPage);
       } catch (error: any) {
@@ -210,11 +208,14 @@ const ServiceListingTable = () => {
     fetchServiceList(page, debouncedSearch);
   }, [page, debouncedSearch, fetchServiceList]);
 
-  const refreshList = useCallback((value: string) => {
-    if (value === "refresh") {
-      fetchServiceList(page, debouncedSearch);
-    }
-  }, [fetchServiceList, page, debouncedSearch]);
+  const refreshList = useCallback(
+    (value: string) => {
+      if (value === "refresh") {
+        fetchServiceList(page, debouncedSearch);
+      }
+    },
+    [fetchServiceList, page, debouncedSearch]
+  );
 
   return (
     <Box
@@ -228,7 +229,9 @@ const ServiceListingTable = () => {
     >
       <Box
         sx={{
-          flex: selectedService ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
+          flex: selectedService
+            ? { xs: "0 0 100%", md: "0 0 65%" }
+            : "0 0 100%",
           maxWidth: selectedService ? { xs: "100%", md: "65%" } : "100%",
           transition: "all 0.3s ease",
           height: "100%",
@@ -247,10 +250,10 @@ const ServiceListingTable = () => {
               color: "white",
               display: "flex",
               justifyContent: "flex-end",
-              '&:disabled': {
+              "&:disabled": {
                 backgroundColor: "#6c87b7",
                 cursor: "not-allowed",
-              }
+              },
             }}
             variant="contained"
             onClick={() => setOpenCreateModal(true)}
@@ -267,8 +270,27 @@ const ServiceListingTable = () => {
             overflowY: "auto",
             borderRadius: 2,
             border: "1px solid #e0e0e0",
+            position: "relative",
           }}
         >
+          {isLoading && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                zIndex: 1,
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          )}
           <Table stickyHeader>
             <TableHead>
               <TableRow>
@@ -359,9 +381,7 @@ const ServiceListingTable = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} align="center">
-                    Loading...
-                  </TableCell>
+                  <TableCell colSpan={6} align="center"></TableCell>
                 </TableRow>
               ) : serviceList.length > 0 ? (
                 serviceList.map((row) => (

@@ -14,7 +14,7 @@ const Company = lazy(() => import("../screens/company/company"));
 const Operator = lazy(() => import("../screens/operator/Operator"));
 const CRole = lazy(() => import("../screens/operatorRole/Role"));
 const BusRoute = lazy(() => import("../screens/busroute/BusRoute"));
-const GlobalFare = lazy(() => import("../screens/fare/Fare"));
+const GlobalFare = lazy(() => import("../screens/globalfare/Fare"));
 const Bus = lazy(() => import("../screens/bus/Bus"));
 const CompanyFare = lazy(() => import("../screens/companyFare/CompanyFare"));
 const Service = lazy(() => import("../screens/service/service"));

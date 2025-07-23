@@ -12,6 +12,7 @@ import {
   TextField,
   Tooltip,
   Chip,
+  CircularProgress,
 } from "@mui/material";
 import { useDispatch } from "react-redux";
 import ErrorIcon from "@mui/icons-material/Error";
@@ -44,7 +45,7 @@ const CompanyFareListingPage = () => {
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const debounceRef = useRef<number | null>(null);
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
   const rowsPerPage = 10;
   const [hasNextPage, setHasNextPage] = useState(false);
@@ -252,8 +253,27 @@ const CompanyFareListingPage = () => {
                   margin: "0 auto",
                 },
               },
+              position: "relative",
             }}
           >
+            {isLoading && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  backgroundColor: "rgba(255, 255, 255, 0.7)",
+                  zIndex: 1,
+                }}
+              >
+                <CircularProgress />
+              </Box>
+            )}
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
@@ -327,7 +347,11 @@ const CompanyFareListingPage = () => {
               </TableHead>
 
               <TableBody>
-                {fareList.length > 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center"></TableCell>
+                  </TableRow>
+                ) : fareList.length > 0 ? (
                   fareList.map((fare) => {
                     const isSelected = selectedFare?.id === fare.id;
                     return (

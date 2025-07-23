@@ -16,6 +16,7 @@ import {
   DialogContent,
   Chip,
   Typography,
+  CircularProgress,
 } from "@mui/material";
 import { useDispatch } from "react-redux";
 import { companyListApi } from "../../slices/appSlice";
@@ -48,7 +49,7 @@ const CompanyListingTable = () => {
 
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const debounceRef = useRef<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
   const rowsPerPage = 10;
   const [hasNextPage, setHasNextPage] = useState(false);
@@ -218,8 +219,28 @@ const CompanyListingTable = () => {
             overflowY: "auto",
             borderRadius: 2,
             border: "1px solid #e0e0e0",
+            position: "relative",
           }}
         >
+          {isLoading && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                zIndex: 1,
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          )}
+
           <Table stickyHeader>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
@@ -400,7 +421,11 @@ const CompanyListingTable = () => {
                 textOverflow: "ellipsis",
               }}
             >
-              {companyList.length > 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center"></TableCell>
+                </TableRow>
+              ) : companyList.length > 0 ? (
                 companyList.map((company) => {
                   const isSelected = selectedCompany?.id === company.id;
                   return (

@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   MenuItem,
   Select,
   Table,
@@ -42,8 +43,6 @@ const getStatusBackendValue = (displayValue: string): string => {
   return statusMap[displayValue] || "";
 };
 
-
-
 const DutyListingTable = () => {
   const { companyId } = useParams();
   const location = useLocation();
@@ -60,7 +59,7 @@ const DutyListingTable = () => {
   });
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const debounceRef = useRef<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [hasNextPage, setHasNextPage] = useState(false);
   const rowsPerPage = 10;
@@ -134,10 +133,11 @@ const DutyListingTable = () => {
                     : duty.status === 2
                     ? "Started"
                     : duty.status === 3
-                    ? "Terminated" 
+                    ? "Terminated"
                     : duty.status === 4
-                    ? "Ended":"",
-                    created_on: duty.created_on,               
+                    ? "Ended"
+                    : "",
+                created_on: duty.created_on,
               };
             } catch (error) {
               console.error(
@@ -280,8 +280,27 @@ const DutyListingTable = () => {
             overflowY: "auto",
             borderRadius: 2,
             border: "1px solid #e0e0e0",
+            position: "relative",
           }}
         >
+          {isLoading && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                zIndex: 1,
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          )}
           <Table stickyHeader>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
@@ -345,7 +364,11 @@ const DutyListingTable = () => {
             </TableHead>
 
             <TableBody>
-              {dutyList.length > 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center"></TableCell>
+                </TableRow>
+              ) : dutyList.length > 0 ? (
                 dutyList.map((row) => (
                   <TableRow
                     key={row.id}
@@ -390,7 +413,7 @@ const DutyListingTable = () => {
                       />
                     </TableCell>
 
-                    <TableCell sx={{ textAlign: "center" }} >
+                    <TableCell sx={{ textAlign: "center" }}>
                       <Tooltip title={row.operatorName} placement="bottom">
                         <Typography noWrap>
                           {row.operatorName.length > 15
