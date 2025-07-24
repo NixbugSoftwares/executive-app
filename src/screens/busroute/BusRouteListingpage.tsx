@@ -149,11 +149,11 @@ const BusRouteListing = () => {
 
           const processed = response.map((lm: any) => ({
             id: lm.landmark_id,
-            name: lm.name,
             arrivalTime: lm.arrival_delta,
             departureTime: lm.departure_delta,
             distance_from_start: lm.distance_from_start ?? 0,
           }));
+          console.log("_____+_+_+_+_+_+_+_+_+_+_+_+_++_+",processed);
 
           setSelectedRouteLandmarks(processed);
           setMapLandmarks(processed);
@@ -275,7 +275,6 @@ const BusRouteListing = () => {
       fetchRoute(page, debouncedSearch);
     }
   };
-
   return (
     <Box
       sx={{

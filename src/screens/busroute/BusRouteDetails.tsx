@@ -487,7 +487,7 @@ const getLandmarkName = (landmarkId: string | number) => {
       const formData = new FormData();
       formData.append("id", routeId.toString());
       formData.append("name", updatedRouteName);
-      formData.append("starting_time", timeString.displayTime + "Z");
+      formData.append("start_time", timeString.displayTime + "Z");
 
       await dispatch(routeUpdationApi({ routeId, formData })).unwrap();
       refreshList("refresh");
