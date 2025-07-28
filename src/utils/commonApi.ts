@@ -3,7 +3,7 @@ import localStorageHelper from "./localStorageHelper";
 import { showErrorToast } from "../common/toastMessageHelper";
 import commonHelper from "./commonHelper";
 
-export const base_URL = "https://entebus-api.nixbug.com/executive/"; //base URL
+export const base_URL = "https://api.entebus.nixbug.com/executive/"; //base URL
 
 //******************************************************Token **************************************** */
 const getAuthToken = async () => {

@@ -123,7 +123,7 @@ const Sidebar: React.FC = () => {
             icon: <RoomIcon />,
           },
           {
-            label: "Common Fare",
+            label: "Global Fare",
             path: "/executive/global-fare",
             icon: <CalculateIcon />,
           },

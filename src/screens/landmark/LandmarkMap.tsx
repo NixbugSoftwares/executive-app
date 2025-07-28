@@ -36,6 +36,7 @@ import busstopimage from "../../assets/png/busstopimage.png";
 import { Landmark, BusStop } from "../../types/type";
 import { useAppDispatch } from "../../store/Hooks";
 import { landmarkListApi } from "../../slices/appSlice";
+
 interface MapComponentProps {
   onDrawEnd: (coordinates: string) => void;
   isOpen: boolean;
@@ -89,10 +90,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [showAllBoundaries, setShowAllBoundaries] = useState(false);
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
   const isProgrammaticMove = useRef(false);
-
   const [shouldFitView, setShouldFitView] = useState(false);
+  //*********************Initialize the map**************************************
 
-  //*********************Initialize the map********************
   const initializeMap = () => {
     if (!mapRef.current) return null;
 
@@ -110,59 +110,83 @@ const MapComponent: React.FC<MapComponentProps> = ({
         maxZoom: 18,
       }),
     });
+      let previousZoom = map.getView().getZoom();
 
     map.on("pointermove", (event) => {
       const coords = toLonLat(event.coordinate);
       setMousePosition(`${coords[0].toFixed(7)},${coords[1].toFixed(7)} `);
     });
+   map.on("moveend", () => {
+  const currentZoom = map.getView().getZoom();
 
-    map.on("moveend", () => {
-      if (!isProgrammaticMove.current) {
-        fetchLandmarksInView();
-      }
-      isProgrammaticMove.current = false;
-    });
+  if (currentZoom !== previousZoom) {
+    previousZoom = currentZoom;
+    if (showAllBoundaries) {
+      fetchLandmarksInView();
+    }
+  }
+
+  isProgrammaticMove.current = false;
+});
 
     return map;
   };
 
-  useEffect(() => {
-    if (!mapInstance.current) {
-      mapInstance.current = initializeMap();
-      fetchLandmarksInView();
-    }
+useEffect(() => {
+  if (!mapInstance.current) {
+    mapInstance.current = initializeMap();
+    fetchLandmarksInView();
+  }
 
-    if (isOpen) {
-      setTimeout(() => {
-        mapInstance.current?.updateSize();
-        fetchLandmarksInView();
-      }, 500);
-    }
+  let previousZoom = mapInstance.current?.getView().getZoom();
 
-    return () => {
-      // Clean up event listeners when component unmounts
-      if (mapInstance.current) {
-        mapInstance.current.un("moveend", fetchLandmarksInView);
+  // Store the event key for moveend only
+  let moveEndKey: any = null;
+  if (mapInstance.current) {
+    moveEndKey = mapInstance.current.on("moveend", () => {
+      const currentZoom = mapInstance.current?.getView().getZoom();
+
+      if (currentZoom !== previousZoom) {
+        previousZoom = currentZoom;
+
+        if (showAllBoundaries) {
+          fetchLandmarksInView();
+        }
       }
-    };
-  }, [isOpen, onDrawEnd, navigate]);
+
+      isProgrammaticMove.current = false;
+    });
+  }
+
+  return () => {
+    if (mapInstance.current && moveEndKey) {
+      mapInstance.current.un("moveend", moveEndKey);
+    }
+  };
+}, [isOpen, onDrawEnd, navigate, showAllBoundaries]);
 
   const fetchLandmarksInView = async () => {
-    if (!mapInstance.current || isProgrammaticMove.current || selectedLandmark)
-      return;
+    if (!mapInstance.current || isProgrammaticMove.current) return;
 
-    const centerRaw = mapInstance.current.getView().getCenter();
-    if (!centerRaw) return;
+    // Get current map center
+    const center = toLonLat(mapInstance.current.getView().getCenter()!);
+    const location = `POINT(${center[0]} ${center[1]})`;
 
-    const center = toLonLat(centerRaw);
-    const [lon, lat] = center;
-    const locationaskey = `POINT(${lon} ${lat})`;
+    // Adjust limit based on zoom level (fewer landmarks when zoomed out)
+    const zoom = mapInstance.current.getView().getZoom()!;
+    const limit = Math.min(100, Math.max(20, Math.floor(zoom * 5))); // Example: 20-100 landmarks
 
     try {
       const response = await dispatch(
-        landmarkListApi({ location: locationaskey, limit: 100 })
+        landmarkListApi({
+          location, // Center point
+          limit, // Dynamic limit based on zoom
+          order_by: 2, // Order by distance from location
+          order_in: 1, // ASC (nearest first)
+        })
       ).unwrap();
-      console.log("Landmarks in view:", response.data);
+      console.log("response", response);
+
       setLandmarks(response.data);
     } catch (error: any) {
       showErrorToast(error);
@@ -216,9 +240,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setShowAllBoundaries(newShowAllValue);
 
     if (newShowAllValue) {
-      await fetchLandmarksInView();
-
+      await fetchLandmarksInView(); // Load landmarks for current view
       setShouldFitView(true);
+    } else {
+      setLandmarks([]); // Clear landmarks when toggle is off
+      vectorSource.current.clear();
     }
   };
 
@@ -266,33 +292,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     if (!mapInstance.current) return;
     vectorSource.current.clear();
     const features: ol.Feature[] = [];
-
-    // 1. Show specific boundary from selectedBoundary string
-    if (selectedBoundary) {
-      try {
-        const coordinates = selectedBoundary
-          .split(",")
-          .map((coord) => coord.trim().split(" ").map(Number))
-          .map((coord) => fromLonLat(coord));
-
-        const polygon = new Polygon([coordinates]);
-        const feature = new ol.Feature(polygon);
-
-        feature.setStyle(
-          new Style({
-            stroke: new Stroke({ color: "rgb(255, 149, 0)", width: 3 }),
-            fill: new Fill({ color: "rgba(221, 201, 75, 0.3)" }),
-          })
-        );
-
-        features.push(feature);
-      } catch (error) {
-        console.error("Error parsing selectedBoundary:", error);
-      }
-    }
-
-    // 2. Show all landmarks if toggle is active
-    else if (showAllBoundaries && landmarks.length > 0) {
+    // 1. Show all landmarks if toggle is active
+    if (showAllBoundaries && landmarks.length > 0) {
       landmarks.forEach((landmark) => {
         if (!landmark.boundary) return;
         try {
@@ -323,13 +324,48 @@ const MapComponent: React.FC<MapComponentProps> = ({
       });
     }
 
-    // 3. Show selected landmark only (if not all)
-    else if (selectedLandmark?.boundary && !showAllBoundaries) {
+    // 2. Show specific boundary from selectedBoundary string
+    else if (selectedBoundary) {
       try {
-        const coordinates = parseWKTBoundary(selectedLandmark.boundary);
+        const coordinates = selectedBoundary
+          .split(",")
+          .map((coord) => coord.trim().split(" ").map(Number))
+          .map((coord) => fromLonLat(coord));
+
         const polygon = new Polygon([coordinates]);
         const feature = new ol.Feature(polygon);
 
+        // Get the polygon's extent (bounding box)
+        const extent = polygon.getExtent();
+        const [minX, _minY, maxX, maxY] = extent;
+
+        // Calculate top-center position
+        const centerX = (minX + maxX) / 2;
+        const topY = maxY;
+
+        // Create a point feature for the label
+        const labelFeature = new ol.Feature({
+          geometry: new Point([centerX, topY]),
+          name: selectedLandmark?.name || "Landmark",
+        });
+
+        // Style for the label
+        labelFeature.setStyle(
+          new Style({
+            text: new Text({
+              text: `LANDMARK NAME: ${(
+                selectedLandmark?.name || "Landmark"
+              ).toUpperCase()}`,
+              font: "bold 15px Arial",
+              fill: new Fill({ color: "darkblue" }),
+              stroke: new Stroke({ color: "#FFF", width: 3 }),
+              offsetY: -10,
+              textAlign: "center",
+            }),
+          })
+        );
+
+        // Style for the polygon
         feature.setStyle(
           new Style({
             stroke: new Stroke({ color: "rgb(255, 149, 0)", width: 3 }),
@@ -338,15 +374,49 @@ const MapComponent: React.FC<MapComponentProps> = ({
         );
 
         features.push(feature);
+        features.push(labelFeature);
+      } catch (error) {
+        console.error("Error parsing selectedBoundary:", error);
+      }
+    }
+    // 3. Show selected landmark only (if not all)
+    else if (selectedLandmark?.boundary && !showAllBoundaries) {
+      try {
+        const coordinates = parseWKTBoundary(selectedLandmark.boundary);
+        const polygon = new Polygon([coordinates]);
+        const feature = new ol.Feature(polygon);
+
+        // Debugging logs
+        console.log("Selected Landmark:", selectedLandmark);
+        console.log("Landmark name:", selectedLandmark.name);
+        console.log("Boundary coordinates:", coordinates);
+
+        // Create style with conditional text
+        const landmarkName = selectedLandmark.name || "Unnamed Landmark";
+        const style = new Style({
+          stroke: new Stroke({ color: "rgb(255, 149, 0)", width: 3 }),
+          fill: new Fill({ color: "rgba(221, 201, 75, 0.3)" }),
+          text: new Text({
+            text: landmarkName,
+            font: "bold 12px Arial",
+            fill: new Fill({ color: "#000" }),
+            stroke: new Stroke({ color: "#FFF", width: 3 }),
+            offsetY: -25,
+          }),
+        });
+
+        feature.setStyle(style);
+        features.push(feature);
       } catch (err) {
-        console.error("Error parsing selectedLandmark boundary:", err);
+        console.error("Error parsing selectedLandmark:", {
+          error: err,
+          landmark: selectedLandmark,
+        });
       }
     }
 
     // 4. Bus Stops inside selected landmark
     if (busStops && selectedLandmark && !showAllBoundaries) {
-      console.log("Processing bus stops for landmark:", selectedLandmark.id);
-
       const busStopFeatures = busStops
         .filter((stop) => stop.landmark_id === selectedLandmark.id)
         .map((stop) => {
@@ -366,7 +436,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                   anchor: [0.5, 1],
                 }),
                 text: new Text({
-                  text: stop.name || "Bus Stop",
+                  text: ` ${stop.name || "Bus Stop"}`,
                   font: "bold 12px Arial",
                   fill: new Fill({ color: "#000" }),
                   stroke: new Stroke({ color: "#FFF", width: 3 }),
@@ -381,7 +451,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             return null;
           }
         })
-        .filter(Boolean); // Remove null values
+        .filter(Boolean);
 
       console.log(`Created ${busStopFeatures.length} bus stop features`);
       features.push(...busStopFeatures.map((feature) => feature!));
@@ -686,7 +756,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       setMapType(type);
     }
   };
-
   return (
     <Box height="100%">
       <Box
@@ -695,7 +764,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
           alignItems: "center",
           justifyContent: "space-between",
           padding: 1,
-          backgroundColor: "#f5f5f5",
+          backgroundColor: "#f5f5f5ff",
           borderRadius: 1,
         }}
       >
@@ -799,9 +868,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
                     onClick={toggleBusStopAdding}
                     disabled={!canCreateLandmark}
                     sx={{
-                      backgroundColor: !canCreateLandmark || !canUpdateLandmark
-                        ? "#6c87b7 !important"
-                        : "#00008B",
+                      backgroundColor:
+                        !canCreateLandmark || !canUpdateLandmark
+                          ? "#6c87b7 !important"
+                          : "#00008B",
                       color: "white",
                       "&.Mui-disabled": {
                         backgroundColor: "#6c87b7 !important",
@@ -825,7 +895,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
               </Tooltip>
             </Box>
           )}
-          {!selectedLandmark && (
+          {!selectedLandmark && isDrawing && (
             <Tooltip
               title={
                 showAllBoundaries
