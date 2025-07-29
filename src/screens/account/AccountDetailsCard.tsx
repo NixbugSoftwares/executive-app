@@ -23,6 +23,7 @@ import {
   Work as WorkIcon,
   Person as PersonIcon,
 } from "@mui/icons-material";
+import DateRangeOutlinedIcon from "@mui/icons-material/DateRangeOutlined";
 import ToggleOnIcon from "@mui/icons-material/ToggleOn";
 import ToggleOffIcon from "@mui/icons-material/ToggleOff";
 import { useAppDispatch } from "../../store/Hooks";
@@ -35,18 +36,10 @@ import {
 } from "../../common/toastMessageHelper";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
-
+import { Account } from "../../types/type";
+import moment from "moment";
 interface AccountCardProps {
-  account: {
-    id: number;
-    fullName: string;
-    username: string;
-    gender: string;
-    designation: string;
-    email_id: string;
-    phoneNumber: string;
-    status: string;
-  };
+  account: Account;
   onUpdate: () => void;
   onDelete: (id: number) => void;
   onBack: () => void;
@@ -104,7 +97,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
       showErrorToast(error);
     }
   };
-const getGenderValue = (genderText: string): number | undefined => {
+  const getGenderValue = (genderText: string): number | undefined => {
     const option = genderOptions.find((opt) => opt.label === genderText);
     return option?.value;
   };
@@ -148,6 +141,9 @@ const getGenderValue = (genderText: string): number | undefined => {
         <Card sx={{ p: 2, bgcolor: "grey.100", mb: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <PhoneIcon color="action" sx={{ mr: 1 }} />
+            <Typography>
+              <b>Phone:</b>
+            </Typography>
             {account.phoneNumber ? (
               <a
                 href={`tel:${account.phoneNumber.replace("tel:", "")}`}
@@ -166,6 +162,9 @@ const getGenderValue = (genderText: string): number | undefined => {
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <EmailIcon color="action" sx={{ mr: 1 }} />
+            <Typography>
+              <b>Email:</b>
+            </Typography>
             {account.email_id ? (
               <a
                 href={`mailto:${account.email_id}`}
@@ -184,6 +183,9 @@ const getGenderValue = (genderText: string): number | undefined => {
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <PersonIcon color="action" sx={{ mr: 1 }} />
+            <Typography>
+              <b>Gender:</b>
+            </Typography>
             <Typography variant="body2">
               {account.gender ? account.gender : "Not added yet"}
             </Typography>
@@ -191,8 +193,32 @@ const getGenderValue = (genderText: string): number | undefined => {
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <WorkIcon color="action" sx={{ mr: 1 }} />
+            <Typography>
+              <b>Designation:</b>
+            </Typography>
+
             <Typography variant="body2">
               {account.designation ? account.designation : "Not added yet"}
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+            <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
+
+            <Typography variant="body2">
+              <b> Created at:</b>
+              {moment(account.created_on).local().format("DD-MM-YYYY, hh:mm A")}
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+            <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
+
+            <Typography variant="body2">
+              <b> Last updated at:</b>
+              {moment(account?.updated_on).isValid()
+                ? moment(account.updated_on)
+                    .local()
+                    .format("DD-MM-YYYY, hh:mm A")
+                : "Not updated yet"}
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", mb: 1, gap: 1 }}>
@@ -217,7 +243,7 @@ const getGenderValue = (genderText: string): number | undefined => {
         {/* Action Buttons */}
         <CardActions
           sx={{
-            justifyContent: isLoggedInUser ? "center" : "space-between",
+            justifyContent: isLoggedInUser ? "left" : "left",
             alignItems: "center",
             mt: 2,
           }}
@@ -268,42 +294,41 @@ const getGenderValue = (genderText: string): number | undefined => {
                 </Button>
               </span>
             </Tooltip>
-
-            {/* Delete Button (Hidden for Logged-in User) */}
-            {!isLoggedInUser && (
-              <Tooltip
-                title={
-                  !canDeleteExecutive
-                    ? "You don't have permission, contact the admin"
-                    : ""
-                }
-                arrow
-                placement="top-start"
+            <Tooltip
+              title={
+                !canDeleteExecutive || isLoggedInUser
+                  ? "You don't have permission, contact the admin"
+                  : ""
+              }
+              arrow
+              placement="top-start"
+            >
+              <span
+                style={{
+                  cursor:
+                    !canDeleteExecutive || isLoggedInUser
+                      ? "not-allowed"
+                      : "default",
+                }}
               >
-                <span
-                  style={{
-                    cursor: !canDeleteExecutive ? "not-allowed" : "default",
+                <Button
+                  variant="contained"
+                  color="error"
+                  size="small"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  startIcon={<DeleteIcon />}
+                  disabled={!canDeleteExecutive || isLoggedInUser}
+                  sx={{
+                    "&.Mui-disabled": {
+                      backgroundColor: "#e57373 !important",
+                      color: "#ffffff99",
+                    },
                   }}
                 >
-                  <Button
-                    variant="contained"
-                    color="error"
-                    size="small"
-                    onClick={() => setDeleteConfirmOpen(true)}
-                    startIcon={<DeleteIcon />}
-                    disabled={!canDeleteExecutive}
-                    sx={{
-                      "&.Mui-disabled": {
-                        backgroundColor: "#e57373 !important",
-                        color: "#ffffff99",
-                      },
-                    }}
-                  >
-                    Delete
-                  </Button>
-                </span>
-              </Tooltip>
-            )}
+                  Delete
+                </Button>
+              </span>
+            </Tooltip>
           </Box>
         </CardActions>
       </Card>
@@ -348,11 +373,11 @@ const getGenderValue = (genderText: string): number | undefined => {
               fullName: account.fullName,
               email: account.email_id,
               phoneNumber: account.phoneNumber
-              .replace(/\D/g, "")
-              .replace(/^91/, ""),
+                .replace(/\D/g, "")
+                .replace(/^91/, ""),
               designation: account.designation,
-            gender: getGenderValue(account.gender),
-            status: getStatusValue(account.status),
+              gender: getGenderValue(account.gender),
+              status: getStatusValue(account.status),
             }}
             onClose={() => setUpdateFormOpen(false)}
             onCloseDetailCard={onCloseDetailCard}

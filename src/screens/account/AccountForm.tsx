@@ -68,7 +68,7 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
   } = useForm<IAccountFormInputs>({
     resolver: yupResolver(accountFormSchema),
     defaultValues: {
-      gender: 4,
+      gender: 1,
     },
   });
 

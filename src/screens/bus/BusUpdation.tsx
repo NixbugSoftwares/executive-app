@@ -16,7 +16,6 @@ import {
   showErrorToast,
   showSuccessToast,
 } from "../../common/toastMessageHelper";
-
 type BusFormValues = {
   id: number;
   registration_number: string;

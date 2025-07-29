@@ -84,7 +84,7 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
 
   const rowsPerPage = 10;
 
-  const { register, handleSubmit, control, formState: { errors } } = useForm<Schedule>({
+  const {  handleSubmit, control, formState: { errors } } = useForm<Schedule>({
     defaultValues: {
       ticketing_mode: 1,
       triggering_mode: 1,
@@ -136,49 +136,47 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
               bus: items.length === rowsPerPage,
             }));
           })
-          .catch((error) => {
-            showErrorToast(error.message || "Failed to fetch Bus list");
+          .catch((error:any) => {
+            showErrorToast(error|| "Failed to fetch Bus list");
           });
       },
       [dispatch, companyId]
     );
   
-    const fetchFareList = useCallback(
-    async (pageNumber: number, searchText = "") => {
-      setLoading(true);
-      const offset = pageNumber * rowsPerPage;
-      try {
-        const res = await dispatch(
-          fareListApi({
-            limit: rowsPerPage,
-            offset,
-            name: searchText,
-            company_id: companyId, 
-          })
-        ).unwrap();
-  
-        const fares = res.data || [];
-        
-        const formattedFareList = fares.map((fare: any) => ({
-          id: fare.id,
-          name: fare.name ?? "-",
-        }));
-  
-        setDropdownData((prev) => ({
-          ...prev,
-          fareList:
-            pageNumber === 0
-              ? formattedFareList
-              : [...prev.fareList, ...formattedFareList],
-        }));
-      } catch (error: any) {
-        showErrorToast(error?.message || "Failed to fetch Fare list");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [dispatch, companyId, rowsPerPage]
-  );
+  const fetchFareList = useCallback(
+  async (pageNumber: number, searchText = "") => {
+    const offset = pageNumber * rowsPerPage;
+    try {
+      const res = await dispatch(
+        fareListApi({
+          limit: rowsPerPage,
+          offset,
+          name: searchText,
+          company_id: companyId,
+          
+        })
+      ).unwrap();
+
+      const fares = res.data || [];
+
+      const formattedFareList = fares.map((fare: any) => ({
+        id: fare.id,
+        name: fare.name ?? "-",
+      }));
+
+      setDropdownData((prev) => ({
+        ...prev,
+        fareList:
+          pageNumber === 0
+            ? formattedFareList
+            : [...prev.fareList, ...formattedFareList],
+      }));
+    } catch (error: any) {
+      showErrorToast(error || "Failed to fetch Fare list");
+    }
+  },
+  [dispatch, rowsPerPage, companyId]
+);
   
     const fetchRouteList = useCallback(
       (pageNumber: number, searchText = "") => {
@@ -351,15 +349,31 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
           sx={{ mt: 1 }}
           onSubmit={handleSubmit(handleAccountCreation)}
         >
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Schedule Name"
-            {...register("name", { required: "Service name is required" })}
-            error={!!errors.name}
-            helperText={errors.name?.message}
-            size="small"
+          <Controller
+            name="name"
+            control={control}
+            rules={{
+              required: "Schedule name is required",
+              minLength: {
+                value: 4,
+                message: "Schedule name must be at least 4 characters",
+              },
+              maxLength: {
+                value: 32,
+                message: "Schedule name must be at most 32 characters",
+              },
+            }}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                margin="normal"
+                fullWidth
+                label="Schedule Name"
+                error={!!errors.name}
+                helperText={errors.name?.message}
+                size="small"
+              />
+            )}
           />
 
           {renderAutocomplete("route_id", "Route", memoizedRouteList, "route")}

@@ -20,7 +20,7 @@ import {
 
 interface IAccountFormInputs {
   company_id: number;
-  registrationNumber: string;
+  registration_number: string;
   name: string;
   capacity: number;
   manufactured_on: string;
@@ -71,7 +71,7 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
       if (companyIdToUse) {
         formData.append("company_id", companyIdToUse.toString());
       }
-      formData.append("registration_number", data.registrationNumber);
+      formData.append("registration_number", data.registration_number);
       formData.append("name", data.name);
       formData.append("capacity", data.capacity.toString());
       formData.append(
@@ -140,9 +140,9 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
             required
             fullWidth
             label="Registration Number"
-            {...register("registrationNumber")}
-            error={!!errors.registrationNumber}
-            helperText={errors.registrationNumber?.message}
+            {...register("registration_number")}
+            error={!!errors.registration_number}
+            helperText={errors.registration_number?.message}
             size="small"
           />
           <TextField

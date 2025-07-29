@@ -148,6 +148,8 @@ const ServiceListingTable = () => {
           starting_at: service.starting_at ?? "",
           ending_at: service.ending_at ?? "",
           remarks: service.remark ?? "",
+          created_on: service.created_on ?? "",
+          updated_on: service.updated_on ?? "",
         }));
         setServiceList(formattedServices);
         setHasNextPage(items.length === rowsPerPage);

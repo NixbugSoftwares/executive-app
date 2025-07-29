@@ -81,7 +81,7 @@ const ServiceCreationForm: React.FC<IOperatorCreationFormProps> = ({
     defaultValues: {
       ticket_mode: "1",
       created_mode: "1",
-      starting_at: new Date().toISOString().split("T")[0], 
+      starting_at: new Date().toISOString().split("T")[0],
     },
   });
 
@@ -130,7 +130,7 @@ const ServiceCreationForm: React.FC<IOperatorCreationFormProps> = ({
           }));
         })
         .catch((error) => {
-          showErrorToast(error.message || "Failed to fetch Bus list");
+          showErrorToast(error || "Failed to fetch Bus list");
         });
     },
     [dispatch, companyId]
@@ -138,7 +138,6 @@ const ServiceCreationForm: React.FC<IOperatorCreationFormProps> = ({
 
   const fetchFareList = useCallback(
   async (pageNumber: number, searchText = "") => {
-    setLoading(true);
     const offset = pageNumber * rowsPerPage;
     try {
       const res = await dispatch(
@@ -146,12 +145,12 @@ const ServiceCreationForm: React.FC<IOperatorCreationFormProps> = ({
           limit: rowsPerPage,
           offset,
           name: searchText,
-          company_id: companyId, 
+          company_id: companyId,
         })
       ).unwrap();
 
       const fares = res.data || [];
-      
+
       const formattedFareList = fares.map((fare: any) => ({
         id: fare.id,
         name: fare.name ?? "-",
@@ -165,9 +164,7 @@ const ServiceCreationForm: React.FC<IOperatorCreationFormProps> = ({
             : [...prev.fareList, ...formattedFareList],
       }));
     } catch (error: any) {
-      showErrorToast(error?.message || "Failed to fetch Fare list");
-    } finally {
-      setLoading(false);
+      showErrorToast(error || "Failed to fetch Fare list");
     }
   },
   [dispatch, companyId, rowsPerPage]
@@ -390,39 +387,50 @@ const ServiceCreationForm: React.FC<IOperatorCreationFormProps> = ({
             name="fare_id"
             control={control}
             rules={{ required: "Fare is required" }}
-            render={({ field }) => (
-              <Autocomplete
-                options={memoizedFareList}
-                getOptionLabel={(option) => option.name}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                value={
-                  memoizedFareList.find((item) => item.id === field.value) ||
-                  null
-                }
-                onChange={(_, newValue) => {
-                  field.onChange(newValue?.id);
-                }}
-                onInputChange={(_, newInputValue) => {
-                  setSearchParams((prev) => ({ ...prev, fare: newInputValue }));
-                  setPage((prev) => ({ ...prev, fare: 0 }));
-                  fetchFareList(0, newInputValue);
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Select Fare"
-                    margin="normal"
-                    error={!!errors.fare_id}
-                    helperText={errors.fare_id?.message}
-                    required
-                  />
-                )}
-                ListboxProps={{
-                  onScroll: (event) => handleScroll(event, "fare"),
-                  style: { maxHeight: 200, overflow: "auto" },
-                }}
-              />
-            )}
+            render={({ field }) => {
+              // Find the selected fare in the list, or create a fallback object if not found
+              const selectedFare =
+                memoizedFareList.find((item) => item.id === field.value) ||
+                (field.value
+                  ? { id: field.value, name: "Selected Fare" }
+                  : null);
+
+              return (
+                <Autocomplete
+                  options={memoizedFareList}
+                  getOptionLabel={(option) => option.name}
+                  isOptionEqualToValue={(option, value) =>
+                    option.id === value.id
+                  }
+                  value={selectedFare}
+                  onChange={(_, newValue) => {
+                    field.onChange(newValue?.id);
+                  }}
+                  onInputChange={(_, newInputValue) => {
+                    setSearchParams((prev) => ({
+                      ...prev,
+                      fare: newInputValue,
+                    }));
+                    setPage((prev) => ({ ...prev, fare: 0 }));
+                    fetchFareList(0, newInputValue);
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Select Fare"
+                      margin="normal"
+                      error={!!errors.fare_id}
+                      helperText={errors.fare_id?.message}
+                      required
+                    />
+                  )}
+                  ListboxProps={{
+                    onScroll: (event) => handleScroll(event, "fare"),
+                    style: { maxHeight: 200, overflow: "auto" },
+                  }}
+                />
+              );
+            }}
           />
 
           <TextField

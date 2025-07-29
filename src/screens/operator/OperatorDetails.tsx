@@ -22,6 +22,7 @@ import {
   AccountCircle as UserIcon,
   Person as PersonIcon,
 } from "@mui/icons-material";
+import DateRangeOutlinedIcon from "@mui/icons-material/DateRangeOutlined";
 import ToggleOnIcon from "@mui/icons-material/ToggleOn";
 import ToggleOffIcon from "@mui/icons-material/ToggleOff";
 import { useAppDispatch } from "../../store/Hooks";
@@ -36,6 +37,7 @@ import AccountUpdateForm from "./UpdationForm";
 import { Operator } from "../../types/type";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
+import moment from "moment";
 interface AccountCardProps {
   operator: Operator;
   onUpdate: () => void;
@@ -64,17 +66,17 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
   onCloseDetailCard,
 }) => {
   console.log("operator", operator);
-  
+
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const dispatch = useAppDispatch();
-  const [updateFormOpen, setUpdateFormOpen] = useState(false); 
-    const canUpdateOperator = useSelector((state: RootState) =>
+  const [updateFormOpen, setUpdateFormOpen] = useState(false);
+  const canUpdateOperator = useSelector((state: RootState) =>
     state.app.permissions.includes("update_operator")
   );
   const canDeleteOperator = useSelector((state: RootState) =>
     state.app.permissions.includes("delete_operator")
   );
-   const getGenderValue = (genderText: string): number | undefined => {
+  const getGenderValue = (genderText: string): number | undefined => {
     const option = genderOptions.find((opt) => opt.label === genderText);
     return option?.value;
   };
@@ -134,6 +136,9 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
         <Card sx={{ p: 2, bgcolor: "grey.100", mb: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <PhoneIcon color="action" sx={{ mr: 1 }} />
+            <Typography>
+              <b>Phone:</b>
+            </Typography>
             {operator.phoneNumber ? (
               <a
                 href={`tel:${operator.phoneNumber.replace("tel:", "")}`}
@@ -152,6 +157,9 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <EmailIcon color="action" sx={{ mr: 1 }} />
+            <Typography>
+              <b>Email:</b>
+            </Typography>
             {operator.email_id ? (
               <a
                 href={`mailto:${operator.email_id}`}
@@ -170,8 +178,34 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <PersonIcon color="action" sx={{ mr: 1 }} />
+
+            <Typography>
+              <b>Gender:</b>
+            </Typography>
             <Typography variant="body2">
               {operator.gender ? operator.gender : "Not added yet"}
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+            <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
+
+            <Typography variant="body2">
+              <b> Created at:</b>
+              {moment(operator.created_on)
+                .local()
+                .format("DD-MM-YYYY, hh:mm A")}
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+            <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
+
+            <Typography variant="body2">
+              <b> Last updated at:</b>
+              {moment(operator?.updated_on).isValid()
+                ? moment(operator.updated_on)
+                    .local()
+                    .format("DD-MM-YYYY, hh:mm A")
+                : "Not updated yet"}
             </Typography>
           </Box>
 
@@ -216,7 +250,7 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
             {/* Update Button with Tooltip */}
             <Tooltip
               title={
-                !canUpdateOperator 
+                !canUpdateOperator
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -236,7 +270,7 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
                     setUpdateFormOpen(true);
                   }}
                   startIcon={<EditIcon />}
-                  disabled={!canUpdateOperator }
+                  disabled={!canUpdateOperator}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#81c784 !important",
@@ -249,7 +283,6 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
               </span>
             </Tooltip>
 
-           
             <Tooltip
               title={
                 !canDeleteOperator
@@ -295,7 +328,9 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
           company_id={operator.company_id}
           operatorData={{
             fullName: operator.fullName,
-            phoneNumber: operator.phoneNumber.replace(/\D/g, "").replace(/^91/, ""),
+            phoneNumber: operator.phoneNumber
+              .replace(/\D/g, "")
+              .replace(/^91/, ""),
             email: operator.email_id,
             gender: getGenderValue(operator.gender),
             status: getStatusValue(operator.status),

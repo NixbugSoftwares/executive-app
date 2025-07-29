@@ -121,6 +121,8 @@ const OperatorListingTable = () => {
           email_id: operator.email_id,
           phoneNumber: operator.phone_number || "",
           status: operator.status === 1 ? "Active" : "Suspended",
+          created_on: operator.created_on,
+          updated_on: operator.updated_on,
         }));
         setOperatorList(formattedAccounts);
         setHasNextPage(items.length === rowsPerPage);
@@ -370,6 +372,7 @@ const OperatorListingTable = () => {
                             displayEmpty
                             size="small"
                             sx={{
+                              width: "150px",
                               textAlign: "center",
                               "& .MuiInputBase-root": {
                                 height: 30,
@@ -421,7 +424,6 @@ const OperatorListingTable = () => {
                               fontSize: selectedOperator ? "0.8rem" : "1rem",
                             },
                           }}
-                          fullWidth
                         />
                       )}
                     </TableCell>
@@ -452,7 +454,7 @@ const OperatorListingTable = () => {
                         "&:hover": { backgroundColor: "#E3F2FD" },
                       }}
                     >
-                      <TableCell>{row.id}</TableCell>
+                      <TableCell align="center">{row.id}</TableCell>
                       <TableCell>
                         {row.fullName ? (
                           <Tooltip title={row.fullName} placement="bottom">

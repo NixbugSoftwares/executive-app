@@ -100,58 +100,6 @@ export const accountFormSchema = yup.object().shape({
   
 });
 
-//**************************************************account updation schema **************************************** */
-
-
-export const accountUpdationFormSchema = yup.object().shape({
-  username: yup
-    .string()
-    .optional()
-    .matches(/^[A-Za-z][A-Za-z0-9@._-]{3,31}$/, "Invalid username format"),
-
-  password: yup
-    .string()
-    .matches(
-      /^[A-Za-z0-9\-+,.@_$%&*#!^=/\?]{8,64}$/,
-      "Invalid password format"
-    ),
-    
-  fullName: yup
-  .string()
-  .optional()
-  .matches(/^[A-Za-z]+(?: [A-Za-z]+)*$|^$/, "Invalid full name format")
-  .max(32, "Full name cannot exceed 32 characters"),
-
-  phoneNumber: yup
-  .string()
-  .optional()
-  .matches(/^[1-9][0-9]{9}$/, "Invalid phone number format"),
- 
-  email: yup
-    .string()
-    .trim()
-    .max(254, "Email cannot exceed 254 characters")
-    .matches(/^(?!.*\.\.)[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+)*@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}|^$/, "Invalid email format")
-    .optional(),
-
-  gender: yup
-    .number(),
-
-  designation: yup
-    .string()
-    .trim()
-    .max(32, "Designation cannot exceed 32 characters")
-    .matches(/^[a-zA-Z\s\-\_\(\)]*|^$/, "Invalid designation format")
-    .optional(),
-
-  role: yup
-    .number()
-    .required(), 
-
-  status: yup
-    .number()
-  
-});
 
 //*********************************************************Role creating validation schema********************************************** 
 export const roleCreationSchema = yup.object().shape({
@@ -261,9 +209,9 @@ export const companyCreationSchema = yup.object().shape({
 
   address: yup
   .string()
+  .required("address is required")
   .min(4, "Address must be at least 4 characters")
-  .max(512, "Address name cannot exceed 32 characters")
-  .required("address is required"),
+  .max(512, "Address name cannot exceed 32 characters"),
 
   location: yup
   .string()
@@ -324,8 +272,9 @@ export const operatorCreationSchema = yup.object().shape({
 
   fullName: yup
     .string()
-    .optional()
+    .required("Full name is required")
     .matches(/^[A-Za-z]+(?: [A-Za-z]+)*$|^$/, "Invalid full name format")
+    .min(4, "Full name must be at least 4 characters")
     .max(32, "Full name cannot exceed 32 characters"),
   phoneNumber: yup
 
@@ -403,13 +352,13 @@ export const operatorRoleCreationSchema = yup.object().shape({
 //******************************************************Company Bus Creation *********************************************** */
 export const busCreationSchema = yup.object().shape({
   company_id: yup.number().required("Company is required"),
-   registrationNumber: yup
+   registration_number: yup
     .string()
     .required("Registration number is required")
     .max(16, "Registration number must be at most 16 characters")
     .matches(
       /^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{1,4}$/,
-      "Format: e.g., KA01AB1234 — 2 letters, 2 digits, 1–2 letters, 1–4 digits"
+      "Format: e.g., KA01AB1234 — 2 letters, 2 digits, 1-2 letters, 1-4 digits"
     ),
 
   name: yup.string().required().min(4).max(32),

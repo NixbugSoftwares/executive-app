@@ -38,61 +38,12 @@ import {
 } from "../../common/toastMessageHelper";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
-
+import { RoleDetails } from "../../types/type";
 interface RoleCardProps {
   role: {
     id: number;
     name: string;
-    roleDetails?: {
-      manage_ex_token?: boolean;
-      manage_op_token?: boolean;
-      manage_ve_token?: boolean;
-      create_executive?: boolean;
-      update_executive?: boolean;
-      delete_executive?: boolean;
-      create_landmark?: boolean;
-      update_landmark?: boolean;
-      delete_landmark?: boolean;
-      create_company?: boolean;
-      update_company?: boolean;
-      delete_company?: boolean;
-      create_operator?: boolean;
-      update_operator?: boolean;
-      delete_operator?: boolean;
-      create_business?: boolean;
-      update_business?: boolean;
-      delete_business?: boolean;
-      create_route?: boolean;
-      update_route?: boolean;
-      delete_route?: boolean;
-      create_bus?: boolean;
-      update_bus?: boolean;
-      delete_bus?: boolean;
-      create_vendor?: boolean;
-      update_vendor?: boolean;
-      delete_vendor?: boolean;
-      create_schedule?: boolean;
-      update_schedule?: boolean;
-      delete_schedule?: boolean;
-      create_service?: boolean;
-      update_service?: boolean;
-      delete_service?: boolean;
-      create_fare?: boolean;
-      update_fare?: boolean;
-      delete_fare?: boolean;
-      create_duty?: boolean;
-      update_duty?: boolean;
-      delete_duty?: boolean;
-      create_ex_role?: boolean;
-      update_ex_role?: boolean;
-      delete_ex_role?: boolean;
-      create_op_role?: boolean;
-      update_op_role?: boolean;
-      delete_op_role?: boolean;
-      create_ve_role?: boolean;
-      update_ve_role?: boolean;
-      delete_ve_role?: boolean;
-    };
+    roleDetails?: RoleDetails;
   };
   onBack: () => void;
   onUpdate: (id: number) => void;
@@ -109,17 +60,14 @@ const permissionGroups = [
       {
         label: "Executive ",
         key: "manage_ex_token",
-        icon: <PermissionsIcon fontSize="small" />,
       },
       {
         label: "Operator",
         key: "manage_op_token",
-        icon: <PermissionsIcon fontSize="small" />,
       },
       {
         label: "Vendor ",
         key: "manage_ve_token",
-        icon: <PermissionsIcon fontSize="small" />,
       },
     ],
   },
@@ -129,17 +77,14 @@ const permissionGroups = [
       {
         label: "Create",
         key: "create_executive",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Update",
         key: "update_executive",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Delete",
         key: "delete_executive",
-        icon: <DeleteIcon fontSize="small" />,
       },
     ],
   },
@@ -149,17 +94,14 @@ const permissionGroups = [
       {
         label: "Create",
         key: "create_landmark",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Update",
         key: "update_landmark",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Delete",
         key: "delete_landmark",
-        icon: <DeleteIcon fontSize="small" />,
       },
     ],
   },
@@ -169,17 +111,14 @@ const permissionGroups = [
       {
         label: "Create",
         key: "create_company",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Update",
         key: "update_company",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Delete",
         key: "delete_company",
-        icon: <DeleteIcon fontSize="small" />,
       },
     ],
   },
@@ -189,17 +128,14 @@ const permissionGroups = [
       {
         label: "Create",
         key: "create_operator",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Update",
         key: "update_operator",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Delete",
         key: "delete_operator",
-        icon: <DeleteIcon fontSize="small" />,
       },
     ],
   },
@@ -209,17 +145,14 @@ const permissionGroups = [
       {
         label: "Create",
         key: "create_business",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Update",
         key: "update_business",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Delete",
         key: "delete_business",
-        icon: <DeleteIcon fontSize="small" />,
       },
     ],
   },
@@ -229,17 +162,14 @@ const permissionGroups = [
       {
         label: "Create",
         key: "create_route",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Update",
         key: "update_route",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Delete",
         key: "delete_route",
-        icon: <DeleteIcon fontSize="small" />,
       },
     ],
   },
@@ -249,17 +179,14 @@ const permissionGroups = [
       {
         label: "Create",
         key: "create_bus",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Update",
         key: "update_bus",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Delete",
         key: "delete_bus",
-        icon: <DeleteIcon fontSize="small" />,
       },
     ],
   },
@@ -269,17 +196,14 @@ const permissionGroups = [
       {
         label: "Create",
         key: "create_vendor",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Update",
         key: "update_vendor",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Delete",
         key: "delete_vendor",
-        icon: <DeleteIcon fontSize="small" />,
       },
     ],
   },
@@ -289,17 +213,14 @@ const permissionGroups = [
       {
         label: "Create",
         key: "create_schedule",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Update",
         key: "update_schedule",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Delete",
         key: "delete_schedule",
-        icon: <DeleteIcon fontSize="small" />,
       },
     ],
   },
@@ -309,17 +230,14 @@ const permissionGroups = [
       {
         label: "Create",
         key: "create_service",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Update",
         key: "update_service",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Delete",
         key: "delete_service",
-        icon: <DeleteIcon fontSize="small" />,
       },
     ],
   },
@@ -329,17 +247,14 @@ const permissionGroups = [
       {
         label: "Create",
         key: "create_fare",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Update",
         key: "update_fare",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Delete",
         key: "delete_fare",
-        icon: <DeleteIcon fontSize="small" />,
       },
     ],
   },
@@ -349,17 +264,14 @@ const permissionGroups = [
       {
         label: "Create",
         key: "create_duty",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Update",
         key: "update_duty",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Delete",
         key: "delete_duty",
-        icon: <DeleteIcon fontSize="small" />,
       },
     ],
   },
@@ -369,17 +281,14 @@ const permissionGroups = [
       {
         label: "Create",
         key: "create_ex_role",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Update",
         key: "update_ex_role",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Delete",
         key: "delete_ex_role",
-        icon: <DeleteIcon fontSize="small" />,
       },
     ],
   },
@@ -389,17 +298,14 @@ const permissionGroups = [
       {
         label: "Create",
         key: "create_op_role",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Update",
         key: "update_op_role",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Delete",
         key: "delete_op_role",
-        icon: <DeleteIcon fontSize="small" />,
       },
     ],
   },
@@ -409,17 +315,14 @@ const permissionGroups = [
       {
         label: "Create",
         key: "create_ve_role",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Update",
         key: "update_ve_role",
-        icon: <EditIcon fontSize="small" />,
       },
       {
         label: "Delete",
         key: "delete_ve_role",
-        icon: <DeleteIcon fontSize="small" />,
       },
     ],
   },
@@ -484,7 +387,7 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
       <Card
         sx={{ maxWidth: 500, margin: "auto", boxShadow: 3, borderRadius: 2 }}
       >
-        <Box sx={{ p: 2, bgcolor: theme.palette.primary.main, color: "white" }}>
+        <Box sx={{ p: 2, bgcolor:"darkblue", color: "white" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Avatar sx={{ bgcolor: "white", width: 40, height: 40 }}>
               <RolesIcon color="primary" />
@@ -500,14 +403,14 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
 
         {/* Permissions Section */}
         <CardContent>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1, backgroundColor: "rgba(42, 150, 46, 0.1)", p: 1, borderRadius: 1 }}>
             <PermissionsIcon color="primary" />
             <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
               Permissions
             </Typography>
           </Box>
 
-          <Divider sx={{ mb: 2 }} />
+          <Divider sx={{ scale: 5, fill: theme.palette.primary.main, mb: 2 }} />
 
           <Grid container spacing={1}>
             {permissionGroups.map((group) => (
@@ -517,10 +420,10 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
                     variant="subtitle2"
                     sx={{
                       fontWeight: "bold",
-                      color: theme.palette.text.secondary,
+                      color: theme.palette.text.primary,
                     }}
                   >
-                    {group.groupName}
+                    {group.groupName}:
                   </Typography>
                 </Grid>
                 {group.permissions.map((permission) => (
@@ -537,7 +440,6 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
                           : "rgba(201, 65, 56, 0.3)",
                       }}
                     >
-                      {permission.icon}
                       <Typography variant="caption" sx={{ flex: 1 }}>
                         {permission.label}
                       </Typography>
@@ -586,6 +488,7 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
                   onClick={() => setUpdateFormOpen(true)}
                   disabled={!canUpdateRole}
                   startIcon={<EditIcon />}
+                  color="success"
                   sx={{
                     minWidth: 100,
                     "&.Mui-disabled": {
@@ -687,6 +590,11 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
             onCloseDetailCard={onCloseDetailCard}
           />
         </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseModal} color="error">
+            Cancle
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   );

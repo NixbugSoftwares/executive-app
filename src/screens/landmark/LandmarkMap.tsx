@@ -51,6 +51,7 @@ interface MapComponentProps {
   onDrawingChange: (isDrawing: boolean) => void;
   busStops?: BusStop[];
   onBusStopPointSelect: (Location: string) => void;
+  landmarkRefreshKey: number;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
@@ -64,6 +65,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onDrawingChange,
   busStops,
   onBusStopPointSelect,
+  landmarkRefreshKey,
 }) => {
   const dispatch = useAppDispatch();
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -110,45 +112,17 @@ const MapComponent: React.FC<MapComponentProps> = ({
         maxZoom: 18,
       }),
     });
-      let previousZoom = map.getView().getZoom();
+    let previousZoom = map.getView().getZoom();
 
     map.on("pointermove", (event) => {
       const coords = toLonLat(event.coordinate);
       setMousePosition(`${coords[0].toFixed(7)},${coords[1].toFixed(7)} `);
     });
-   map.on("moveend", () => {
-  const currentZoom = map.getView().getZoom();
-
-  if (currentZoom !== previousZoom) {
-    previousZoom = currentZoom;
-    if (showAllBoundaries) {
-      fetchLandmarksInView();
-    }
-  }
-
-  isProgrammaticMove.current = false;
-});
-
-    return map;
-  };
-
-useEffect(() => {
-  if (!mapInstance.current) {
-    mapInstance.current = initializeMap();
-    fetchLandmarksInView();
-  }
-
-  let previousZoom = mapInstance.current?.getView().getZoom();
-
-  // Store the event key for moveend only
-  let moveEndKey: any = null;
-  if (mapInstance.current) {
-    moveEndKey = mapInstance.current.on("moveend", () => {
-      const currentZoom = mapInstance.current?.getView().getZoom();
+    map.on("moveend", () => {
+      const currentZoom = map.getView().getZoom();
 
       if (currentZoom !== previousZoom) {
         previousZoom = currentZoom;
-
         if (showAllBoundaries) {
           fetchLandmarksInView();
         }
@@ -156,14 +130,42 @@ useEffect(() => {
 
       isProgrammaticMove.current = false;
     });
-  }
 
-  return () => {
-    if (mapInstance.current && moveEndKey) {
-      mapInstance.current.un("moveend", moveEndKey);
-    }
+    return map;
   };
-}, [isOpen, onDrawEnd, navigate, showAllBoundaries]);
+
+  useEffect(() => {
+    if (!mapInstance.current) {
+      mapInstance.current = initializeMap();
+      fetchLandmarksInView();
+    }
+
+    let previousZoom = mapInstance.current?.getView().getZoom();
+
+    // Store the event key for moveend only
+    let moveEndKey: any = null;
+    if (mapInstance.current) {
+      moveEndKey = mapInstance.current.on("moveend", () => {
+        const currentZoom = mapInstance.current?.getView().getZoom();
+
+        if (currentZoom !== previousZoom) {
+          previousZoom = currentZoom;
+
+          if (showAllBoundaries) {
+            fetchLandmarksInView();
+          }
+        }
+
+        isProgrammaticMove.current = false;
+      });
+    }
+
+    return () => {
+      if (mapInstance.current && moveEndKey) {
+        mapInstance.current.un("moveend", moveEndKey);
+      }
+    };
+  }, [isOpen, onDrawEnd, navigate, showAllBoundaries, landmarkRefreshKey]);
 
   const fetchLandmarksInView = async () => {
     if (!mapInstance.current || isProgrammaticMove.current) return;
@@ -292,6 +294,7 @@ useEffect(() => {
     if (!mapInstance.current) return;
     vectorSource.current.clear();
     const features: ol.Feature[] = [];
+
     // 1. Show all landmarks if toggle is active
     if (showAllBoundaries && landmarks.length > 0) {
       landmarks.forEach((landmark) => {
@@ -303,6 +306,7 @@ useEffect(() => {
 
           const isSelected = selectedLandmark?.id === landmark.id;
 
+          // Create polygon style
           feature.setStyle(
             new Style({
               stroke: new Stroke({
@@ -318,6 +322,25 @@ useEffect(() => {
           );
 
           features.push(feature);
+
+          // Add label for each landmark when showing all boundaries
+          const interiorPoint = polygon.getInteriorPoint();
+          const labelFeature = new ol.Feature(interiorPoint);
+
+          labelFeature.setStyle(
+            new Style({
+              text: new Text({
+                text: landmark.name || "Landmark",
+                font: "bold 12px Arial",
+                fill: new Fill({ color: "darkblue" }),
+                stroke: new Stroke({ color: "#FFF", width: 3 }),
+                offsetY: 0,
+                textAlign: "center",
+              }),
+            })
+          );
+
+          features.push(labelFeature);
         } catch (err) {
           console.error(`Error processing landmark ${landmark.id}:`, err);
         }
@@ -840,7 +863,7 @@ useEffect(() => {
                     },
                   }}
                 >
-                  {isDrawing ? "Disable " : "Add Landmark"}
+                  {isDrawing ? "Finish " : "Add Landmark"}
                 </Button>
               </span>
             </Tooltip>

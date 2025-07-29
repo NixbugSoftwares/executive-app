@@ -30,7 +30,7 @@ import {
 interface IAccountFormInputs {
   username: string;
   password: string;
-  fullName?: string;
+  fullName: string;
   phoneNumber?: string;
   email?: string;
   gender?: number;
@@ -221,6 +221,7 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
           <TextField
             margin="normal"
             fullWidth
+            required
             label="Full Name"
             {...register("fullName")}
             error={!!errors.fullName}

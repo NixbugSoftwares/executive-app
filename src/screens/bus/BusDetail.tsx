@@ -23,9 +23,13 @@ import { useAppDispatch } from "../../store/Hooks";
 import { busDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import BusUpdateForm from "./BusUpdation";
-import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/toastMessageHelper";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
+import moment from "moment";
 
 interface BusCardProps {
   bus: {
@@ -64,12 +68,6 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
   const canDeleteBus = useSelector((state: RootState) =>
     state.app.permissions.includes("delete_bus")
   );
-
-  const formatUTCDateToLocal = (dateString: string | null): string => {
-    if (!dateString || dateString.trim() === "") return "Not added yet";
-    const date = new Date(dateString);
-    return isNaN(date.getTime()) ? "Not added yet" : date.toLocaleDateString();
-  };
 
   const handleBusDelete = async () => {
     if (!bus.id) {
@@ -142,45 +140,60 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
               <b>Capacity:</b> {bus.capacity}
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              <b>Manufactured:</b> {formatUTCDateToLocal(bus.manufactured_on)}
+              <b>Manufactured:</b>{" "}
+              {moment(bus?.manufactured_on).isValid()
+                ? moment(bus.manufactured_on).local().format("DD-MM-YYYY")
+                : "Not added yet"}
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              <b>Insurance Upto:</b> {formatUTCDateToLocal(bus.insurance_upto)}
+              <b>Insurance Upto:</b>{" "}
+              {moment(bus?.insurance_upto).isValid()
+                ? moment(bus.insurance_upto).local().format("DD-MM-YYYY")
+                : "Not added yet"}
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              <b>Pollution Upto:</b> {formatUTCDateToLocal(bus.pollution_upto)}
+              <b>Pollution Upto:</b>{" "}
+              {moment(bus?.pollution_upto).isValid()
+                ? moment(bus.pollution_upto).local().format("DD-MM-YYYY")
+                : "Not added yet"}
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              <b>Fitness Upto:</b> {formatUTCDateToLocal(bus.fitness_upto)}
+              <b>Fitness Upto:</b>{" "}
+              {moment(bus?.fitness_upto).isValid()
+                ? moment(bus.fitness_upto).local().format("DD-MM-YYYY")
+                : "Not added yet"}
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              <b>Road tax Upto:</b> {formatUTCDateToLocal(bus.road_tax_upto)}
+              <b>Road tax Upto:</b>{" "}
+              {moment(bus?.road_tax_upto).isValid()
+                ? moment(bus.road_tax_upto).local().format("DD-MM-YYYY")
+                : "Not added yet"}
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", mb: 1, gap: 1 }}>
-  {bus.status === 1 ? (
-    <>
-      <VerifiedIcon sx={{ color: "green", fontSize: 30 }} />
-      <Typography sx={{ color: "green", fontWeight: "bold" }}>
-        Active
-      </Typography>
-    </>
-  ) : bus.status === 2 ? (
-    <>
-      <NewReleasesIcon sx={{ color: "#FFA500", fontSize: 30 }} />
-      <Typography sx={{ color: "#FFA500", fontWeight: "bold" }}>
-        Maintenance
-      </Typography>
-    </>
-  ) : (
-    <>
-      <BlockIcon sx={{ color: "#d93550", fontSize: 30 }} />
-      <Typography sx={{ color: "#d93550", fontWeight: "bold" }}>
-        Suspended
-      </Typography>
-    </>
-  )}
-</Box>
+            {bus.status === 1 ? (
+              <>
+                <VerifiedIcon sx={{ color: "green", fontSize: 30 }} />
+                <Typography sx={{ color: "green", fontWeight: "bold" }}>
+                  Active
+                </Typography>
+              </>
+            ) : bus.status === 2 ? (
+              <>
+                <NewReleasesIcon sx={{ color: "#FFA500", fontSize: 30 }} />
+                <Typography sx={{ color: "#FFA500", fontWeight: "bold" }}>
+                  Maintenance
+                </Typography>
+              </>
+            ) : (
+              <>
+                <BlockIcon sx={{ color: "#d93550", fontSize: 30 }} />
+                <Typography sx={{ color: "#d93550", fontWeight: "bold" }}>
+                  Suspended
+                </Typography>
+              </>
+            )}
+          </Box>
         </Card>
 
         {/* Action Buttons */}
@@ -324,12 +337,12 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             onCloseDetailCard={onCloseDetailCard}
           />
         </DialogContent>
-        
-                <DialogActions>
-                          <Button onClick={() => setUpdateFormOpen(false)} color="error">
-                            Cancel
-                          </Button>
-                        </DialogActions>
+
+        <DialogActions>
+          <Button onClick={() => setUpdateFormOpen(false)} color="error">
+            Cancel
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   );

@@ -67,6 +67,8 @@ const AccountListingTable = () => {
       .unwrap()
       .then((res) => {
         const items = res.data || [];
+        console.log("Fetched Accounts:", items);
+        
         const formattedAccounts = items.map((account: any) => ({
           id: account.id,
           fullName: account.full_name || account.fullName,
@@ -83,6 +85,8 @@ const AccountListingTable = () => {
           phoneNumber: account.phone_number || account.phoneNumber || "",
           status: account.status === 1 ? "Active" : "Suspended",
           designation: account.designation || "",
+          created_on: account.created_on,
+          updated_on: account.updated_on,
         }));
         setAccountList(formattedAccounts);
         setHasNextPage(items.length === rowsPerPage);
@@ -332,7 +336,7 @@ const AccountListingTable = () => {
               </TableRow>
               {/* Search Row */}
               <TableRow>
-                <TableCell>
+                <TableCell width="10%">
                   <TextField
                     type="number"
                     variant="outlined"
@@ -347,7 +351,7 @@ const AccountListingTable = () => {
                     }}
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell width="20%">
                   <TextField
                     type="text"
                     variant="outlined"
@@ -362,7 +366,7 @@ const AccountListingTable = () => {
                     }}
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell width="10%">
                   <TextField
                     type="number"
                     variant="outlined"
@@ -377,7 +381,7 @@ const AccountListingTable = () => {
                     }}
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell width={"10%"}>
                   <TextField
                     type="text"
                     variant="outlined"
@@ -393,7 +397,7 @@ const AccountListingTable = () => {
                   />
                 </TableCell>
 
-                <TableCell>
+                <TableCell width="20%">
                   <TextField
                     type="text"
                     variant="outlined"
@@ -409,7 +413,7 @@ const AccountListingTable = () => {
                   />
                 </TableCell>
 
-                <TableCell>
+                <TableCell width="10%">
                   <Select
                     value={search.gender}
                     onChange={handleSelectChange}

@@ -51,8 +51,8 @@ const getTriggerModeBackendValue = (displayValue: string): string => {
 type SearchFilter = {
   id: string;
   name: string;
-  ticket_mode: string;
-  trigger_mode: string;
+  ticketing_mode: string;
+  triggering_mode: string;
   permit_no: string;
 };
 
@@ -70,8 +70,8 @@ const ScheduleListingTable = () => {
   const [search, setSearch] = useState<SearchFilter>({
     id: "",
     name: "",
-    ticket_mode: "",
-    trigger_mode: "",
+    ticketing_mode: "",
+    triggering_mode: "",
     permit_no: "",
   });
   const [debouncedSearch, setDebouncedSearch] = useState<SearchFilter>(search);
@@ -104,11 +104,11 @@ const ScheduleListingTable = () => {
       // Convert display values to backend values
       const backendSearchParams = {
         ...searchParams,
-        ticket_mode: searchParams.ticket_mode
-          ? +getTicketModeBackendValue(searchParams.ticket_mode)
+        ticketing_mode: searchParams.ticketing_mode
+          ? +getTicketModeBackendValue(searchParams.ticketing_mode)
           : undefined,
-        trigger_mode: searchParams.trigger_mode
-          ? +getTriggerModeBackendValue(searchParams.trigger_mode)
+        triggering_mode: searchParams.triggering_mode
+          ? +getTriggerModeBackendValue(searchParams.triggering_mode)
           : undefined,
       };
 
@@ -150,6 +150,8 @@ const ScheduleListingTable = () => {
             frequency: Array.isArray(schedule.frequency)
               ? schedule.frequency
               : [],
+            created_on: schedule.created_on,
+            updated_on: schedule.updated_on,
           }));
 
           setScheduleList(formattedSchedules);
@@ -327,12 +329,12 @@ const ScheduleListingTable = () => {
                   { key: "id", isNumber: true },
                   { key: "name", isNumber: false },
                   {
-                    key: "ticket_mode",
+                    key: "ticketing_mode",
                     isSelect: true,
                     options: ["Hybrid", "Digital", "Conventional"],
                   },
                   {
-                    key: "trigger_mode",
+                    key: "triggering_mode",
                     isSelect: true,
                     options: ["Automatic", "Manual", "Disabled"],
                   },
@@ -416,7 +418,7 @@ const ScheduleListingTable = () => {
                         </Tooltip>
                       </Typography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell align="center">
                       <Chip
                         label={row.ticketing_mode}
                         size="small"
@@ -441,7 +443,7 @@ const ScheduleListingTable = () => {
                         }}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell  align="center">
                       <Chip
                         label={row.triggering_mode}
                         size="small"

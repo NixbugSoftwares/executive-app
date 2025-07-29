@@ -138,6 +138,7 @@ const DutyListingTable = () => {
                     ? "Ended"
                     : "",
                 created_on: duty.created_on,
+                updated_on: duty.updated_on,
               };
             } catch (error) {
               console.error(
@@ -383,7 +384,7 @@ const DutyListingTable = () => {
                   >
                     <TableCell sx={{ textAlign: "center" }}>{row.id}</TableCell>
 
-                    <TableCell>
+                    <TableCell sx={{ textAlign: "center" }}>
                       <Chip
                         label={row.status}
                         size="small"

@@ -56,11 +56,12 @@ const RoleListingTable = () => {
         .unwrap()
         .then((res) => {
           const items = res.data || [];
+          console.log("Fetched Roles:", items);
           const formattedRoleList = items.map((role: any) => ({
             id: role.id,
             name: role.name,
             created_on: role.created_on,
-            updated_on: role.updated_on|| "not updated",
+            updated_on: role.updated_on || "not updated",
             roleDetails: {
               ...role,
             },
@@ -187,24 +188,24 @@ const RoleListingTable = () => {
             position: "relative",
           }}
         >
-           {isLoading && (
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          backgroundColor: "rgba(255, 255, 255, 0.7)",
-                          zIndex: 1,
-                        }}
-                      >
-                        <CircularProgress />
-                      </Box>
-                    )}
+          {isLoading && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                zIndex: 1,
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          )}
           <Table stickyHeader>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
@@ -265,11 +266,11 @@ const RoleListingTable = () => {
             </TableHead>
 
             <TableBody>
-             {isLoading ? (
-                             <TableRow>
-                               <TableCell colSpan={6} align="center"></TableCell>
-                             </TableRow>
-                           ) :roleList.length > 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center"></TableCell>
+                </TableRow>
+              ) : roleList.length > 0 ? (
                 roleList.map((row) => {
                   const isSelected = selectedRole?.id === row.id;
                   return (
@@ -282,8 +283,8 @@ const RoleListingTable = () => {
                           backgroundColor: isSelected ? "#E3F2FD" : "inherit",
                         }}
                       >
-                        <TableCell>{row.id}</TableCell>
-                        <TableCell>
+                        <TableCell align="center">{row.id}</TableCell>
+                        <TableCell >
                           <Tooltip title={row.name} placement="bottom">
                             <Typography noWrap>
                               {row.name.length > 30
@@ -295,12 +296,14 @@ const RoleListingTable = () => {
                         <TableCell align="center">
                           {moment(row.created_on)
                             .local()
-                            .format("YYYY-MM-DD hh:mm A")}
+                            .format("DD-MM-YYYY, hh:mm A")}
                         </TableCell>
                         <TableCell align="center">
-                          {moment(row.updated_on)
-                            .local()
-                            .format("YYYY-MM-DD hh:mm A")}
+                          {moment(row?.updated_on).isValid()
+                            ? moment(row.updated_on)
+                                .local()
+                                .format("DD-MM-YYYY, hh:mm A")
+                            : "Not updated yet"}
                         </TableCell>
                       </TableRow>
                       <TableRow>

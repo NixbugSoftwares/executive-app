@@ -20,6 +20,7 @@ interface ILandmarkCreationFormProps {
   boundary: string;
   onClose: () => void;
   refreshList: (value: string) => void;
+  onLandmarkAdded?: () => void; 
 }
 
 
@@ -34,6 +35,7 @@ const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
   boundary,
   onClose,
   refreshList,
+  onLandmarkAdded,
 }) => {
   const dispatch = useAppDispatch();
 
@@ -67,6 +69,9 @@ const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
       await dispatch(landmarkCreationApi(formData)).unwrap();
       showSuccessToast("Landmark created successfully!");
       refreshList("refresh");
+      if (onLandmarkAdded) {
+        onLandmarkAdded();
+      }
       onClose();
     } catch {
       showErrorToast("Something went wrong. Please try again.");

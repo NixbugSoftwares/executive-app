@@ -20,6 +20,7 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
 } from "@mui/icons-material";
+import DateRangeOutlinedIcon from "@mui/icons-material/DateRangeOutlined";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import NewReleasesIcon from "@mui/icons-material/NewReleases";
 import BlockIcon from "@mui/icons-material/Block";
@@ -37,6 +38,7 @@ import {
 import { Company } from "../../types/type";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
+import moment from "moment";
 interface companyCardProps {
   company: Company;
 
@@ -54,8 +56,6 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
   onBack,
   handleCloseDetailCard,
 }) => {
-  console.log("company", company);
-  
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
@@ -262,6 +262,25 @@ const canUpdateCompany = useSelector((state: RootState) =>
               Company
             </Typography>
           </Box>
+
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+            <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
+            <Typography variant="body2">
+              <b > Created at:</b>
+              {moment(company.created_on).local().format("DD-MM-YYYY, hh:mm A")}
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+            <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
+            <Typography variant="body2">
+              <b > Last update at:</b>
+              {moment(company?.updated_on).isValid()
+                                          ? moment(company.updated_on)
+                                              .local()
+                                              .format("DD-MM-YYYY, hh:mm A")
+                                          : "Not updated yet"}
+            </Typography>
+          </Box>
         </Card>
 
         {/* Action Buttons */}
@@ -403,7 +422,7 @@ const canUpdateCompany = useSelector((state: RootState) =>
       <Dialog
         open={updateFormOpen}
         onClose={() => setUpdateFormOpen(false)}
-        maxWidth="xs"
+        maxWidth="sm"
         fullWidth
       >
         <DialogContent>

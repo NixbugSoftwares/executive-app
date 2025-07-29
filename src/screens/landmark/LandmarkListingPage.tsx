@@ -62,6 +62,7 @@ const LandmarkListing = () => {
     null
   );
   const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [landmarkRefreshKey, setLandmarkRefreshKey] = useState(0);
   const [openBusStopModal, setOpenBusStopModal] = useState(false);
   const [busStopToUpdate, setBusStopToUpdate] = useState<BusStop | null>(null);
   const [busStopUpdateModalOpen, setBusStopUpdateModalOpen] = useState(false);
@@ -283,7 +284,11 @@ const LandmarkListing = () => {
       fetchLandmark(page, debouncedSearch);
     }
   };
-
+const handleLandmarkAdded = () => {
+  setLandmarkRefreshKey((k) => k + 1);
+  refreshList("refresh");
+  setOpenCreateModal(false);
+};
   return (
     <Box
       sx={{
@@ -542,7 +547,7 @@ const LandmarkListing = () => {
                                                   >
                                                     <Button
                                                       size="small"
-                                                      color="primary"
+                                                      color="success"
                                                       sx={{ mr: 1 }}
                                                       disabled={
                                                         !canUpdateLandmark ||
@@ -685,6 +690,7 @@ const LandmarkListing = () => {
               selectedLandmark ? busStopsByLandmark[selectedLandmark.id] : []
             }
             onBusStopPointSelect={handlePointSelect}
+            landmarkRefreshKey={landmarkRefreshKey}
           />
         </Box>
       </Box>
@@ -702,6 +708,7 @@ const LandmarkListing = () => {
             boundary={boundary}
             onClose={() => setOpenCreateModal(false)}
             refreshList={refreshList}
+            onLandmarkAdded={handleLandmarkAdded}
           />
         </DialogContent>
         <DialogActions>

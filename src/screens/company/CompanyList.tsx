@@ -90,6 +90,8 @@ const CompanyListingTable = () => {
               : company.status === 3
               ? "Suspended"
               : "",
+              created_on: company.created_on,
+              updated_on: company.updated_on
         }));
         setCompanyList(formattedAccounts);
         setHasNextPage(items.length === rowsPerPage);
@@ -449,7 +451,7 @@ const CompanyListingTable = () => {
                         },
                       }}
                     >
-                      <TableCell>{company.id}</TableCell>
+                      <TableCell align="center">{company.id}</TableCell>
                       <TableCell>
                         {" "}
                         <Tooltip title={company.name} placement="bottom">
@@ -463,8 +465,8 @@ const CompanyListingTable = () => {
                       <TableCell>
                         <Tooltip title={company.address} placement="bottom">
                           <Typography noWrap>
-                            {company.address.length > 10
-                              ? `${company.address.substring(0, 10)}...`
+                            {company.address.length > 15
+                              ? `${company.address.substring(0, 15)}...`
                               : company.address}
                           </Typography>
                         </Tooltip>

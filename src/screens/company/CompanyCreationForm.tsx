@@ -155,6 +155,7 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
             required
             fullWidth
             label="Location"
+            placeholder="Click to select location"
             {...register("location")}
             error={!!errors.location}
             helperText={errors.location?.message}

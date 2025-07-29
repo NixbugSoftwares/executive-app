@@ -235,7 +235,7 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
 
   const defaultValues = permissionGroups.reduce((acc, group) => {
     group.permissions.forEach((permission) => {
-      acc[permission.key as keyof RoleFormValues] = false;
+      acc[permission.key as keyof RoleFormValues] = false as any;
     });
     return acc;
   }, {} as Partial<RoleFormValues>);
@@ -320,71 +320,78 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
 
       <Box
         sx={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+          display: "flex",
+          flexWrap: "wrap",
           gap: 1,
           mb: 2,
+          alignItems: "flex-start",
         }}
       >
         {permissionGroups.map((group) => (
-          <Accordion
+          <Box
             key={group.groupName}
-            defaultExpanded={false}
-            sx={{
-              boxShadow: "none",
-              border: `1px solid ${theme.palette.divider}`,
-              "&:before": { display: "none" },
-            }}
+            sx={{ minWidth: 200, flex: "1 1 200px", maxWidth: "100%" }}
           >
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon fontSize="small" />}
+            <Accordion
+              defaultExpanded={false}
               sx={{
-                minHeight: "40px !important",
-                "& .MuiAccordionSummary-content": {
-                  my: 0.5,
-                },
+                boxShadow: "none",
+                border: `1px solid ${theme.palette.divider}`,
+                "&:before": { display: "none" },
               }}
             >
-              <Typography variant="body2" fontWeight="medium">
-                {group.groupName}
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails sx={{ pt: 0, pb: 1 }}>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                {group.permissions.map((permission) => (
-                  <Controller
-                    key={permission.key}
-                    name={permission.key as keyof RoleFormValues}
-                    control={control}
-                    render={({ field }) => (
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            size="small"
-                            checked={!!field.value}
-                            onChange={(e) => field.onChange(e.target.checked)}
-                            color="primary"
-                          />
-                        }
-                        label={
-                          <Typography variant="caption">
-                            {permission.label}
-                          </Typography>
-                        }
-                        sx={{
-                          m: 0,
-                          justifyContent: "space-between",
-                          "& .MuiFormControlLabel-label": {
-                            flex: 1,
-                          },
-                        }}
-                      />
-                    )}
-                  />
-                ))}
-              </Box>
-            </AccordionDetails>
-          </Accordion>
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon fontSize="small" />}
+                sx={{
+                  minHeight: "40px !important",
+                  "& .MuiAccordionSummary-content": {
+                    my: 0.5,
+                  },
+                }}
+              >
+                <Typography variant="body2" fontWeight="medium">
+                  {group.groupName}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0, pb: 1 }}>
+                <Box
+                  sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
+                >
+                  {group.permissions.map((permission) => (
+                    <Controller
+                      key={permission.key}
+                      name={permission.key as keyof RoleFormValues}
+                      control={control}
+                      render={({ field }) => (
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              size="small"
+                              checked={!!field.value}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                              color="primary"
+                            />
+                          }
+                          label={
+                            <Typography variant="caption">
+                              {permission.label}
+                            </Typography>
+                          }
+                          sx={{
+                            m: 0,
+                            justifyContent: "space-between",
+                            "& .MuiFormControlLabel-label": {
+                              flex: 1,
+                            },
+                          }}
+                        />
+                      )}
+                    />
+                  ))}
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+          </Box>
         ))}
       </Box>
 

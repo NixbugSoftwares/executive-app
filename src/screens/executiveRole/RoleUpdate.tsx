@@ -172,8 +172,7 @@ const RoleUpdateForm: React.FC<RoleUpdateFormProps> = ({
   const dispatch = useAppDispatch();
   const [loading, setLoading] = React.useState(false);
 
-  const { handleSubmit, control, reset, 
-    register } = useForm({
+  const { handleSubmit, control, reset, register } = useForm({
     resolver: yupResolver(roleCreationSchema),
     defaultValues: {
       name: roleData.name,
@@ -202,7 +201,9 @@ const RoleUpdateForm: React.FC<RoleUpdateFormProps> = ({
         });
       });
 
-      const response = await dispatch(roleUpdationApi({ roleId, formData: formData})).unwrap();
+      const response = await dispatch(
+        roleUpdationApi({ roleId, formData: formData })
+      ).unwrap();
       if (response?.id) {
         showSuccessToast("Role updated successfully!");
         refreshList("refresh");
@@ -229,17 +230,22 @@ const RoleUpdateForm: React.FC<RoleUpdateFormProps> = ({
         width: "100%",
       }}
     >
-      <Typography variant="h6" align="center" gutterBottom sx={{ fontWeight: "bold" }}>
+      <Typography
+        variant="h6"
+        align="center"
+        gutterBottom
+        sx={{ fontWeight: "bold" }}
+      >
         Update Role Details
       </Typography>
       <TextField
-  label="Role Name"
-  size="small"
-  fullWidth
-  InputLabelProps={{ shrink: true }}
-  {...register("name")}
-  defaultValue={roleData.name}
-/>
+        label="Role Name"
+        size="small"
+        fullWidth
+        InputLabelProps={{ shrink: true }}
+        {...register("name")}
+        defaultValue={roleData.name}
+      />
 
       <Divider sx={{ my: 1 }} />
 
@@ -249,72 +255,78 @@ const RoleUpdateForm: React.FC<RoleUpdateFormProps> = ({
 
       <Box
         sx={{
-          maxHeight: "400px",
-          overflowY: "auto",
-          pr: 1,
-          "& .MuiAccordion-root": {
-            boxShadow: "none",
-            border: `1px solid ${theme.palette.divider}`,
-            "&:before": { display: "none" },
-          },
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 1,
+          mb: 2,
+          alignItems: "flex-start",
         }}
       >
         {permissionGroups.map((group) => (
-          <Accordion key={group.groupName} defaultExpanded>
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon fontSize="small" />}
+          <Box
+            key={group.groupName}
+            sx={{ minWidth: 200, flex: "1 1 200px", maxWidth: "100%" }}
+          >
+            <Accordion
+              defaultExpanded={true}
               sx={{
-                minHeight: "40px !important",
-                "& .MuiAccordionSummary-content": {
-                  my: 0.5,
-                },
+                boxShadow: "none",
+                border: `1px solid ${theme.palette.divider}`,
+                "&:before": { display: "none" },
               }}
             >
-              <Typography variant="subtitle2" fontWeight="bold">
-                {group.groupName}
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails sx={{ pt: 0, pb: 1 }}>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                {group.permissions.map((permission) => (
-                  <Controller
-                    key={permission.key}
-                    name={permission.key}
-                    control={control}
-                    render={({ field }) => (
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            size="small"
-                            checked={!!field.value}
-                            onChange={(e) => field.onChange(e.target.checked)}
-                            color="primary"
-                          />
-                        }
-                        label={
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                            }}
-                          >
-                            <Typography variant="body2">
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon fontSize="small" />}
+                sx={{
+                  minHeight: "40px !important",
+                  "& .MuiAccordionSummary-content": {
+                    my: 0.5,
+                  },
+                }}
+              >
+                <Typography variant="body2" fontWeight="medium">
+                  {group.groupName}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0, pb: 1 }}>
+                <Box
+                  sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
+                >
+                  {group.permissions.map((permission) => (
+                    <Controller
+                      key={permission.key}
+                      name={permission.key}
+                      control={control}
+                      render={({ field }) => (
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              size="small"
+                              checked={!!field.value}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                              color="primary"
+                            />
+                          }
+                          label={
+                            <Typography variant="caption">
                               {permission.label}
                             </Typography>
-                          </Box>
-                        }
-                        sx={{
-                          m: 0,
-                          justifyContent: "space-between",
-                        }}
-                      />
-                    )}
-                  />
-                ))}
-              </Box>
-            </AccordionDetails>
-          </Accordion>
+                          }
+                          sx={{
+                            m: 0,
+                            justifyContent: "space-between",
+                            "& .MuiFormControlLabel-label": {
+                              flex: 1,
+                            },
+                          }}
+                        />
+                      )}
+                    />
+                  ))}
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+          </Box>
         ))}
       </Box>
 
