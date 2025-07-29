@@ -307,7 +307,7 @@ const AccountListingTable = () => {
                 >
                   Email
                 </TableCell>
-                <TableCell
+                {/* <TableCell
                   sx={{
                     width: "120px",
                     minWidth: "120px",
@@ -319,7 +319,7 @@ const AccountListingTable = () => {
                   }}
                 >
                   Designation
-                </TableCell>
+                </TableCell> */}
                 <TableCell
                   sx={{
                     width: "120px",
@@ -397,7 +397,7 @@ const AccountListingTable = () => {
                   />
                 </TableCell>
 
-                <TableCell width="20%">
+                {/* <TableCell width="20%">
                   <TextField
                     type="text"
                     variant="outlined"
@@ -411,7 +411,7 @@ const AccountListingTable = () => {
                       "& .MuiInputBase-input": { textAlign: "center" },
                     }}
                   />
-                </TableCell>
+                </TableCell> */}
 
                 <TableCell width="10%">
                   <Select
@@ -505,7 +505,7 @@ const AccountListingTable = () => {
                       )}
                     </TableCell>
 
-                    <TableCell>
+                    {/* <TableCell>
                       <Typography noWrap>
                         {row.designation ? (
                           row.designation
@@ -518,7 +518,7 @@ const AccountListingTable = () => {
                           </Tooltip>
                         )}
                       </Typography>
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell sx={{ textAlign: "center" }}>
                       {row.gender}
                     </TableCell>
