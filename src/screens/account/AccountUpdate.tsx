@@ -78,7 +78,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
   canUpdateExecutive,
 }) => {
   console.log("accountData", accountData);
-  
+
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
@@ -145,12 +145,12 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       if (data.password) formData.append("password", data.password);
       formData.append("gender", data.gender?.toString() || "");
       if (data.fullName) formData.append("full_name", data.fullName);
-       if (data.phoneNumber)
+      if (data.phoneNumber)
         formData.append("phone_number", `+91${data.phoneNumber}`);
       if (data.email) {
-      console.log("Email is being sent:", data.email);
-      formData.append("email_id", data.email);
-    }
+        console.log("Email is being sent:", data.email);
+        formData.append("email_id", data.email);
+      }
       if (data.designation) formData.append("designation", data.designation);
       if (data.status) formData.append("status", data.status.toString());
       const accountResponse = await dispatch(
@@ -182,9 +182,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
         } catch (error: any) {
           console.error("Role assignment error:", error);
           showErrorToast(
-            error.response?.data?.detail ||
-              error ||
-              "Account updated, but role assignment failed!"
+            error || "Account updated, but role assignment failed!"
           );
         }
       }
@@ -193,8 +191,8 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       onCloseDetailCard();
       refreshList("refresh");
       onClose();
-    } catch {
-      showErrorToast("Something went wrong. Please try again.");
+    } catch (error: any) {
+      showErrorToast(error || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -254,7 +252,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             helperText={errors.fullName?.message}
             size="small"
           />
-           <Controller
+          <Controller
             name="phoneNumber"
             control={control}
             render={({ field }) => (
