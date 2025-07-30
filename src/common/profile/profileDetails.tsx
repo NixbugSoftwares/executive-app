@@ -84,7 +84,7 @@ const ProfilePage: React.FC = () => {
   const user = localStorageHelper.getItem("@user");
   const userId = user?.executive_id;
   const canManageOperator = useSelector((state: RootState) =>
-    state.app.permissions.includes("manage_executive")
+    state.app.permissions.includes("update_executive")
   );
   console.log("userId", userId);
   const getGender = (value: number): string => {
@@ -95,8 +95,10 @@ const ProfilePage: React.FC = () => {
         return "Female";
       case 3:
         return "Male";
-      default:
+      case 4:
         return "Transgender";
+      default:
+        return "Not specified";
     }
   };
   const getStatus = (value: number): string => {
@@ -173,6 +175,7 @@ const ProfilePage: React.FC = () => {
           designation: user.designation,
           phoneNumber: formatPhoneNumber(user.phone_number),
           created_on: user.created_on,
+          updated_on: user.updated_on,
           role: role,
           roleAssignmentId: roleAssignmentId,
         };
@@ -189,7 +192,7 @@ const ProfilePage: React.FC = () => {
         });
       }
     } catch (error: any) {
-      showErrorToast(error.message || "Failed to load profile");
+      showErrorToast(error|| "Failed to load profile");
     } finally {
       setIsLoading(false);
     }
@@ -258,7 +261,7 @@ const ProfilePage: React.FC = () => {
           }
         } catch (error) {
           showErrorToast("Account updated, but role assignment failed!");
-          console.error("Role assignment error:", error);
+          console.error(error||"Role assignment error:", error);
           return;
         }
       }
@@ -266,9 +269,9 @@ const ProfilePage: React.FC = () => {
       showSuccessToast(`${editingField} updated successfully!`);
       setEditingField(null);
       await fetchUserData();
-    } catch (error) {
+    } catch (error:any) {
       console.error("Update error:", error);
-      showErrorToast("Something went wrong. Please try again.");
+      showErrorToast(error||"Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -287,9 +290,9 @@ const ProfilePage: React.FC = () => {
       commonHelper.logout();
       dispatch(userLoggedOut());
       showSuccessToast("Logout successful!");
-    } catch (error) {
+    } catch (error:any) {
       console.error("Logout Error:", error);
-      showErrorToast("Logout failed. Please try again.");
+      showErrorToast(error||"Logout failed. Please try again.");
     }
   };
 
@@ -416,10 +419,10 @@ const ProfilePage: React.FC = () => {
                     {...register("gender")}
                     onChange={(e) => setGenderValue(Number(e.target.value))}
                   >
-                    <MenuItem value={1}>Female</MenuItem>
-                    <MenuItem value={2}>Male</MenuItem>
-                    <MenuItem value={3}>Transgender</MenuItem>
-                    <MenuItem value={0}>Other</MenuItem>
+                    <MenuItem value={1}>Other</MenuItem>
+                    <MenuItem value={2}>Female</MenuItem>
+                    <MenuItem value={3}>Male</MenuItem>
+                    <MenuItem value={0}>Transgender</MenuItem>
                   </Select>
                 </FormControl>
               )}
