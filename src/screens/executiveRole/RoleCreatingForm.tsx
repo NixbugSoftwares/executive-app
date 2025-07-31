@@ -377,6 +377,7 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
                               {permission.label}
                             </Typography>
                           }
+                          labelPlacement="start"
                           sx={{
                             m: 0,
                             justifyContent: "space-between",

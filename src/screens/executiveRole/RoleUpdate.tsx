@@ -312,6 +312,7 @@ const RoleUpdateForm: React.FC<RoleUpdateFormProps> = ({
                               {permission.label}
                             </Typography>
                           }
+                          labelPlacement="start"
                           sx={{
                             m: 0,
                             justifyContent: "space-between",
