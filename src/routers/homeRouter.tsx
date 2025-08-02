@@ -9,7 +9,7 @@ import {
 const Account = lazy(() => import("../screens/account/Account"));
 const ExeRole = lazy(() => import("../screens/executiveRole/Role"));
 const Landmark = lazy(() => import("../screens/landmark/LandMark"));
-const BusStop = lazy(() => import("../screens/busStop/BusStop"));
+// const BusStop = lazy(() => import("../screens/busStop/BusStop"));
 const Company = lazy(() => import("../screens/company/company"));
 const Operator = lazy(() => import("../screens/operator/Operator"));
 const CRole = lazy(() => import("../screens/operatorRole/Role"));
@@ -43,7 +43,7 @@ const HomeRouter: React.FC = () => {
         <Route path="/executive/account" element={<Account />} />
         <Route path="/executive/role" element={<ExeRole />} />
         <Route path="/executive/landmark" element={<Landmark />} />
-        <Route path="/executive/busstop" element={<BusStop />} />
+        {/* <Route path="/executive/busstop" element={<BusStop />} /> */}
         <Route path="/executive/global-fare" element={<GlobalFare />} />
 
         <Route path="/executive/company" element={<Company />} />
