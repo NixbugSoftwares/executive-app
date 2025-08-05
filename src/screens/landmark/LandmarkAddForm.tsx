@@ -13,30 +13,29 @@ import {
 interface ILandmarkFormInputs {
   name: string;
   boundary: string;
-  status: string;
-  importance: string;
+  type?: string;
 }
 
 interface ILandmarkCreationFormProps {
   boundary: string;
   onClose: () => void;
   refreshList: (value: string) => void;
+  onLandmarkAdded?: () => void; 
 }
 
-const statusOptions = [
-  { label: "VALIDATING", value: "1" },
-  { label: "VERIFIED", value: "2" },
-];
 
-const importanceOptions = [
-  { label: "LOW", value: 1 },
-  { label: "MEDIUM", value: 2 },
-  { label: "HIGH", value: 3 },
+const typeOptions = [
+  { label: "LOCAL", value: 1 },
+  { label: "VILLAGE", value: 2 },
+  { label: "DISTRICT", value: 3 },
+  { label: "STATE", value: 4 },
+  { label: "NATIONAL", value: 5 },
 ];
 const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
   boundary,
   onClose,
   refreshList,
+  onLandmarkAdded,
 }) => {
   const dispatch = useAppDispatch();
 
@@ -50,8 +49,7 @@ const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
     defaultValues: {
       name: "",
       boundary: boundary,
-      status: "1",
-      importance: "1",
+      type: "1",
     },
   });
 
@@ -66,12 +64,14 @@ const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
       const formData = new FormData();
       formData.append("name", data.name);
       formData.append("boundary", data.boundary);
-      formData.append("status", data.status);
-      formData.append("importance", data.importance);
+      if (data.type) formData.append("type", data.type);
 
       await dispatch(landmarkCreationApi(formData)).unwrap();
       showSuccessToast("Landmark created successfully!");
       refreshList("refresh");
+      if (onLandmarkAdded) {
+        onLandmarkAdded();
+      }
       onClose();
     } catch {
       showErrorToast("Something went wrong. Please try again.");
@@ -135,19 +135,19 @@ const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
 
       {/* Status Field */}
       <Controller
-        name="status"
+        name="type"
         control={control}
         render={({ field }) => (
           <TextField
             margin="normal"
             fullWidth
             select
-            label="Status"
+            label="type"
             {...field}
-            error={!!errors.status}
+            error={!!errors.type}
             size="small"
           >
-            {statusOptions.map((option) => (
+            {typeOptions.map((option) => (
               <MenuItem key={option.value} value={option.value}>
                 {option.label}
               </MenuItem>
@@ -156,28 +156,7 @@ const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
         )}
       />
 
-      {/* Importance Field */}
-      <Controller
-        name="importance"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            margin="normal"
-            fullWidth
-            select
-            label="Importance"
-            {...field}
-            error={!!errors.importance}
-            size="small"
-          >
-            {importanceOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
-        )}
-      />
+      
       <Button type="submit" variant="contained" color="success" fullWidth>
         Add Landmark
       </Button>

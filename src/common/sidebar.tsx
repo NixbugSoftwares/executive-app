@@ -10,7 +10,6 @@ import {
   Typography,
   Divider,
   IconButton,
-  Avatar,
   Collapse,
   styled,
 } from "@mui/material";
@@ -23,15 +22,19 @@ import RoomIcon from "@mui/icons-material/Room";
 import EngineeringIcon from "@mui/icons-material/Engineering";
 import RouteIcon from "@mui/icons-material/Route";
 import CalculateIcon from "@mui/icons-material/Calculate";
-// import CorporateFareIcon from "@mui/icons-material/CorporateFare";
+import AssignmentIndRoundedIcon from '@mui/icons-material/AssignmentIndRounded';
+import AssignmentTurnedInRoundedIcon from '@mui/icons-material/AssignmentTurnedInRounded';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
 import BusinessIcon from "@mui/icons-material/Business";
 import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import PersonIcon from '@mui/icons-material/Person';
+import ExpandLess from "@mui/icons-material/ExpandLess";
+import ExpandMore from "@mui/icons-material/ExpandMore";
 import { useTheme, useMediaQuery } from "@mui/material";
 import LogoutConfirmationModal from "./logoutModal";
-import LoggedInUser from "./UserDetails";
 import { companyListApi } from "../slices/appSlice";
 import type { AppDispatch } from "../store/Store";
 import { useDispatch } from "react-redux";
@@ -50,12 +53,11 @@ const Sidebar: React.FC = () => {
   const { companyId } = useParams();
   const [isOpen, setIsOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [isUserSectionOpen, setIsUserSectionOpen] = useState(false);
   const [isCompanySectionOpen, setIsCompanySectionOpen] = useState(false);
   const [companyName, setCompanyName] = useState("");
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
-
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   // Memoized company check
   const isCompanySelected = useMemo(
     () =>
@@ -65,6 +67,7 @@ const Sidebar: React.FC = () => {
       location.pathname.startsWith("/executive/company/bus") ||
       location.pathname.startsWith("/executive/company/busroute") ||
       location.pathname.startsWith("/executive/company/fare"),
+
     [companyId, location.pathname]
   );
 
@@ -75,7 +78,7 @@ const Sidebar: React.FC = () => {
       if (companyId) {
         try {
           console.log("Fetching company name for ID:", companyId);
-          const response = await dispatch(companyListApi()).unwrap();
+          const response = await dispatch(companyListApi({limit: 1,offset: 0, id: Number(companyId) })).unwrap();
           console.log("API Response:", response);
           const companies = response.data || response;
           const company = companies.find(
@@ -119,13 +122,8 @@ const Sidebar: React.FC = () => {
             path: "/executive/landmark",
             icon: <RoomIcon />,
           },
-          // {
-          //   label: "Bus Stop",
-          //   path: "/executive/busstop",
-          //   icon: <ModeOfTravelIcon />,
-          // },
           {
-            label: "Common Fare",
+            label: "Global Fare",
             path: "/executive/global-fare",
             icon: <CalculateIcon />,
           },
@@ -158,11 +156,30 @@ const Sidebar: React.FC = () => {
         path: `/executive/company/busroute${companyId ? `/${companyId}` : ""}`,
         icon: <RouteIcon />,
       },
-      // {
-      //   label: "Fare",
-      //   path: `/executive/company/fare${companyId ? `/${companyId}` : ""}`,
-      //   icon: <CorporateFareIcon />,
-      // },
+      {
+        label: "Fare",
+        path: `/executive/company/fare${companyId ? `/${companyId}` : ""}`,
+        icon: <CalculateIcon />,
+      },
+      {
+        label: "Service",
+        path: `/executive/company/service${companyId ? `/${companyId}` : ""}`,
+        icon: <AssignmentIndRoundedIcon />,
+      },
+
+      {
+        label:"Schedule"
+        ,path:`/executive/company/schedule${companyId ? `/${companyId}` : ""}`
+        ,icon:<ScheduleIcon/>
+      },
+
+      {
+        label:"Duty"
+        ,path:`/executive/company/duty${companyId ? `/${companyId}` : ""}`
+        ,icon:<AssignmentTurnedInRoundedIcon/>
+      },
+
+
     ],
     [companyId]
   );
@@ -338,7 +355,7 @@ const Sidebar: React.FC = () => {
                         pl: 4,
                         py: 1,
                         color: "text.secondary",
-                        fontStyle: "italic",
+                        fontWeight: "bold",
                         width: "100%",
                         textOverflow: "ellipsis",
                         overflow: "hidden",
@@ -365,37 +382,76 @@ const Sidebar: React.FC = () => {
           ))}
         </Box>
 
-        <Box sx={{ mt: "auto", p: 2 }}>
+        <Box sx={{ px: 2, pt: 1, pb: 0, borderTop: "1px solid #eee", mt: "auto" }}>
           <List>
             <ListItem disablePadding>
               <ListItemButton
-                onClick={() => setIsUserSectionOpen(!isUserSectionOpen)}
+                onClick={() => setUserMenuOpen((prev) => !prev)}
+                sx={{
+                  borderRadius: 1,
+                  minHeight: 40,
+                  justifyContent: "center",
+                  px: 1,
+                  py: 0.5,
+                }}
               >
-                <ListItemIcon>
-                  <Avatar sx={{ bgcolor: "primary.main" }}>
-                    <AccountCircleOutlinedIcon />
-                  </Avatar>
+                <ListItemIcon sx={{ minWidth: 32 }}>
                 </ListItemIcon>
-                <ListItemText primary="User" />
-                {isUserSectionOpen ? <ExpandMoreIcon /> : <ExpandLessIcon />}
+                <ListItemText
+                  primary="User"
+                  primaryTypographyProps={{
+                    fontSize: "0.95rem",
+                    fontWeight: 500,
+                  }}
+                  sx={{ m: 0 }}
+                />
+                {userMenuOpen ? <ExpandMore /> : <ExpandLess />}
               </ListItemButton>
             </ListItem>
-
-            <Collapse in={isUserSectionOpen} timeout="auto" unmountOnExit>
-              <Box sx={{ pl: 4, pr: 2 }}>
-                <LoggedInUser />
+            <Collapse in={userMenuOpen} timeout="auto" unmountOnExit>
+              <List component="div" disablePadding>
                 <ListItem disablePadding>
-                  <ListItemButton onClick={() => setIsLogoutModalOpen(true)}>
-                    <ListItemIcon>
-                      <PowerSettingsNewIcon color="error" />
+                  <ListItemButton
+                    onClick={() => {
+                      navigate("/profile");
+                      if (isSmallScreen) setIsOpen(false);
+                      setUserMenuOpen(false);
+                    }}
+                    sx={{
+                      pl: 4,
+                      backgroundColor:
+                        location.pathname === "/profile"
+                          ? "primary.light"
+                          : "inherit",
+                      "&:hover": {
+                        backgroundColor: "#E3F2FD",
+                      },
+                      borderRadius: 1,
+                      mb: 1,
+                      minHeight: 36,
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <PersonIcon />
                     </ListItemIcon>
-                    <ListItemText
-                      primary="Logout"
-                      sx={{ color: "error.main" }}
-                    />
+                    <ListItemText primary="Profile" />
                   </ListItemButton>
                 </ListItem>
-              </Box>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    onClick={() => {
+                      setIsLogoutModalOpen(true);
+                      setUserMenuOpen(false);
+                    }}
+                    sx={{ pl: 4, minHeight: 36 }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <PowerSettingsNewIcon color="error" />
+                    </ListItemIcon>
+                    <ListItemText primary="Logout" sx={{ color: "error.main" }} />
+                  </ListItemButton>
+                </ListItem>
+              </List>
             </Collapse>
           </List>
         </Box>

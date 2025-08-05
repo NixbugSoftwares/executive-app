@@ -11,13 +11,23 @@ import {
   DialogContent,
   DialogTitle,
   Avatar,
-  Chip,
   Tooltip,
   Checkbox,
   FormControlLabel,
   Alert,
+  Grid,
+  useTheme,
+  Divider,
 } from "@mui/material";
-import { Diversity3 as Diversity3Icon, ArrowBack as BackIcon, } from "@mui/icons-material";
+import {
+  Diversity3 as RolesIcon,
+  ArrowBack as BackIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Check as CheckIcon,
+  Close as CloseIcon,
+  Security as PermissionsIcon,
+} from "@mui/icons-material";
 import { useAppDispatch } from "../../store/Hooks";
 import { roleDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
@@ -26,42 +36,319 @@ import {
   showSuccessToast,
   showErrorToast,
 } from "../../common/toastMessageHelper";
-
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
+import { RoleDetails } from "../../types/type";
 interface RoleCardProps {
   role: {
     id: number;
     name: string;
-    manageExecutive?: boolean;
-    manageRole?: boolean;
-    manageLandmark?: boolean;
-    manageCompany?: boolean;
-    manageVendor?: boolean;
-    manageRoute?: boolean;
-    manageSchedule?: boolean;
-    manageService?: boolean;
-    manageDuty?: boolean;
-    manageFare?: boolean;
+    roleDetails?: RoleDetails;
   };
   onBack: () => void;
   onUpdate: (id: number) => void;
   onDelete: (id: number) => void;
   refreshList: (value: any) => void;
-  canManageRole: boolean;
   handleCloseDetailCard: () => void;
+  onCloseDetailCard: () => void;
 }
+
+const permissionGroups = [
+  {
+    groupName: "Token Management",
+    permissions: [
+      {
+        label: "Executive ",
+        key: "manage_ex_token",
+      },
+      {
+        label: "Operator",
+        key: "manage_op_token",
+      },
+      {
+        label: "Vendor ",
+        key: "manage_ve_token",
+      },
+    ],
+  },
+  {
+    groupName: "Executive Management",
+    permissions: [
+      {
+        label: "Create",
+        key: "create_executive",
+      },
+      {
+        label: "Update",
+        key: "update_executive",
+      },
+      {
+        label: "Delete",
+        key: "delete_executive",
+      },
+    ],
+  },
+  {
+    groupName: "Landmark Management",
+    permissions: [
+      {
+        label: "Create",
+        key: "create_landmark",
+      },
+      {
+        label: "Update",
+        key: "update_landmark",
+      },
+      {
+        label: "Delete",
+        key: "delete_landmark",
+      },
+    ],
+  },
+  {
+    groupName: "Company Management",
+    permissions: [
+      {
+        label: "Create",
+        key: "create_company",
+      },
+      {
+        label: "Update",
+        key: "update_company",
+      },
+      {
+        label: "Delete",
+        key: "delete_company",
+      },
+    ],
+  },
+  {
+    groupName: "Operator Management",
+    permissions: [
+      {
+        label: "Create",
+        key: "create_operator",
+      },
+      {
+        label: "Update",
+        key: "update_operator",
+      },
+      {
+        label: "Delete",
+        key: "delete_operator",
+      },
+    ],
+  },
+  {
+    groupName: "Business Management",
+    permissions: [
+      {
+        label: "Create",
+        key: "create_business",
+      },
+      {
+        label: "Update",
+        key: "update_business",
+      },
+      {
+        label: "Delete",
+        key: "delete_business",
+      },
+    ],
+  },
+  {
+    groupName: "Route Management",
+    permissions: [
+      {
+        label: "Create",
+        key: "create_route",
+      },
+      {
+        label: "Update",
+        key: "update_route",
+      },
+      {
+        label: "Delete",
+        key: "delete_route",
+      },
+    ],
+  },
+  {
+    groupName: "Bus Management",
+    permissions: [
+      {
+        label: "Create",
+        key: "create_bus",
+      },
+      {
+        label: "Update",
+        key: "update_bus",
+      },
+      {
+        label: "Delete",
+        key: "delete_bus",
+      },
+    ],
+  },
+  {
+    groupName: "Vendor Management",
+    permissions: [
+      {
+        label: "Create",
+        key: "create_vendor",
+      },
+      {
+        label: "Update",
+        key: "update_vendor",
+      },
+      {
+        label: "Delete",
+        key: "delete_vendor",
+      },
+    ],
+  },
+  {
+    groupName: "Schedule Management",
+    permissions: [
+      {
+        label: "Create",
+        key: "create_schedule",
+      },
+      {
+        label: "Update",
+        key: "update_schedule",
+      },
+      {
+        label: "Delete",
+        key: "delete_schedule",
+      },
+    ],
+  },
+  {
+    groupName: "Service Management",
+    permissions: [
+      {
+        label: "Create",
+        key: "create_service",
+      },
+      {
+        label: "Update",
+        key: "update_service",
+      },
+      {
+        label: "Delete",
+        key: "delete_service",
+      },
+    ],
+  },
+  {
+    groupName: "Fare Management",
+    permissions: [
+      {
+        label: "Create",
+        key: "create_fare",
+      },
+      {
+        label: "Update",
+        key: "update_fare",
+      },
+      {
+        label: "Delete",
+        key: "delete_fare",
+      },
+    ],
+  },
+  {
+    groupName: "Duty Management",
+    permissions: [
+      {
+        label: "Create",
+        key: "create_duty",
+      },
+      {
+        label: "Update",
+        key: "update_duty",
+      },
+      {
+        label: "Delete",
+        key: "delete_duty",
+      },
+    ],
+  },
+  {
+    groupName: "Executive Role Management",
+    permissions: [
+      {
+        label: "Create",
+        key: "create_ex_role",
+      },
+      {
+        label: "Update",
+        key: "update_ex_role",
+      },
+      {
+        label: "Delete",
+        key: "delete_ex_role",
+      },
+    ],
+  },
+  {
+    groupName: "Operator Role Management",
+    permissions: [
+      {
+        label: "Create",
+        key: "create_op_role",
+      },
+      {
+        label: "Update",
+        key: "update_op_role",
+      },
+      {
+        label: "Delete",
+        key: "delete_op_role",
+      },
+    ],
+  },
+  {
+    groupName: "Vendor Role Management",
+    permissions: [
+      {
+        label: "Create",
+        key: "create_ve_role",
+      },
+      {
+        label: "Update",
+        key: "update_ve_role",
+      },
+      {
+        label: "Delete",
+        key: "delete_ve_role",
+      },
+    ],
+  },
+];
 
 const RoleDetailsCard: React.FC<RoleCardProps> = ({
   role,
   onBack,
   onDelete,
   refreshList,
-  canManageRole,
   handleCloseDetailCard,
+  onCloseDetailCard,
 }) => {
+  const theme = useTheme();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const [acknowledgedWarning, setAcknowledgedWarning] = useState(false);
   const dispatch = useAppDispatch();
+
+  const canDeleteRole = useSelector((state: RootState) =>
+    state.app.permissions.includes("delete_ex_role")
+  );
+
+  const canUpdateRole = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_ex_role")
+  );
 
   const handleCloseModal = () => {
     setUpdateFormOpen(false);
@@ -90,181 +377,176 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
     }
   };
 
+  const getPermissionValue = (key: string) => {
+    return role.roleDetails?.[key as keyof typeof role.roleDetails] || false;
+  };
+
   return (
     <>
       {/* Role Details Card */}
       <Card
-        sx={{ maxWidth: 420, margin: 2, boxShadow: 4, borderRadius: 3, p: 1 }}
+        sx={{ maxWidth: 500, margin: "auto", boxShadow: 3, borderRadius: 2 }}
       >
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            mb: 2,
-          }}
-        >
-          <Avatar sx={{ bgcolor: "primary.main", width: 56, height: 56 }}>
-            <Diversity3Icon fontSize="large" />
-          </Avatar>
-          <Typography variant="h6" sx={{ mt: 1, fontWeight: "bold" }}>
-            {role.name}
+        <Box sx={{ p: 2, bgcolor:"darkblue", color: "white" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Avatar sx={{ bgcolor: "white", width: 40, height: 40 }}>
+              <RolesIcon color="primary" />
+            </Avatar>
+            <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+              {role.name}
+            </Typography>
+          </Box>
+          <Typography variant="caption" sx={{ display: "block", mt: 1 }}>
+            Role ID: {role.id}
           </Typography>
         </Box>
 
         {/* Permissions Section */}
         <CardContent>
-          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: "bold" }}>
-            Permissions:
-          </Typography>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {/* List all permissions */}
-            <Chip
-              label={`Manage Executive: ${role.manageExecutive ? "Yes" : "No"}`}
-              color={role.manageExecutive ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Role: ${role.manageRole ? "Yes" : "No"}`}
-              color={role.manageRole ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Landmark: ${role.manageLandmark ? "Yes" : "No"}`}
-              color={role.manageLandmark ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Company: ${role.manageCompany ? "Yes" : "No"}`}
-              color={role.manageCompany ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Vendor: ${role.manageVendor ? "Yes" : "No"}`}
-              color={role.manageVendor ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Route: ${role.manageRoute ? "Yes" : "No"}`}
-              color={role.manageRoute ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Schedule: ${role.manageSchedule ? "Yes" : "No"}`}
-              color={role.manageSchedule ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Service: ${role.manageService ? "Yes" : "No"}`}
-              color={role.manageService ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Duty: ${role.manageDuty ? "Yes" : "No"}`}
-              color={role.manageDuty ? "success" : "error"}
-              variant="outlined"
-            />
-            <Chip
-              label={`Manage Fare: ${role.manageFare ? "Yes" : "No"}`}
-              color={role.manageFare ? "success" : "error"}
-              variant="outlined"
-            />
+          <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1, backgroundColor: "rgba(42, 150, 46, 0.1)", p: 1, borderRadius: 1 }}>
+            <PermissionsIcon color="primary" />
+            <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
+              Permissions
+            </Typography>
           </Box>
+
+          <Divider sx={{ scale: 5, fill: theme.palette.primary.main, mb: 2 }} />
+
+          <Grid container spacing={1}>
+            {permissionGroups.map((group) => (
+              <React.Fragment key={group.groupName}>
+                <Grid item xs={12}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontWeight: "bold",
+                      color: theme.palette.text.primary,
+                    }}
+                  >
+                    {group.groupName}:
+                  </Typography>
+                </Grid>
+                {group.permissions.map((permission) => (
+                  <Grid item xs={6} sm={4} key={permission.key}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        p: 0.5,
+                        borderRadius: 1,
+                        bgcolor: getPermissionValue(permission.key)
+                          ? "rgba(42, 150, 46, 0.3)"
+                          : "rgba(201, 65, 56, 0.3)",
+                      }}
+                    >
+                      <Typography variant="caption" sx={{ flex: 1 }}>
+                        {permission.label}
+                      </Typography>
+                      {getPermissionValue(permission.key) ? (
+                        <CheckIcon
+                          fontSize="small"
+                          sx={{ backgroundColor: "#E8F5E9" }}
+                        />
+                      ) : (
+                        <CloseIcon fontSize="small" color="error" />
+                      )}
+                    </Box>
+                  </Grid>
+                ))}
+              </React.Fragment>
+            ))}
+          </Grid>
         </CardContent>
 
         {/* Action Buttons */}
-        <CardActions sx={{ justifyContent: "space-between", gap: 1 }}>
-         <Button
-                       variant="outlined"
-                       color="primary"
-                       size="small"
-                       onClick={onBack}
-                       startIcon={<BackIcon />}
-                     >
-                       Back
-                     </Button>
-          <Tooltip
-            title={
-              !canManageRole
-                ? "You don't have permission, contact the admin"
-                : ""
-            }
-            arrow
-            placement="top-start"
+        <CardActions
+          sx={{
+            justifyContent: "space-between",
+            p: 2,
+            borderTop: `1px solid ${theme.palette.divider}`,
+          }}
+        >
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={onBack}
+            startIcon={<BackIcon />}
+            sx={{ minWidth: 100 }}
           >
-            <span
-              style={{ cursor: !canManageRole ? "not-allowed" : "default" }}
-            >
-              <Button
-                variant="contained"
-                color="success"
-                size="small"
-                onClick={() => setUpdateFormOpen(true)}
-                disabled={!canManageRole}
-                sx={{
-                  "&.Mui-disabled": {
-                    backgroundColor: "#81c784 !important",
-                    color: "#ffffff99",
-                  },
-                }}
-              >
-                Update
-              </Button>
-            </span>
-          </Tooltip>
+            Back
+          </Button>
 
-          {/* Delete Button with Tooltip */}
-          <Tooltip
-            title={
-              !canManageRole
-                ? "You don't have permission, contact the admin"
-                : ""
-            }
-            arrow
-            placement="top-start"
-          >
-            <span
-              style={{ cursor: !canManageRole ? "not-allowed" : "default" }}
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Tooltip
+              title={!canUpdateRole ? "You don't have update permission" : ""}
             >
-              <Button
-                variant="contained"
-                color="error"
-                size="small"
-                onClick={() => setDeleteConfirmOpen(true)}
-                disabled={!canManageRole}
-                sx={{
-                  "&.Mui-disabled": {
-                    backgroundColor: "#e57373 !important",
-                    color: "#ffffff99",
-                  },
-                }}
-              >
-                Delete
-              </Button>
-            </span>
-          </Tooltip>
+              <span>
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => setUpdateFormOpen(true)}
+                  disabled={!canUpdateRole}
+                  startIcon={<EditIcon />}
+                  color="success"
+                  sx={{
+                    minWidth: 100,
+                    "&.Mui-disabled": {
+                      backgroundColor: theme.palette.action.disabledBackground,
+                    },
+                  }}
+                >
+                  Update
+                </Button>
+              </span>
+            </Tooltip>
+
+            <Tooltip
+              title={!canDeleteRole ? "You don't have delete permission" : ""}
+            >
+              <span>
+                <Button
+                  variant="contained"
+                  color="error"
+                  size="small"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  disabled={!canDeleteRole}
+                  startIcon={<DeleteIcon />}
+                  sx={{
+                    minWidth: 100,
+                    "&.Mui-disabled": {
+                      backgroundColor: theme.palette.error.light,
+                    },
+                  }}
+                >
+                  Delete
+                </Button>
+              </span>
+            </Tooltip>
+          </Box>
         </CardActions>
       </Card>
 
       {/* Delete Confirmation Modal */}
       <Dialog
         open={deleteConfirmOpen}
-        onClose={() => {
-          setDeleteConfirmOpen(false);
-          setAcknowledgedWarning(false); // Reset when dialog closes
-        }}
+        onClose={() => setDeleteConfirmOpen(false)}
       >
-        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogTitle>Confirm Role Deletion</DialogTitle>
         <DialogContent>
           <Alert severity="warning" sx={{ mb: 2 }}>
-            <strong>Warning:</strong> This role might be assigned to executives.
-            Deleting it will remove all associated permissions from those
-            accounts.
+            <strong>Warning:</strong> Deleting this role will remove all
+            associated permissions from assigned users.
           </Alert>
 
-          <Typography gutterBottom>
-            <b>ID:</b> {role.id}, <b>Role Name:</b> {role.name}
-          </Typography>
+          <Box sx={{ mb: 2 }}>
+            <Typography>
+              <strong>Role:</strong> {role.name}
+            </Typography>
+            <Typography>
+              <strong>ID:</strong> {role.id}
+            </Typography>
+          </Box>
 
           <FormControlLabel
             control={
@@ -274,23 +556,18 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
                 color="primary"
               />
             }
-            label="I understand that deleting this role will affect all executives assigned to it"
+            label="I understand the consequences"
           />
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => {
-              setDeleteConfirmOpen(false);
-              setAcknowledgedWarning(false);
-            }}
-            color="primary"
-          >
+          <Button onClick={() => setDeleteConfirmOpen(false)} color="primary">
             Cancel
           </Button>
           <Button
             onClick={handleRoleDelete}
             color="error"
             disabled={!acknowledgedWarning}
+            variant="contained"
           >
             Confirm Delete
           </Button>
@@ -300,21 +577,22 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
       {/* Update Form Modal */}
       <Dialog
         open={updateFormOpen}
-        onClose={() => setUpdateFormOpen(false)}
-        maxWidth="xs"
+        onClose={handleCloseModal}
+        maxWidth="sm"
         fullWidth
       >
         <DialogContent>
           <RoleUpdateForm
-            refreshList={(value: any) => refreshList(value)}
             roleId={role.id}
-            onClose={() => setUpdateFormOpen(false)}
-            handleCloseDetailCard={handleCloseDetailCard}
+            roleData={role}
+            refreshList={refreshList}
+            onClose={handleCloseModal}
+            onCloseDetailCard={onCloseDetailCard}
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseModal} color="error">
-            Cancel
+            Cancle
           </Button>
         </DialogActions>
       </Dialog>

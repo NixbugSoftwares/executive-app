@@ -18,12 +18,13 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Alert,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import CodeEditor from "./textEditor";
+import CodeEditor from "./CompanyFareTextEditor";
 import {
   useForm,
   Controller,
@@ -31,13 +32,18 @@ import {
   SubmitHandler,
 } from "react-hook-form";
 import { useAppDispatch } from "../../store/Hooks";
-import { fareCreationApi } from "../../slices/appSlice";
 import {
   showErrorToast,
   showSuccessToast,
 } from "../../common/toastMessageHelper";
 import { Fare } from "../../types/type";
-import { fareDeleteApi, fareupdationApi } from "../../slices/appSlice";
+import {
+  fareDeleteApi,
+  fareupdationApi,
+  fareCreationApi,
+} from "../../slices/appSlice";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
 interface TicketType {
   id: number;
   name: string;
@@ -62,7 +68,7 @@ interface FareSkeletonPageProps {
   refreshList: (value: any) => void;
   fareToEdit?: Fare | null;
   mode: "create" | "view";
-  canManageFare: boolean;
+  companyId: number;
 }
 
 const defaultTicketTypes = [
@@ -71,12 +77,12 @@ const defaultTicketTypes = [
   { id: 3, name: "Student" },
 ];
 
-const FareSkeletonPage = ({
+const CompanyFareSkeletonPage = ({
   onCancel,
   refreshList,
   fareToEdit,
   mode,
-  canManageFare,
+  companyId,
 }: FareSkeletonPageProps) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
@@ -91,7 +97,12 @@ const FareSkeletonPage = ({
   const [output, setOutput] = useState("");
   const [_fareToDelete, setFareToDelete] = useState<number | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-
+  const canUpdateFare = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_fare")
+  );
+  const canDeleteFare = useSelector((state: RootState) =>
+    state.app.permissions.includes("delete_fare")
+  );
   useEffect(() => {
     if (fareToEdit) {
       setFareFunction(fareToEdit.function);
@@ -161,19 +172,27 @@ const FareSkeletonPage = ({
   const attributes = watch("attributes");
 
   const handleRunCode = () => {
-    try {
-      const func = new Function(
-        "ticket_type",
-        "distance",
-        "extra",
-        `${fareFunction}\nreturn getFare(ticket_type, distance, extra);`
-      );
+    let logs: any[] = [];
+    const customConsole = {
+      log: (...args: any[]) => logs.push(args.join(" ")),
+    };
 
-      const result = func("Adult", 1000, {});
-      setOutput(`Test output (Adult, 1000m): ${result}`);
+    try {
+      // eslint-disable-next-line no-new-func
+      const func = new Function("console", fareFunction);
+      const result = func(customConsole);
+
+      let outputText = "";
+      if (logs.length > 0) {
+        outputText += logs.join("\n") + "\n";
+      }
+      if (result !== undefined) {
+        outputText += `Result: ${JSON.stringify(result)}`;
+      }
+      setOutput(outputText.trim() || "No output");
     } catch (error) {
       setOutput(
-        `Error: ${error instanceof Error ? error.message : "Invalid function"}`
+        `Error: ${error instanceof Error ? error.message : "Invalid code"}`
       );
     }
   };
@@ -213,18 +232,20 @@ const FareSkeletonPage = ({
   const handleFareCreation: SubmitHandler<FareInputs> = async (data) => {
     try {
       setLoading(true);
-      const formData = new FormData();
-      formData.append("name", data.name);
-      formData.append("function", fareFunction);
-      formData.append("attributes", JSON.stringify(data.attributes));
-
-      await dispatch(fareCreationApi(formData)).unwrap();
+      const fareCreate = {
+        company_id: companyId,
+        scope: 2,
+        name: data.name,
+        function: fareFunction,
+        attributes: data.attributes,
+      };
+      await dispatch(fareCreationApi(fareCreate)).unwrap();
       onCancel();
       refreshList("refresh");
       showSuccessToast("Fare created successfully");
     } catch (error: any) {
       console.error("Error creating fare:", error);
-      showErrorToast(error.message);
+      showErrorToast(error || "Error creating fare");
     } finally {
       setLoading(false);
     }
@@ -233,21 +254,21 @@ const FareSkeletonPage = ({
   const handleFareUpdate: SubmitHandler<FareInputs> = async (data) => {
     try {
       setLoading(true);
-      const formData = new URLSearchParams();
-      formData.append("id", String(fareToEdit?.id));
-      formData.append("name", data.name);
-      formData.append("function", fareFunction);
-      formData.append("attributes", JSON.stringify(data.attributes));
-
+      const fareUpdate = {
+        id: fareToEdit?.id,
+        name: data.name,
+        function: fareFunction,
+        attributes: data.attributes,
+      };
       await dispatch(
-        fareupdationApi({ fareId: fareToEdit!.id, formData })
+        fareupdationApi({ fareId: fareToEdit!.id, fareUpdate })
       ).unwrap();
       onCancel();
       refreshList("refresh");
       showSuccessToast("Fare updated successfully");
     } catch (error: any) {
       console.error("Error updating fare:", error);
-      showErrorToast(error.message);
+      showErrorToast(error || "Error updating fare");
     } finally {
       setLoading(false);
     }
@@ -263,16 +284,14 @@ const FareSkeletonPage = ({
 
     try {
       setLoading(true);
-      const formData = new FormData();
-      formData.append("id", String(fareToEdit.id));
 
-      await dispatch(fareDeleteApi(formData)).unwrap();
+      await dispatch(fareDeleteApi({ fareId: fareToEdit.id })).unwrap();
       onCancel();
       refreshList("refresh");
       showSuccessToast("Fare deleted successfully");
     } catch (error: any) {
       console.error("Error deleting fare:", error);
-      showErrorToast(error.message);
+      showErrorToast(error || "Error deleting fare");
     } finally {
       setLoading(false);
     }
@@ -313,9 +332,20 @@ const FareSkeletonPage = ({
           <Controller
             name="name"
             control={control}
-            rules={{ required: "Fare name is required" }}
+            rules={{
+              required: "Fare name is required",
+              minLength: {
+                value: 4,
+                message: "Fare name must be at least 4 characters",
+              },
+              maxLength: {
+                value: 32,
+                message: "Fare name must be at most 32 characters",
+              },
+            }}
             render={({ field }) => (
               <TextField
+                required
                 {...field}
                 label="Fare Name"
                 fullWidth
@@ -540,7 +570,7 @@ const FareSkeletonPage = ({
             <>
               <Tooltip
                 title={
-                  !canManageFare
+                  !canDeleteFare
                     ? "You don't have permission, contact the admin"
                     : ""
                 }
@@ -549,7 +579,7 @@ const FareSkeletonPage = ({
               >
                 <span
                   style={{
-                    cursor: !canManageFare ? "not-allowed" : "default",
+                    cursor: !canDeleteFare ? "not-allowed" : "default",
                   }}
                 >
                   <Button
@@ -561,7 +591,7 @@ const FareSkeletonPage = ({
                       handleDeleteFare(fareToEdit!.id);
                     }}
                     startIcon={<DeleteIcon />}
-                    disabled={!canManageFare}
+                    disabled={!canDeleteFare}
                     sx={{
                       "&.Mui-disabled": {
                         backgroundColor: "#e57373 !important",
@@ -574,37 +604,37 @@ const FareSkeletonPage = ({
                 </span>
               </Tooltip>
               <Tooltip
-                            title={
-                              !canManageFare
-                                ? "You don't have permission, contact the admin"
-                                : ""
-                            }
-                            arrow
-                            placement="top-start"
-                          >
-                            <span
-                              style={{
-                                cursor: !canManageFare ? "not-allowed" : "default",
-                              }}
-                            >
-                              <Button
-                                variant="contained"
-                                color="success"
-                                size="small"
-                                onClick={handleSubmit(handleFareUpdate)}
-                                startIcon={<EditIcon />}
-                                disabled={!canManageFare}
-                                sx={{
-                                  "&.Mui-disabled": {
-                                    backgroundColor: "#81c784 !important",
-                                    color: "#ffffff99",
-                                  },
-                                }}
-                              >
-                                Update
-                              </Button>
-                            </span>
-                          </Tooltip>
+                title={
+                  !canUpdateFare
+                    ? "You don't have permission, contact the admin"
+                    : ""
+                }
+                arrow
+                placement="top-start"
+              >
+                <span
+                  style={{
+                    cursor: !canUpdateFare ? "not-allowed" : "default",
+                  }}
+                >
+                  <Button
+                    variant="contained"
+                    color="success"
+                    size="small"
+                    onClick={handleSubmit(handleFareUpdate)}
+                    startIcon={<EditIcon />}
+                    disabled={!canUpdateFare}
+                    sx={{
+                      "&.Mui-disabled": {
+                        backgroundColor: "#81c784 !important",
+                        color: "#ffffff99",
+                      },
+                    }}
+                  >
+                    Update
+                  </Button>
+                </span>
+              </Tooltip>
             </>
           ) : (
             <Button
@@ -661,6 +691,11 @@ const FareSkeletonPage = ({
             borderTop: "1px solid #e0e0e0",
           }}
         >
+          <Alert severity="info">
+            <Typography variant="body2">
+              Use console.log to print output from your function.
+            </Typography>
+          </Alert>
           <Typography variant="subtitle1" gutterBottom>
             Output:
           </Typography>
@@ -700,4 +735,4 @@ const FareSkeletonPage = ({
   );
 };
 
-export default FareSkeletonPage;
+export default CompanyFareSkeletonPage;

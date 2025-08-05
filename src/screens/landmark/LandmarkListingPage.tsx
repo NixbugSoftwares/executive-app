@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { useEffect, useRef, useState } from "react";
 import {
   Table,
@@ -16,34 +16,44 @@ import {
   DialogContent,
   DialogTitle,
   Typography,
-  Chip,
   Tooltip,
   Collapse,
   IconButton,
+  Select,
+  MenuItem,
+  CircularProgress,
 } from "@mui/material";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import WarningIcon from "@mui/icons-material/Warning";
-import LowPriorityIcon from "@mui/icons-material/LowPriority";
-import MediumPriorityIcon from "@mui/icons-material/Height";
-import HighPriorityIcon from "@mui/icons-material/PriorityHigh";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import LandmarkAddForm from "./LandmarkAddForm";
 import MapComponent from "./LandmarkMap";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   landmarkListApi,
   landmarkDeleteApi,
   busStopListApi,
   busStopDeleteApi,
 } from "../../slices/appSlice";
-import { AppDispatch } from "../../store/Store";
+import { AppDispatch, RootState } from "../../store/Store";
 import LandmarkUpdateForm from "./LandmarkUpdateForm";
 import VectorSource from "ol/source/Vector";
 import BusStopAddForm from "./busStopCreationForm";
 import BusStopUpdateForm from "./BusStopUpdationForm";
 import { showErrorToast } from "../../common/toastMessageHelper";
 import { Landmark, BusStop } from "../../types/type";
+import PaginationControls from "../../common/paginationControl";
+import { SelectChangeEvent } from "@mui/material";
+
+const getTypeBackendValue = (displayValue: string): string => {
+  const typeMap: Record<string, string> = {
+    Local: "1",
+    Village: "2",
+    District: "3",
+    State: "4",
+    National: "5",
+  };
+  return typeMap[displayValue] || "";
+};
 
 const LandmarkListing = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -51,14 +61,18 @@ const LandmarkListing = () => {
   const [selectedLandmark, setSelectedLandmark] = useState<Landmark | null>(
     null
   );
-  const [busStopList, setBusStopList] = useState<BusStop[]>([]);
   const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [landmarkRefreshKey, setLandmarkRefreshKey] = useState(0);
   const [openBusStopModal, setOpenBusStopModal] = useState(false);
   const [busStopToUpdate, setBusStopToUpdate] = useState<BusStop | null>(null);
   const [busStopUpdateModalOpen, setBusStopUpdateModalOpen] = useState(false);
-  const [search, setSearch] = useState({ id: "", name: "", location: "" });
+  const [search, setSearch] = useState({ id: "", name: "", type: "" });
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const debounceRef = useRef<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
   const rowsPerPage = 10;
+  const [hasNextPage, setHasNextPage] = useState(false);
   const [boundary, setBoundary] = useState<string>("");
   const [location, setLocation] = useState<string>("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -72,6 +86,15 @@ const LandmarkListing = () => {
   const vectorSource = useRef(new VectorSource());
   const [isDrawing, setIsDrawing] = useState(false);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
+  const [busStopsByLandmark, setBusStopsByLandmark] = useState<{
+    [key: number]: BusStop[];
+  }>({});
+  const canCreateLandmark = useSelector((state: RootState) =>
+    state.app.permissions.includes("create_landmark")
+  );
+  const canUpdateLandmark = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_landmark")
+  );
 
   //****************exctracting points of landmark and busstop**********************
   const extractRawPoints = (polygonString: string): string => {
@@ -79,72 +102,87 @@ const LandmarkListing = () => {
     const matches = polygonString.match(/\(\((.*?)\)\)/);
     return matches ? matches[1] : "";
   };
-
-  const parsePointString = (pointString: string): [number, number] | null => {
-    if (!pointString) return null;
-    const matches = pointString.match(/POINT\(([^)]+)\)/);
-    if (!matches) return null;
-
-    const coords = matches[1].split(" ");
-    if (coords.length !== 2) return null;
-
-    return [parseFloat(coords[0]), parseFloat(coords[1])];
-  };
-
   //********************fetching landmarks and busstops*****************************
-  const fetchLandmark = () => {
-    dispatch(landmarkListApi())
+  const fetchLandmark = useCallback((pageNumber: number, searchParams = {}) => {
+    const offset = pageNumber * rowsPerPage;
+    dispatch(landmarkListApi({ limit: rowsPerPage, offset, ...searchParams }))
       .unwrap()
-      .then((res: any[]) => {
-        const formattedLandmarks = res.map((landmark: any) => ({
+      .then((res) => {
+        console.log("Fetch Response||||||:", res);
+
+        const items = res.data || [];
+        const formattedLandmarks = items.map((landmark: any) => ({
           id: landmark.id,
           name: landmark.name,
           boundary: extractRawPoints(landmark.boundary),
-          importance:
-            landmark.importance === 1
-              ? "Low"
-              : landmark.importance === 2
-              ? "Medium"
-              : "High",
-          status: landmark.status === 1 ? "Validating" : "Verified",
+          type:
+            landmark.type === 1
+              ? "Local"
+              : landmark.type == 2
+              ? "Village"
+              : landmark.type == 3
+              ? "District"
+              : landmark.type == 4
+              ? "State"
+              : landmark.type == 5
+              ? "National"
+              : "not found",
         }));
         setLandmarkList(formattedLandmarks);
+        setHasNextPage(items.length === rowsPerPage);
       })
-      .catch((err: any) => {
-        showErrorToast(err);
-      });
-  };
-
-  const fetchBusStop = () => {
-    dispatch(busStopListApi())
+      .catch((error) => {
+        console.error("Fetch Error:", error);
+        showErrorToast(
+          error.detail ||
+            error.message ||
+            error ||
+            "Failed to fetch account list"
+        );
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
+  const fetchBusStopsForLandmark = (landmarkId: number) => {
+    dispatch(busStopListApi({ landmark_id: landmarkId }))
       .unwrap()
       .then((res: any[]) => {
-        const formattedBusStops = res.map((busStop: any) => {
-          const coords = parsePointString(busStop.location);
-          return {
-            id: busStop.id,
-            name: busStop.name,
-            landmark_id: busStop.landmark_id,
-            location: busStop.location,
-            parsedLocation: coords,
-            status: busStop.status === 1 ? "Validating" : "Verified",
-          };
-        });
-        setBusStopList(formattedBusStops);
+        const formattedBusStops = res.map((busStop: any) => ({
+          id: busStop.id,
+          name: busStop.name,
+          landmark_id: busStop.landmark_id,
+          location: busStop.location,
+          status: busStop.status === 1 ? "Validating" : "Verified",
+        }));
+        setBusStopsByLandmark((prev) => ({
+          ...prev,
+          [landmarkId]: formattedBusStops,
+        }));
       })
-      .catch((err: any) => {
-        showErrorToast(err);
+      .catch((error) => {
+        showErrorToast(
+          error.detail || error.message || error || "Failed to fetch bus stops"
+        );
       });
+  };
+  const handleRowClick = (landmark: Landmark) => {
+    if (isDrawing) return;
+    setSelectedLandmark(landmark);
+    setExpandedRow(expandedRow === landmark.id ? null : landmark.id);
+    if (!busStopsByLandmark[landmark.id]) {
+      fetchBusStopsForLandmark(landmark.id);
+    }
   };
 
   useEffect(() => {
-    fetchLandmark();
-    fetchBusStop();
-  }, []);
+    const typeBackendValue = getTypeBackendValue(debouncedSearch.type);
+    const searchParams = {
+      ...(debouncedSearch.id && { id: debouncedSearch.id }),
+      ...(debouncedSearch.name && { name: debouncedSearch.name }),
+      ...(debouncedSearch.type && { type: typeBackendValue }),
+    };
 
-  const getBusStopsForLandmark = (landmarkId: number): BusStop[] => {
-    return busStopList.filter((stop) => stop.landmark_id === landmarkId);
-  };
+    fetchLandmark(page, searchParams);
+  }, [page, debouncedSearch, fetchLandmark]);
 
   //*************************DELETE landmark and busstop*****************************
   const handleLandmarkDelete = async () => {
@@ -157,7 +195,7 @@ const LandmarkListing = () => {
       formData.append("id", String(landmarkToDelete.id));
       await dispatch(landmarkDeleteApi(formData)).unwrap();
       setDeleteConfirmOpen(false);
-      fetchLandmark();
+      refreshList("refresh");
       setExpandedRow(null);
       setSelectedLandmark(null);
     } catch (error: any) {
@@ -175,24 +213,15 @@ const LandmarkListing = () => {
       showErrorToast("Error: Bus stop to delete is missing");
       return;
     }
-
     try {
       const formData = new FormData();
       formData.append("id", String(busStopToDelete.id));
       await dispatch(busStopDeleteApi(formData)).unwrap();
       setBusStopDeleteConfirmOpen(false);
-      fetchBusStop();
+      fetchBusStopsForLandmark(busStopToDelete.landmark_id!);
     } catch (error: any) {
       showErrorToast(error);
     }
-  };
-
-  const handleRowClick = (landmark: Landmark) => {
-    if (isDrawing) {
-      return;
-    }
-    setSelectedLandmark(landmark);
-    setExpandedRow(expandedRow === landmark.id ? null : landmark.id);
   };
 
   const clearBoundaries = () => {
@@ -219,35 +248,47 @@ const LandmarkListing = () => {
     setIsDrawing(drawingState);
   };
 
-  const handleSearchChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    column: keyof typeof search
-  ) => {
-    setSearch((prev) => ({
-      ...prev,
-      [column]: (e.target as HTMLInputElement).value,
-    }));
+  const handleSearchChange = useCallback(
+    (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+      column: keyof typeof search
+    ) => {
+      const value = e.target.value;
+      setSearch((prev) => ({ ...prev, [column]: value }));
+
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = window.setTimeout(() => {
+        setDebouncedSearch((prev) => ({ ...prev, [column]: value }));
+        setPage(0);
+      }, 700);
+    },
+    []
+  );
+  const handleSelectChange = useCallback((e: SelectChangeEvent<string>) => {
+    const value = e.target.value;
+    setSearch((prev) => ({ ...prev, type: value }));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      setDebouncedSearch((prev) => ({ ...prev, type: value }));
+      setPage(0);
+    }, 700);
+  }, []);
+  const handleChangePage = useCallback(
+    (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+      setPage(newPage);
+    },
+    []
+  );
+  const refreshList = (value: string) => {
+    if (value === "refresh") {
+      fetchLandmark(page, debouncedSearch);
+    }
   };
-
-  const filteredData = landmarkList.filter((row) => {
-    const id = row.id ? row.id.toString().toLowerCase() : "";
-    const name = row.name ? row.name.toLowerCase() : "";
-    const location = row.boundary ? row.boundary.toLowerCase() : "";
-    const searchId = search.id ? search.id.toLowerCase() : "";
-    const searchName = search.name ? search.name.toLowerCase() : "";
-    const searchLocation = search.location ? search.location.toLowerCase() : "";
-
-    return (
-      id.includes(searchId) &&
-      name.includes(searchName) &&
-      location.includes(searchLocation)
-    );
-  });
-
-  const handleChangePage = (_event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
+const handleLandmarkAdded = () => {
+  setLandmarkRefreshKey((k) => k + 1);
+  refreshList("refresh");
+  setOpenCreateModal(false);
+};
   return (
     <Box
       sx={{
@@ -267,11 +308,32 @@ const LandmarkListing = () => {
           overflowY: "auto",
         }}
       >
-        <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
+        <TableContainer
+          component={Paper}
+          sx={{ overflowX: "auto", position: "relative" }}
+        >
+          {isLoading && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                zIndex: 1,
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          )}
           <Table sx={{ borderCollapse: "collapse", width: "100%" }}>
             <TableHead>
               <TableRow>
-                <TableCell colSpan={2} sx={{ width: "20%" }}>
+                <TableCell colSpan={2} sx={{ width: "25%" }}>
                   <Box
                     display="flex"
                     flexDirection="column"
@@ -279,6 +341,7 @@ const LandmarkListing = () => {
                   >
                     <b>ID</b>
                     <TextField
+                      type="number"
                       variant="outlined"
                       size="small"
                       placeholder="Search"
@@ -291,13 +354,13 @@ const LandmarkListing = () => {
                     />
                   </Box>
                 </TableCell>
-                <TableCell sx={{ width: "30%" }}>
+                <TableCell sx={{ width: "50%" }}>
                   <Box
                     display="flex"
                     flexDirection="column"
                     alignItems="center"
                   >
-                    <b>Name</b>
+                    <b>Landmark Name</b>
                     <TextField
                       variant="outlined"
                       size="small"
@@ -312,298 +375,261 @@ const LandmarkListing = () => {
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Box display="flex" justifyContent="center">
-                    <b>Importance</b>
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Box display="flex" justifyContent="center">
-                    <b>Status</b>
+                  <Box
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="center"
+                  >
+                    <b>Type</b>
+                    <Select
+                      value={search.type}
+                      onChange={handleSelectChange}
+                      displayEmpty
+                      size="small"
+                      fullWidth
+                      sx={{ height: 40 }}
+                    >
+                      <MenuItem value="">All</MenuItem>
+                      <MenuItem value="Local">Local</MenuItem>
+                      <MenuItem value="Village">Village</MenuItem>
+                      <MenuItem value="District">District</MenuItem>
+                      <MenuItem value="State">State</MenuItem>
+                      <MenuItem value="National">National</MenuItem>
+                    </Select>
                   </Box>
                 </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredData.length > 0 ? (
-                filteredData
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row) => {
-                    const isSelected = selectedLandmark?.id === row.id;
-                    return (
-                      <React.Fragment key={row.id}>
-                        <Tooltip
-                          title={
-                            isDrawing
-                              ? "Finish drawing on the map first"
-                              : "Click to view details"
-                          }
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center"></TableCell>
+                </TableRow>
+              ) : landmarkList.length > 0 ? (
+                landmarkList.map((row) => {
+                  const isSelected = selectedLandmark?.id === row.id;
+
+                  return (
+                    <React.Fragment key={row.id}>
+                      <Tooltip
+                        title={
+                          isDrawing
+                            ? "Finish drawing on the map first"
+                            : "Click to view details"
+                        }
+                      >
+                        <TableRow
+                          hover
+                          onClick={() => handleRowClick(row)}
+                          sx={{
+                            cursor: isDrawing ? "not-allowed" : "pointer",
+                            backgroundColor: isSelected ? "#E3F2FD" : "inherit",
+                            opacity: isDrawing ? 0.7 : 1,
+                            "&:hover": {
+                              backgroundColor: isDrawing
+                                ? "inherit"
+                                : isSelected
+                                ? "#E3F2FD !important"
+                                : "#E3F2FD",
+                            },
+                          }}
                         >
-                          <TableRow
-                            hover
-                            onClick={() => handleRowClick(row)}
-                            sx={{
-                              cursor: isDrawing ? "not-allowed" : "pointer",
-                              backgroundColor: isSelected
-                                ? "#E3F2FD"
-                                : "inherit",
-                              opacity: isDrawing ? 0.7 : 1,
-                              "&:hover": {
-                                backgroundColor: isDrawing
-                                  ? "inherit"
-                                  : isSelected
-                                  ? "#E3F2FD !important"
-                                  : "#E3F2FD",
-                              },
-                            }}
+                          <TableCell>
+                            <IconButton
+                              aria-label="expand row"
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedRow(
+                                  expandedRow === row.id ? null : row.id
+                                );
+                              }}
+                            >
+                              {expandedRow === row.id ? (
+                                <KeyboardArrowUpIcon />
+                              ) : (
+                                <KeyboardArrowDownIcon />
+                              )}
+                            </IconButton>
+                          </TableCell>
+                          <TableCell>{row.id}</TableCell>
+                          <TableCell>{row.name}</TableCell>
+                          <TableCell>{row.type}</TableCell>
+                        </TableRow>
+                      </Tooltip>
+                      <TableRow>
+                        <TableCell
+                          style={{ paddingBottom: 0, paddingTop: 0 }}
+                          colSpan={6}
+                        >
+                          <Collapse
+                            in={expandedRow === row.id}
+                            timeout="auto"
+                            unmountOnExit
                           >
-                            <TableCell>
-                              <IconButton
-                                aria-label="expand row"
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setExpandedRow(
-                                    expandedRow === row.id ? null : row.id
-                                  );
-                                }}
-                              >
-                                {expandedRow === row.id ? (
-                                  <KeyboardArrowUpIcon />
-                                ) : (
-                                  <KeyboardArrowDownIcon />
-                                )}
-                              </IconButton>
-                            </TableCell>
-                            <TableCell>{row.id}</TableCell>
-                            <TableCell>{row.name}</TableCell>
-                            <TableCell>
-                              {row.importance === "Low" && (
-                                <Chip
-                                  icon={<LowPriorityIcon />}
-                                  label="Low"
-                                  color="info"
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: isSelected
-                                      ? "#90CAF9"
-                                      : "#E3F2FD",
-                                    color: isSelected ? "#1565C0" : "#1565C0",
-                                  }}
-                                />
-                              )}
-                              {row.importance === "Medium" && (
-                                <Chip
-                                  icon={<MediumPriorityIcon />}
-                                  label="Medium"
-                                  color="warning"
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: isSelected
-                                      ? "#edd18f"
-                                      : "#FFE082",
-                                    color: isSelected ? "#9f3b03" : "#9f3b03",
-                                  }}
-                                />
-                              )}
-                              {row.importance === "High" && (
-                                <Chip
-                                  icon={<HighPriorityIcon />}
-                                  label="High"
-                                  color="error"
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: isSelected
-                                      ? "#EF9A9A"
-                                      : "#FFEBEE",
-                                    color: isSelected ? "#D32F2F" : "#D32F2F",
-                                  }}
-                                />
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {row.status === "Validating" && (
-                                <Chip
-                                  icon={<WarningIcon />}
-                                  label="Validating"
-                                  color="warning"
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: isSelected
-                                      ? "#edd18f"
-                                      : "#FFE082",
-                                    color: isSelected ? "#9f3b03" : "#9f3b03",
-                                  }}
-                                />
-                              )}
-                              {row.status === "Verified" && (
-                                <Chip
-                                  icon={<CheckCircleIcon />}
-                                  label="Verified"
-                                  color="success"
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: isSelected
-                                      ? "#A5D6A7"
-                                      : "#E8F5E9",
-                                    color: isSelected ? "#2E7D32" : "#2E7D32",
-                                  }}
-                                />
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        </Tooltip>
-                        <TableRow>
-                          <TableCell
-                            style={{ paddingBottom: 0, paddingTop: 0 }}
-                            colSpan={6}
-                          >
-                            <Collapse
-                              in={expandedRow === row.id}
-                              timeout="auto"
-                              unmountOnExit
+                            <Box
+                              sx={{
+                                margin: 1,
+                                p: 2,
+                                backgroundColor: "#f5f5f5",
+                                borderRadius: 1,
+                              }}
                             >
                               <Box
                                 sx={{
-                                  margin: 1,
-                                  p: 2,
-                                  backgroundColor: "#f5f5f5",
-                                  borderRadius: 1,
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 1,
                                 }}
                               >
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: 1,
-                                  }}
-                                >
-                                  <Typography
-                                    variant="subtitle1"
-                                    sx={{ mt: 2 }}
+                                <Typography variant="subtitle1" sx={{ mt: 2 }}>
+                                  <strong>Bus Stops:</strong>
+                                </Typography>
+
+                                {(busStopsByLandmark[row.id] || []).length >
+                                0 ? (
+                                  <TableContainer
+                                    component={Paper}
+                                    sx={{ maxHeight: 300, overflow: "auto" }}
                                   >
-                                    <strong>Bus Stops:</strong>
+                                    <Table size="small">
+                                      <TableHead>
+                                        <TableRow>
+                                          <TableCell>ID</TableCell>
+                                          <TableCell>
+                                            <strong>Name</strong>
+                                          </TableCell>
+
+                                          <TableCell align="center">
+                                            <strong>Actions</strong>
+                                          </TableCell>
+                                        </TableRow>
+                                      </TableHead>
+                                      <TableBody>
+                                        {(busStopsByLandmark[row.id] || []).map(
+                                          (stop) => (
+                                            <TableRow key={stop.id}>
+                                              <TableCell>{stop.id}</TableCell>
+                                              <TableCell>
+                                                <Tooltip
+                                                  title={stop.name}
+                                                  placement="bottom"
+                                                >
+                                                  <Typography noWrap>
+                                                    {stop.name.length > 15
+                                                      ? `${stop.name.substring(
+                                                          0,
+                                                          15
+                                                        )}...`
+                                                      : stop.name}
+                                                  </Typography>
+                                                </Tooltip>
+                                              </TableCell>
+
+                                              <TableCell align="center">
+                                                <Tooltip
+                                                  title={
+                                                    !canUpdateLandmark ||
+                                                    !canCreateLandmark
+                                                      ? "You don't have permission, contact the admin"
+                                                      : "Click to update the Bus stop"
+                                                  }
+                                                  placement="top-end"
+                                                >
+                                                  <span
+                                                    style={{
+                                                      cursor:
+                                                        !canUpdateLandmark ||
+                                                        !canCreateLandmark
+                                                          ? "not-allowed"
+                                                          : "default",
+                                                    }}
+                                                  >
+                                                    <Button
+                                                      size="small"
+                                                      color="success"
+                                                      sx={{ mr: 1 }}
+                                                      disabled={
+                                                        !canUpdateLandmark ||
+                                                        !canCreateLandmark
+                                                      }
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setBusStopToUpdate(
+                                                          stop
+                                                        );
+                                                        setBusStopUpdateModalOpen(
+                                                          true
+                                                        );
+                                                      }}
+                                                    >
+                                                      Update
+                                                    </Button>
+                                                  </span>
+                                                </Tooltip>
+
+                                                <Tooltip
+                                                  title={
+                                                    !canUpdateLandmark ||
+                                                    !canCreateLandmark
+                                                      ? "You don't have permission, contact the admin"
+                                                      : "Click to delete the Bus stop"
+                                                  }
+                                                  placement="top-end"
+                                                >
+                                                  <span
+                                                    style={{
+                                                      cursor:
+                                                        !canUpdateLandmark ||
+                                                        !canCreateLandmark
+                                                          ? "not-allowed"
+                                                          : "default",
+                                                    }}
+                                                  >
+                                                    <Button
+                                                      size="small"
+                                                      color="error"
+                                                      disabled={
+                                                        !canUpdateLandmark ||
+                                                        !canCreateLandmark
+                                                      }
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleBusStopDeleteClick(
+                                                          stop
+                                                        );
+                                                      }}
+                                                    >
+                                                      Delete
+                                                    </Button>
+                                                  </span>
+                                                </Tooltip>
+                                              </TableCell>
+                                            </TableRow>
+                                          )
+                                        )}
+                                      </TableBody>
+                                    </Table>
+                                  </TableContainer>
+                                ) : (
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontStyle: "italic",
+                                      color: "text.secondary",
+                                    }}
+                                  >
+                                    No bus stops added yet
                                   </Typography>
-
-                                  {getBusStopsForLandmark(row.id).length > 0 ? (
-                                    <TableContainer
-                                      component={Paper}
-                                      sx={{ maxHeight: 300, overflow: "auto" }}
-                                    >
-                                      <Table size="small">
-                                        <TableHead>
-                                          <TableRow>
-                                            <TableCell>
-                                              <strong>Name</strong>
-                                            </TableCell>
-                                            <TableCell>
-                                              <strong>Status</strong>
-                                            </TableCell>
-                                            <TableCell align="center">
-                                              <strong>Actions</strong>
-                                            </TableCell>
-                                          </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                          {getBusStopsForLandmark(row.id).map(
-                                            (stop) => (
-                                              <TableRow key={stop.id}>
-                                                <TableCell>
-                                                  {stop.name}
-                                                </TableCell>
-                                                <TableCell>
-                                                  <Chip
-                                                    icon={
-                                                      stop.status ===
-                                                      "Validating" ? (
-                                                        <WarningIcon />
-                                                      ) : (
-                                                        <CheckCircleIcon />
-                                                      )
-                                                    }
-                                                    label={stop.status}
-                                                    color={
-                                                      stop.status === "Verified"
-                                                        ? "success"
-                                                        : "warning"
-                                                    }
-                                                    size="small"
-                                                    sx={{
-                                                      backgroundColor:
-                                                        isSelected
-                                                          ? stop.status ===
-                                                            "Validating"
-                                                            ? "#edd18f"
-                                                            : "#A5D6A7"
-                                                          : stop.status ===
-                                                            "Validating"
-                                                          ? "#FFE082"
-                                                          : "#E8F5E9",
-                                                      color: isSelected
-                                                        ? stop.status ===
-                                                          "Validating"
-                                                          ? "#9f3b03"
-                                                          : "#2E7D32"
-                                                        : stop.status ===
-                                                          "Validating"
-                                                        ? "#9f3b03"
-                                                        : "#2E7D32",
-                                                    }}
-                                                  />
-                                                </TableCell>
-
-                                                <TableCell align="right">
-                                                  <Button
-                                                    size="small"
-                                                    color="primary"
-                                                    sx={{ mr: 1 }}
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      setBusStopToUpdate(stop);
-                                                      setBusStopUpdateModalOpen(
-                                                        true
-                                                      );
-                                                    }}
-                                                  >
-                                                    Update
-                                                  </Button>
-                                                  <Button
-                                                    size="small"
-                                                    color="error"
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      handleBusStopDeleteClick(
-                                                        stop
-                                                      );
-                                                    }}
-                                                  >
-                                                    Delete
-                                                  </Button>
-                                                </TableCell>
-                                              </TableRow>
-                                            )
-                                          )}
-                                        </TableBody>
-                                      </Table>
-                                    </TableContainer>
-                                  ) : (
-                                    <Typography
-                                      variant="body2"
-                                      sx={{
-                                        fontStyle: "italic",
-                                        color: "text.secondary",
-                                      }}
-                                    >
-                                      No bus stops added yet
-                                    </Typography>
-                                  )}
-                                </Box>
+                                )}
                               </Box>
-                            </Collapse>
-                          </TableCell>
-                        </TableRow>
-                      </React.Fragment>
-                    );
-                  })
+                            </Box>
+                          </Collapse>
+                        </TableCell>
+                      </TableRow>
+                    </React.Fragment>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} align="center">
@@ -616,66 +642,15 @@ const LandmarkListing = () => {
         </TableContainer>
 
         {/*************************************** Pagination    ****************************************/}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 1,
-            mt: 2,
-            position: "sticky",
-            bottom: 0,
-            backgroundColor: "white",
-            zIndex: 1,
-            p: 1,
-            borderTop: "1px solid #e0e0e0",
-          }}
-        >
-          <Button
-            onClick={() => handleChangePage(null, page - 1)}
-            disabled={page === 0}
-            sx={{ padding: "5px 10px", minWidth: 40 }}
-          >
-            &lt;
-          </Button>
-          {Array.from(
-            { length: Math.ceil(filteredData.length / rowsPerPage) },
-            (_, index) => index
-          )
-            .slice(
-              Math.max(0, page - 1),
-              Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
-            )
-            .map((pageNumber) => (
-              <Button
-                key={pageNumber}
-                onClick={() => handleChangePage(null, pageNumber)}
-                sx={{
-                  padding: "5px 10px",
-                  minWidth: 40,
-                  bgcolor:
-                    page === pageNumber
-                      ? "rgba(21, 101, 192, 0.2)"
-                      : "transparent",
-                  fontWeight: page === pageNumber ? "bold" : "normal",
-                  borderRadius: "5px",
-                  transition: "all 0.3s",
-                  "&:hover": {
-                    bgcolor: "rgba(21, 101, 192, 0.3)",
-                  },
-                }}
-              >
-                {pageNumber + 1}
-              </Button>
-            ))}
-          <Button
-            onClick={() => handleChangePage(null, page + 1)}
-            disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
-            sx={{ padding: "5px 10px", minWidth: 40 }}
-          >
-            &gt;
-          </Button>
-        </Box>
+        
+        <Box sx={{}} >
+          <PaginationControls
+          page={page}
+          onPageChange={(newPage) => handleChangePage(null, newPage)}
+          isLoading={isLoading}
+          hasNextPage={hasNextPage}
+        />
+          </Box>
       </Box>
 
       <Box
@@ -709,11 +684,13 @@ const LandmarkListing = () => {
             handleCloseRowClick={handleCloseRowClick}
             clearBoundaries={clearBoundaries}
             vectorSource={vectorSource}
-            landmarks={landmarkList}
             isDrawing={isDrawing}
             onDrawingChange={handleDrawingChange}
-            busStops={busStopList}
+            busStops={
+              selectedLandmark ? busStopsByLandmark[selectedLandmark.id] : []
+            }
             onBusStopPointSelect={handlePointSelect}
+            landmarkRefreshKey={landmarkRefreshKey}
           />
         </Box>
       </Box>
@@ -730,7 +707,8 @@ const LandmarkListing = () => {
           <LandmarkAddForm
             boundary={boundary}
             onClose={() => setOpenCreateModal(false)}
-            refreshList={fetchLandmark}
+            refreshList={refreshList}
+            onLandmarkAdded={handleLandmarkAdded}
           />
         </DialogContent>
         <DialogActions>
@@ -749,8 +727,13 @@ const LandmarkListing = () => {
           {selectedLandmark && (
             <LandmarkUpdateForm
               onClose={() => setOpenUpdateModal(false)}
-              refreshList={fetchLandmark}
+              refreshList={refreshList}
               landmarkId={selectedLandmark.id}
+              landmarkData={{
+                name: selectedLandmark.name,
+                boundary: selectedLandmark.boundary,
+                type: selectedLandmark.type,
+              }}
             />
           )}
         </DialogContent>
@@ -799,7 +782,9 @@ const LandmarkListing = () => {
           <BusStopAddForm
             location={location}
             onClose={() => setOpenBusStopModal(false)}
-            refreshList={fetchBusStop}
+            refreshBusStops={() =>
+              selectedLandmark && fetchBusStopsForLandmark(selectedLandmark.id)
+            }
             landmarkId={selectedLandmark?.id || null}
           />
         </DialogContent>
@@ -817,12 +802,14 @@ const LandmarkListing = () => {
         fullWidth
       >
         <DialogContent>
-          {busStopToUpdate && (
+          {busStopToUpdate && selectedLandmark && (
             <BusStopUpdateForm
+              busStop={busStopToUpdate}
+              landmark={selectedLandmark}
               onClose={() => setBusStopUpdateModalOpen(false)}
-              refreshList={fetchBusStop}
-              busStopId={busStopToUpdate.id}
-              location={busStopToUpdate.location}
+              refreshBusStops={() =>
+                fetchBusStopsForLandmark(selectedLandmark.id)
+              }
             />
           )}
         </DialogContent>

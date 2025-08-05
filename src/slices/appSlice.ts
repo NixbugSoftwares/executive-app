@@ -1,91 +1,236 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { User } from "../types/type";
+import { RoleDetails, User } from "../types/type";
 import { RootState } from "../store/Store";
 import commonApi from "../utils/commonApi";
 
-// Define a type for the slice state
-type status = "idle" | "loading";
 
 interface AppState {
-  splash: boolean;
-  status: status | "idle" | "loading";
   loggedIn: boolean;
   loggedUser?: User;
   user: User | null;
-  logincreds: {
-    email: string;
-    password: string;
-  };
+  
   accounts: any[];
   list: [];
   error: null;
+  roleDetails: RoleDetails | null;
+  permissions: any[];
 }
 
 // Define the initial state
 const initialState: AppState = {
-  splash: true,
-  status: "idle",
   loggedIn: false,
   user: null,
-  logincreds: {
-    email: "",
-    password: "",
-  },
+  
   accounts: [],
   list: [],
   error: null,
+  roleDetails: null,
+  permissions: [],
 };
+
+interface exectiveListParams {
+  limit: number;
+  offset: number;
+  id?: string;
+  fullName?: string;
+  email_id?: string;
+  designation?: string;
+  phoneNumber?: string;
+  gender?: string;
+}
+
+interface ExecutiveRoleListParams {
+  limit?: number;
+  offset?: number;
+  id?: string;
+  name?: string;
+}
+
+interface LandmarkListParams {
+  limit?: number;
+  offset?: number;
+  id?: number;
+  id_list?: number[];
+  name?: string;
+  location?: string;
+  type?: string;
+  type_list?: number[];
+  order_by?: number;
+  order_in?: number;
+}
+
+interface BusStopListParams {
+  limit?: number;
+  offset?: number;
+  id?: number;
+  landmark_id?: number;
+}
+
+interface FareListParams {
+  limit?: number;
+  offset?: number;
+  id?: number;
+  name?: string;
+  scope?: 1 | 2;
+  company_id?: number;
+}
+
+interface CompanyListParams {
+  limit?: number;
+  offset?: number;
+  id?: number;
+  name?: string;
+  address?: string;
+  contact_person?: string;
+  phone_number?: string;
+  email_id?: string;
+}
+
+interface OperatorListParams {
+  limit?: number;
+  offset?: number;
+  id?: number;
+  company_id?: number;
+  full_name?: string;
+  email_id?: string;
+  phone_number?: string;
+  gender?: string;
+}
+interface OperatorRoleListParams {
+  limit?: number;
+  offset?: number;
+  id?: number;
+  name?: string;
+  company_id?: number | null;
+}
+interface BusListParams {
+  limit?: number;
+  offset?: number;
+  company_id: number;
+  id?: number;
+  name?: string;
+  registration_number?: string;
+  capacity?: number;
+
+}
+interface RouteListParams {
+  limit?: number;
+  offset?: number;
+  id?: number;
+  name?: string;
+  company_id?: number;
+}
+
+interface ServiceListParams {
+  limit?: number;
+  offset?: number;
+  company_id?: number;
+  id?: string;
+  name?: string;
+  ticket_mode?: number;
+  status?: number;
+  status_list?: number[];
+}
+
+interface ScheduleListParams {
+  limit?: number;
+  offset?: number;
+  id?: string;
+  name?: string;
+  permit_no?: string;
+  triggering_mode?: number;
+  ticketing_mode?: number;
+  company_id?: number;
+}
+
+interface DutyListParams {
+  limit?: number;
+  offset?: number;
+  id?: number;
+  name?: string;
+  status?: number;
+  type?: number;
+  company_id?: number;
+}
+
+interface paperTicketListParams {
+  limit?: number;
+  offset?: number;
+  id?: number;
+  service_id?: number;
+  pickup_point?:number;
+  dropping_point?:number;
+  amount?: number;  
+  company_id?: number;
+}
 
 //Logout API
 export const logoutApi = createAsyncThunk(
-  "/executive/token",
+  "token",
   async (data: any, { rejectWithValue }) => {
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/token",
+        "entebus/account/token",
         data,
         true,
         "application/json"
       );
       return response;
     } catch (error: any) {
-      return rejectWithValue(error?.response?.data?.message || "Logout failed");
+      return rejectWithValue(error.detail || "Logout failed");
     }
   }
 );
 
-//loggedinuser api
+export const loggedinUserRoleDetails = createAsyncThunk<
+  any[],
+  number | undefined
+>("role", async (assignedRoleId, { rejectWithValue }) => {
+  try {
+    const response = await commonApi.apiCall(
+      "get",
+      "role",
+      {},
+      true,
+      "application/json"
+    );
+
+    if (!assignedRoleId) return response;
+
+    const matchedRole = response.find(
+      (role: { id: number }) => role.id === assignedRoleId
+    );
+    return matchedRole ? [matchedRole] : [];
+  } catch (error: any) {
+    return rejectWithValue(
+      error.detail || "Failed to fetch Role"
+    );
+  }
+});
 
 export const loggedinuserAPI = createAsyncThunk(
-  "/executive/account",
+  "account",
   async (executive_id: number, { rejectWithValue }) => {
     try {
       const response = await commonApi.apiCall(
         "get",
-        "/executive/account",
+        "entebus/account",
         { executive_id },
         true,
         "application/json"
       );
-      console.log("Full API Response==================>", response);
 
-      // Check if response is directly an array
       if (Array.isArray(response)) {
         return response;
       }
-
-      // Check if response.data exists
       if (!response || !response.data) {
         throw new Error("Invalid response format");
       }
 
-      return response.data; // Ensure correct return
-    } catch (error: any) {
-      console.log("Error fetching accounts=====================>", error);
-      return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch accounts"
-      );
+      return response.data;
+    } catch (error: any) {console.log("Error fetching accounts=====================>", error);
+      return rejectWithValue(error.detail || "Failed to fetch accounts");
     }
   }
 );
@@ -93,79 +238,95 @@ export const loggedinuserAPI = createAsyncThunk(
 //***************************************************************Executive Account APIS***********************************************************************
 //Account creation API
 export const accountCreationApi = createAsyncThunk(
-  "/executive/account",
+  "/account",
   async (data: FormData, { rejectWithValue }) => {
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/account",
+        "entebus/account",
         data,
         true,
         "application/x-www-form-urlencoded"
       );
+      console.log("Account creation response==================>", response);
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Account creation failed"
+        error.detail || error.message || error || "Account creation failed"
       );
     }
   }
 );
-
 //Account list API
 export const accountListApi = createAsyncThunk(
-  "/executive/account",
-  async (_, { rejectWithValue }) => {
+  "/Account",
+  async (params: exectiveListParams, { rejectWithValue }) => {
+    const {
+      limit,
+      offset,
+      id,
+      fullName,
+      gender,
+      email_id,
+      phoneNumber,
+      designation,
+    } = params;
+
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(fullName && { full_name: fullName }),
+      ...(gender && { gender }),
+      ...(email_id && { email_id }),
+      ...(phoneNumber && { phone_number: phoneNumber }),
+      ...(designation && { designation }),
+    };
     try {
       const response = await commonApi.apiCall(
         "get",
-        "/executive/account",
-        {},
+        "entebus/account",
+        queryParams,
         true,
         "application/json"
       );
-      console.log("Full API Response==================>", response);
-
-      // Check if response is directly an array
-      if (Array.isArray(response)) {
-        return response;
-      }
-
-      // Check if response.data exists
-      if (!response || !response.data) {
-        throw new Error("Invalid response format");
-      }
-
-      return response.data; // Ensure correct return
+      if (!response) throw new Error("No response received");
+      return { data: response };
     } catch (error: any) {
-      console.log("Error fetching accounts=====================>", error);
+      console.error("API Error:", error);
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch accounts"
+        error.detail ||
+          error.message ||
+          error ||
+          "Failed to fetch executive list"
       );
     }
   }
 );
-
 // Account Update API
 export const accountupdationApi = createAsyncThunk(
-  "/executive/account",
+  "/account",
   async (
-    { formData }: { accountId: number; formData: URLSearchParams },
+    { formData }: { accountId: number; formData: FormData },
     { rejectWithValue }
   ) => {
     try {
       const response = await commonApi.apiCall(
         "patch",
-        `/executive/account`,
+        `entebus/account`,
         formData,
         true,
-        "application/x-www-form-urlencoded" // Use the correct content type
+        "application/x-www-form-urlencoded"
       );
       return response;
     } catch (error: any) {
-      console.error("Backend Error Response:", error.response?.data); // Log the full error response
+      console.error("Backend Error Response:", error.response);
       return rejectWithValue(
-        error?.response?.data?.message || "Account update failed"
+        error.detail ||
+          error.message ||
+          error ||
+          error.response?.data ||
+          "Account update failed"
       );
     }
   }
@@ -177,7 +338,7 @@ export const accountDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/account",
+        "entebus/account",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -186,7 +347,7 @@ export const accountDeleteApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Account deletion failed"
+        error.detail || error.message || error || "Account deletion failed"
       );
     }
   }
@@ -200,7 +361,7 @@ export const roleCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/role",
+        "role",
         data,
         true,
         "application/www-form-urlencoded"
@@ -208,7 +369,7 @@ export const roleCreationApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Role creation failed"
+        error.detail || error.response?.data?.message || "Role creation failed"
       );
     }
   }
@@ -216,49 +377,49 @@ export const roleCreationApi = createAsyncThunk(
 
 //Role list Api
 export const roleListApi = createAsyncThunk(
-  "/executive/role",
-  async (_, { rejectWithValue }) => {
+  "/Role",
+  async (params: ExecutiveRoleListParams, { rejectWithValue }) => {
+    const { limit, offset, id, name } = params;
+    console.log("operatorListApi called with:", params);
+
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(name && { name: name }),
+    };
     try {
       const response = await commonApi.apiCall(
         "get",
-        "/executive/role",
-        {},
+        "role",
+        queryParams,
         true,
         "application/json"
       );
-      console.log("Full API Response==================>", response);
+      if (!response) throw new Error("No response received");
 
-      // Check if response is directly an array
-      if (Array.isArray(response)) {
-        return response;
-      }
-
-      // Check if response.data exists
-      if (!response || !response.data) {
-        throw new Error("Invalid response format");
-      }
-
-      return response.data; // Ensure correct return
+      return {
+        data: response.data || response,
+      };
     } catch (error: any) {
-      console.log("Error fetching role=====================>", error);
+      console.error("API Error:", error);
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch Role"
+        error.detail || error.message || error || "Failed to fetch role list"
       );
     }
   }
 );
-
 // role Update API
 export const roleUpdationApi = createAsyncThunk(
   "/executive/role",
   async (
-    { formData }: { roleId: number; formData: URLSearchParams },
+    { formData }: { roleId: number; formData: FormData },
     { rejectWithValue }
   ) => {
     try {
       const response = await commonApi.apiCall(
         "patch",
-        `/executive/role`,
+        `role`,
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -280,7 +441,7 @@ export const roleDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/role",
+        "role",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -298,7 +459,7 @@ export const roleDeleteApi = createAsyncThunk(
 //*******************************************Executive role mapping APIS*************************************************************
 //role assign API
 export const roleAssignApi = createAsyncThunk(
-  "/executive/account/role",
+  "account/role",
   async (
     { executive_id, role_id }: { executive_id: number; role_id: number },
     { rejectWithValue }
@@ -306,7 +467,7 @@ export const roleAssignApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/account/role",
+        "account/role",
         { executive_id, role_id },
         true,
         "application/x-www-form-urlencoded"
@@ -324,32 +485,22 @@ export const roleAssignApi = createAsyncThunk(
 
 //  get RoleMappingApi
 export const fetchRoleMappingApi = createAsyncThunk(
-  "/executive/account/role",
-  async (accountId: number, { rejectWithValue }) => {
+  "/account/role",
+  async (executive_id: number, { rejectWithValue }) => {
     try {
       const response = await commonApi.apiCall(
         "get",
-        `/executive/account/role`, // Endpoint to fetch all role mappings
-        {},
+        "account/role",
+        { executive_id },
         true,
         "application/json"
       );
 
-      // Ensure the response is an array
-      if (!Array.isArray(response)) {
-        throw new Error("Invalid response format: Expected an array");
+      // Handle case where response is an array (like your Postman example)
+      if (Array.isArray(response) && response.length > 0) {
+        return response[0]; // Return first mapping (assuming one operator has one role)
       }
-
-      // Find the role mapping for the specific executive (accountId)
-      const roleMapping = response.find(
-        (mapping: any) => mapping.executive_id === accountId
-      );
-
-      if (!roleMapping) {
-        throw new Error("No role mapping found for this executive");
-      }
-
-      return roleMapping; // Return the specific role mapping object
+      return response;
     } catch (error: any) {
       return rejectWithValue(
         error?.response?.data?.message || "Failed to fetch role mapping"
@@ -372,17 +523,17 @@ export const roleAssignUpdateApi = createAsyncThunk(
 
       const response = await commonApi.apiCall(
         "patch",
-        "/executive/account/role",
+        "account/role",
         formData,
         true,
-        "application/x-www-form-urlencoded" // Use the correct content type
+        "application/x-www-form-urlencoded"
       );
       console.log("Role Assignment Update Response:", response);
       return response;
     } catch (error: any) {
-      console.error("Backend Error Response:", error.response?.data); // Log the full error response
+      console.error("Backend Error Response:", error.response?.data?.detail);
       return rejectWithValue(
-        error?.response?.data?.message || "Role assign failed"
+        error.response?.data?.detail || error || "Role assign failed"
       );
     }
   }
@@ -393,32 +544,37 @@ export const roleAssignUpdateApi = createAsyncThunk(
 //landmark list API
 export const landmarkListApi = createAsyncThunk(
   "/executive/landmark",
-  async (_, { rejectWithValue }) => {
+  async (params: LandmarkListParams, { rejectWithValue }) => {
+    const { limit, offset, id, id_list, name, location, type, type_list, order_by, order_in } = params;
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(id_list && { id_list }),
+      ...(name && { name }),
+      ...(location && { location }),
+      ...(type && { type }),
+      ...(type_list && { type_list }),
+      ...(order_by && { order_by }),
+      ...(order_in && { order_in }),
+    };
     try {
       const response = await commonApi.apiCall(
         "get",
-        "/executive/landmark",
-        {},
+        "landmark",
+        queryParams,
         true,
         "application/json"
       );
-      console.log("Full API Response==================>", response);
+      console.log("landmarkListApi called with:", params);
 
-      // Check if response is directly an array
-      if (Array.isArray(response)) {
-        return response;
-      }
-
-      // Check if response.data exists
-      if (!response || !response.data) {
-        throw new Error("Invalid response format");
-      }
-
-      return response.data; // Ensure correct return
+      return { data: response || response.data };
     } catch (error: any) {
-      console.log("Error fetching landmark=====================>", error);
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch landmarks"
+        error.detail ||
+          error.message ||
+          error ||
+          "Failed to fetch landmark list"
       );
     }
   }
@@ -431,7 +587,7 @@ export const landmarkCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/landmark",
+        "landmark",
         data,
         true,
         "application/www-form-urlencoded"
@@ -439,7 +595,7 @@ export const landmarkCreationApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Role creation failed"
+        error.detail || error.message || error || "landmark creation failed"
       );
     }
   }
@@ -455,16 +611,18 @@ export const landmarkUpdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        "/executive/landmark",
+        "landmark",
         formData,
         true,
         "application/x-www-form-urlencoded"
       );
       return response;
     } catch (error: any) {
-      console.error("Backend Error Response:", error.response?.data);
       return rejectWithValue(
-        error?.response?.data?.message || "Account update failed"
+        error.detail ||
+          error.message ||
+          error ||
+          "Landmark update failed please try again"
       );
     }
   }
@@ -477,7 +635,7 @@ export const landmarkDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/landmark",
+        "landmark",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -486,7 +644,7 @@ export const landmarkDeleteApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Account deletion failed"
+        error.detail || error.message || error || "Account deletion failed"
       );
     }
   }
@@ -497,32 +655,29 @@ export const landmarkDeleteApi = createAsyncThunk(
 //bus stop list API
 export const busStopListApi = createAsyncThunk(
   "/executive/bus_stop",
-  async (_, { rejectWithValue }) => {
+  async (params: BusStopListParams, { rejectWithValue }) => {
+    const { limit, offset,id, landmark_id } = params;
+    const queryParams = {
+      ...(limit && { limit }),
+      ...(offset && { offset }),
+      ...(id && { id }),
+      ...(landmark_id && { landmark_id }),
+    };
     try {
       const response = await commonApi.apiCall(
         "get",
-        "/executive/bus_stop",
-        {},
+        "landmark/bus_stop",
+        queryParams,
         true,
         "application/json"
       );
-      console.log("Full API Response==================>", response);
-
-      // Check if response is directly an array
-      if (Array.isArray(response)) {
-        return response;
-      }
-
-      // Check if response.data exists
-      if (!response || !response.data) {
-        throw new Error("Invalid response format");
-      }
-
-      return response.data; // Ensure correct return
+      return response;
     } catch (error: any) {
-      console.log("Error fetching bus stops =====================>", error);
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch bus stops"
+        error.detail ||
+          error.message ||
+          error ||
+          "Failed to fetch bus stop list"
       );
     }
   }
@@ -535,7 +690,7 @@ export const busStopCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/bus_stop",
+        "landmark/bus_stop",
         data,
         true,
         "application/www-form-urlencoded"
@@ -543,12 +698,11 @@ export const busStopCreationApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Bus stop  creation failed"
+        error.detail || error.message || error || "Bus stop  creation failed"
       );
     }
   }
 );
-
 
 //bus stop updation Api
 export const busStopUpdationApi = createAsyncThunk(
@@ -560,7 +714,7 @@ export const busStopUpdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        "/executive/bus_stop",
+        "landmark/bus_stop",
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -569,7 +723,7 @@ export const busStopUpdationApi = createAsyncThunk(
     } catch (error: any) {
       console.error("Backend Error Response:", error.response?.data);
       return rejectWithValue(
-        error?.response?.data?.message || "bus sto update failed"
+        error.detail || error.message || error || "bus stop update failed"
       );
     }
   }
@@ -582,7 +736,7 @@ export const busStopDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/bus_stop",
+        "landmark/bus_stop",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -591,45 +745,164 @@ export const busStopDeleteApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "bus stop deletion failed"
+        error.detail || error.message || error || "bus stop deletion failed"
+      );
+    }
+  }
+);
+//****************************************************************global and local Fare *************************************************************************
+//fare get api
+export const fareListApi = createAsyncThunk(
+  "/fare",
+  async (params: FareListParams, { rejectWithValue }) => {
+    const {
+      limit,
+      offset,
+      id,
+      name,
+      scope, 
+      company_id
+    } = params;
+
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(name && { name }),
+      ...(scope && { scope }),
+      ...(company_id && { company_id }),
+    };
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "company/fare",
+        queryParams,
+        true,
+        "application/json"
+      );
+      if (!response) throw new Error("No response received");
+      return { data: response };
+    } catch (error: any) {
+      console.error("API Error:", error);
+      return rejectWithValue(
+        error.detail ||
+          error.message ||
+          error ||
+          "Failed to fetch fare list"
+      );
+    }
+  }
+);
+
+//fare creation API
+export const fareCreationApi = createAsyncThunk(
+  "/executive/company/fare",
+  async (data: any, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "post",
+        "company/fare",
+        data,
+        true,
+        "application/json" 
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.detail || error.message || error || "Fare creation failed"
       );
     }
   }
 );
 
 
+//fare updation API
+export const fareupdationApi = createAsyncThunk(
+  "/executive/company/fare",
+  async (
+    {  fareUpdate }: { fareId: number; fareUpdate: any },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await commonApi.apiCall(
+        "patch",
+        `company/fare`,
+        fareUpdate,
+        true,
+        "application/json" 
+      );
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data);
+      return rejectWithValue(
+        error.detail || error.message || error || "Fare update failed"
+      );
+    }
+  }
+);
+
+//fare delete API
+export const fareDeleteApi = createAsyncThunk(
+  "executive/company/fare",
+  async ({  fareId }: { fareId: number;}, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "delete",
+        "company/fare",
+        fareId,
+        true,
+        "application/jason"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.detail || error.message || error || "Fare deletion failed"
+      );
+    }
+  }
+);
 
 //*************************************************** company APIS ********************************************************************* */
 
 //company list API
 export const companyListApi = createAsyncThunk(
   "/executive/company",
-  async (_, { rejectWithValue }) => {
+  async (params: CompanyListParams, { rejectWithValue }) => {
+    const {
+      limit,
+      offset,
+      id,
+      name,
+      address,
+      contact_person,
+      phone_number,
+      email_id,
+    } = params;
+
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(name && { name }),
+      ...(address && { address }),
+      ...(contact_person && { contact_person }),
+      ...(phone_number && { phone_number }),
+      ...(email_id && { email_id }),
+    };
     try {
       const response = await commonApi.apiCall(
         "get",
-        "/executive/company",
-        {},
+        "company",
+        queryParams,
         true,
         "application/json"
       );
-      console.log("Full API Response==================>", response);
-
-      // Check if response is directly an array
-      if (Array.isArray(response)) {
-        return response;
-      }
-
-      // Check if response.data exists
-      if (!response || !response.data) {
-        throw new Error("Invalid response format");
-      }
-
-      return response.data; // Ensure correct return
+      if (!response) throw new Error("No response received");
+      return { data: response };
     } catch (error: any) {
-      console.log("Error fetching role=====================>", error);
+      console.error("API Error:", error);
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch accounts"
+        error.detail || error.message || error || "Failed to fetch company list"
       );
     }
   }
@@ -642,7 +915,7 @@ export const companyCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/company",
+        "company",
         data,
         true,
         "application/www-form-urlencoded"
@@ -650,7 +923,7 @@ export const companyCreationApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "company creation failed"
+        error.detail || error.message || error || "company creation failed"
       );
     }
   }
@@ -666,7 +939,7 @@ export const companyUpdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        "/executive/company",
+        "company",
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -675,7 +948,7 @@ export const companyUpdationApi = createAsyncThunk(
     } catch (error: any) {
       console.error("Backend Error Response:", error.response?.data);
       return rejectWithValue(
-        error?.response?.data?.message || "Role update failed"
+        error.detail || error.message || error || "Company update failed"
       );
     }
   }
@@ -688,7 +961,7 @@ export const companyDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/company",
+        "company",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -697,7 +970,7 @@ export const companyDeleteApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Account deletion failed"
+        error.detail || error.message || error || "Company deletion failed"
       );
     }
   }
@@ -708,33 +981,42 @@ export const companyDeleteApi = createAsyncThunk(
 //Operatoer list API
 export const operatorListApi = createAsyncThunk(
   "/executive/company/operator",
-  async (companyId: number | null, { rejectWithValue }) => {
+  async (params: OperatorListParams, { rejectWithValue }) => {
+    const {
+      limit,
+      offset,
+      id,
+      full_name,
+      phone_number,
+      email_id,
+      company_id,
+      gender
+    } = params;
+
+    const queryParams = {
+      limit,
+      offset,
+      ...(company_id && { company_id}),
+      ...(id && { id }),
+      ...(full_name && { full_name }),
+      ...(phone_number && { phone_number }),
+      ...(email_id && { email_id }),
+      ...(gender && { gender }),
+    };
     try {
-      const params = companyId ? { company_id: companyId } : {};
       const response = await commonApi.apiCall(
         "get",
-        "/executive/company/operator",
-        params,
+        "company/account",
+        queryParams,
         true,
         "application/json"
       );
-      console.log("Full API Response==================>", response);
-
-      // Check if response is directly an array
-      if (Array.isArray(response)) {
-        return response;
-      }
-
-      // Check if response.data exists
-      if (!response || !response.data) {
-        throw new Error("Invalid response format");
-      }
-
-      return response.data; // Ensure correct return
+      if (!response) throw new Error("No response received");
+      return { data: response };
     } catch (error: any) {
-      console.log("Error fetching operator=====================>", error);
+      console.error("API Error:", error);
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch accounts"
+        error.detail || error.message || error || "Failed to fetch Operator list"
       );
     }
   }
@@ -747,31 +1029,31 @@ export const operatorCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/company/operator",
+        "company/account",
         data,
         true,
-        "application/x-www-form-urlencoded" // Use the correct content type for form data"
+        "application/x-www-form-urlencoded" 
       );
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Account creation failed"
+        error.detail || error.message || error || "Account creation failed"
       );
     }
   }
 );
 
 //operator updation API
-export const operatorupdationApi = createAsyncThunk(
+export const operatorUpdationApi = createAsyncThunk(
   "/executive/company/operator",
   async (
-    { formData }: { operatorId: number; formData: URLSearchParams },
+    { formData }: { operatorId: number; formData: FormData },
     { rejectWithValue }
   ) => {
     try {
       const response = await commonApi.apiCall(
         "patch",
-        `/executive/company/operator`,
+        `company/account`,
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -780,7 +1062,7 @@ export const operatorupdationApi = createAsyncThunk(
     } catch (error: any) {
       console.error("Backend Error Response:", error.response?.data); // Log the full error response
       return rejectWithValue(
-        error?.response?.data?.message || "Account update failed"
+        error.detail || error.message || error || "Account update failed"
       );
     }
   }
@@ -793,7 +1075,7 @@ export const operatorDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/company/operator",
+        "company/account",
         data,
         true,
         "multipart/form-data"
@@ -802,7 +1084,7 @@ export const operatorDeleteApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Account deletion failed"
+        error.detail || error.message || error || "Account deletion failed"
       );
     }
   }
@@ -816,7 +1098,7 @@ export const operatorRoleCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/company/role",
+        "company/role",
         data,
         true,
         "application/www-form-urlencoded"
@@ -824,7 +1106,7 @@ export const operatorRoleCreationApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Role creation failed"
+        error.detail || error.message || error || "Role creation failed"
       );
     }
   }
@@ -832,34 +1114,36 @@ export const operatorRoleCreationApi = createAsyncThunk(
 
 //operatort role list api
 export const operatorRoleListApi = createAsyncThunk(
-  "/executive/company/role",
-  async (companyId: number | null, { rejectWithValue }) => {
+  "/Role",
+  async (params: OperatorRoleListParams, { rejectWithValue }) => {
+    const { limit, offset, id, name, company_id } = params;
+    console.log("operatorListApi called with:", params);
+
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(name && { name: name }),
+      ...(company_id !== undefined && { company_id }), 
+    };
     try {
-      const params = companyId ? { company_id: companyId } : {};
       const response = await commonApi.apiCall(
         "get",
-        "/executive/company/role",
-        params,
+        "company/role",
+        queryParams,
         true,
         "application/json"
       );
-      console.log("Full API Response==================>", response);
+      if (!response) throw new Error("No response received");
 
-      // Check if response is directly an array
-      if (Array.isArray(response)) {
-        return response;
-      }
-
-      // Check if response.data exists
-      if (!response || !response.data) {
-        throw new Error("Invalid response format");
-      }
-
-      return response.data; // Ensure correct return
+      return {
+        data: response.data || response,
+      };
     } catch (error: any) {
-      console.log("Error fetching role=====================>", error);
+      console.error("API Error:", error);
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch accounts"
+
+        error.detail || error.message || error ||  "Failed to fetch operator list"
       );
     }
   }
@@ -869,13 +1153,13 @@ export const operatorRoleListApi = createAsyncThunk(
 export const operatorRoleUpdationApi = createAsyncThunk(
   "/executive/company/role",
   async (
-    { formData }: { roleId: number; formData: URLSearchParams },
+    { formData }: { roleId: number; formData: FormData },
     { rejectWithValue }
   ) => {
     try {
       const response = await commonApi.apiCall(
         "patch",
-        `/executive/company/role`,
+        `company/role`,
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -884,7 +1168,7 @@ export const operatorRoleUpdationApi = createAsyncThunk(
     } catch (error: any) {
       console.error("Backend Error Response:", error.response?.data);
       return rejectWithValue(
-        error?.response?.data?.message || "Role update failed"
+        error.detail || error.message || error || "Role update failed"
       );
     }
   }
@@ -897,7 +1181,7 @@ export const operatorRoleDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/company/role",
+        "company/role",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -906,7 +1190,7 @@ export const operatorRoleDeleteApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Account deletion failed"
+        error.detail || error.message || error || "Account deletion failed"
       );
     }
   }
@@ -914,38 +1198,27 @@ export const operatorRoleDeleteApi = createAsyncThunk(
 
 //***************************************************************** operator role mapping ************************************************************************
 
-//fetch operator roll
+//fetch operator role mapping
 
 export const fetchOperatorRoleMappingApi = createAsyncThunk(
-  "/executive/company/operator/role",
-  async (operatorId: number, { rejectWithValue }) => {
+  "account/role",
+  async (operator_id: number, { rejectWithValue }) => {
     try {
       const response = await commonApi.apiCall(
         "get",
-        "/executive/company/operator/role",
-        {},
+        "company/account/role",
+        { operator_id },
         true,
         "application/json"
       );
 
-      // Ensure the response is an array
-      if (!Array.isArray(response)) {
-        throw new Error("Invalid response format: Expected an array");
+      if (Array.isArray(response) && response.length > 0) {
+        return response[0]; 
       }
-
-      // Find the role mapping for the specific executive (accountId)
-      const roleMapping = response.find(
-        (mapping: any) => mapping.operator_id === operatorId
-      );
-
-      if (!roleMapping) {
-        throw new Error("No role mapping found for this operator");
-      }
-
-      return roleMapping; // Return the specific role mapping object
+      return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch role mapping"
+        error.detail || error.message || error || "Failed to fetch role mapping"
       );
     }
   }
@@ -961,17 +1234,16 @@ export const operatorRoleAssignApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/company/operator/role",
+        "company/account/role",
         { operator_id, role_id },
         true,
         "multipart/form-data"
       );
-      console.log("slice Responseyyyyyy==================>", response);
 
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Role assign failed"
+        error.detail || error.message || error || "Role assign failed"
       );
     }
   }
@@ -991,7 +1263,7 @@ export const operatorRoleAssignUpdateApi = createAsyncThunk(
 
       const response = await commonApi.apiCall(
         "patch",
-        "/executive/company/operator/role",
+        "company/account/role",
         formData,
         true,
         "application/x-www-form-urlencoded" // Use the correct content type
@@ -1001,7 +1273,7 @@ export const operatorRoleAssignUpdateApi = createAsyncThunk(
     } catch (error: any) {
       console.error("Backend Error Response:", error.response?.data); // Log the full error response
       return rejectWithValue(
-        error?.response?.data?.message || "Role assign failed"
+        error.detail || error.message || error || "Role assign failed"
       );
     }
   }
@@ -1016,7 +1288,7 @@ export const busCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/company/bus",
+        "company/bus",
         data,
         true,
         "application/www-form-urlencoded"
@@ -1024,7 +1296,7 @@ export const busCreationApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Role creation failed"
+        error.detail || error.message || error || "Bus creation failed"
       );
     }
   }
@@ -1033,33 +1305,37 @@ export const busCreationApi = createAsyncThunk(
 //bus list Api
 export const busListApi = createAsyncThunk(
   "/executive/company/bus",
-  async (companyId: number | null, { rejectWithValue }) => {
+  async (params: BusListParams, { rejectWithValue }) => {
+    const { limit, offset, id, name, registration_number, capacity, company_id } =
+      params;
+    console.log("companyBusListApi called with:", params);
+
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(name && { name: name }),
+      ...(registration_number && { registration_number }),
+      ...(capacity && { capacity }),
+      ...(company_id && { company_id }),
+    };
     try {
-      const params = companyId ? { company_id: companyId } : {};
       const response = await commonApi.apiCall(
         "get",
-        "/executive/company/bus",
-        params,
+        "company/bus",
+        queryParams,
         true,
         "application/json"
       );
-      console.log("Full API Response==================>", response);
+      if (!response) throw new Error("No response received");
 
-      // Check if response is directly an array
-      if (Array.isArray(response)) {
-        return response;
-      }
-
-      // Check if response.data exists
-      if (!response || !response.data) {
-        throw new Error("Invalid response format");
-      }
-
-      return response.data; // Ensure correct return
+      return {
+        data: response.data || response,
+      };
     } catch (error: any) {
-      console.log("Error fetching operator=====================>", error);
+      console.error("API Error:", error);
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch accounts"
+        error.detail || error.message || error || "Failed to fetch Bus list"
       );
     }
   }
@@ -1075,7 +1351,7 @@ export const busUpdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        "/executive/company/bus",
+        "company/bus",
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -1084,7 +1360,7 @@ export const busUpdationApi = createAsyncThunk(
     } catch (error: any) {
       console.error("Backend Error Response:", error.response?.data); // Log the full error response
       return rejectWithValue(
-        error?.response?.data?.message || "Bus update failed"
+        error.detail || error.message || error || "Bus update failed"
       );
     }
   }
@@ -1097,7 +1373,7 @@ export const busDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/company/bus",
+        "company/bus",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -1106,14 +1382,13 @@ export const busDeleteApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Account deletion failed"
+        error.detail || error.message || error || "Bus deletion failed"
       );
     }
   }
 );
 
-
-//****************************************************Bus route & Route landmark******************** 
+//****************************************************Bus route & Route landmark********************
 
 //route creation API
 export const routeCreationApi = createAsyncThunk(
@@ -1122,7 +1397,7 @@ export const routeCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/company/route",
+        "company/route",
         data,
         true,
         "application/www-form-urlencoded"
@@ -1130,7 +1405,7 @@ export const routeCreationApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "route creation failed"
+        error.detail || error.message || error || "route creation failed"
       );
     }
   }
@@ -1143,7 +1418,7 @@ export const routeLandmarkCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/company/route/landmark",
+        "company/route/landmark",
         data,
         true,
         "application/www-form-urlencoded"
@@ -1151,48 +1426,48 @@ export const routeLandmarkCreationApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "route-landmark creation failed"
-      );
-    }
-  }
-); 
-
-//route list Api
-
-export const busRouteListApi = createAsyncThunk(
-  "/executive/company/route",
-  async (companyId: number | null, { rejectWithValue }) => {
-    try {
-      const params = companyId ? { company_id: companyId } : {};
-      const response = await commonApi.apiCall(
-        "get",
-        "/executive/company/route",
-        params,
-        true,
-        "application/json"
-      );
-      console.log("Full API Response==================>", response);
-
-      // Check if response is directly an array
-      if (Array.isArray(response)) {
-        return response;
-      }
-
-      // Check if response.data exists
-      if (!response || !response.data) {
-        throw new Error("Invalid response format");
-      }
-
-      return response.data; // Ensure correct return
-    } catch (error: any) {
-      console.log("Error fetching routes=====================>", error);
-      return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch routes"
+        error.detail || error.message || error || "route-landmark creation failed"
       );
     }
   }
 );
 
+//route list Api
+
+export const busRouteListApi = createAsyncThunk(
+  "/company/route",
+  async (params: RouteListParams, { rejectWithValue }) => {
+    const{limit,offset,id,name,company_id}=params;
+    console.log("companyBusListApi called with:", params);
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(name && { name: name }),
+      ...(company_id && { company_id }), 
+    }
+    try {
+      
+      const response = await commonApi.apiCall(
+        "get",
+        "company/route",
+        queryParams,
+        true,
+        "application/json"
+      );
+      if (!response) throw new Error("No response received");
+
+      return {
+        data: response.data || response,
+      };
+    } catch (error: any) {
+      console.error("API Error:", error);
+      return rejectWithValue(
+        error.detail || error.message || "Failed to fetch Bus list"
+      );
+    }
+  }
+);
 
 //route-landmark list api
 
@@ -1203,7 +1478,7 @@ export const busRouteLandmarkListApi = createAsyncThunk(
       const params = routeId ? { route_id: routeId } : {};
       const response = await commonApi.apiCall(
         "get",
-        "/executive/company/route/landmark",
+        "company/route/landmark",
         params,
         true,
         "application/json"
@@ -1222,14 +1497,16 @@ export const busRouteLandmarkListApi = createAsyncThunk(
 
       return response.data; // Ensure correct return
     } catch (error: any) {
-      console.log("Error fetching route landmarks =====================>", error);
+      console.log(
+        "Error fetching route landmarks =====================>",
+        error
+      );
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch route landmarks"
+        error.detail || error.message || "Failed to fetch route landmarks"
       );
     }
   }
 );
-
 
 //route-delete Api
 export const routeDeleteApi = createAsyncThunk(
@@ -1238,7 +1515,7 @@ export const routeDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/company/route",
+        "company/route",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -1247,12 +1524,11 @@ export const routeDeleteApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Account deletion failed"
+        error.detail || error.message || "Account deletion failed"
       );
     }
   }
 );
-
 
 //route-landmark Delete Api
 export const routeLandmarkDeleteApi = createAsyncThunk(
@@ -1261,7 +1537,7 @@ export const routeLandmarkDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/company/route/landmark",
+        "company/route/landmark",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -1270,12 +1546,11 @@ export const routeLandmarkDeleteApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Account deletion failed"
+        error.detail || error.message || "Account deletion failed"
       );
     }
   }
 );
-
 
 //route update Api
 export const routeUpdationApi = createAsyncThunk(
@@ -1287,7 +1562,7 @@ export const routeUpdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        "/executive/company/route",
+        "company/route",
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -1296,7 +1571,7 @@ export const routeUpdationApi = createAsyncThunk(
     } catch (error: any) {
       console.error("Backend Error Response:", error.response?.data); // Log the full error response
       return rejectWithValue(
-        error?.response?.data?.message || "route update failed"
+        error.detail || error.message || "route update failed"
       );
     }
   }
@@ -1312,7 +1587,7 @@ export const routeLandmarkUpdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        "/executive/company/route/landmark",
+        "company/route/landmark",
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -1321,73 +1596,62 @@ export const routeLandmarkUpdationApi = createAsyncThunk(
     } catch (error: any) {
       console.error("Backend Error Response:", error.response?.data); // Log the full error response
       return rejectWithValue(
-        error?.response?.data?.message || "Route-landmark update failed"
+        error.detail || error.message || "Route-landmark update failed"
       );
     }
   }
 );
 
 
-//****************************************************************global and local Fare *************************************************************************
-//fare get api
-export const fareListApi = createAsyncThunk(
-  "executive/company/fare",
-  async (params: { scope: 1 | 2; companyId?: string }, { rejectWithValue }) => {
+//*******************************************Service**************************************************
+
+//service listing Api
+export const serviceListingApi = createAsyncThunk(
+  "/service",
+  async (params: ServiceListParams, { rejectWithValue }) => {
+    const { limit, offset, id, company_id, name,  ticket_mode, status, status_list  } =
+      params;
+
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(company_id && { company_id }),
+      ...(name && { name }),
+      ...(ticket_mode && { ticket_mode }),
+      ...(status && { status }),
+      ...(status_list && { status_list }),
+    };
     try {
-      if (!params.scope) {
-        throw new Error("Scope parameter is required (1 for global, 2 for local)");
-      }
-
-      const endpoint = "/executive/company/fare";
-      const queryParams = new URLSearchParams({ scope: params.scope.toString() });
-
-      if (params.scope === 2 && params.companyId) {
-        queryParams.append("companyId", params.companyId);
-      }
-
       const response = await commonApi.apiCall(
         "get",
-        `${endpoint}?${queryParams.toString()}`,
-        null,
+        "company/service",
+        queryParams,
         true,
         "application/json"
       );
-
-      if (!response || typeof response !== "object") {
-        throw new Error("API returned non-object response");
-      }
-
-      const responseData = response.data || response;
-      const fareData = Array.isArray(responseData) ? responseData : [responseData];
-
-      if (!fareData.length || !fareData[0].id) {
-        throw new Error("API response doesn't contain valid fare data");
-      }
+      if (!response) throw new Error("No response received");
 
       return {
-        scope: params.scope,
-        companyId: params.scope === 2 ? params.companyId : null,
-        data: fareData,
+        data: response.data || response,
       };
     } catch (error: any) {
-      console.error("Error fetching fares:", error);
-      return rejectWithValue({
-        message: error?.response?.data?.message || error.message,
-        code: error?.response?.status || 500,
-        details: error?.response?.data?.errors || null,
-      });
+      console.error("API Error:", error);
+      return rejectWithValue(
+        error.detail || error.message || error|| "Failed to fetch service list"
+      );
     }
   }
-);
+)
 
-//fare creation API
-export const fareCreationApi = createAsyncThunk(
-  "/executive/company/fare",
+//service creation Api
+export const serviceCreationApi = createAsyncThunk(
+  "/company/service",
   async (data: FormData, { rejectWithValue }) => {
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/company/fare",
+        "company/service",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -1395,44 +1659,45 @@ export const fareCreationApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Account creation failed"
+        error.detail || error.message ||error || "Service creation failed"
       );
     }
   }
 );
 
-//fare updation API
-export const fareupdationApi = createAsyncThunk(
-  "/executive/company/fare",
+//service updation Api
+export const serviceupdationApi = createAsyncThunk(
+  "/company/service",
   async (
-    { formData }: { fareId: number; formData: URLSearchParams },
+    { formData }: { serviceId: number; formData: FormData },
     { rejectWithValue }
   ) => {
     try {
       const response = await commonApi.apiCall(
         "patch",
-        `/executive/company/fare`,
+        `company/service`,
         formData,
         true,
-        "application/x-www-form-urlencoded" // Use the correct content type
+        "application/x-www-form-urlencoded" 
       );
       return response;
     } catch (error: any) {
-      console.error("Backend Error Response:", error.response?.data); // Log the full error response
+      console.error("Backend Error Response:", error.response?.data); 
       return rejectWithValue(
-        error?.response?.data?.message || "Fare update failed"
+        error.detail || error.message ||error ||  "Service update failed"
       );
     }
   }
 );
-//fare delete API
-export const fareDeleteApi = createAsyncThunk(
-  "executive/company/fare",
+
+//service Deletion Api
+export const serviceDeleteApi = createAsyncThunk(
+  "/company/service",
   async (data: FormData, { rejectWithValue }) => {
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "/executive/company/fare",
+        "company/service",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -1440,11 +1705,298 @@ export const fareDeleteApi = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error?.response?.data?.message || "Fare deletion failed"
+        error.detail || error.message ||error ||  "Service deletion failed"
       );
     }
   }
 );
+
+
+//*******************************************Schedule**************************************************
+
+//schedule listing api
+export const scheduleListingApi = createAsyncThunk(
+  "/schedule",
+  async (params: ScheduleListParams, { rejectWithValue }) => {
+    const { limit, offset, id, name, permit_no , triggering_mode, ticketing_mode, company_id  } =
+      params;
+
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(name && { name: name }),
+      ...(permit_no && { permit_no }),
+      ...(ticketing_mode && { ticketing_mode }),
+      ...(triggering_mode && { triggering_mode }),
+      ...(company_id && { company_id }),
+    };
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "company/schedule",
+        queryParams,
+        true,
+        "application/json"
+      );
+      if (!response) throw new Error("No response received");
+
+      return {
+        data: response.data || response,
+      };
+    } catch (error: any) {
+      console.error("API Error:", error);
+      return rejectWithValue(
+        error.detail || error.message ||error || 
+          "Failed to fetch schedule list"
+      );
+    }
+  }
+)
+
+//schedule creation Api
+export const scheduleCreationApi = createAsyncThunk(
+  "/company/schedule",
+  async (data: any, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "post",
+        "company/schedule",
+        data, 
+        true,
+        "application/json" 
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.detail || error.message ||error ||  "Schedule creation failed"
+      );
+    }
+  }
+);
+
+//schedule updation Api
+export const scheduleUpdationApi = createAsyncThunk(
+  "/company/schedule",
+  async (data: any, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "patch",
+        "company/schedule",
+        data, 
+        true,
+        "application/json" 
+      );
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data); // Log the full error response
+      return rejectWithValue(
+        error.detail || error.message ||error ||  "Schedule update failed"
+      );
+    }
+  }
+);
+
+//schedule deletion Api
+export const scheduleDeleteApi = createAsyncThunk(
+  "/company/schedule",
+  async (id: number, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "delete",
+        "company/schedule",
+        id, 
+        true,
+        "application/json"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.detail || error.message ||error ||  "Schedule deletion failed"
+      );
+    }
+  }
+);
+
+//*******************************************Duty**************************************************  
+
+//duty listing Api
+export const dutyListingApi = createAsyncThunk(
+  "/duty",
+  async (params: DutyListParams, { rejectWithValue }) => {
+    const { limit, offset, id, name, status, type, company_id } = params;
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(name && { name }),
+      ...(status && { status }),
+      ...(type && { type }),
+      ...(company_id && { company_id }),
+    };
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "company/service/duty",
+        queryParams,
+        true,
+        "application/json"
+      );
+      if (!response) throw new Error("No response received");
+      return {
+        data: response.data || response,
+      };
+    } catch (error: any) {
+      console.error("API Error:", error);
+      return rejectWithValue(
+        error.detail || error.message ||error ||
+          "Failed to fetch duty list"
+      );
+    }
+  }
+);
+
+//duty creation Api
+export const dutyCreationApi = createAsyncThunk(
+  "/company/service/duty",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "post",
+        "company/service/duty",
+        data,
+        true,
+        "application/x-www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        
+        error.detail || error.message ||error || "Duty creation failed"
+      );
+    }
+  }
+);
+
+//duty updation Api
+export const dutyupdationApi = createAsyncThunk(
+  "/company/service/duty",
+  async (
+    { formData }: { dutyId: number; formData: FormData },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await commonApi.apiCall(
+        "patch",
+        `company/service/duty`,
+        formData,
+        true,
+        "application/x-www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      console.error("Backend Error Response:", error.response?.data);
+      return rejectWithValue(
+        
+        error.detail || error.message ||error || "Duty update failed"
+      );
+    }
+  }
+);
+
+//duty Deletion Api
+export const dutyDeleteApi = createAsyncThunk(
+  "/company/service/duty",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      const response = await commonApi.apiCall(
+        "delete",
+        "company/service/duty",
+        data,
+        true,
+        "application/x-www-form-urlencoded"
+      );
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        
+        error.detail || error.message ||error || "Duty deletion failed"
+      );
+    }
+  }
+)
+
+//*********************************************paper ticket**************************************
+
+//Paper ticket listing Api
+export const paperTicketListingApi = createAsyncThunk(
+  "/paper-ticket",
+  async (params: paperTicketListParams, { rejectWithValue }) => {
+    const { limit, offset, id, service_id, pickup_point, dropping_point, amount,company_id } = params;
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(service_id && { service_id }),
+      ...(pickup_point && { pickup_point }),
+      ...(dropping_point && { dropping_point }),
+      ...(amount && { amount }),
+      ...(company_id && { company_id }),
+    };
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "company/service/ticket/paper",
+        queryParams,
+        true,
+        "application/json"
+      );
+      if (!response) throw new Error("No response received");
+      return {
+        data: response.data || response,
+      };
+    } catch (error: any) {
+      console.error("API Error:", error);
+      return rejectWithValue(
+        error.detail || error.message ||error ||
+          "Failed to fetch paper ticket list"
+      );
+    }
+  }
+);
+//for landmark
+export const landmarkNameApi = createAsyncThunk(
+  "/landmark",
+  async (params: LandmarkListParams, { rejectWithValue }) => {
+    const { limit, offset, id, name } = params;
+    const queryParams = {
+      limit,
+      offset,
+      ...(id && { id }),
+      ...(name && { name }),
+    };
+    try {
+      const response = await commonApi.apiCall(
+        "get",
+        "landmark",
+        queryParams,
+        true,
+        "application/json"
+      );
+      if (!response) throw new Error("No response received");
+      return {
+        data: response.data || response,
+      };
+    } catch (error: any) {
+      console.error("API Error:", error);
+      return rejectWithValue(
+        error.detail || error.message ||error ||
+          "Failed to fetch landmark list"
+      );
+    }
+  }
+);
+
 
 // Slice
 export const appSlice = createSlice({
@@ -1452,12 +2004,7 @@ export const appSlice = createSlice({
   initialState,
   reducers: {
     // Use the PayloadAction type to declare the contents of action.payload
-    splashCompleted: (state, action: PayloadAction<boolean>) => {
-      state.splash = action.payload;
-    },
-    setLoader: (state, action: PayloadAction<status>) => {
-      state.status = action.payload;
-    },
+    
     userLoggedIn: (state, action: PayloadAction<User>) => {
       state.loggedIn = true;
       state.loggedUser = action.payload;
@@ -1470,28 +2017,31 @@ export const appSlice = createSlice({
       state.loggedUser = action.payload;
     },
 
-    setLoginCreds: (state, action) => {
-      state.logincreds = action.payload;
+    setRoleDetails: (state, action) => {
+      state.roleDetails = action.payload;
     },
-    
+    clearRoleDetails: (state) => {
+      state.roleDetails = null;
+    },
+    setPermissions: (state, action: PayloadAction<string[]>) => {
+      state.permissions = action.payload;
+    },
   },
 });
 
 export const {
   userLoggedIn,
   userLoggedOut,
-  setLoader,
   setLoggedUser,
-  splashCompleted,
-  setLoginCreds,
+  setRoleDetails,
+  clearRoleDetails,
+  setPermissions,
 } = appSlice.actions;
 // Export actions
 
 export default appSlice.reducer;
 
 // Slice store data selector function
-export const getSplash = (state: RootState) => state.app.splash;
-export const getStatus = (state: RootState) => state.app.status;
 export const getLoggedIn = (state: RootState) => state.app.loggedIn;
 export const getLoggedUser = (state: RootState) => state.app.loggedUser;
-export const getLoginCreds = (state: RootState) => state.app.logincreds;
+export const getRoleDetails = (state: RootState) => state.app.roleDetails;

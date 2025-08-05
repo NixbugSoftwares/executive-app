@@ -18,19 +18,19 @@ const initialState: AuthState = {
 
 // Async thunk for login
 export const LoginApi = createAsyncThunk(
-  "/executive/token",
+  "/token",
   async (data: FormData, { rejectWithValue }) => {
     try {
       const response = await commonApi.apiCall(
         "post",
-        "/executive/token",
+        "entebus/account/token",
         data,
         false,
         "multipart/form-data"
       );
-      return response; // Ensure response contains `access_token`
+      return response;
     } catch (error: any) {
-      return rejectWithValue(error?.response?.data?.message || "Login failed");
+      return rejectWithValue(error.detail);
     }
   }
 );

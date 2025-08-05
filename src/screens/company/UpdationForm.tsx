@@ -44,8 +44,9 @@ const statusOptions = [
 ];
 
 const typeOptions = [
-  { label: "Privet", value: 1 },
-  { label: "Government", value: 2 },
+  { label: "Other", value: 1 },
+  { label: "Privet", value: 2 },
+  { label: "Government", value: 3 },
 ];
 
 const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
@@ -70,36 +71,21 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
     formState: { errors },
   } = useForm<ICompanyFormInputs>();
 
-  // Fetch location name from coordinates
-  const fetchLocationName = async (lat: number, lng: number) => {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-      );
-      const data = await response.json();
-      return data.display_name || "Unknown Location";
-    } catch (error) {
-      showErrorToast("Error fetching location name:" + error);
-      return "Unknown Location";
-    }
-  };
+
 
   // Fetch company data
   useEffect(() => {
-    dispatch(companyListApi())
+    dispatch(companyListApi({limit:1, offset: 0, id: companyId}))
       .unwrap()
-      .then(async (res: any[]) => {
-        const company = res.find((company) => company.id === companyId);
+      .then(async (res: { data: any[] }) => {
+        const items = res.data;
+        const company = items.find((company) => company.id === companyId);
         if (company) {
-          // Parse the location string into latitude and longitude
-          const locationRegex = /POINT\(([\d.]+) ([\d.]+)\)/;
+          const locationRegex = /POINT\s*\(\s*([\d.-]+)\s+([\d.-]+)\s*\)/;
           const match = company.location.match(locationRegex);
           const latitude = match ? parseFloat(match[2]) : undefined;
           const longitude = match ? parseFloat(match[1]) : undefined;
-          if (latitude && longitude) {
-            const name = await fetchLocationName(latitude, longitude);
-            setLocationName(name);
-          }
+          setLocationName(company.location);
 
           setCompanyData({
             name: company.name,
@@ -133,20 +119,20 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
         }
       })
       .catch((err: any) => {
-        showErrorToast("Error fetching company data:" + err);
+        showErrorToast(  err || "Failed to fetch company data. Please try again.");
       });
   }, [companyId, dispatch, reset]);
 
   // Handle location selection from MapModal
   const handleLocationSelect = (location: {
-    name: string;
+    // name: string;
     lat: number;
     lng: number;
   }) => {
     setValue("location", `POINT (${location.lng} ${location.lat})`);
     setValue("latitude", location.lat);
     setValue("longitude", location.lng);
-    setLocationName(location.name);
+    // setLocationName(location.name);
   };
 
   // Handle Account Update
@@ -181,9 +167,8 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
       refreshList("refresh");
       handleCloseDetailCard();
       onClose();
-    } catch (error) {
-      showErrorToast("Error updating company:" + error);
-      showErrorToast("Failed to update company. Please try again.");
+    } catch (error: any) {
+      showErrorToast( error || "Error updating company:" );
     } finally {
       setLoading(false);
     }

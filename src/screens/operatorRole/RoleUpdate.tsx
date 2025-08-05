@@ -1,174 +1,300 @@
-import React, { useState, useEffect } from "react";
-import { TextField, Button, Box, Typography, Switch, CircularProgress } from "@mui/material";
+import React from "react";
+import {
+  TextField,
+  Button,
+  Box,
+  Typography,
+  Switch,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  FormControlLabel,
+  Divider,
+  useTheme,
+} from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useAppDispatch } from "../../store/Hooks";
-import { operatorRoleUpdationApi, operatorRoleListApi } from "../../slices/appSlice"; 
+import { operatorRoleUpdationApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
-import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
-type RoleFormValues = {
-  id: number; 
-  name: string;
-  manage_bus?: boolean;
-  manage_route?: boolean;
-  manage_schedule?: boolean;
-  manage_role?: boolean;
-  manage_operator?: boolean;
-  manage_company?: boolean;
-  manage_fare?: boolean;
-};
-
-interface IRoleUpdateFormProps {
-  onClose: () => void; 
-  refreshList: (value: any) => void; 
-  roleId: number; 
-  handleCloseDetailCard: () => void
+import {
+  showSuccessToast,
+  showErrorToast,
+} from "../../common/toastMessageHelper";
+interface RoleUpdateFormProps {
+  roleId: number;
+  roleData: any;
+  refreshList: (value: any) => void;
+  onClose: () => void;
+  onCloseDetailCard: () => void;
 }
 
-const RoleUpdateForm: React.FC<IRoleUpdateFormProps> = ({
-  onClose,
-  refreshList,
+const permissionGroups = [
+  {
+    groupName: "Token Management",
+    permissions: [{ label: "Operator Token", key: "manage_token" }],
+  },
+  {
+    groupName: "Company",
+    permissions: [{ label: "Update", key: "update_company" }],
+  },
+  {
+    groupName: "Operator",
+    permissions: [
+      { label: "Create", key: "create_operator" },
+      { label: "Update", key: "update_operator" },
+      { label: "Delete", key: "delete_operator" },
+    ],
+  },
+  {
+    groupName: "Route",
+    permissions: [
+      { label: "Create", key: "create_route" },
+      { label: "Update", key: "update_route" },
+      { label: "Delete", key: "delete_route" },
+    ],
+  },
+  {
+    groupName: "Bus",
+    permissions: [
+      { label: "Create", key: "create_bus" },
+      { label: "Update", key: "update_bus" },
+      { label: "Delete", key: "delete_bus" },
+    ],
+  },
+  {
+    groupName: "Schedule",
+    permissions: [
+      { label: "Create", key: "create_schedule" },
+      { label: "Update", key: "update_schedule" },
+      { label: "Delete", key: "delete_schedule" },
+    ],
+  },
+  {
+    groupName: "Service",
+    permissions: [
+      { label: "Create", key: "create_service" },
+      { label: "Update", key: "update_service" },
+      { label: "Delete", key: "delete_service" },
+    ],
+  },
+  {
+    groupName: "Fare",
+    permissions: [
+      { label: "Create", key: "create_fare" },
+      { label: "Update", key: "update_fare" },
+      { label: "Delete", key: "delete_fare" },
+    ],
+  },
+  {
+    groupName: "Duty",
+    permissions: [
+      { label: "Create", key: "create_duty" },
+      { label: "Update", key: "update_duty" },
+      { label: "Delete", key: "delete_duty" },
+    ],
+  },
+  {
+    groupName: "Operator Role",
+    permissions: [
+      { label: "Create", key: "create_role" },
+      { label: "Update", key: "update_role" },
+      { label: "Delete", key: "delete_role" },
+    ],
+  },
+];
+
+const RoleUpdateForm: React.FC<RoleUpdateFormProps> = ({
   roleId,
-  handleCloseDetailCard
+  roleData,
+  refreshList,
+  onClose,
+  onCloseDetailCard,
 }) => {
+  const theme = useTheme();
   const dispatch = useAppDispatch();
-  const [loading, setLoading] = useState(false);
-  const [roleData, setRoleData] = useState<RoleFormValues | null>(null); 
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset, 
-    formState: { errors },
-  } = useForm<RoleFormValues>();
+  const [loading, setLoading] = React.useState(false);
 
-  // Fetch role data on mount
-  useEffect(() => {
-    const fetchRoleData = async () => {
-      try {
-        setLoading(true);
-        const roles = await dispatch(operatorRoleListApi(null)).unwrap();
-        const role = roles.find((r: any) => r.id === roleId);
+  const { handleSubmit, control, reset, register } = useForm({
+    defaultValues: {
+      name: roleData.name,
+      ...roleData.roleDetails,
+    },
+  });
 
-        if (role) {
-          setRoleData({
-            id: role.id,
-            name: role.name,
-            manage_bus: role.manage_bus,
-            manage_route: role.manage_route,
-            manage_schedule: role.manage_schedule,
-            manage_role: role.manage_role,
-            manage_operator: role.manage_operator,
-            manage_company: role.manage_company,
-            manage_fare: role.manage_fare,
-          });
+  React.useEffect(() => {
+    reset({
+      name: roleData.name,
+      ...roleData.roleDetails,
+    });
+  }, [roleData, reset]);
 
-          reset({
-            id: role.id,
-            name: role.name,
-            manage_bus: role.manage_bus,
-            manage_route: role.manage_route,  
-            manage_schedule: role.manage_schedule,
-            manage_role: role.manage_role,  
-            manage_operator: role.manage_operator,
-            manage_company: role.manage_company,
-            manage_fare: role.manage_fare,
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching role data:", error);
-        alert("Failed to fetch role data. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRoleData();
-  }, [roleId, dispatch, reset]);
-
-  // Handle Role Update
-  const handleRoleUpdate: SubmitHandler<RoleFormValues> = async (data) => {
+  const handleRoleUpdate: SubmitHandler<any> = async (data) => {
+    setLoading(true);
     try {
-      setLoading(true);
-  
-      const formData = new URLSearchParams();
-      formData.append("id", roleId.toString()); 
+      const formData = new FormData();
+      formData.append("id", String(roleId));
       formData.append("name", data.name);
-      formData.append("manage_bus", String(data.manage_bus));
-      formData.append("manage_route", String(data.manage_route));
-      formData.append("manage_schedule", String(data.manage_schedule));
-      formData.append("manage_role", String(data.manage_role));
-      formData.append("manage_operator", String(data.manage_operator));
-      formData.append("manage_company", String(data.manage_company));
-      formData.append("manage_fare", String(data.manage_fare));
-  
-      // Update API
-      await dispatch(operatorRoleUpdationApi({ roleId, formData })).unwrap();
-      
-      showSuccessToast("Role updated successfully!");
-      refreshList("refresh");
-      handleCloseDetailCard();
-      onClose();
-    } catch (error) {
-      console.error("Update error:", error);
-      showErrorToast("Failed to update role. Please try again.");
+
+      // Append all permissions to formData
+      permissionGroups.forEach((group) => {
+        group.permissions.forEach((permission) => {
+          formData.append(permission.key, String(data[permission.key]));
+        });
+      });
+
+      const response = await dispatch(
+        operatorRoleUpdationApi({ roleId, formData: formData })
+      ).unwrap();
+      if (response?.id) {
+        showSuccessToast("Role updated successfully!");
+        refreshList("refresh");
+        onClose();
+        onCloseDetailCard();
+      } else {
+        showErrorToast("Role update failed. Please try again.");
+      }
+    } catch (error: any) {
+      showErrorToast(error || "Failed to update role. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  if (!roleData) {
-    return <CircularProgress />; 
-  }
-
   return (
     <Box
       component="form"
       onSubmit={handleSubmit(handleRoleUpdate)}
-      
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+        width: "100%",
+      }}
     >
-      <Typography variant="h5" align="center" gutterBottom>
-        Update Role
+      <Typography
+        variant="h6"
+        align="center"
+        gutterBottom
+        sx={{ fontWeight: "bold" }}
+      >
+        Update Role Details
       </Typography>
-
-      
       <TextField
         label="Role Name"
-        {...register("name")}
-        error={!!errors.name}
-        helperText={errors.name?.message}
-        variant="outlined"
         size="small"
         fullWidth
+        InputLabelProps={{ shrink: true }}
+        {...register("name")}
+        defaultValue={roleData.name}
       />
 
-      
-      {([
-        "manage_bus",
-        "manage_route",
-        "manage_schedule",
-        "manage_role",
-        "manage_operator",
-        "manage_company",
-        "manage_fare",
-      ] as (keyof RoleFormValues)[]).map((field) => (
-        <Box key={field} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography>{field.replace("manage", "Manage ")}</Typography>
-          <Controller
-            name={field}
-            control={control}
-            render={({ field: { value, onChange } }) => (
-              <Switch checked={!!value} onChange={(e) => onChange(e.target.checked)} color="success" />
-            )}
-          />
-        </Box>
-      ))}
+      <Divider sx={{ my: 1 }} />
 
-      {/* Submit Button */}
-      <Button type="submit" variant="contained" color="primary" fullWidth disabled={loading}>
-        {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Update Role"}
-      </Button>
+      <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
+        Permissions
+      </Typography>
+
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 1,
+          mb: 2,
+          alignItems: "flex-start",
+        }}
+      >
+        {permissionGroups.map((group) => (
+          <Box
+            key={group.groupName}
+            sx={{ minWidth: 200, flex: "1 1 200px", maxWidth: "100%" }}
+          >
+            <Accordion
+              defaultExpanded={true}
+              sx={{
+                boxShadow: "none",
+                border: `1px solid ${theme.palette.divider}`,
+                "&:before": { display: "none" },
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon fontSize="small" />}
+                sx={{
+                  minHeight: "40px !important",
+                  "& .MuiAccordionSummary-content": {
+                    my: 0.5,
+                  },
+                }}
+              >
+                <Typography variant="body2" fontWeight="medium">
+                  {group.groupName}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0, pb: 1 }}>
+                <Box
+                  sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
+                >
+                  {group.permissions.map((permission) => (
+                    <Controller
+                      key={permission.key}
+                      name={permission.key}
+                      control={control}
+                      render={({ field }) => (
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              size="small"
+                              checked={!!field.value}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                              color="primary"
+                            />
+                          }
+                          label={
+                            <Typography variant="caption">
+                              {permission.label}
+                            </Typography>
+                          }
+                          labelPlacement="start"
+                          sx={{
+                            m: 0,
+                            justifyContent: "space-between",
+                            "& .MuiFormControlLabel-label": {
+                              flex: 1,
+                            },
+                          }}
+                        />
+                      )}
+                    />
+                  ))}
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+          </Box>
+        ))}
+      </Box>
+
+      <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+        <Button
+          variant="outlined"
+          color="primary"
+          fullWidth
+          onClick={onClose}
+          disabled={loading}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          fullWidth
+          disabled={loading}
+          sx={{ bgcolor: "darkblue" }}
+        >
+          {loading ? "Updating..." : "Update Role"}
+        </Button>
+      </Box>
     </Box>
   );
 };
 
 export default RoleUpdateForm;
-

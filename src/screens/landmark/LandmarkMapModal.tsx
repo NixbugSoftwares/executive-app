@@ -2,18 +2,14 @@ import React from "react";
 import { Dialog, DialogContent, DialogActions, Button } from "@mui/material";
 import UpdateMapComponent from "./LandmarkUpdateMap";
 
-interface Landmark {
-  id: number;
-  name: string;
-  boundary: string;
-}
+
 
 interface MapModalProps {
   open: boolean;
   onClose: () => void;
   initialBoundary?: string;
   onSave: (coordinates: string) => void;
-  landmarks?: Landmark[];
+  editingLandmarkId?: number; 
 }
 
 const MapModal: React.FC<MapModalProps> = ({
@@ -21,7 +17,7 @@ const MapModal: React.FC<MapModalProps> = ({
   onClose,
   initialBoundary,
   onSave,
-  landmarks = [],
+  editingLandmarkId, 
 }) => {
   const handleSave = (coordinates: string) => {
     onSave(coordinates);
@@ -35,7 +31,7 @@ const MapModal: React.FC<MapModalProps> = ({
           initialBoundary={initialBoundary}
           onSave={handleSave}
           onClose={onClose}
-          landmarks={landmarks}
+          editingLandmarkId={editingLandmarkId ?? 0} 
         />
       </DialogContent>
       <DialogActions>

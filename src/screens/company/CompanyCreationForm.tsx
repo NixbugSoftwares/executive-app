@@ -26,7 +26,7 @@ interface ICompanyFormInputs {
   location: string;
   owner_name: string;
   phone_number: string;
-  email?: string;
+  email: string;
   latitude?: number;
   longitude?: number;
   company_type: string;
@@ -39,14 +39,15 @@ interface ICompanyCreationFormProps {
 }
 
 const TypeOptions = [
-  { label: "Privet", value: 1 },
-  { label: "Government", value: 2 },
+  { label: "Other", value: 1 },
+  { label: "Privet", value: 2 },
+  { label: "Government", value: 3 },
 ];
-const statusOptions=[
-  {label:"Validating",value:1},
-  {label:"Verified",value:2},
-  {label:"Suspended",value:3},
-]
+const statusOptions = [
+  { label: "Validating", value: 1 },
+  { label: "Verified", value: 2 },
+  { label: "Suspended", value: 3 },
+];
 
 const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
   onClose,
@@ -70,14 +71,10 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
     },
   });
 
-  const handleLocationSelect = (location: {
-    name: string;
-    lat: number;
-    lng: number;
-  }) => {
-    setValue("location", location.name);
+  const handleLocationSelect = (location: { lat: number; lng: number }) => {
     setValue("latitude", location.lat);
     setValue("longitude", location.lng);
+    setValue("location", `POINT(${location.lng} ${location.lat})`);
   };
 
   const handleAccountCreation: SubmitHandler<ICompanyFormInputs> = async (
@@ -89,7 +86,7 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
       const formData = new FormData();
       formData.append("name", data.name);
       formData.append("address", data.address);
-      formData.append("location", `POINT (${data.longitude} ${data.latitude})`);
+      formData.append("location", `POINT(${data.longitude} ${data.latitude})`);
       formData.append("contact_person", data.owner_name);
       formData.append("phone_number", `+91${data.phone_number}`);
       if (data.email) {
@@ -105,8 +102,8 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
       } else {
         showErrorToast("Company creation failed. Please try again.");
       }
-    } catch (error) {
-      showErrorToast("Error during company creation:" + error);
+    } catch (error: any) {
+      showErrorToast(error || "Error during company creation:");
     } finally {
       setLoading(false);
     }
@@ -158,12 +155,16 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
             required
             fullWidth
             label="Location"
+            placeholder="Click to select location"
             {...register("location")}
             error={!!errors.location}
             helperText={errors.location?.message}
             size="small"
             onClick={() => setMapModalOpen(true)}
+            InputProps={{ readOnly: true }}
+            InputLabelProps={{ shrink: true }}
           />
+
           <TextField
             margin="normal"
             required
@@ -206,6 +207,7 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
           <TextField
             margin="normal"
             fullWidth
+            required
             label="Email"
             placeholder="example@gmail.com"
             {...register("email")}

@@ -44,7 +44,7 @@ export const accountFormSchema = yup.object().shape({
     
   fullName: yup
   .string()
-  .optional()
+  .required("Full Name is required")
   .test({
     name: 'fullNameValidation',
     message: (params) => {
@@ -100,73 +100,89 @@ export const accountFormSchema = yup.object().shape({
   
 });
 
-//**************************************************account updation schema **************************************** */
-
-
-export const accountUpdationFormSchema = yup.object().shape({
-  username: yup
-    .string()
-    .optional()
-    .matches(/^[A-Za-z][A-Za-z0-9@._-]{3,31}$/, "Invalid username format"),
-
-  password: yup
-    .string()
-    .matches(
-      /^[A-Za-z0-9\-+,.@_$%&*#!^=/\?]{8,64}$/,
-      "Invalid password format"
-    ),
-    
-  fullName: yup
-  .string()
-  .optional()
-  .matches(/^[A-Za-z]+(?: [A-Za-z]+)*$|^$/, "Invalid full name format")
-  .max(32, "Full name cannot exceed 32 characters"),
-
-  phoneNumber: yup
-  .string()
-  .optional()
-  .matches(/^[1-9][0-9]{9}$/, "Invalid phone number format"),
- 
-  email: yup
-    .string()
-    .trim()
-    .max(254, "Email cannot exceed 254 characters")
-    .matches(/^(?!.*\.\.)[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+)*@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}|^$/, "Invalid email format")
-    .optional(),
-
-  gender: yup
-    .number(),
-
-  designation: yup
-    .string()
-    .trim()
-    .max(32, "Designation cannot exceed 32 characters")
-    .matches(/^[a-zA-Z\s\-\_\(\)]*|^$/, "Invalid designation format")
-    .optional(),
-
-  role: yup
-    .number()
-    .required(), 
-
-  status: yup
-    .number()
-  
-});
 
 //*********************************************************Role creating validation schema********************************************** 
 export const roleCreationSchema = yup.object().shape({
-  name: yup.string().required("Role name is required")
-  .min(4, "landmark name must be at least 4 characters")
-  .max(32, "landmark name cannot exceed 32 characters"),
-  manageExecutive: yup.boolean(),
-  manageRole: yup.boolean(),
-  manageLandmark: yup.boolean(),
-  manageCompany: yup.boolean(),
-  manageVendor: yup.boolean(),
-  manageRoute: yup.boolean(),
-  manageSchedule: yup.boolean(),
-  manageService: yup.boolean(),
-  manageDuty: yup.boolean(),
+  name: yup.string()
+    .required("Role name is required")
+    .min(4, "Role name must be at least 4 characters")
+    .max(32, "Role name cannot exceed 32 characters"),
+  
+  // Token Management
+  manage_ex_token: yup.boolean(),
+  manage_op_token: yup.boolean(),
+  manage_ve_token: yup.boolean(),
+  
+  // Executive Permissions
+  create_executive: yup.boolean(),
+  update_executive: yup.boolean(),
+  delete_executive: yup.boolean(),
+  
+  // Landmark Permissions
+  create_landmark: yup.boolean(),
+  update_landmark: yup.boolean(),
+  delete_landmark: yup.boolean(),
+  
+  // Company Permissions
+  create_company: yup.boolean(),
+  update_company: yup.boolean(),
+  delete_company: yup.boolean(),
+  
+  // Operator Permissions
+  create_operator: yup.boolean(),
+  update_operator: yup.boolean(),
+  delete_operator: yup.boolean(),
+  
+  // Business Permissions
+  create_business: yup.boolean(),
+  update_business: yup.boolean(),
+  delete_business: yup.boolean(),
+  
+  // Route Permissions
+  create_route: yup.boolean(),
+  update_route: yup.boolean(),
+  delete_route: yup.boolean(),
+  
+  // Bus Permissions
+  create_bus: yup.boolean(),
+  update_bus: yup.boolean(),
+  delete_bus: yup.boolean(),
+  
+  // Vendor Permissions
+  create_vendor: yup.boolean(),
+  update_vendor: yup.boolean(),
+  delete_vendor: yup.boolean(),
+  
+  // Schedule Permissions
+  create_schedule: yup.boolean(),
+  update_schedule: yup.boolean(),
+  delete_schedule: yup.boolean(),
+  
+  // Service Permissions
+  create_service: yup.boolean(),
+  update_service: yup.boolean(),
+  delete_service: yup.boolean(),
+  
+  // Fare Permissions
+  create_fare: yup.boolean(),
+  update_fare: yup.boolean(),
+  delete_fare: yup.boolean(),
+  
+  // Duty Permissions
+  create_duty: yup.boolean(),
+  update_duty: yup.boolean(),
+  delete_duty: yup.boolean(),
+  
+  // Role Permissions
+  create_ex_role: yup.boolean(),
+  update_ex_role: yup.boolean(),
+  delete_ex_role: yup.boolean(),
+  create_op_role: yup.boolean(),
+  update_op_role: yup.boolean(),
+  delete_op_role: yup.boolean(),
+  create_ve_role: yup.boolean(),
+  update_ve_role: yup.boolean(),
+  delete_ve_role: yup.boolean(),
 });
 
 
@@ -178,8 +194,7 @@ export const landMarkAddSchema = yup.object().shape({
   .min(4, "landmark name must be at least 4 characters")
   .max(32, "landmark name cannot exceed 32 characters"),
   boundary: yup.string().required("Boundary is required"),
-  status: yup.string().required("Status is required"),
-  importance: yup.string().required("Importance is required"),
+  type:yup.string().optional(),
 })
 
 
@@ -194,9 +209,9 @@ export const companyCreationSchema = yup.object().shape({
 
   address: yup
   .string()
+  .required("address is required")
   .min(4, "Address must be at least 4 characters")
-  .max(512, "Address name cannot exceed 32 characters")
-  .required("address is required"),
+  .max(512, "Address name cannot exceed 32 characters"),
 
   location: yup
   .string()
@@ -216,10 +231,10 @@ export const companyCreationSchema = yup.object().shape({
   
   email: yup
     .string()
+    .required("Email is required")
     .trim()
     .max(254, "Email cannot exceed 254 characters")
-    .matches(/^(?!.*\.\.)[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+)*@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}|^$/, "Invalid email format")
-    .optional(),
+    .matches(/^(?!.*\.\.)[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+)*@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}|^$/, "Invalid email format"),
 
 
     company_type: yup
@@ -257,8 +272,9 @@ export const operatorCreationSchema = yup.object().shape({
 
   fullName: yup
     .string()
-    .optional()
+    .required("Full name is required")
     .matches(/^[A-Za-z]+(?: [A-Za-z]+)*$|^$/, "Invalid full name format")
+    .min(4, "Full name must be at least 4 characters")
     .max(32, "Full name cannot exceed 32 characters"),
   phoneNumber: yup
 
@@ -286,25 +302,70 @@ export const operatorCreationSchema = yup.object().shape({
 export const operatorRoleCreationSchema = yup.object().shape({
   name: yup.string().required("Role name is required"),
   companyId: yup.number().required("Company is required"),
-  manage_bus: yup.boolean(),
-  manage_route: yup.boolean(),
-  manage_schedule: yup.boolean(),
-  manage_role: yup.boolean(),
-  manage_operator: yup.boolean(),
-  manage_company: yup.boolean(),
+    // Token Management
+  manage_token: yup.boolean(),
+  
+  // Company Permissions
+  update_company: yup.boolean(),
+  
+  // Operator Permissions
+  create_operator: yup.boolean(),
+  update_operator: yup.boolean(),
+  delete_operator: yup.boolean(),
+  // Route Permissions
+  create_route: yup.boolean(),
+  update_route: yup.boolean(),
+  delete_route: yup.boolean(),
+  
+  // Bus Permissions
+  create_bus: yup.boolean(),
+  update_bus: yup.boolean(),
+  delete_bus: yup.boolean(),
+  // Schedule Permissions
+  create_schedule: yup.boolean(),
+  update_schedule: yup.boolean(),
+  delete_schedule: yup.boolean(),
+  
+  // Service Permissions
+  create_service: yup.boolean(),
+  update_service: yup.boolean(),
+  delete_service: yup.boolean(),
+  
+  // Fare Permissions
+  create_fare: yup.boolean(),
+  update_fare: yup.boolean(),
+  delete_fare: yup.boolean(),
+  
+  // Duty Permissions
+  create_duty: yup.boolean(),
+  update_duty: yup.boolean(),
+  delete_duty: yup.boolean(),
+  
+  // Role Permissions
+  create_role: yup.boolean(),
+  update_role: yup.boolean(),
+  delete_role: yup.boolean(),
 });
 
 
 
 //******************************************************Company Bus Creation *********************************************** */
 export const busCreationSchema = yup.object().shape({
-  companyId: yup.number().required("Company is required"),
-  registrationNumber: yup.string().min(4).max(16).required("Registration number is required"),
-  name: yup.string().min(4).max(64).required("Bus name is required"),
-  capacity: yup.number().min(1).max(120).required("Capacity is required"),
-  manufactured_on: yup.string().required("Manufacture date is required"),
-  insurance_upto: yup.string().nullable(),
-  pollution_upto: yup.string().nullable(),
-  fitness_upto: yup.string().nullable(),
-  road_tax_upto: yup.string().nullable(),
+  company_id: yup.number().required("Company is required"),
+   registration_number: yup
+    .string()
+    .required("Registration number is required")
+    .max(16, "Registration number must be at most 16 characters")
+    .matches(
+      /^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{1,4}$/,
+      "Format: e.g., KA01AB1234 — 2 letters, 2 digits, 1-2 letters, 1-4 digits"
+    ),
+
+  name: yup.string().required().min(4).max(32),
+  capacity: yup.number().required().min(1).max(120),
+  manufactured_on: yup.string().required(),
+  insurance_upto: yup.string().nullable().notRequired(),
+  pollution_upto: yup.string().nullable().notRequired(),
+  fitness_upto: yup.string().nullable().notRequired(),
+  road_tax_upto: yup.string().nullable().notRequired(),
 });

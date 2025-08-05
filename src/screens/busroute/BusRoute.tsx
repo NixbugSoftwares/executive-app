@@ -17,8 +17,6 @@ const BusRoutePage: React.FC = () => {
       >
       <BusRouteListing/>
       </Box>
-      
-
     </Box>
   )
 }

@@ -16,18 +16,18 @@ import {
   DialogContent,
   DialogActions,
   FormControl,
-  IconButton,
+  // IconButton,
   InputLabel,
   MenuItem,
   Select,
   SelectChangeEvent,
   TextField,
-  Tooltip,
+  // Tooltip,
   Typography,
   Alert,
 } from "@mui/material";
-import LocationOnIcon from "@mui/icons-material/LocationOn";
-import { Refresh } from "@mui/icons-material";
+// import LocationOnIcon from "@mui/icons-material/LocationOn";
+// import { Refresh } from "@mui/icons-material";
 import { showErrorToast } from "../../common/toastMessageHelper";
 import { landmarkListApi } from "../../slices/appSlice";
 import { useDispatch } from "react-redux";
@@ -49,6 +49,7 @@ interface MapComponentProps {
   isEditing?: boolean;
   startingTime?: string;
   isNewRoute?: boolean;
+  selectedLandmarkIds?: number[];
 }
 
 const MapComponent = React.forwardRef(
@@ -82,16 +83,17 @@ const MapComponent = React.forwardRef(
     const selectInteractionRef = useRef<OlSelect | null>(null);
     const routeCoordsRef = useRef<Coordinate[]>([]);
     // Time selection states
-    const [arrivalHour, setArrivalHour] = useState<number>(12);
+    const [arrivalHour, setArrivalHour] = useState<number>(6);
     const [arrivalMinute, setArrivalMinute] = useState<number>(30);
     const [arrivalAmPm, setArrivalAmPm] = useState<string>("AM");
-    const [departureHour, setDepartureHour] = useState<number>(12);
+    const [departureHour, setDepartureHour] = useState<number>(6);
     const [departureMinute, setDepartureMinute] = useState<number>(30);
     const [departureAmPm, setDepartureAmPm] = useState<string>("AM");
     const [arrivalDayOffset, setArrivalDayOffset] = useState<number>(0);
     const [departureDayOffset, setDepartureDayOffset] = useState<number>(0);
     const [isFirstLandmark, setIsFirstLandmark] = useState(false);
     const [showTimeError, setShowTimeError] = useState<string>("");
+    const [distanceError, setDistanceError] = useState<string>("");
     // Initialize the map
     const initializeMap = () => {
       if (!mapRef.current) return null;
@@ -129,28 +131,148 @@ const MapComponent = React.forwardRef(
 
       return map;
     };
+
     useEffect(() => {
       if (!mapInstance.current) {
         mapInstance.current = initializeMap();
       }
-      fetchLandmark();
     }, []);
 
-    const handleViewModeLandmarks = () => {
+    const fetchLandmark = async (
+      locationaskey: string,
+      idList: number[] = [],
+      zoom?: number
+    ) => {
+      try {
+        if ((mode === "view" || isEditing) && idList.length > 0) {
+          const selectedParams = {
+            id_list: idList,
+            order_by: 2,
+            order_in: 1,
+          };
+
+          const selectedRes = await dispatch(
+            landmarkListApi(selectedParams)
+          ).unwrap();
+          const selectedLandmarksData = selectedRes.data.map(
+            (landmark: any) => ({
+              id: landmark.id,
+              name: landmark.name,
+              boundary: extractRawPoints(landmark.boundary),
+            })
+          );
+
+          if (isEditing) {
+            const nearbyParams = {
+              location: locationaskey,
+              limit: Math.min(100, Math.max(10, Math.floor((zoom || 10) * 5))),
+              order_by: 2,
+              order_in: 1,
+            };
+
+            const nearbyRes = await dispatch(
+              landmarkListApi(nearbyParams)
+            ).unwrap();
+            const nearbyLandmarksData = nearbyRes.data.map((landmark: any) => ({
+              id: landmark.id,
+              name: landmark.name,
+              boundary: extractRawPoints(landmark.boundary),
+            }));
+
+            const combinedLandmarks = [
+              ...selectedLandmarksData,
+              ...nearbyLandmarksData.filter(
+                (lm: any) =>
+                  !selectedLandmarksData.some((slm: any) => slm.id === lm.id)
+              ),
+            ];
+
+            setLandmarks(combinedLandmarks);
+            // Don't call handleViewModeLandmarks for edit mode
+            return;
+          }
+
+          setLandmarks(selectedLandmarksData);
+          handleViewModeLandmarks(selectedLandmarksData);
+          return;
+        }
+
+        if (mode !== "view") {
+          const params = {
+            location: locationaskey,
+            limit: Math.min(100, Math.max(10, Math.floor((zoom || 10) * 5))),
+            order_by: 2,
+            order_in: 1,
+          };
+
+          const res = await dispatch(landmarkListApi(params)).unwrap();
+          const formattedLandmarks = res.data.map((landmark: any) => ({
+            id: landmark.id,
+            name: landmark.name,
+            boundary: extractRawPoints(landmark.boundary),
+          }));
+          setLandmarks(formattedLandmarks);
+        }
+      } catch (err: any) {
+        showErrorToast(err || "Failed to fetch landmarks");
+      }
+    };
+
+    useEffect(() => {
+      if (!mapInstance.current) return;
+
+      const map = mapInstance.current;
+      let debounceTimer: number;
+
+      const handleViewChange = () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = window.setTimeout(() => {
+          const centerRaw = map.getView().getCenter();
+          if (!centerRaw) return;
+
+          const center = toLonLat(centerRaw);
+          const locationaskey = `POINT(${center[0]} ${center[1]})`;
+          const zoom = map.getView().getZoom();
+
+          // Get IDs of selected landmarks if in edit mode
+          const idList =
+            mode === "view" || isEditing
+              ? mode === "view"
+                ? propLandmarks.map((lm) => lm.id)
+                : selectedLandmarks.map((lm) => lm.id)
+              : [];
+
+          fetchLandmark(locationaskey, idList, zoom);
+        }, 300);
+      };
+
+      // Always set up listeners, but handle logic inside
+      map.getView().on("change:resolution", handleViewChange);
+      map.on("moveend", handleViewChange);
+
+      // Initial fetch
+      handleViewChange();
+
+      return () => {
+        clearTimeout(debounceTimer);
+        map.getView().un("change:resolution", handleViewChange);
+        map.un("moveend", handleViewChange);
+      };
+    }, [mode, isEditing, selectedLandmarks, propLandmarks]);
+
+    const handleViewModeLandmarks = (landmarksData: Landmark[]) => {
       selectedLandmarksSource.current.clear();
       routePathSource.current.clear();
       routeCoordsRef.current = [];
 
-      if (!propLandmarks || propLandmarks.length === 0) {
-        return;
-      }
+      if (!propLandmarks || propLandmarks.length === 0) return;
 
       const sortedLandmarks = [...propLandmarks].sort(
         (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
       );
 
       sortedLandmarks.forEach((landmark, index) => {
-        const lm = landmarks.find((l) => l.id === landmark.id);
+        const lm = landmarksData.find((l) => l.id === landmark.id);
         if (lm?.boundary) {
           try {
             const coordinates = lm.boundary
@@ -182,7 +304,6 @@ const MapComponent = React.forwardRef(
             );
 
             selectedLandmarksSource.current.addFeature(feature);
-
             const center = getCenter(polygon.getExtent());
             routeCoordsRef.current.push(center);
           } catch (error) {
@@ -208,7 +329,12 @@ const MapComponent = React.forwardRef(
         routePathSource.current.addFeature(routeFeature);
       }
 
-      if (routeCoordsRef.current.length > 0 && mapInstance.current) {
+      // Only fit view to selected landmarks in view mode, not edit mode
+      if (
+        routeCoordsRef.current.length > 0 &&
+        mapInstance.current &&
+        mode === "view"
+      ) {
         const extent = selectedLandmarksSource.current.getExtent();
         mapInstance.current.getView().fit(extent, {
           padding: [50, 50, 50, 50],
@@ -216,22 +342,38 @@ const MapComponent = React.forwardRef(
         });
       }
     };
+
     useEffect(() => {
-      if (mode === "view") {
-        handleViewModeLandmarks();
+      if (mode === "view" && propLandmarks.length > 0) {
+        const idList = propLandmarks.map((lm) => lm.id);
+        const locationaskey = "POINT(76.9366 8.5241)";
+        fetchLandmark(locationaskey, idList);
       }
-    }, [propLandmarks, mode]);
+    }, [mode, propLandmarks]);
 
     useEffect(() => {
       if (isEditing !== undefined) {
         setIsAddingLandmark(isEditing);
         setShowAllBoundaries(isEditing);
+
+        if (isEditing && mapInstance.current) {
+          const centerRaw = mapInstance.current.getView().getCenter();
+          const zoom = mapInstance.current.getView().getZoom();
+          if (centerRaw) {
+            const center = toLonLat(centerRaw);
+            const locationaskey = `POINT(${center[0]} ${center[1]})`;
+            const idList = selectedLandmarks.map((lm) => lm.id);
+            fetchLandmark(locationaskey, idList, zoom);
+          }
+        }
       }
     }, [isEditing]);
 
     useEffect(() => {
-      if (!mapInstance.current) return;
+      console.log(mode);
 
+      console.log("isAddingLandmark+++++++", isAddingLandmark);
+      if (!mapInstance.current) return;
       const layers = mapInstance.current.getLayers().getArray();
       const allBoundariesLayer =
         layers[1] instanceof VectorLayer ? layers[1] : null;
@@ -292,36 +434,14 @@ const MapComponent = React.forwardRef(
       const matches = polygonString.match(/\(\((.*?)\)\)/);
       return matches ? matches[1] : "";
     };
-    const fetchLandmark = () => {
-      dispatch(landmarkListApi())
-        .unwrap()
-        .then((res: any[]) => {
-          const formattedLandmarks = res.map((landmark: any) => ({
-            id: landmark.id,
-            name: landmark.name,
-            boundary: extractRawPoints(landmark.boundary),
-            importance:
-              landmark.importance === 1
-                ? "Low"
-                : landmark.importance === 2
-                ? "Medium"
-                : "High",
-            status: landmark.status === 1 ? "Validating" : "Verified",
-          }));
-          setLandmarks(formattedLandmarks);
-        })
-        .catch((err: any) => {
-          showErrorToast(err);
-        });
-    };
-
     useEffect(() => {
+      console.log("is editingggg>>>>>>>>>>>>>>>>>>>", isEditing);
       if (!mapInstance.current) return;
 
       allBoundariesSource.current.clear();
       const features: Feature[] = [];
 
-      if (showAllBoundaries && landmarks) {
+      if (landmarks) {
         landmarks.forEach((landmark) => {
           if (landmark.boundary) {
             try {
@@ -333,26 +453,66 @@ const MapComponent = React.forwardRef(
               const polygon = new Polygon([coordinates]);
               const feature = new Feature(polygon);
               feature.set("id", landmark.id);
-              feature.setStyle(
-                new Style({
-                  stroke: new Stroke({
-                    color: "rgba(0, 0, 255, 0.7)",
-                    width: 2,
-                  }),
-                  fill: new Fill({
-                    color: "rgba(0, 0, 255, 0.1)",
-                  }),
-                  text: new Text({
-                    text: landmark.name,
-                    font: "bold 14px Arial",
-                    fill: new Fill({ color: "#000" }),
-                    stroke: new Stroke({ color: "#fff", width: 2 }),
-                    offsetY: -30,
-                    textAlign: "center",
-                  }),
-                })
+
+              // Check if this landmark is selected
+              const isSelected = selectedLandmarks.some(
+                (sl) => sl.id === landmark.id
               );
-              features.push(feature);
+
+              if (
+                isSelected ||
+                (mode === "create" && showAllBoundaries) ||
+                isEditing
+              ) {
+                feature.setStyle(
+                  new Style({
+                    stroke: new Stroke({
+                      color: isSelected
+                        ? "rgba(0, 150, 0, 0.7)"
+                        : "rgba(0, 0, 255, 0.7)",
+                      width: 2,
+                    }),
+                    fill: new Fill({
+                      color: isSelected
+                        ? "rgba(0, 150, 0, 0.1)"
+                        : "rgba(0, 0, 255, 0.1)",
+                    }),
+                  })
+                );
+                features.push(feature);
+
+                // Calculate centroid of the polygon
+                const getCentroid = (coords: Coordinate[]): Coordinate => {
+                  let x = 0;
+                  let y = 0;
+                  const numPoints = coords.length;
+
+                  for (const point of coords) {
+                    x += point[0];
+                    y += point[1];
+                  }
+
+                  return [x / numPoints, y / numPoints];
+                };
+
+                const centroid = getCentroid(coordinates);
+                const labelFeature = new Feature(new Point(centroid));
+                labelFeature.set("id", `label-${landmark.id}`);
+                labelFeature.setStyle(
+                  new Style({
+                    text: new Text({
+                      text: ` ${(landmark?.name || "Landmark").toUpperCase()}`,
+                      font: "bold 12px Arial",
+                      fill: new Fill({ color: "darkblue" }),
+                      stroke: new Stroke({ color: "#FFF", width: 3 }),
+                      offsetY: 0, // No offset needed since we're using centroid
+                      textAlign: "center",
+                      placement: "point", // Ensures text is placed at the point
+                    }),
+                  })
+                );
+                features.push(labelFeature);
+              }
             } catch (error) {
               console.error(`Error processing landmark ${landmark.id}:`, error);
             }
@@ -362,15 +522,26 @@ const MapComponent = React.forwardRef(
 
       if (features.length > 0) {
         allBoundariesSource.current.addFeatures(features);
-        const extent = allBoundariesSource.current.getExtent();
-        if (extent[0] !== Infinity) {
-          mapInstance.current.getView().fit(extent, {
-            padding: [50, 50, 50, 50],
-            duration: 1000,
-          });
+      }
+    }, [showAllBoundaries, landmarks, selectedLandmarks, isEditing, mode]);
+
+    useEffect(() => {
+      console.log("mode", mode);
+      if (isEditing !== undefined) {
+        setIsAddingLandmark(isEditing);
+        setShowAllBoundaries(isEditing);
+
+        // When entering edit mode, fetch all landmarks
+        if (isEditing && mapInstance.current) {
+          const centerRaw = mapInstance.current.getView().getCenter();
+          if (centerRaw) {
+            const center = toLonLat(centerRaw);
+            const locationaskey = `POINT(${center[0]} ${center[1]})`;
+            fetchLandmark(locationaskey, []);
+          }
         }
       }
-    }, [showAllBoundaries, landmarks]);
+    }, [isEditing]);
 
     const handleSearch = async () => {
       if (!searchQuery || !mapInstance.current) return;
@@ -549,16 +720,6 @@ const MapComponent = React.forwardRef(
         );
         routePathSource.current.addFeature(numberFeature);
       });
-
-      if (mapInstance.current) {
-        const extent = selectedLandmarksSource.current.getExtent();
-        if (extent[0] !== Infinity) {
-          mapInstance.current.getView().fit(extent, {
-            padding: [50, 50, 50, 50],
-            duration: 1000,
-          });
-        }
-      }
     }, [propLandmarks, landmarks, selectedLandmarks, mode]);
 
     const toggleAddLandmarkMode = () => {
@@ -587,50 +748,85 @@ const MapComponent = React.forwardRef(
       clearRoutePath,
       toggleAddLandmarkMode,
       isAddingLandmark,
+      disableAddLandmarkMode: () => {
+        setIsAddingLandmark(false);
+        setShowAllBoundaries(false);
+      },
     }));
 
-    const refreshMap = () => {
-      setTimeout(() => {
-        selectedLandmarksSource.current.clear();
-        setShowAllBoundaries(false);
-      }, 300);
+    // const refreshMap = () => {
+    //   setTimeout(() => {
+    //     selectedLandmarksSource.current.clear();
+    //     setShowAllBoundaries(false);
+    //   }, 300);
 
-      if (mapInstance.current) {
-        mapInstance.current.getView().animate({
-          center: fromLonLat([76.9366, 8.5241]),
-          zoom: 10,
-          duration: 1000,
-        });
-      }
-      setTimeout(() => {
-        mapInstance.current?.render();
-      }, 1100);
-    };
+    //   if (mapInstance.current) {
+    //     mapInstance.current.getView().animate({
+    //       center: fromLonLat([76.9366, 8.5241]),
+    //       zoom: 10,
+    //       duration: 1000,
+    //     });
+    //   }
+    //   setTimeout(() => {
+    //     mapInstance.current?.render();
+    //   }, 1100);
+    // };
 
     //*************************************** time selection and logics for adding landmarks **********************************
+
+    const convertUTCToIST12Hour = (utcTime: string) => {
+      // utcTime is like "07:00:00" or "07:00:00Z"
+      const timeStr = utcTime.replace("Z", "");
+      const [h, m] = timeStr.split(":").map(Number);
+
+      // Create a date in UTC
+      const utcDate = new Date(Date.UTC(1970, 0, 1, h, m, 0));
+      // Add 5 hours 30 minutes to get IST
+      utcDate.setUTCHours(
+        utcDate.getUTCHours() + 5,
+        utcDate.getUTCMinutes() + 30
+      );
+
+      let istHour = utcDate.getUTCHours();
+      const istMinute = utcDate.getUTCMinutes();
+      const period = istHour >= 12 ? "PM" : "AM";
+      const displayHour = istHour % 12 || 12;
+
+      return {
+        hour: displayHour,
+        minute: istMinute,
+        period,
+      };
+    };
+
     const convertLocalToUTC = (
       hour: number,
       minute: number,
       period: string,
       dayOffset: number = 0
     ) => {
-      let utcHour = hour;
+      let istHour = hour;
       if (period === "PM" && hour !== 12) {
-        utcHour += 12;
+        istHour += 12;
       } else if (period === "AM" && hour === 12) {
-        utcHour = 0;
+        istHour = 0;
       }
 
-      // ✅ Apply dayOffset directly to the day argument in Date.UTC()
-      const utcTime = new Date(
-        Date.UTC(1970, 0, 1 + dayOffset, utcHour, minute, 0)
+      // Create IST date
+      const istDate = new Date(
+        Date.UTC(1970, 0, 1 + dayOffset, istHour, minute, 0)
+      );
+      // Subtract 5 hours 30 minutes to get UTC
+      istDate.setUTCHours(
+        istDate.getUTCHours() - 5,
+        istDate.getUTCMinutes() - 30
       );
 
       return {
-        displayTime: utcTime.toISOString().slice(11, 19),
-        fullTime: utcTime.toISOString(),
+        displayTime: istDate.toISOString().slice(11, 19),
+        fullTime: istDate.toISOString(),
         dayOffset,
-        timestamp: utcTime.getTime(), // helpful for delta calculation
+        timestamp: istDate.getTime(),
       };
     };
 
@@ -640,18 +836,14 @@ const MapComponent = React.forwardRef(
       setIsFirstLandmark(firstLandmark);
 
       if (firstLandmark && startingTime) {
-        const timeStr = startingTime.replace("Z", "");
-        const [hours, minutes] = timeStr.split(":").map(Number);
+        // Use helper to convert UTC to IST for display
+        const { hour, minute, period } = convertUTCToIST12Hour(startingTime);
 
-        // Convert to 12-hour format
-        const displayHours = hours % 12 || 12;
-        const period = hours >= 12 ? "PM" : "AM";
-
-        setArrivalHour(displayHours);
-        setArrivalMinute(minutes);
+        setArrivalHour(hour);
+        setArrivalMinute(minute);
         setArrivalAmPm(period);
-        setDepartureHour(displayHours);
-        setDepartureMinute(minutes);
+        setDepartureHour(hour);
+        setDepartureMinute(minute);
         setDepartureAmPm(period);
         setArrivalDayOffset(0);
         setDepartureDayOffset(0);
@@ -669,7 +861,7 @@ const MapComponent = React.forwardRef(
         departureMinute !== undefined
       );
     };
-    
+
     const getTimestamp = (
       hour: number,
       minute: number,
@@ -705,29 +897,37 @@ const MapComponent = React.forwardRef(
         return;
       }
       if (departureTS < arrivalTS) {
-        setShowTimeError("Departure time must be after or equal to arrival time.");
+        setShowTimeError(
+          "Departure time must be after or equal to arrival time."
+        );
         return;
-      } 
-        setShowTimeError("");
+      }
+      setShowTimeError("");
+
+      if (
+        selectedLandmark?.distance_from_start === undefined ||
+        selectedLandmark?.distance_from_start === null ||
+        selectedLandmark?.distance_from_start === "" ||
+        isNaN(selectedLandmark?.distance_from_start)
+      ) {
+        setDistanceError("Distance from Start is required");
+        return;
+      }
+      setDistanceError("");
 
       // For first landmark, force times to match starting time
       if (isFirstLandmark && startingTime) {
-        const timeStr = startingTime.replace("Z", "");
-        const [hours, minutes] = timeStr.split(":").map(Number);
+        // Use the startingTime directly as UTC
+        const arrivalUTC = {
+          displayTime: startingTime.replace("Z", ""),
+          fullTime: `1970-01-01T${startingTime.replace("Z", "")}Z`,
+          dayOffset: 0,
+          timestamp: new Date(
+            `1970-01-01T${startingTime.replace("Z", "")}Z`
+          ).getTime(),
+        };
 
-        const arrivalUTC = convertLocalToUTC(
-          hours % 12 || 12,
-          minutes,
-          hours >= 12 ? "PM" : "AM",
-          0
-        );
-
-        const departureUTC = convertLocalToUTC(
-          hours % 12 || 12,
-          minutes,
-          hours >= 12 ? "PM" : "AM",
-          0
-        );
+        const departureUTC = { ...arrivalUTC };
 
         const landmarkWithDistance = {
           ...selectedLandmark,
@@ -735,7 +935,7 @@ const MapComponent = React.forwardRef(
           departureTime: departureUTC,
           arrivalDayOffset: 0,
           departureDayOffset: 0,
-          distance_from_start: 0, // Starting point has 0 distance
+          distance_from_start: 0,
         };
 
         onAddLandmark(landmarkWithDistance);
@@ -771,13 +971,12 @@ const MapComponent = React.forwardRef(
     };
 
     const handleClose = () => {
-  setShowTimeError("");
-  setIsModalOpen(false);
-};
-
+      setShowTimeError("");
+      setIsModalOpen(false);
+    };
 
     return (
-      <Box height="100%">
+      <Box height="100%" display="flex" flexDirection="column">
         <Box
           sx={{
             display: "flex",
@@ -820,30 +1019,55 @@ const MapComponent = React.forwardRef(
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
             </Box>
-
-            <Tooltip
-              title={showAllBoundaries ? "Hide landmarks" : "Show landmarks"}
-            >
-              <IconButton
-                onClick={() => setShowAllBoundaries(!showAllBoundaries)}
+            {/* {isAddingLandmark && (
+              <Tooltip
+                title={showAllBoundaries ? "Hide landmarks" : "Show landmarks"}
               >
-                <LocationOnIcon
-                  sx={{ color: showAllBoundaries ? "blue" : undefined }}
-                />
-              </IconButton>
-            </Tooltip>
-            <Box>
-              <Tooltip title="Refresh Map" placement="bottom">
-                <IconButton color="warning" onClick={refreshMap}>
-                  <Refresh />
+                <IconButton
+                  onClick={() => {
+                    const newShowState = !showAllBoundaries;
+                    setShowAllBoundaries(newShowState);
+
+                    if (mapInstance.current && isEditing) {
+                      const centerRaw = mapInstance.current
+                        .getView()
+                        .getCenter();
+                      if (centerRaw) {
+                        const center = toLonLat(centerRaw);
+                        const locationaskey = `POINT(${center[0]} ${center[1]})`;
+                        fetchLandmark(
+                          locationaskey,
+                          newShowState
+                            ? []
+                            : selectedLandmarks.map((lm) => lm.id)
+                        );
+                      }
+                    }
+                  }}
+                >
+                  <LocationOnIcon
+                    sx={{ color: showAllBoundaries ? "blue" : undefined }}
+                  />
                 </IconButton>
               </Tooltip>
-            </Box>
+            )} */}
+
+            {/* <Tooltip title="Refresh Map" placement="bottom">
+              <IconButton color="warning" onClick={refreshMap}>
+                <Refresh />
+              </IconButton>
+            </Tooltip> */}
           </Box>
         </Box>
 
-        <Box ref={mapRef} width="100%" height="calc(100% - 128px)" flex={1} />
-        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+        <Box
+          ref={mapRef}
+          width="100%"
+          flex={1}
+          sx={{ height: "calc(100% - 128px)" }}
+        />
+
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center", p: 1 }}>
           <Typography variant="body2">
             <strong>[{mousePosition || "coordinates"}]</strong>
           </Typography>
@@ -861,10 +1085,10 @@ const MapComponent = React.forwardRef(
                   : "For ending landmarks, arrival and departure time must be the same."}
               </Alert>
               {showTimeError && (
-  <Box mb={2}>
-    <Alert severity="error">{showTimeError}</Alert>
-  </Box>
-)}
+                <Box mb={2}>
+                  <Alert severity="error">{showTimeError}</Alert>
+                </Box>
+              )}
             </Box>
 
             <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
@@ -1009,21 +1233,24 @@ const MapComponent = React.forwardRef(
               <TextField
                 label="Distance from Start (meters)"
                 type="number"
-                required
                 fullWidth
                 margin="normal"
-                value={selectedLandmark?.distance_from_start || ""}
-                onChange={(e) =>
+                value={selectedLandmark?.distance_from_start ?? ""}
+                onChange={(e) => {
                   setSelectedLandmark({
                     ...selectedLandmark!,
-                    distance_from_start: parseFloat(e.target.value),
-                  })
-                }
+                    distance_from_start:
+                      e.target.value === "" ? "" : parseFloat(e.target.value),
+                  });
+                  setDistanceError("");
+                }}
+                error={!!distanceError}
+                helperText={distanceError}
               />
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleClose} >Cancel</Button>
+            <Button onClick={handleClose}>Cancel</Button>
             <Button
               onClick={handleAddLandmark}
               color="primary"

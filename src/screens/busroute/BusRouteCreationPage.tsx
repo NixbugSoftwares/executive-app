@@ -32,14 +32,16 @@ import {
 import { SelectedLandmark } from "../../types/type";
 
 interface BusRouteCreationProps {
-  companyId: number | null;
   landmarks: SelectedLandmark[];
+  companyId: number;
   onLandmarkRemove: (id: number) => void;
   onSuccess: () => void;
   onCancel: () => void;
   onClearRoute?: () => void;
   mapRef: React.RefObject<any>;
   onStartingTimeChange: (time: string) => void;
+  refreshList: (value: any) => void;
+  onClose?: () => void;
 }
 
 interface BusRouteFormInputs {
@@ -48,26 +50,27 @@ interface BusRouteFormInputs {
 }
 
 const BusRouteCreation = ({
-  companyId,
   landmarks,
+  companyId,
   onLandmarkRemove,
   onSuccess,
   onCancel,
   onClearRoute,
   mapRef,
   onStartingTimeChange,
+  refreshList,
+  onClose,
 }: BusRouteCreationProps) => {
   const dispatch = useAppDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [localHour, setLocalHour] = useState<number>(12);
-  const [localMinute, setLocalMinute] = useState<number>(30);
+  const [localHour, setLocalHour] = useState<number>(6);
+  const [localMinute, setLocalMinute] = useState<number>(0);
   const [amPm, setAmPm] = useState<string>("AM");
   const [isAddingLandmark, setIsAddingLandmark] = useState(false);
   const [startingDayOffset] = useState(0);
   const {
     register,
     handleSubmit,
-    reset,
     setValue,
     formState: { errors },
   } = useForm<BusRouteFormInputs>();
@@ -79,22 +82,28 @@ const BusRouteCreation = ({
     period: string,
     dayOffset: number = 0
   ) => {
-    let utcHour = hour;
+    let istHour = hour;
     if (period === "PM" && hour !== 12) {
-      utcHour += 12;
+      istHour += 12;
     } else if (period === "AM" && hour === 12) {
-      utcHour = 0;
+      istHour = 0;
     }
 
-    const utcTime = new Date(
-      Date.UTC(1970, 0, 1 + dayOffset, utcHour, minute, 0)
+    // Create IST date
+    const istDate = new Date(
+      Date.UTC(1970, 0, 1 + dayOffset, istHour, minute, 0)
+    );
+    // Subtract 5 hours 30 minutes to get UTC
+    istDate.setUTCHours(
+      istDate.getUTCHours() - 5,
+      istDate.getUTCMinutes() - 30
     );
 
     return {
-      displayTime: utcTime.toISOString().slice(11, 19),
-      fullTime: utcTime.toISOString(),
+      displayTime: istDate.toISOString().slice(11, 19),
+      fullTime: istDate.toISOString(),
       dayOffset,
-      timestamp: utcTime.getTime(),
+      timestamp: istDate.getTime(),
     };
   };
 
@@ -103,19 +112,19 @@ const BusRouteCreation = ({
     landmarks: SelectedLandmark[],
     timeType: "arrival" | "departure"
   ) => {
-    const startTimeStr = startingTime.endsWith("Z")
-      ? startingTime.slice(0, -1)
-      : startingTime;
-    const [startH, startM, startS] = startTimeStr.split(":").map(Number);
-    const startDate = new Date(Date.UTC(1970, 0, 1, startH, startM, startS));
+    // Parse starting time as UTC (with day offset 0)
+    const startDate = new Date(`1970-01-01T${startingTime.replace("Z", "")}Z`);
 
     return landmarks.map((landmark) => {
       const timeObj =
         timeType === "arrival" ? landmark.arrivalTime : landmark.departureTime;
+      // Parse landmark time as UTC (with its day offset)
       const landmarkDate = new Date(timeObj.fullTime);
-      const deltaSeconds =
-        (landmarkDate.getTime() - startDate.getTime()) / 1000;
-      return Math.max(0, Math.floor(deltaSeconds));
+      // Delta in seconds
+      const deltaSeconds = Math.floor(
+        (landmarkDate.getTime() - startDate.getTime()) / 1000
+      );
+      return Math.max(0, deltaSeconds);
     });
   };
 
@@ -128,7 +137,7 @@ const BusRouteCreation = ({
     );
     const fullTime = displayTime + "Z";
     setValue("starting_time", fullTime);
-    onStartingTimeChange(fullTime); // Notify parent component
+    onStartingTimeChange(fullTime);
   }, [
     localHour,
     localMinute,
@@ -150,18 +159,15 @@ const BusRouteCreation = ({
   const handleRouteCreation: SubmitHandler<BusRouteFormInputs> = async (
     data
   ) => {
-    if (!companyId) {
-      showErrorToast("Company ID is missing");
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
       const routeFormData = new FormData();
-      routeFormData.append("company_id", companyId.toString());
       routeFormData.append("name", data.name);
-      routeFormData.append("starting_time", data.starting_time);
+      routeFormData.append("start_time", data.starting_time);
+      routeFormData.append("company_id", companyId.toString());
+      console.log("starting_time", data.starting_time);
+      console.log("name", data.name);
 
       const routeResponse = await dispatch(
         routeCreationApi(routeFormData)
@@ -171,8 +177,6 @@ const BusRouteCreation = ({
       const sortedLandmarks = [...landmarks].sort(
         (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
       );
-
-      // Calculate deltas using the new function
       const arrivalDeltas = calculateTimeDeltas(
         data.starting_time,
         sortedLandmarks,
@@ -192,7 +196,6 @@ const BusRouteCreation = ({
         const landmarkFormData = new FormData();
         landmarkFormData.append("route_id", routeId.toString());
         landmarkFormData.append("landmark_id", landmark.id.toString());
-        landmarkFormData.append("sequence_id", (index + 1).toString());
         landmarkFormData.append(
           "distance_from_start",
           landmark.distance_from_start?.toString() || "0"
@@ -209,32 +212,53 @@ const BusRouteCreation = ({
 
         return dispatch(routeLandmarkCreationApi(landmarkFormData)).unwrap();
       });
+      console.log("Landmark promises:", landmarkPromises);
 
       await Promise.all(landmarkPromises);
       showSuccessToast("Route and landmarks created successfully");
-      reset();
+      refreshList("refresh");
       onSuccess();
       if (onClearRoute) onClearRoute();
-    } catch (error) {
+      if (
+        mapRef.current?.toggleAddLandmarkMode &&
+        mapRef.current.isAddingLandmark
+      ) {
+        mapRef.current.toggleAddLandmarkMode();
+      }
+      if (onClose) onClose();
+    } catch (error: any) {
       console.error("Error in route creation process:", error);
-      showErrorToast(
-        error instanceof Error
-          ? error.message
-          : "Failed to create route and landmarks"
-      );
+      showErrorToast(error || "Failed to create route and landmarks");
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const formatTimeForDisplay = (isoString: string) => {
+  function formatTimeForDisplayIST(isoString: string, showDayLabel = true) {
     const date = new Date(isoString);
-    const hours = date.getUTCHours();
+    date.setTime(date.getTime() + (5 * 60 + 30) * 60 * 1000);
+    let hours = date.getUTCHours();
     const minutes = date.getUTCMinutes();
     const period = hours >= 12 ? "PM" : "AM";
     const displayHours = hours % 12 || 12;
-    return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
-  };
+
+    const dayOffset = Math.floor(
+      (date.getTime() - Date.UTC(1970, 0, 1)) / (86400 * 1000)
+    );
+    const userDay = dayOffset + 1;
+
+    let suffix = "th";
+    if (userDay % 10 === 1 && userDay % 100 !== 11) suffix = "st";
+    else if (userDay % 10 === 2 && userDay % 100 !== 12) suffix = "nd";
+    else if (userDay % 10 === 3 && userDay % 100 !== 13) suffix = "rd";
+
+    const timeStr = `${displayHours}:${minutes
+      .toString()
+      .padStart(2, "0")} ${period}`;
+    if (showDayLabel) {
+      return `${timeStr} (${userDay}${suffix} day)`;
+    }
+    return timeStr;
+  }
 
   return (
     <Box
@@ -272,7 +296,6 @@ const BusRouteCreation = ({
 
         <TextField
           margin="normal"
-          required
           fullWidth
           label="Route Name"
           {...register("name", { required: "Route name is required" })}
@@ -374,13 +397,27 @@ const BusRouteCreation = ({
               backgroundColor: "action.hover",
               borderRadius: 1,
               my: 2,
+              border: "1px dashed",
+              borderColor: "divider",
             }}
           >
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-              No landmarks selected yet
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ mb: 1, fontWeight: 500 }}
+            >
+              No landmarks selected
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
               Please select landmarks from the map to create your route
+            </Typography>
+            <Typography
+              variant="caption"
+              color="info"
+              fontSize="0.75rem"
+              fontWeight="bold"
+            >
+              Only verified landmarks will be displayed
             </Typography>
           </Box>
         ) : (
@@ -471,8 +508,9 @@ const BusRouteCreation = ({
                             />
                             <span>
                               Arrive:{" "}
-                              {formatTimeForDisplay(
-                                landmark.arrivalTime.fullTime
+                              {formatTimeForDisplayIST(
+                                landmark.arrivalTime.fullTime,
+                                index !== 0 // false for first, true for others
                               )}
                             </span>
                           </Box>
@@ -486,8 +524,9 @@ const BusRouteCreation = ({
                             />
                             <span>
                               Depart:{" "}
-                              {formatTimeForDisplay(
-                                landmark.departureTime.fullTime
+                              {formatTimeForDisplayIST(
+                                landmark.departureTime.fullTime,
+                                index !== 0 // false for first, true for others
                               )}
                             </span>
                           </Box>

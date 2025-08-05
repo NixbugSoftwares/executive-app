@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Table,
   TableBody,
@@ -7,7 +7,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   TextField,
   Box,
   Button,
@@ -19,45 +18,37 @@ import {
   Typography,
   DialogTitle,
   DialogActions,
+  CircularProgress,
 } from "@mui/material";
 import ErrorIcon from "@mui/icons-material/Error";
 import { SelectChangeEvent } from "@mui/material";
 import { useDispatch } from "react-redux";
-import {
-  operatorListApi,
-  companyListApi,
-  operatorRoleListApi,
-} from "../../slices/appSlice";
+import { operatorListApi, operatorRoleListApi } from "../../slices/appSlice";
 import type { AppDispatch } from "../../store/Store";
-import localStorageHelper from "../../utils/localStorageHelper";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
 import OperatorDetailsCard from "./OperatorDetails";
 import OperatorCreationForm from "./OperatorCreationForm";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
+import PaginationControls from "../../common/paginationControl";
+import { showErrorToast } from "../../common/toastMessageHelper";
+import { Operator } from "../../types/type";
 
-interface Operator {
-  id: number;
-  companyId: number;
-  companyName: string;
-  username: string;
-  fullName: string;
-  password: string;
-  gender: string;
-  email: string;
-  phoneNumber: string;
-  status: string;
-}
-
-interface Company {
-  id: number;
-  name: string;
-}
+const getGenderBackendValue = (displayValue: string): string => {
+  const genderMap: Record<string, string> = {
+    Other: "1",
+    Female: "2",
+    Male: "3",
+    Transgender: "4",
+  };
+  return genderMap[displayValue] || "";
+};
 
 const OperatorListingTable = () => {
   const { companyId } = useParams();
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
   const [operatorList, setOperatorList] = useState<Operator[]>([]);
-  const [companyList, setCompanyList] = useState<Company[]>([]);
   const [selectedOperator, setSelectedOperator] = useState<Operator | null>(
     null
   );
@@ -67,6 +58,8 @@ const OperatorListingTable = () => {
   const [openNoRolesModal, setOpenNoRolesModal] = useState(false);
   const [_rolesExist, setRolesExist] = useState(true);
   const navigate = useNavigate();
+
+  console.log("filterCompanyId", filterCompanyId);
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -82,74 +75,74 @@ const OperatorListingTable = () => {
 
   const [search, setSearch] = useState({
     id: "",
-    company_name: "",
-    fullName: "",
+    full_name: "",
     gender: "",
-    email: "",
-    phoneNumber: "",
+    email_id: "",
+    phone_number: "",
   });
-
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const debounceRef = useRef<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
-  const rowsPerPage = 8;
+  const rowsPerPage = 10;
+  const [hasNextPage, setHasNextPage] = useState(false);
   const [openCreateModal, setOpenCreateModal] = useState(false);
 
-  const roleDetails = localStorageHelper.getItem("@roleDetails");
-  const canManageCompany = roleDetails?.manage_company || false;
-
-  const fetchAccounts = () => {
-    dispatch(operatorListApi(filterCompanyId))
+  const canCreateOperator = useSelector((state: RootState) =>
+    state.app.permissions.includes("create_operator")
+  );
+  const fetchAccounts = useCallback((pageNumber: number, searchParams = {}) => {
+    const offset = pageNumber * rowsPerPage;
+    dispatch(
+      operatorListApi({
+        limit: rowsPerPage,
+        offset,
+        company_id: filterCompanyId !== null ? filterCompanyId : undefined,
+        ...searchParams,
+      })
+    )
       .unwrap()
-      .then((res: any[]) => {
-        const formattedAccounts = res.map((operator: any) => ({
+      .then((res) => {
+        const items = res.data || [];
+        const formattedAccounts = items.map((operator: any) => ({
           id: operator.id,
-          companyId: operator.company_id,
-          companyName: operator.company_name,
+          company_id: operator.company_id,
           fullName: operator.full_name,
           username: operator.username,
           password: "",
           gender:
             operator.gender === 1
-              ? "Female"
+              ? "Other"
               : operator.gender === 2
-              ? "Male"
+              ? "Female"
               : operator.gender === 3
-              ? "Transgender"
-              : "Other",
-          email: operator.email_id,
+              ? "Male"
+              : "Transgender",
+          email_id: operator.email_id,
           phoneNumber: operator.phone_number || "",
           status: operator.status === 1 ? "Active" : "Suspended",
+          created_on: operator.created_on,
+          updated_on: operator.updated_on,
         }));
         setOperatorList(formattedAccounts);
+        setHasNextPage(items.length === rowsPerPage);
       })
-      .catch((err: any) => {
-        console.error("Error fetching accounts", err);
-      });
-  };
+      .catch((error: any) => {
+        console.error("Error fetching accounts", error);
+        showErrorToast(error || "Failed to fetch accounts");
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
 
-  const fetchCompany = () => {
-    dispatch(companyListApi())
-      .unwrap()
-      .then((res: any[]) => {
-        setCompanyList(res);
-        if (location.state?.companyId) {
-          const company = res.find((c) => c.id === location.state.companyId);
-          if (company) {
-            setSearch((prev) => ({ ...prev, company_name: company.name }));
-          }
-        }
-      })
-      .catch((err: any) => {
-        console.error("Error fetching companies", err);
-      });
-  };
   const checkRolesExist = () => {
     if (!filterCompanyId) return false;
 
-    dispatch(operatorRoleListApi(filterCompanyId))
+    dispatch(operatorRoleListApi({ company_id: filterCompanyId }))
       .unwrap()
-      .then((res: any[]) => {
-        setRolesExist(res.length > 0);
-        if (res.length === 0) {
+      .then((res) => {
+        const items = res.data || [];
+        setRolesExist(items.length > 0);
+        if (items.length === 0) {
           setOpenNoRolesModal(true);
         } else {
           setOpenCreateModal(true);
@@ -161,75 +154,73 @@ const OperatorListingTable = () => {
       });
   };
 
-  useEffect(() => {
-    fetchAccounts();
-    fetchCompany();
-  }, [filterCompanyId]);
+  const handleSearchChange = useCallback(
+    (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+      column: keyof typeof search
+    ) => {
+      const value = e.target.value;
+      setSearch((prev) => ({ ...prev, [column]: value }));
 
-  const getCompanyName = (companyId: number) => {
-    const company = companyList.find((company) => company.id === companyId);
-    return company ? company.name : "Unknown Company";
-  };
-
-  const handleSearchChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    column: keyof typeof search
-  ) => {
-    setSearch((prev) => ({ ...prev, [column]: e.target.value }));
-  };
-
-  const handleSelectChange = (e: SelectChangeEvent<string>) => {
-    setSearch({ ...search, gender: e.target.value });
-  };
-
-  const filteredData = operatorList.filter(
-    (row: Operator) =>
-      (row.id?.toString()?.toLowerCase() || "").includes(
-        search.id.toLowerCase()
-      ) &&
-      (getCompanyName(row.companyId)?.toLowerCase() || "").includes(
-        search.company_name.toLowerCase()
-      ) &&
-      (row.fullName?.toLowerCase() || "").includes(
-        search.fullName.toLowerCase()
-      ) &&
-      (!search.gender ||
-        (row.gender?.toLowerCase() || "") === search.gender.toLowerCase()) &&
-      (row.email?.toLowerCase() || "").includes(search.email.toLowerCase()) &&
-      (row.phoneNumber?.toLowerCase() || "").includes(
-        search.phoneNumber.toLowerCase()
-      ) &&
-      (!filterCompanyId || row.companyId === filterCompanyId)
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = window.setTimeout(() => {
+        setDebouncedSearch((prev) => ({ ...prev, [column]: value }));
+        setPage(0);
+      }, 700);
+    },
+    []
   );
 
-  const handleChangePage = (
-    _event: React.MouseEvent<HTMLButtonElement> | null,
-    newPage: number
-  ) => {
-    setPage(newPage);
-  };
+  const handleSelectChange = useCallback((e: SelectChangeEvent<string>) => {
+    const value = e.target.value;
+    setSearch((prev) => ({ ...prev, gender: value }));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      setDebouncedSearch((prev) => ({ ...prev, gender: value }));
+      setPage(0);
+    }, 700);
+  }, []);
 
-  const handleCloseModal = () => {
-    setOpenCreateModal(false);
-  };
+  const handleChangePage = useCallback(
+    (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+      setPage(newPage);
+    },
+    []
+  );
+
+  useEffect(() => {
+    const genderBackendValue = getGenderBackendValue(debouncedSearch.gender);
+    const searchParams = {
+      ...(debouncedSearch.id && { id: debouncedSearch.id }),
+      ...(debouncedSearch.full_name && {
+        full_name: debouncedSearch.full_name,
+      }),
+      ...(debouncedSearch.gender && { gender: genderBackendValue }),
+      ...(debouncedSearch.email_id && { email_id: debouncedSearch.email_id }),
+      ...(debouncedSearch.phone_number && {
+        phone_number: debouncedSearch.phone_number,
+      }),
+    };
+
+    fetchAccounts(page, searchParams);
+  }, [page, debouncedSearch, fetchAccounts]);
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      fetchAccounts();
+      fetchAccounts(page, debouncedSearch);
     }
   };
-  
+
   const handleCloseDetailCard = () => {
     setSelectedOperator(null);
   };
 
   const handleRowClick = (account: Operator) => {
-    const companyName = getCompanyName(account.companyId);
-    setSelectedOperator({ ...account, companyName: companyName });
+    setSelectedOperator(account);
   };
   const handleAddOperatorClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!canManageCompany) return;
+    if (!canCreateOperator) return;
 
     if (filterCompanyId) {
       checkRolesExist();
@@ -297,29 +288,19 @@ const OperatorListingTable = () => {
             gap: 2,
             mb: 2,
             mt: 1,
-            justifyContent: "space-between",
+            justifyContent: "right",
           }}
         >
-          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-            {filterCompanyId && (
-              <Typography variant="body2" color="textSecondary">
-                Company Name :{" "}
-                {companyList.find((c) => c.id === filterCompanyId)?.name ||
-                  filterCompanyId}
-              </Typography>
-            )}
-          </Box>
-
           <Tooltip
             title={
-              !canManageCompany
+              !canCreateOperator
                 ? "You don't have permission, contact the admin"
                 : "Click to open the operator creation form"
             }
             placement="top-end"
           >
             <span
-              style={{ cursor: !canManageCompany ? "not-allowed" : "default" }}
+              style={{ cursor: !canCreateOperator ? "not-allowed" : "default" }}
             >
               <Button
                 sx={{
@@ -327,7 +308,7 @@ const OperatorListingTable = () => {
                   mr: 2,
                   mb: 2,
                   display: "block",
-                  backgroundColor: !canManageCompany
+                  backgroundColor: !canCreateOperator
                     ? "#6c87b7 !important"
                     : "#00008B",
                   color: "white",
@@ -338,7 +319,7 @@ const OperatorListingTable = () => {
                 }}
                 variant="contained"
                 onClick={handleAddOperatorClick}
-                disabled={!canManageCompany}
+                disabled={!canCreateOperator}
               >
                 Add Operator
               </Button>
@@ -346,10 +327,37 @@ const OperatorListingTable = () => {
           </Tooltip>
         </Box>
 
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 600 }}>
+        <TableContainer
+          sx={{
+            flex: 1,
+            maxHeight: "calc(100vh - 100px)",
+            overflowY: "auto",
+            borderRadius: 2,
+            border: "1px solid #e0e0e0",
+            position: "relative",
+          }}
+        >
+          {isLoading && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                zIndex: 1,
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          )}
+          <Table stickyHeader>
             <TableHead>
-              <TableRow>
+              <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
                 {["ID", "Full Name", "Phone", "Email", "Gender"].map(
                   (header) => (
                     <TableCell key={header}>
@@ -364,6 +372,7 @@ const OperatorListingTable = () => {
                             displayEmpty
                             size="small"
                             sx={{
+                              width: "150px",
                               textAlign: "center",
                               "& .MuiInputBase-root": {
                                 height: 30,
@@ -383,6 +392,11 @@ const OperatorListingTable = () => {
                           variant="outlined"
                           size="small"
                           placeholder="Search"
+                          type={
+                            header === "ID" || header === "Phone"
+                              ? "number"
+                              : "text"
+                          }
                           value={
                             search[
                               header
@@ -410,7 +424,6 @@ const OperatorListingTable = () => {
                               fontSize: selectedOperator ? "0.8rem" : "1rem",
                             },
                           }}
-                          fullWidth
                         />
                       )}
                     </TableCell>
@@ -420,66 +433,82 @@ const OperatorListingTable = () => {
             </TableHead>
 
             <TableBody>
-              {filteredData.length > 0 ? (
-                filteredData
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row) => {
-                    const isSelected = selectedOperator?.id === row.id;
-                    return (
-                      <TableRow
-                        key={row.id}
-                        hover
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRowClick(row);
-                        }}
-                        sx={{
-                          cursor: "pointer",
-                          backgroundColor: isSelected ? "#E3F2FD" : "inherit",
-                          "&:hover": { backgroundColor: "#E3F2FD" },
-                        }}
-                      >
-                        <TableCell>{row.id}</TableCell>
-                        <TableCell>
-                          {row.fullName ? (
-                            row.fullName
-                          ) : (
-                            <Tooltip
-                              title=" Full Name not added yet"
-                              placement="bottom"
-                            >
-                              <ErrorIcon sx={{ color: "#737d72 " }} />
-                            </Tooltip>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {row.phoneNumber ? (
-                            row.phoneNumber.replace("tel:", "")
-                          ) : (
-                            <Tooltip
-                              title=" Phone Number not added yet"
-                              placement="bottom"
-                            >
-                              <ErrorIcon sx={{ color: "#737d72" }} />
-                            </Tooltip>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {row.email ? (
-                            row.email
-                          ) : (
-                            <Tooltip
-                              title=" Email not added yet"
-                              placement="bottom"
-                            >
-                              <ErrorIcon sx={{ color: "#737d72 " }} />
-                            </Tooltip>
-                          )}
-                        </TableCell>
-                        <TableCell>{row.gender}</TableCell>
-                      </TableRow>
-                    );
-                  })
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center"></TableCell>
+                </TableRow>
+              ) : operatorList.length > 0 ? (
+                operatorList.map((row) => {
+                  const isSelected = selectedOperator?.id === row.id;
+                  return (
+                    <TableRow
+                      key={row.id}
+                      hover
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRowClick(row);
+                      }}
+                      sx={{
+                        cursor: "pointer",
+                        backgroundColor: isSelected ? "#E3F2FD" : "inherit",
+                        "&:hover": { backgroundColor: "#E3F2FD" },
+                      }}
+                    >
+                      <TableCell align="center">{row.id}</TableCell>
+                      <TableCell>
+                        {row.fullName ? (
+                          <Tooltip title={row.fullName} placement="bottom">
+                            <Typography noWrap>
+                              {row.fullName.length > 15
+                                ? `${row.fullName.substring(0, 15)}...`
+                                : row.fullName}
+                            </Typography>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip
+                            title="Full Name not added yet"
+                            placement="bottom"
+                          >
+                            <ErrorIcon sx={{ color: "#737d72" }} />
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {row.phoneNumber ? (
+                          <Typography noWrap>
+                            {row.phoneNumber.replace(/\D/g, "").slice(-10)}
+                          </Typography>
+                        ) : (
+                          <Tooltip
+                            title="Phone Number not added yet"
+                            placement="bottom"
+                          >
+                            <ErrorIcon sx={{ color: "#737d72" }} />
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {row.email_id ? (
+                          <Tooltip title={row.email_id} placement="bottom">
+                            <Typography noWrap>
+                              {row.email_id.length > 20
+                                ? `${row.email_id.substring(0, 20)}...`
+                                : row.email_id}
+                            </Typography>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip
+                            title="Email not added yet"
+                            placement="bottom"
+                          >
+                            <ErrorIcon sx={{ color: "#737d72" }} />
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                      <TableCell>{row.gender}</TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} align="center">
@@ -491,71 +520,12 @@ const OperatorListingTable = () => {
           </Table>
         </TableContainer>
 
-        {/* Pagination */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "right",
-            alignItems: "right",
-            gap: 1,
-            mt: 1,
-            mr: 20,
-          }}
-        >
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleChangePage(null, page - 1);
-            }}
-            disabled={page === 0}
-            sx={{ padding: "5px 10px", minWidth: 40 }}
-          >
-            &lt;
-          </Button>
-          {Array.from(
-            { length: Math.ceil(filteredData.length / rowsPerPage) },
-            (_, index) => index
-          )
-            .slice(
-              Math.max(0, page - 1),
-              Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
-            )
-            .map((pageNumber) => (
-              <Button
-                key={pageNumber}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleChangePage(null, pageNumber);
-                }}
-                sx={{
-                  padding: "5px 10px",
-                  minWidth: 40,
-                  bgcolor:
-                    page === pageNumber
-                      ? "rgba(21, 101, 192, 0.2)"
-                      : "transparent",
-                  fontWeight: page === pageNumber ? "bold" : "normal",
-                  borderRadius: "5px",
-                  transition: "all 0.3s",
-                  "&:hover": {
-                    bgcolor: "rgba(21, 101, 192, 0.3)",
-                  },
-                }}
-              >
-                {pageNumber + 1}
-              </Button>
-            ))}
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleChangePage(null, page + 1);
-            }}
-            disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
-            sx={{ padding: "5px 10px", minWidth: 40 }}
-          >
-            &gt;
-          </Button>
-        </Box>
+        <PaginationControls
+          page={page}
+          onPageChange={(newPage) => handleChangePage(null, newPage)}
+          isLoading={isLoading}
+          hasNextPage={hasNextPage}
+        />
       </Box>
 
       {/* Operator Details Card */}
@@ -575,8 +545,7 @@ const OperatorListingTable = () => {
             onDelete={() => {}}
             onBack={() => setSelectedOperator(null)}
             refreshList={refreshList}
-            canManageCompany={canManageCompany}
-            oncloseDetailCard={handleCloseDetailCard}
+            onCloseDetailCard={handleCloseDetailCard}
           />
         </Box>
       )}
@@ -584,14 +553,14 @@ const OperatorListingTable = () => {
       {/* Create Operator Dialog */}
       <Dialog
         open={openCreateModal}
-        onClose={handleCloseModal}
+        onClose={() => setOpenCreateModal(false)}
         maxWidth="sm"
         fullWidth
       >
         <DialogContent>
           <OperatorCreationForm
             refreshList={refreshList}
-            onClose={handleCloseModal}
+            onClose={() => setOpenCreateModal(false)}
             defaultCompanyId={filterCompanyId ?? undefined}
           />
         </DialogContent>

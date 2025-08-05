@@ -29,7 +29,7 @@ import {
 interface IAccountFormInputs {
   username: string;
   password: string;
-  fullName?: string;
+  fullName: string;
   phoneNumber?: string;
   email?: string;
   gender?: number;
@@ -45,10 +45,10 @@ interface IAccountCreationFormProps {
 
 // Gender options mapping
 const genderOptions = [
-  { label: "Female", value: 1 },
-  { label: "Male", value: 2 },
-  { label: "Transgender", value: 3 },
-  { label: "Other", value: 4 },
+  { label: "Other", value: 1 },
+  { label: "Female", value: 2 },
+  { label: "Male", value: 3 },
+  { label: "Transgender", value: 4 },
 ];
 
 const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
@@ -68,16 +68,16 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
   } = useForm<IAccountFormInputs>({
     resolver: yupResolver(accountFormSchema),
     defaultValues: {
-      gender: 4,
+      gender: 1,
     },
   });
 
   // Fetch roles
   useEffect(() => {
-    dispatch(roleListApi())
+    dispatch(roleListApi({}))
       .unwrap()
-      .then((res: any[]) => {
-        setRoles(res.map((role) => ({ id: role.id, name: role.name })));
+      .then((res: { data: any[] }) => {
+        setRoles(res.data.map((role) => ({ id: role.id, name: role.name })));
       })
 
       .catch((err: any) => {
@@ -136,7 +136,7 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
         throw new Error("Account creation failed!");
       }
     } catch (error: any) {
-      throw error;
+      showErrorToast(error);
     } finally {
       setLoading(false);
     }
@@ -218,6 +218,7 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
           <TextField
             margin="normal"
             fullWidth
+            required
             label="Full Name"
             {...register("fullName")}
             error={!!errors.fullName}

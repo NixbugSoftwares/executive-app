@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, TextField, Button, Typography, MenuItem } from "@mui/material";
+import { Box, TextField, Button, Typography} from "@mui/material";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { useAppDispatch } from "../../store/Hooks";
 import { busStopCreationApi } from "../../slices/appSlice";
@@ -18,18 +18,14 @@ interface IBusStopCreationFormProps {
   landmarkId: number | null;
   location: string;
   onClose: () => void;
-  refreshList: (value: string) => void;
+  refreshBusStops: () => void;
 }
 
-const statusOptions = [
-  { label: "VALIDATING", value: "1" },
-  { label: "VERIFIED", value: "2" },
-];
 const BusStopAddForm: React.FC<IBusStopCreationFormProps> = ({
   location,
   landmarkId,
   onClose,
-  refreshList,
+  refreshBusStops,
 }) => {
   const dispatch = useAppDispatch();
 
@@ -42,7 +38,7 @@ const BusStopAddForm: React.FC<IBusStopCreationFormProps> = ({
       name: "",
       landmark_id: landmarkId?.toString() || "",
       location: location || "",
-      status: "1", // default status
+      status: "1", 
     },
   });
 
@@ -54,15 +50,12 @@ const BusStopAddForm: React.FC<IBusStopCreationFormProps> = ({
       formData.append("name", data.name);
       formData.append("landmark_id", data.landmark_id);
       formData.append("location", `POINT(${location})`);
-      formData.append("status", data.status);
-
       await dispatch(busStopCreationApi(formData)).unwrap();
+      await refreshBusStops(); 
       showSuccessToast("Bus Stop created successfully!");
-      refreshList("refresh");
       onClose();
     } catch (error: any) {
       showErrorToast(error);
-      showErrorToast("Something went wrong. Please try again.");
     }
   };
 
@@ -93,6 +86,7 @@ const BusStopAddForm: React.FC<IBusStopCreationFormProps> = ({
         control={control}
         render={({ field }) => (
           <TextField
+          required
             label="Name"
             variant="outlined"
             size="small"
@@ -124,28 +118,7 @@ const BusStopAddForm: React.FC<IBusStopCreationFormProps> = ({
         }}
       />
 
-      {/* Status Field */}
-      <Controller
-        name="status"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            margin="normal"
-            fullWidth
-            select
-            label="Status"
-            {...field}
-            error={!!errors.status}
-            size="small"
-          >
-            {statusOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
-        )}
-      />
+     
       <Button type="submit" variant="contained" color="success" fullWidth>
         Add Bus Stop
       </Button>

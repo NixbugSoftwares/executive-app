@@ -1,10 +1,23 @@
-import { setLoginCreds, userLoggedOut } from "../slices/appSlice";
-import store from "../store/Store";
+import { useDispatch } from "react-redux";
+import { userLoggedOut } from "../slices/appSlice";
 import localStorageHelper from "./localStorageHelper";
+
 async function logout() {
-  store.dispatch(userLoggedOut());
-  store.dispatch(setLoginCreds({}));
-  localStorageHelper.clearStorage();
+  try {
+    const dispatch = useDispatch();
+    dispatch(userLoggedOut());
+    
+    // Clear all relevant storage items
+    await localStorageHelper.removeStoredItem("@user");
+    await localStorageHelper.removeStoredItem("@token");
+    await localStorageHelper.removeStoredItem("@token_expires");
+    await localStorageHelper.clearStorage();
+    
+  } catch (error) {
+    console.error('Logout error:', error);
+    localStorage.clear();
+    sessionStorage.clear();
+  }
 }
 
 export default {

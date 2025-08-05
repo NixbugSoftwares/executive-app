@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Table,
   TableBody,
@@ -6,39 +6,30 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Button,
   Box,
   TextField,
-  Dialog,
-  DialogActions,
-  DialogContent,
   Tooltip,
   Typography,
+  CircularProgress,
 } from "@mui/material";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
 import RoleDetailsCard from "./RoleDetailCard";
 import RoleCreatingForm from "./RoleCreatingForm";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store/Store";
 import { roleListApi } from "../../slices/appSlice";
-import localStorageHelper from "../../utils/localStorageHelper";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
 import { showErrorToast } from "../../common/toastMessageHelper";
-
+import PaginationControls from "../../common/paginationControl";
+import FormModal from "../../common/formModal";
+import moment from "moment";
 interface Role {
   id: number;
   name: string;
-  manageExecutive?: boolean;
-  manageRole?: boolean;
-  manageLandmark?: boolean;
-  manageCompany?: boolean;
-  manageVendor?: boolean;
-  manageRoute?: boolean;
-  manageSchedule?: boolean;
-  manageService?: boolean;
-  manageDuty?: boolean;
-  manageFare?: boolean;
+  created_on: string;
+  updated_on: string;
+  roleDetails: any;
 }
 
 const RoleListingTable = () => {
@@ -47,80 +38,89 @@ const RoleListingTable = () => {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [search, setSearch] = useState({ id: "", Rolename: "" });
-
-  const roleDetails = localStorageHelper.getItem("@roleDetails");
-  const canManageRole = roleDetails?.manage_role || false;
-
-  const fetchRoleList = () => {
-    dispatch(roleListApi())
-      .unwrap()
-      .then((res: any[]) => {
-        const formattedRoles = res.map((role: any) => ({
-          id: role.id,
-          name: role.name,
-          manageExecutive: role.manage_executive,
-          manageRole: role.manage_role,
-          manageLandmark: role.manage_landmark,
-          manageCompany: role.manage_company,
-          manageVendor: role.manage_vendor,
-          manageRoute: role.manage_route,
-          manageSchedule: role.manage_schedule,
-          manageService: role.manage_service,
-          manageDuty: role.manage_duty,
-          manageFare: role.manage_fare,
-        }));
-        setRoleList(formattedRoles);
-      })
-      .catch((err: any) => showErrorToast(err));
-  };
-
-  useEffect(() => {
-    fetchRoleList();
-  }, []);
-
-  const filteredData = roleList.filter(
-    (row) =>
-      row.id.toString().includes(search.id) &&
-      row.name.toLowerCase().includes(search.Rolename.toLowerCase())
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const [page, setPage] = useState(0);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const debounceRef = useRef<number | null>(null);
+  const rowsPerPage = 10;
+  const canCreateRole = useSelector((state: RootState) =>
+    state.app.permissions.includes("create_ex_role")
   );
 
-  const [page, setPage] = useState(0);
-  const rowsPerPage = selectedRole ? 7 : 6;
+  const fetchRoleList = useCallback(
+    (pageNumber: number, searchParams = {}) => {
+      setIsLoading(true);
+      const offset = pageNumber * rowsPerPage;
+      dispatch(roleListApi({ limit: rowsPerPage, offset, ...searchParams }))
+        .unwrap()
+        .then((res) => {
+          const items = res.data || [];
+          console.log("Fetched Roles:", items);
+          const formattedRoleList = items.map((role: any) => ({
+            id: role.id,
+            name: role.name,
+            created_on: role.created_on,
+            updated_on: role.updated_on || "not updated",
+            roleDetails: {
+              ...role,
+            },
+          }));
+          setRoleList(formattedRoleList);
+          setHasNextPage(items.length === rowsPerPage);
+        })
+        .catch((errorMessage) => {
+          showErrorToast(errorMessage);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    },
+    [dispatch]
+  );
 
-  const handleChangePage = (
-    _event: React.MouseEvent<HTMLButtonElement> | null,
-    newPage: number
-  ) => {
-    if (
-      newPage >= 0 &&
-      newPage < Math.ceil(filteredData.length / rowsPerPage)
-    ) {
+  const handleSearchChange = useCallback(
+    (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+      column: keyof typeof search
+    ) => {
+      const value = e.target.value;
+      setSearch((prev) => ({ ...prev, [column]: value }));
+
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = window.setTimeout(() => {
+        setDebouncedSearch((prev) => ({ ...prev, [column]: value }));
+        setPage(0);
+      }, 700);
+    },
+    []
+  );
+
+  const handleChangePage = useCallback(
+    (_: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
       setPage(newPage);
-    }
-  };
+    },
+    []
+  );
 
-  const handleSearchChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    column: keyof typeof search
-  ) => {
-    setSearch((prev) => ({ ...prev, [column]: e.target.value }));
-  };
+  const handleRowClick = (role: Role) => setSelectedRole(role);
 
-  const handleRowClick = (role: Role) => {
-    setSelectedRole(role);
-  };
+  useEffect(() => {
+    const searchParams = {
+      ...(debouncedSearch.id && { id: debouncedSearch.id }),
+      ...(debouncedSearch.Rolename && { name: debouncedSearch.Rolename }),
+    };
+    fetchRoleList(page, searchParams);
+  }, [page, debouncedSearch, fetchRoleList]);
 
-  const handleCloseDetailCard = () => {
-    setSelectedRole(null);
-  };
-
-  const handleCloseModal = () => {
-    setOpenCreateModal(false);
-  };
+  const tableHeaders = [
+    { key: "id", label: "ID" },
+    { key: "Rolename", label: "Name" },
+  ];
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      fetchRoleList();
+      fetchRoleList(page, debouncedSearch);
     }
   };
 
@@ -137,8 +137,8 @@ const RoleListingTable = () => {
       {/* Table Section */}
       <Box
         sx={{
-          flex: selectedRole ? { xs: "0 0 100%", md: "0 0 65%" } : "0 0 100%",
-          maxWidth: selectedRole ? { xs: "100%", md: "65%" } : "100%",
+          flex: selectedRole ? { xs: "0 0 100%", md: "0 0 50%" } : "0 0 100%",
+          maxWidth: selectedRole ? { xs: "100%", md: "50%" } : "100%",
           transition: "all 0.3s ease",
           height: "100%",
           display: "flex",
@@ -146,204 +146,257 @@ const RoleListingTable = () => {
           overflow: "hidden",
         }}
       >
-        {/* Create Role Button */}
         <Tooltip
           title={
-            !canManageRole
+            !canCreateRole
               ? "You don't have permission, contact the admin"
-              : "click to open the role creation form"
+              : "Click to open the role creation form"
           }
           placement="top-end"
         >
-          <span style={{ cursor: !canManageRole ? "not-allowed" : "default" }}>
-            <Button
-              sx={{
-                ml: "auto",
-                mr: 2,
-                mb: 2,
-                display: "block",
-                backgroundColor: !canManageRole
-                  ? "#6c87b7 !important"
-                  : "#00008B",
-                color: "white",
-                "&.Mui-disabled": {
-                  backgroundColor: "#6c87b7 !important",
-                  color: "#ffffff99",
-                },
-              }}
-              variant="contained"
-              onClick={() => setOpenCreateModal(true)}
-              disabled={!canManageRole}
-            >
-              Create Role
-            </Button>
-          </span>
+          <Button
+            sx={{
+              ml: "auto",
+              mr: 2,
+              mb: 2,
+              display: "block",
+              backgroundColor: !canCreateRole
+                ? "#6c87b7 !important"
+                : "#00008B",
+              color: "white",
+              "&.Mui-disabled": {
+                backgroundColor: "#6c87b7 !important",
+                color: "#ffffff99",
+              },
+            }}
+            variant="contained"
+            disabled={!canCreateRole}
+            onClick={() => setOpenCreateModal(true)}
+            style={{ cursor: !canCreateRole ? "not-allowed" : "default" }}
+          >
+            Add New Role
+          </Button>
         </Tooltip>
 
-        {/* Table */}
-        <TableContainer component={Paper}>
-          <Table>
+        <TableContainer
+          sx={{
+            flex: 1,
+            maxHeight: "calc(100vh - 100px)",
+            overflowY: "auto",
+            borderRadius: 2,
+            border: "1px solid #e0e0e0",
+            position: "relative",
+          }}
+        >
+          {isLoading && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                zIndex: 1,
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          )}
+          <Table stickyHeader>
             <TableHead>
-              <TableRow>
-                <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedRole ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    ID
-                  </b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.id}
-                    onChange={(e) => handleSearchChange(e, "id")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 40,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedRole ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedRole ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-
-                <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedRole ? "0.8rem" : "1rem",
-                      textWrap: "nowrap",
-                    }}
-                  >
-                    Role Name
-                  </b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.Rolename}
-                    onChange={(e) => handleSearchChange(e, "Rolename")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 40,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedRole ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedRole ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-
-                {[
-                  "Executive",
-                  "Role",
-                  "Landmark",
-                  "Company",
-                  "Vendor",
-                  "Route",
-                  "Schedule",
-                  "Service",
-                  "Duty",
-                  "Fare"
-                ].map((permission) => (
+              <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+                {tableHeaders.map(({ key, label }) => (
                   <TableCell
-                    key={permission}
-                    align="center"
-                    sx={{ width: "8%" }}
+                    key={key}
+                    sx={
+                      key === "id"
+                        ? {
+                            width: 100,
+                            maxWidth: 100,
+                            p: 1,
+                            textAlign: "center",
+                          } // slightly wider
+                        : { minWidth: 150, textAlign: "center" }
+                    }
                   >
-                    <Box
+                    <b style={{ display: "block", fontSize: "0.85rem" }}>
+                      {label}
+                    </b>
+                    <TextField
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search[key as keyof typeof search]}
+                      onChange={(e) =>
+                        handleSearchChange(e, key as keyof typeof search)
+                      }
+                      type={key === "id" ? "number" : "text"}
+                      fullWidth
                       sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
+                        "& .MuiInputBase-root": {
+                          height: 36,
+                          fontSize: "0.85rem",
+                        },
+                        "& .MuiInputBase-input": {
+                          textAlign: "center",
+                          px: 1,
+                        },
                       }}
-                    >
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          fontWeight: "bold",
-                          fontSize: selectedRole ? "0.8rem" : "1rem",
-                        }}
-                      >
-                        Manage {permission}
-                      </Typography>
-                    </Box>
+                      inputProps={
+                        key === "id"
+                          ? { style: { textAlign: "center" } }
+                          : undefined
+                      }
+                    />
                   </TableCell>
                 ))}
+
+                {/* Created Date Column */}
+                <TableCell sx={{ minWidth: 160, textAlign: "center" }}>
+                  <b style={{ fontSize: "0.85rem" }}>Created On</b>
+                </TableCell>
+                <TableCell sx={{ minWidth: 160, textAlign: "center" }}>
+                  <b style={{ fontSize: "0.85rem" }}>Last Updated at</b>
+                </TableCell>
               </TableRow>
             </TableHead>
 
             <TableBody>
-              {filteredData.length > 0 ? (
-                filteredData
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row) => {
-                    const isSelected = selectedRole?.id === row.id;
-
-                    return (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center"></TableCell>
+                </TableRow>
+              ) : roleList.length > 0 ? (
+                roleList.map((row) => {
+                  const isSelected = selectedRole?.id === row.id;
+                  return (
+                    <React.Fragment key={row.id}>
                       <TableRow
-                        key={row.id}
                         hover
                         onClick={() => handleRowClick(row)}
                         sx={{
                           cursor: "pointer",
-                          backgroundColor: isSelected
-                            ? "#E3F2FD !important"
-                            : "inherit",
-                          "&:hover": {
-                            backgroundColor: isSelected
-                              ? "#E3F2FD !important"
-                              : "#F5F5F5",
-                          },
+                          backgroundColor: isSelected ? "#E3F2FD" : "inherit",
                         }}
                       >
-                        <TableCell>{row.id}</TableCell>
-                        <TableCell sx={{ cursor: "pointer" }}>
-                          {row.name}
+                        <TableCell align="center">{row.id}</TableCell>
+                        <TableCell >
+                          <Tooltip title={row.name} placement="bottom">
+                            <Typography noWrap>
+                              {row.name.length > 30
+                                ? `${row.name.substring(0, 30)}...`
+                                : row.name}
+                            </Typography>
+                          </Tooltip>
                         </TableCell>
-
-                        {[
-                          "manageExecutive",
-                          "manageRole",
-                          "manageLandmark",
-                          "manageCompany",
-                          "manageVendor",
-                          "manageRoute",
-                          "manageSchedule",
-                          "manageService",
-                          "manageDuty",
-                          "manageFare",
-                        ].map((key) => (
-                          <TableCell key={key} align="center">
-                            {row[key as keyof Role] ? (
-                              <CheckCircleIcon sx={{ color: "#228B22" }} />
-                            ) : (
-                              <CancelIcon sx={{ color: "#DE3163" }} />
-                            )}
-                          </TableCell>
-                        ))}
+                        <TableCell align="center">
+                          {moment(row.created_on)
+                            .local()
+                            .format("DD-MM-YYYY, hh:mm A")}
+                        </TableCell>
+                        <TableCell align="center">
+                          {moment(row?.updated_on).isValid()
+                            ? moment(row.updated_on)
+                                .local()
+                                .format("DD-MM-YYYY, hh:mm A")
+                            : "Not updated yet"}
+                        </TableCell>
                       </TableRow>
-                    );
-                  })
+                      <TableRow>
+                        {/* <TableCell
+                          style={{ paddingBottom: 0, paddingTop: 0 }}
+                          colSpan={3}
+                        >
+                          <Collapse
+                            in={expandedGroups[row.id.toString()]}
+                            timeout="auto"
+                            unmountOnExit
+                          >
+                            <Box sx={{ margin: 1 }}>
+                              <Typography
+                                variant="subtitle2"
+                                gutterBottom
+                                component="div"
+                              >
+                                Permissions
+                              </Typography>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  gap: 1,
+                                }}
+                              >
+                                {permissionGroups.map((group) => (
+                                  <Box
+                                    key={group.groupName}
+                                    sx={{
+                                      border: "1px solid #e0e0e0",
+                                      borderRadius: 1,
+                                      p: 1,
+                                      minWidth: "120px",
+                                    }}
+                                  >
+                                    <Typography
+                                      variant="caption"
+                                      fontWeight="bold"
+                                    >
+                                      {group.groupName}
+                                    </Typography>
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        mt: 0.5,
+                                      }}
+                                    >
+                                      {group.permissions.map((permission) => (
+                                        <Box
+                                          key={permission.key}
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 0.5,
+                                          }}
+                                        >
+                                          <Typography variant="caption">
+                                            {permission.label}:
+                                          </Typography>
+                                          {row.roleDetails[permission.key] ? (
+                                            <CheckCircleIcon
+                                              sx={{
+                                                color: "#228B22",
+                                                fontSize: "14px",
+                                              }}
+                                            />
+                                          ) : (
+                                            <CancelIcon
+                                              sx={{
+                                                color: "#DE3163",
+                                                fontSize: "14px",
+                                              }}
+                                            />
+                                          )}
+                                        </Box>
+                                      ))}
+                                    </Box>
+                                  </Box>
+                                ))}
+                              </Box>
+                            </Box>
+                          </Collapse>
+                        </TableCell> */}
+                      </TableRow>
+                    </React.Fragment>
+                  );
+                })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={11} align="center">
+                  <TableCell colSpan={3} align="center">
                     No roles found.
                   </TableCell>
                 </TableRow>
@@ -352,75 +405,20 @@ const RoleListingTable = () => {
           </Table>
         </TableContainer>
 
-        {/* Pagination */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 1,
-            mt: 2,
-            position: "sticky",
-            bottom: 0,
-            backgroundColor: "white",
-            zIndex: 1,
-            p: 1,
-            borderTop: "1px solid #e0e0e0",
-          }}
-        >
-          <Button
-            onClick={() => handleChangePage(null, page - 1)}
-            disabled={page === 0}
-            sx={{ padding: "5px 10px", minWidth: 40 }}
-          >
-            &lt;
-          </Button>
-          {Array.from(
-            { length: Math.ceil(filteredData.length / rowsPerPage) },
-            (_, index) => index
-          )
-            .slice(
-              Math.max(0, page - 1),
-              Math.min(page + 2, Math.ceil(filteredData.length / rowsPerPage))
-            )
-            .map((pageNumber) => (
-              <Button
-                key={pageNumber}
-                onClick={() => handleChangePage(null, pageNumber)}
-                sx={{
-                  padding: "5px 10px",
-                  minWidth: 40,
-                  bgcolor:
-                    page === pageNumber
-                      ? "rgba(21, 101, 192, 0.2)"
-                      : "transparent",
-                  fontWeight: page === pageNumber ? "bold" : "normal",
-                  borderRadius: "5px",
-                  transition: "all 0.3s",
-                  "&:hover": {
-                    bgcolor: "rgba(21, 101, 192, 0.3)",
-                  },
-                }}
-              >
-                {pageNumber + 1}
-              </Button>
-            ))}
-          <Button
-            onClick={() => handleChangePage(null, page + 1)}
-            disabled={page >= Math.ceil(filteredData.length / rowsPerPage) - 1}
-            sx={{ padding: "5px 10px", minWidth: 40 }}
-          >
-            &gt;
-          </Button>
-        </Box>
+        <PaginationControls
+          page={page}
+          onPageChange={(newPage) => handleChangePage(null, newPage)}
+          isLoading={isLoading}
+          hasNextPage={hasNextPage}
+        />
       </Box>
 
       {/* Side Panel for Role Details */}
       {selectedRole && (
         <Box
           sx={{
-            flex: { xs: "0 0 100%", md: "0 0 30%" },
-            maxWidth: { xs: "100%", md: "30%" },
+            flex: { xs: "0 0 100%", md: "0 0 50%" },
+            maxWidth: { xs: "100%", md: "50%" },
             transition: "all 0.3s ease",
             bgcolor: "grey.100",
             p: 2,
@@ -436,26 +434,21 @@ const RoleListingTable = () => {
             onUpdate={() => {}}
             onDelete={() => {}}
             refreshList={(value: any) => refreshList(value)}
-            canManageRole={canManageRole}
-            handleCloseDetailCard={handleCloseDetailCard}
+            handleCloseDetailCard={() => setSelectedRole(null)}
+            onCloseDetailCard={() => setSelectedRole(null)}
           />
         </Box>
       )}
 
-      {/* Create Role Modal */}
-      <Dialog open={openCreateModal} onClose={handleCloseModal} maxWidth="sm">
-        <DialogContent>
-          <RoleCreatingForm
-            onClose={handleCloseModal}
-            refreshList={(value: any) => refreshList(value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal} color="error">
-            Cancel
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <FormModal
+        open={openCreateModal}
+        onClose={() => setOpenCreateModal(false)}
+      >
+        <RoleCreatingForm
+          refreshList={refreshList}
+          onClose={() => setOpenCreateModal(false)}
+        />
+      </FormModal>
     </Box>
   );
 };

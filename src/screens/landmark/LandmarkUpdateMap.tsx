@@ -22,10 +22,12 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
+import { landmarkListApi } from "../../slices/appSlice";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { Coordinate } from "ol/coordinate";
 import { getArea } from "ol/sphere";
 import { showErrorToast } from "../../common/toastMessageHelper";
+import { useAppDispatch } from "../../store/Hooks";
 interface Landmark {
   id: number;
   name: string;
@@ -36,15 +38,16 @@ interface MapComponentProps {
   initialBoundary?: string;
   onSave: (coordinates: string) => void;
   onClose: () => void;
-  landmarks?: Landmark[];
+  editingLandmarkId: number;
 }
 
 const UpdateMapComponent: React.FC<MapComponentProps> = ({
   initialBoundary,
   onSave,
   onClose,
-  landmarks = [],
+  editingLandmarkId,
 }) => {
+  const dispatch = useAppDispatch();
   const mapRef = useRef<HTMLDivElement | null>(null);
   const vectorSource = useRef(new VectorSource());
   const initialVectorSource = useRef(new VectorSource());
@@ -59,7 +62,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showAllBoundaries, setShowAllBoundaries] = useState(false);
   const [drawingArea, setDrawingArea] = useState<string>("");
-
+  const [landmarks, setLandmarks] = useState<Landmark[]>([]);
   // Initialize map and layers
   useEffect(() => {
     if (!mapRef.current) return;
@@ -140,7 +143,50 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
     };
   }, [initialBoundary]);
 
-  // Load all boundaries when checkbox is checked or landmarks change
+  const fetchLandmarksInView = async () => {
+    if (!mapInstance.current) return;
+    const centerRaw = mapInstance.current.getView().getCenter();
+    if (!centerRaw) return;
+    const center = toLonLat(centerRaw);
+    const [lon, lat] = center;
+    const locationaskey = `POINT(${lon} ${lat})`;
+
+    // Get zoom and set limit like in LandmarkMap.tsx
+    const zoom = mapInstance.current.getView().getZoom()!;
+    const limit = Math.min(100, Math.max(20, Math.floor(zoom * 5))); 
+
+    try {
+      const response = await dispatch(
+        landmarkListApi({
+          location: locationaskey,
+          limit,
+          order_by: 2, // Order by distance
+          order_in: 1, // ASC (nearest first)
+        })
+      ).unwrap();
+      setLandmarks(response.data);
+    } catch (error: any) {
+      showErrorToast(error);
+    }
+  };
+  useEffect(() => {
+    if (!mapInstance.current) return;
+
+    const map = mapInstance.current;
+
+    const handleMoveEnd = () => {
+      if (showAllBoundaries) {
+        fetchLandmarksInView();
+      }
+    };
+
+    map.on("moveend", handleMoveEnd);
+
+    return () => {
+      map.un("moveend", handleMoveEnd);
+    };
+  }, [showAllBoundaries]);
+
   useEffect(() => {
     boundariesSource.current.clear();
 
@@ -161,8 +207,6 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
             if (coordinates.length >= 3) {
               const polygon = new Polygon([coordinates]);
               const feature = new Feature(polygon);
-
-              // Skip styling for the initial boundary (it's already styled in initialVectorSource)
               if (landmark.boundary !== initialBoundary) {
                 boundariesSource.current.addFeature(feature);
               }
@@ -174,6 +218,48 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
       });
     }
   }, [showAllBoundaries, landmarks, initialBoundary]);
+
+  const checkForOverlaps = (newPolygon: Polygon): boolean => {
+    if (!landmarks || landmarks.length === 0) return false;
+
+    const newCoords = newPolygon.getCoordinates()[0];
+
+    for (const landmark of landmarks) {
+      // Skip the landmark we're currently updating by comparing ID
+      if (!landmark.boundary) continue;
+      if (landmark.id === editingLandmarkId) continue;
+
+      try {
+        const coordinatesString = landmark.boundary
+          .replace(/POLYGON\s*\(\(/, "")
+          .replace(/\)\)$/, "")
+          .split(",")
+          .map((coord) => coord.trim().split(/\s+/).map(Number));
+        const existingCoords = coordinatesString.map((coord) =>
+          fromLonLat(coord)
+        );
+        const existingPolygon = new Polygon([existingCoords]);
+        if (newPolygon.intersectsExtent(existingPolygon.getExtent())) {
+          return true;
+        }
+        for (const coord of newCoords) {
+          if (existingPolygon.intersectsCoordinate(coord)) {
+            return true;
+          }
+        }
+        for (const coord of existingPolygon.getCoordinates()[0]) {
+          if (newPolygon.intersectsCoordinate(coord)) {
+            return true;
+          }
+        }
+      } catch (error) {
+        showErrorToast(
+          "Error checking overlap with landmark " + landmark.id + ": " + error
+        );
+      }
+    }
+    return false;
+  };
 
   const startDrawing = () => {
     if (!mapInstance.current) return;
@@ -277,48 +363,6 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
     mapInstance.current.addInteraction(draw);
   };
 
-  const checkForOverlaps = (newPolygon: Polygon): boolean => {
-    if (!landmarks || landmarks.length === 0) return false;
-
-    const newCoords = newPolygon.getCoordinates()[0];
-
-    for (const landmark of landmarks) {
-      // Skip the landmark we're currently updating
-      if (!landmark.boundary || landmark.boundary === initialBoundary) continue;
-
-      try {
-        // Extract coordinates from WKT format
-        const coordinatesString = landmark.boundary
-          .replace(/POLYGON\s*\(\(/, "")
-          .replace(/\)\)$/, "")
-          .split(",")
-          .map((coord) => coord.trim().split(/\s+/).map(Number));
-        const existingCoords = coordinatesString.map((coord) =>
-          fromLonLat(coord)
-        );
-        const existingPolygon = new Polygon([existingCoords]);
-        if (newPolygon.intersectsExtent(existingPolygon.getExtent())) {
-          return true;
-        }
-        for (const coord of newCoords) {
-          if (existingPolygon.intersectsCoordinate(coord)) {
-            return true;
-          }
-        }
-        for (const coord of existingPolygon.getCoordinates()[0]) {
-          if (newPolygon.intersectsCoordinate(coord)) {
-            return true;
-          }
-        }
-      } catch (error) {
-        showErrorToast(
-          "Error checking overlap with landmark " + landmark.id + ": " + error
-        );
-      }
-    }
-    return false;
-  };
-
   const handleConfirm = () => {
     if (updatedCoordinates) {
       onSave(updatedCoordinates);
@@ -388,9 +432,8 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
       } else {
         alert("Location not found. Please try a different query.");
       }
-    } catch (error) {
-      showErrorToast("Geocoding error: " + error);
-      alert("Error searching for location. Please try again.");
+    } catch (error: any) {
+      showErrorToast(error);
     }
   };
 
@@ -481,7 +524,14 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
           >
             <IconButton
               onClick={() => {
-                setShowAllBoundaries(!showAllBoundaries);
+                const newValue = !showAllBoundaries;
+                setShowAllBoundaries(newValue);
+                if (newValue) {
+                  fetchLandmarksInView();
+                } else {
+                  setLandmarks([]);
+                  boundariesSource.current.clear();
+                }
               }}
               // sx={{ ml: 1 }}
             >

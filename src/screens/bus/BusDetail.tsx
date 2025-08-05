@@ -13,19 +13,27 @@ import {
   DialogContentText,
   Tooltip,
 } from "@mui/material";
+
+import VerifiedIcon from "@mui/icons-material/Verified";
+import NewReleasesIcon from "@mui/icons-material/NewReleases";
+import BlockIcon from "@mui/icons-material/Block";
 import { Delete as DeleteIcon } from "@mui/icons-material";
 import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
 import { useAppDispatch } from "../../store/Hooks";
 import { busDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import BusUpdateForm from "./BusUpdation";
-import { showSuccessToast } from "../../common/toastMessageHelper";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/toastMessageHelper";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
+import moment from "moment";
 
 interface BusCardProps {
   bus: {
     id: number;
-    companyId: number;
-    companyName: string;
     registrationNumber: string;
     name: string;
     capacity: number;
@@ -34,12 +42,13 @@ interface BusCardProps {
     insurance_upto: string;
     pollution_upto: string;
     fitness_upto: string;
+    road_tax_upto: string;
+    status: number;
   };
   refreshList: (value: any) => void;
   onUpdate: () => void;
   onDelete: (id: number) => void;
   onBack: () => void;
-  canManageCompany: boolean;
   onCloseDetailCard: () => void;
 }
 
@@ -48,18 +57,17 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
   refreshList,
   onDelete,
   onBack,
-  canManageCompany,
   onCloseDetailCard,
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const dispatch = useAppDispatch();
-
-  const formatUTCDateToLocal = (dateString: string | null): string => {
-    if (!dateString || dateString.trim() === "") return "Not added yet";
-    const date = new Date(dateString);
-    return isNaN(date.getTime()) ? "Not added yet" : date.toLocaleDateString();
-  };
+  const canUpdateBus = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_bus")
+  );
+  const canDeleteBus = useSelector((state: RootState) =>
+    state.app.permissions.includes("delete_bus")
+  );
 
   const handleBusDelete = async () => {
     if (!bus.id) {
@@ -78,8 +86,9 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
       showSuccessToast("Bus deleted successfully");
       onCloseDetailCard();
       refreshList("refresh");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Delete error:", error);
+      showErrorToast(error || "Failed to delete bus. Please try again.");
     }
   };
 
@@ -87,7 +96,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
     <>
       <Card
         sx={{
-          maxWidth:400,
+          maxWidth: 400,
           width: "100%",
           margin: "auto",
           boxShadow: 3,
@@ -125,26 +134,65 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             }}
           >
             <Typography variant="body2" color="textSecondary">
-              <b>Company Name:</b> {bus.companyName}
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
               <b>Registration Number:</b> {bus.registrationNumber}
             </Typography>
             <Typography variant="body2" color="textSecondary">
               <b>Capacity:</b> {bus.capacity}
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              <b>Manufactured:</b> {formatUTCDateToLocal(bus.manufactured_on)}
+              <b>Manufactured:</b>{" "}
+              {moment(bus?.manufactured_on).isValid()
+                ? moment(bus.manufactured_on).local().format("DD-MM-YYYY")
+                : "Not added yet"}
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              <b>Insurance Upto:</b> {formatUTCDateToLocal(bus.insurance_upto)}
+              <b>Insurance Upto:</b>{" "}
+              {moment(bus?.insurance_upto).isValid()
+                ? moment(bus.insurance_upto).local().format("DD-MM-YYYY")
+                : "Not added yet"}
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              <b>Pollution Upto:</b> {formatUTCDateToLocal(bus.pollution_upto)}
+              <b>Pollution Upto:</b>{" "}
+              {moment(bus?.pollution_upto).isValid()
+                ? moment(bus.pollution_upto).local().format("DD-MM-YYYY")
+                : "Not added yet"}
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              <b>Fitness Upto:</b> {formatUTCDateToLocal(bus.fitness_upto)}
+              <b>Fitness Upto:</b>{" "}
+              {moment(bus?.fitness_upto).isValid()
+                ? moment(bus.fitness_upto).local().format("DD-MM-YYYY")
+                : "Not added yet"}
             </Typography>
+            <Typography variant="body2" color="textSecondary">
+              <b>Road tax Upto:</b>{" "}
+              {moment(bus?.road_tax_upto).isValid()
+                ? moment(bus.road_tax_upto).local().format("DD-MM-YYYY")
+                : "Not added yet"}
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1, gap: 1 }}>
+            {bus.status === 1 ? (
+              <>
+                <VerifiedIcon sx={{ color: "green", fontSize: 30 }} />
+                <Typography sx={{ color: "green", fontWeight: "bold" }}>
+                  Active
+                </Typography>
+              </>
+            ) : bus.status === 2 ? (
+              <>
+                <NewReleasesIcon sx={{ color: "#FFA500", fontSize: 30 }} />
+                <Typography sx={{ color: "#FFA500", fontWeight: "bold" }}>
+                  Maintenance
+                </Typography>
+              </>
+            ) : (
+              <>
+                <BlockIcon sx={{ color: "#d93550", fontSize: 30 }} />
+                <Typography sx={{ color: "#d93550", fontWeight: "bold" }}>
+                  Suspended
+                </Typography>
+              </>
+            )}
           </Box>
         </Card>
 
@@ -170,7 +218,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             {/* Update Button with Tooltip */}
             <Tooltip
               title={
-                !canManageCompany
+                !canUpdateBus
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -179,7 +227,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             >
               <span
                 style={{
-                  cursor: !canManageCompany ? "not-allowed" : "default",
+                  cursor: !canUpdateBus ? "not-allowed" : "default",
                 }}
               >
                 <Button
@@ -187,7 +235,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
                   color="success"
                   size="small"
                   onClick={() => setUpdateFormOpen(true)}
-                  disabled={!canManageCompany}
+                  disabled={!canUpdateBus}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#81c784 !important",
@@ -203,7 +251,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             {/* Delete Button with Tooltip */}
             <Tooltip
               title={
-                !canManageCompany
+                !canDeleteBus
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -212,7 +260,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
             >
               <span
                 style={{
-                  cursor: !canManageCompany ? "not-allowed" : "default",
+                  cursor: !canDeleteBus ? "not-allowed" : "default",
                 }}
               >
                 <Button
@@ -221,7 +269,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
                   size="small"
                   onClick={() => setDeleteConfirmOpen(true)}
                   startIcon={<DeleteIcon />}
-                  disabled={!canManageCompany}
+                  disabled={!canDeleteBus}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#e57373 !important",
@@ -271,12 +319,30 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
       >
         <DialogContent>
           <BusUpdateForm
-            refreshList={(value: any) => refreshList(value)}
             busId={bus.id}
+            busData={{
+              id: bus.id,
+              registration_number: bus.registrationNumber,
+              name: bus.name,
+              capacity: bus.capacity,
+              manufactured_on: bus.manufactured_on,
+              insurance_upto: bus.insurance_upto,
+              pollution_upto: bus.pollution_upto,
+              fitness_upto: bus.fitness_upto,
+              road_tax_upto: bus.road_tax_upto,
+              status: bus.status,
+            }}
+            refreshList={(value: any) => refreshList(value)}
             onClose={() => setUpdateFormOpen(false)}
             onCloseDetailCard={onCloseDetailCard}
           />
         </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setUpdateFormOpen(false)} color="error">
+            Cancel
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   );

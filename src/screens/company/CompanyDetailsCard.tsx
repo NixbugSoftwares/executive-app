@@ -20,6 +20,7 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
 } from "@mui/icons-material";
+import DateRangeOutlinedIcon from "@mui/icons-material/DateRangeOutlined";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import NewReleasesIcon from "@mui/icons-material/NewReleases";
 import BlockIcon from "@mui/icons-material/Block";
@@ -34,24 +35,17 @@ import {
   showSuccessToast,
   showErrorToast,
 } from "../../common/toastMessageHelper";
+import { Company } from "../../types/type";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
+import moment from "moment";
 interface companyCardProps {
-  company: {
-    id: number;
-    name: string;
-    ownerName: string;
-    location: string;
-    phoneNumber: string;
-    address: string;
-    email: string;
-    status: string;
-    companyType: string;
-  };
+  company: Company;
 
   onUpdate: () => void;
   onDelete: (id: number) => void;
   onBack: () => void;
   refreshList: (value: any) => void;
-  canManageCompany: boolean;
   handleCloseDetailCard: () => void;
 }
 
@@ -60,21 +54,25 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
   refreshList,
   onDelete,
   onBack,
-  canManageCompany,
   handleCloseDetailCard,
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const dispatch = useAppDispatch();
-
+const canUpdateCompany = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_company")
+  );
+  const canDeleteCompany = useSelector((state: RootState) =>
+    state.app.permissions.includes("delete_company")
+  );
   const handleCloseModal = () => {
     setUpdateFormOpen(false);
   };
 
   const extractCoordinates = (location: string) => {
     if (!location) return null;
-    const regex = /POINT\(([\d.]+) ([\d.]+)\)/;
+    const regex = /POINT\s*\(\s*([\d.-]+)\s+([\d.-]+)\s*\)/;
     const match = location.match(regex);
 
     if (match) {
@@ -102,9 +100,8 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
       showSuccessToast("Company deleted successfully!");
       handleCloseDetailCard();
       refreshList("refresh");
-    } catch (error) {
-      showErrorToast("Delete error: " + error);
-      showErrorToast("Failed to delete company. Please try again.");
+    } catch (error : any) {
+      showErrorToast(error || "Failed to delete company");
     }
   };
   return (
@@ -142,7 +139,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
         <Card sx={{ p: 2, bgcolor: "grey.100", mb: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <Typography variant="body2" color="textSecondary">
-              <b>Owner Name:</b> {company.ownerName}
+              <b>Owner Name:</b> {company.contact_person}
             </Typography>
           </Box>
 
@@ -175,13 +172,13 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <PhoneIcon color="action" sx={{ mr: 1 }} />
-            {company.phoneNumber ? (
+            {company.phone_number ? (
               <a
-                href={`tel:${company.phoneNumber.replace("tel:", "")}`}
+                href={`tel:${company.phone_number.replace("tel:", "")}`}
                 style={{ textDecoration: "none" }}
               >
                 <Typography variant="body2" color="primary">
-                  {company.phoneNumber.replace("tel:", "")}
+                  {company.phone_number.replace("tel:", "")}
                 </Typography>
               </a>
             ) : (
@@ -193,13 +190,13 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
 
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <EmailIcon color="action" sx={{ mr: 1 }} />
-            {company.email ? (
+            {company.email_id ? (
               <a
-                href={`mailto:${company.email}`}
+                href={`mailto:${company.email_id}`}
                 style={{ textDecoration: "none" }}
               >
                 <Typography variant="body2" color="primary">
-                  {company.email}
+                  {company.email_id}
                 </Typography>
               </a>
             ) : (
@@ -265,6 +262,25 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
               Company
             </Typography>
           </Box>
+
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+            <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
+            <Typography variant="body2">
+              <b > Created at:</b>
+              {moment(company.created_on).local().format("DD-MM-YYYY, hh:mm A")}
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+            <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
+            <Typography variant="body2">
+              <b > Last update at:</b>
+              {moment(company?.updated_on).isValid()
+                                          ? moment(company.updated_on)
+                                              .local()
+                                              .format("DD-MM-YYYY, hh:mm A")
+                                          : "Not updated yet"}
+            </Typography>
+          </Box>
         </Card>
 
         {/* Action Buttons */}
@@ -283,7 +299,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
             {/* Update Button with Tooltip */}
             <Tooltip
               title={
-                !canManageCompany
+                !canUpdateCompany
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -292,7 +308,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
             >
               <span
                 style={{
-                  cursor: !canManageCompany ? "not-allowed" : "default",
+                  cursor: !canUpdateCompany ? "not-allowed" : "default",
                 }}
               >
                 <Button
@@ -303,7 +319,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
                     setUpdateFormOpen(true);
                   }}
                   startIcon={<EditIcon />}
-                  disabled={!canManageCompany}
+                  disabled={!canUpdateCompany}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#81c784 !important",
@@ -319,7 +335,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
             {/* Delete Button with Tooltip */}
             <Tooltip
               title={
-                !canManageCompany
+                !canDeleteCompany
                   ? "You don't have permission, contact the admin"
                   : ""
               }
@@ -328,7 +344,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
             >
               <span
                 style={{
-                  cursor: !canManageCompany ? "not-allowed" : "default",
+                  cursor: !canDeleteCompany ? "not-allowed" : "default",
                 }}
               >
                 <Button
@@ -337,7 +353,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
                   size="small"
                   onClick={() => setDeleteConfirmOpen(true)}
                   startIcon={<DeleteIcon />}
-                  disabled={!canManageCompany}
+                  disabled={!canDeleteCompany}
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#e57373 !important",
@@ -406,7 +422,7 @@ const companyDetailsCard: React.FC<companyCardProps> = ({
       <Dialog
         open={updateFormOpen}
         onClose={() => setUpdateFormOpen(false)}
-        maxWidth="xs"
+        maxWidth="sm"
         fullWidth
       >
         <DialogContent>
