@@ -355,7 +355,7 @@ const Sidebar: React.FC = () => {
                         pl: 4,
                         py: 1,
                         color: "text.secondary",
-                        fontStyle: "italic",
+                        fontWeight: "bold",
                         width: "100%",
                         textOverflow: "ellipsis",
                         overflow: "hidden",
