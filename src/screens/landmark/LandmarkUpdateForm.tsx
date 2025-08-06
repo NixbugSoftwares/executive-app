@@ -42,7 +42,7 @@ const typeValueMap: Record<string, string> = {
   "LOCAL": "1",
   "Local": "1",
   "VILLAGE": "2",
-  "village": "2",
+  "Village": "2",
   "DISTRICT": "3",
   "District": "3",
   "STATE": "4",
@@ -63,6 +63,8 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
   boundary,
   landmarkData
 }) => {
+  console.log(landmarkData);
+  
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
