@@ -241,17 +241,36 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
           sx={{ mt: 1 }}
           onSubmit={handleSubmit(handleAccountUpdate)}
         >
-          {/* Rest of your form fields remain the same */}
           <TextField
             margin="normal"
             fullWidth
             label="Full Name"
-            {...register("fullName")}
             defaultValue={accountData.fullName || ""}
+            {...register("fullName", {
+              required: "Full name is required",
+              maxLength: {
+                value: 32,
+                message: "Full name cannot exceed 32 characters",
+              },
+              validate: {
+                noNumbers: (value: any) =>
+                  !/[0-9]/.test(value) ||
+                  "Numbers are not allowed in the full name",
+                noSpecialChars: (value: any) =>
+                  !/[^A-Za-z ]/.test(value) ||
+                  "Special characters are not allowed",
+                endsWithLetter: (value: any) =>
+                  /[A-Za-z]$/.test(value) || "Full name must end with a letter",
+                validPattern: (value: any) =>
+                  /^[A-Za-z]+(?: [A-Za-z]+)*$/.test(value) ||
+                  "Full name should consist of letters separated by single spaces",
+              },
+            })}
             error={!!errors.fullName}
             helperText={errors.fullName?.message}
             size="small"
           />
+
           <Controller
             name="phoneNumber"
             control={control}
@@ -346,8 +365,27 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             margin="normal"
             fullWidth
             label="Designation"
-            {...register("designation")}
             defaultValue={accountData.designation || ""}
+            {...register("designation", {
+              maxLength: {
+                value: 32,
+                message: "Designation cannot exceed 32 characters",
+              },
+              validate: {
+                allowedCharacters: (value) =>
+                  !value ||
+                  /^[A-Za-z\s\-_()]*$/.test(value) ||
+                  "Designation can only contain letters, spaces, hyphens (-), underscores (_), and brackets ( )",
+                noLeadingTrailingSpaces: (value) =>
+                  !value ||
+                  !/^\s|\s$/.test(value) ||
+                  "Designation should not start or end with a space",
+                noConsecutiveSpecials: (value) =>
+                  !value ||
+                  !/([\s\-_()]{2,})/.test(value) ||
+                  "Designation cannot have consecutive spaces or special characters",
+              },
+            })}
             error={!!errors.designation}
             helperText={errors.designation?.message}
             size="small"
