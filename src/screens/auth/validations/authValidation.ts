@@ -105,8 +105,10 @@ export const accountFormSchema = yup.object().shape({
 export const roleCreationSchema = yup.object().shape({
   name: yup.string()
     .required("Role name is required")
+     .matches(/^\S(?:.*\S)?$/, "Role name cannot start or end with a space")
     .min(4, "Role name must be at least 4 characters")
     .max(32, "Role name cannot exceed 32 characters"),
+
   
   // Token Management
   manage_ex_token: yup.boolean(),
