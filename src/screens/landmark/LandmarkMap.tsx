@@ -639,6 +639,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const newDrawingState = !isDrawing;
     setIsDrawing(newDrawingState);
     onDrawingChange(newDrawingState);
+    showAllBoundaries && setShowAllBoundaries(false);
   };
 
   //*********************************bus stop adding functions************************************
