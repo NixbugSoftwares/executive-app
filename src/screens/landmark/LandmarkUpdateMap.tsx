@@ -430,7 +430,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
           zoom: 14,
         });
       } else {
-        alert("Location not found. Please try a different query.");
+        // alert("Location not found. Please try a different query.");
       }
     } catch (error: any) {
       showErrorToast(error);

@@ -7,11 +7,13 @@ import {
   showSuccessToast,
   showErrorToast,
 } from "../../common/toastMessageHelper";
+
+import { yupResolver } from "@hookform/resolvers/yup";
+import { busStopCreationSchema } from "../auth/validations/authValidation";
 interface IBusStopFormInputs {
   name: string;
   landmark_id: string;
   location: string;
-  status: string;
 }
 
 interface IBusStopCreationFormProps {
@@ -34,11 +36,11 @@ const BusStopAddForm: React.FC<IBusStopCreationFormProps> = ({
     handleSubmit,
     formState: { errors },
   } = useForm<IBusStopFormInputs>({
+    resolver: yupResolver(busStopCreationSchema),
     defaultValues: {
       name: "",
       landmark_id: landmarkId?.toString() || "",
       location: location || "",
-      status: "1", 
     },
   });
 
@@ -86,8 +88,8 @@ const BusStopAddForm: React.FC<IBusStopCreationFormProps> = ({
         control={control}
         render={({ field }) => (
           <TextField
-          required
             label="Name"
+            required
             variant="outlined"
             size="small"
             error={!!errors.name}

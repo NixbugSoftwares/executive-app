@@ -106,6 +106,7 @@ const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
         render={({ field }) => (
           <TextField
             label="Name"
+            required
             variant="outlined"
             size="small"
             error={!!errors.name}

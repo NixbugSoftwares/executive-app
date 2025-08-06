@@ -516,6 +516,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   //************************check for overlaps*********************
   const checkForOverlaps = (newPolygon: Polygon): boolean => {
+    console.log("Checking for overlaps...");
+    console.log("landmarks:>>>>>>>>>>>>", landmarks);
+    
     if (!landmarks || landmarks.length === 0) return false;
 
     const newCoords = newPolygon.getCoordinates()[0];
