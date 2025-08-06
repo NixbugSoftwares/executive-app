@@ -1,4 +1,4 @@
-import React, { useState} from "react";
+import React, { useState } from "react";
 import {
   TextField,
   Button,
@@ -8,7 +8,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
-import { landmarkUpdationApi} from "../../slices/appSlice";
+import { landmarkUpdationApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import MapModal from "./LandmarkMapModal";
 import {
@@ -19,7 +19,7 @@ import {
 interface ILandmarkFormInputs {
   name: string;
   boundary: string;
-  type:string
+  type: string;
 }
 
 interface ILandmarkUpdateFormProps {
@@ -27,9 +27,8 @@ interface ILandmarkUpdateFormProps {
   refreshList: (value: string) => void;
   landmarkId: number;
   boundary?: string;
-  landmarkData?: ILandmarkFormInputs; 
+  landmarkData?: ILandmarkFormInputs;
 }
-
 
 const typeOptions = [
   { label: "LOCAL", value: 1 },
@@ -39,16 +38,16 @@ const typeOptions = [
   { label: "NATIONAL", value: 5 },
 ];
 const typeValueMap: Record<string, string> = {
-  "LOCAL": "1",
-  "Local": "1",
-  "VILLAGE": "2",
-  "Village": "2",
-  "DISTRICT": "3",
-  "District": "3",
-  "STATE": "4",
-  "State": "4",
-  "NATIONAL": "5", 
-  "National": "5",
+  LOCAL: "1",
+  Local: "1",
+  VILLAGE: "2",
+  Village: "2",
+  DISTRICT: "3",
+  District: "3",
+  STATE: "4",
+  State: "4",
+  NATIONAL: "5",
+  National: "5",
 };
 function toWKTPolygon(boundary: string) {
   if (!boundary) return "";
@@ -61,16 +60,16 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
   refreshList,
   landmarkId,
   boundary,
-  landmarkData
+  landmarkData,
 }) => {
   console.log(landmarkData);
-  
+
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [updatedBoundary, setUpdatedBoundary] = useState(
-  landmarkData?.boundary || boundary || ""
-);
+    landmarkData?.boundary || boundary || ""
+  );
   const {
     register,
     handleSubmit,
@@ -78,10 +77,10 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
     formState: { errors },
   } = useForm<ILandmarkFormInputs>({
     defaultValues: {
-    name: landmarkData?.name || "",
-    boundary: landmarkData?.boundary,
-    type: typeValueMap[landmarkData?.type ?? ""] || "",
-  },
+      name: landmarkData?.name || "",
+      boundary: landmarkData?.boundary,
+      type: typeValueMap[landmarkData?.type ?? ""] || "",
+    },
   });
 
   const handleSaveBoundary = (coordinates: string) => {
@@ -97,14 +96,17 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       const formData = new FormData();
       formData.append("id", landmarkId.toString());
       formData.append("name", data.name);
-      formData.append("boundary", toWKTPolygon(data.boundary || updatedBoundary));
+      formData.append(
+        "boundary",
+        toWKTPolygon(data.boundary || updatedBoundary)
+      );
       formData.append("type", data.type);
       await dispatch(landmarkUpdationApi({ landmarkId, formData })).unwrap();
       showSuccessToast("Landmark updated successfully!");
       refreshList("refresh");
       onClose();
     } catch (error: any) {
-      showErrorToast( error );
+      showErrorToast(error);
     } finally {
       setLoading(false);
     }
@@ -137,7 +139,24 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
 
       <TextField
         label="Name"
-        {...register("name", { required: "Name is required" })}
+        {...register("name", {
+          required: " name is required",
+          maxLength: {
+            value: 32,
+            message: " name cannot exceed 32 characters",
+          },
+          validate: {
+            noNumbers: (value: any) =>
+              !/[0-9]/.test(value) || "Numbers are not allowed in the  name",
+            noSpecialChars: (value: any) =>
+              !/[^A-Za-z ]/.test(value) || "Special characters are not allowed",
+            endsWithLetter: (value: any) =>
+              /[A-Za-z]$/.test(value) || " name must end with a letter",
+            validPattern: (value: any) =>
+              /^[A-Za-z]+(?: [A-Za-z]+)*$/.test(value) ||
+              "Full name should consist of letters separated by single spaces",
+          },
+        })}
         error={!!errors.name}
         helperText={errors.name?.message}
         variant="outlined"
@@ -183,8 +202,6 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
           </TextField>
         )}
       />
-
-     
 
       <Button
         type="submit"

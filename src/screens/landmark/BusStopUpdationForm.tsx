@@ -4,12 +4,11 @@ import {
   Button,
   Box,
   Typography,
-  MenuItem,
   CircularProgress,
 } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
 import { busStopUpdationApi } from "../../slices/appSlice";
-import { useForm, SubmitHandler, Controller } from "react-hook-form";
+import { useForm, SubmitHandler,  } from "react-hook-form";
 import MapModal from "./BUsStopMapModal";
 import {
   showSuccessToast,
@@ -47,22 +46,16 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [updatedLocation, setUpdatedLocation] = useState(busStop.location);
-  const statusTextToValue = (status: string) => {
-  if (status.toLowerCase() === "validating") return "1";
-  if (status.toLowerCase() === "verified") return "2";
-  return "";
-};
+ 
   const {
     register,
     handleSubmit,
-    control,
     setValue,
     formState: { errors },
   } = useForm<IBusStopFormInputs>({
     defaultValues: {
       name: busStop.name,
       location: busStop.location,
-      status: statusTextToValue(busStop.status),
     },
   });
 
@@ -76,10 +69,6 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
     }
     return "";
   }
-const statusOptions = [
-  { label: "Validating", value: "1" },
-  { label: "Verified", value: "2" },
-];
   const handleBusStopUpdate: SubmitHandler<IBusStopFormInputs> = async (
     data
   ) => {
@@ -90,8 +79,6 @@ const statusOptions = [
       formData.append("id", busStop.id.toString());
       formData.append("name", data.name);
       formData.append("location", ensureWktPoint(data.location || updatedLocation));
-      formData.append("status", data.status);
-
       await dispatch(busStopUpdationApi({ busStopId: busStop.id, formData })).unwrap();
       refreshBusStops("refresh");
       showSuccessToast("Bus Stop updated successfully!");
@@ -126,7 +113,26 @@ const statusOptions = [
 
       <TextField
         label="Name"
-        {...register("name", { required: "Name is required" })}
+        {...register("name", {
+              required: " name is required",
+              maxLength: {
+                value: 128,
+                message: " name cannot exceed 128 characters",
+              },
+              validate: {
+                noNumbers: (value: any) =>
+                  !/[0-9]/.test(value) ||
+                  "Numbers are not allowed in the  name",
+                noSpecialChars: (value: any) =>
+                  !/[^A-Za-z ]/.test(value) ||
+                  "Special characters are not allowed",
+                endsWithLetter: (value: any) =>
+                  /[A-Za-z]$/.test(value) || " name must end with a letter",
+                validPattern: (value: any) =>
+                  /^[A-Za-z]+(?: [A-Za-z]+)*$/.test(value) ||
+                  "Full name should consist of letters separated by single spaces",
+              },
+            })}
         error={!!errors.name}
         helperText={errors.name?.message}
         variant="outlined"
@@ -155,28 +161,7 @@ const statusOptions = [
         }}
       />
 
-      <Controller
-        name="status"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            margin="normal"
-            fullWidth
-            select
-            label="Status"
-            {...field}
-            error={!!errors.status}
-            size="small"
-          >
-            {statusOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
-        )}
-      />
-
+      
       <Button
         type="submit"
         variant="contained"
