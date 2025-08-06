@@ -284,11 +284,11 @@ const LandmarkListing = () => {
       fetchLandmark(page, debouncedSearch);
     }
   };
-const handleLandmarkAdded = () => {
-  setLandmarkRefreshKey((k) => k + 1);
-  refreshList("refresh");
-  setOpenCreateModal(false);
-};
+  const handleLandmarkAdded = () => {
+    setLandmarkRefreshKey((k) => k + 1);
+    refreshList("refresh");
+    setOpenCreateModal(false);
+  };
   return (
     <Box
       sx={{
@@ -309,8 +309,14 @@ const handleLandmarkAdded = () => {
         }}
       >
         <TableContainer
-          component={Paper}
-          sx={{ overflowX: "auto", position: "relative" }}
+          sx={{
+            flex: 1,
+            maxHeight: "calc(100vh - 100px)",
+            overflowY: "auto",
+            borderRadius: 2,
+            border: "1px solid #e0e0e0",
+            position: "relative",
+          }}
         >
           {isLoading && (
             <Box
@@ -330,9 +336,9 @@ const handleLandmarkAdded = () => {
               <CircularProgress />
             </Box>
           )}
-          <Table sx={{ borderCollapse: "collapse", width: "100%" }}>
+          <Table stickyHeader sx={{ borderCollapse: "collapse", width: "100%" }}>
             <TableHead>
-              <TableRow>
+              <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
                 <TableCell colSpan={2} sx={{ width: "25%" }}>
                   <Box
                     display="flex"
@@ -340,18 +346,6 @@ const handleLandmarkAdded = () => {
                     alignItems="center"
                   >
                     <b>ID</b>
-                    <TextField
-                      type="number"
-                      variant="outlined"
-                      size="small"
-                      placeholder="Search"
-                      value={search.id}
-                      onChange={(e) => handleSearchChange(e, "id")}
-                      fullWidth
-                      sx={{
-                        "& .MuiInputBase-root": { height: 40, padding: "4px" },
-                      }}
-                    />
                   </Box>
                 </TableCell>
                 <TableCell sx={{ width: "50%" }}>
@@ -361,42 +355,62 @@ const handleLandmarkAdded = () => {
                     alignItems="center"
                   >
                     <b>Landmark Name</b>
-                    <TextField
-                      variant="outlined"
-                      size="small"
-                      placeholder="Search"
-                      value={search.name}
-                      onChange={(e) => handleSearchChange(e, "name")}
-                      fullWidth
-                      sx={{
-                        "& .MuiInputBase-root": { height: 40, padding: "4px" },
-                      }}
-                    />
                   </Box>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ width: "25%" }}>
                   <Box
                     display="flex"
                     flexDirection="column"
                     alignItems="center"
                   >
                     <b>Type</b>
-                    <Select
-                      value={search.type}
-                      onChange={handleSelectChange}
-                      displayEmpty
-                      size="small"
-                      fullWidth
-                      sx={{ height: 40 }}
-                    >
-                      <MenuItem value="">All</MenuItem>
-                      <MenuItem value="Local">Local</MenuItem>
-                      <MenuItem value="Village">Village</MenuItem>
-                      <MenuItem value="District">District</MenuItem>
-                      <MenuItem value="State">State</MenuItem>
-                      <MenuItem value="National">National</MenuItem>
-                    </Select>
                   </Box>
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell colSpan={2}>
+                  <TextField
+                    type="number"
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    value={search.id}
+                    onChange={(e) => handleSearchChange(e, "id")}
+                    fullWidth
+                    sx={{
+                      "& .MuiInputBase-root": { height: 40, padding: "4px" },
+                    }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    value={search.name}
+                    onChange={(e) => handleSearchChange(e, "name")}
+                    fullWidth
+                    sx={{
+                      "& .MuiInputBase-root": { height: 40, padding: "4px" },
+                    }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={search.type}
+                    onChange={handleSelectChange}
+                    displayEmpty
+                    size="small"
+                    fullWidth
+                    sx={{ height: 40 }}
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    <MenuItem value="Local">Local</MenuItem>
+                    <MenuItem value="Village">Village</MenuItem>
+                    <MenuItem value="District">District</MenuItem>
+                    <MenuItem value="State">State</MenuItem>
+                    <MenuItem value="National">National</MenuItem>
+                  </Select>
                 </TableCell>
               </TableRow>
             </TableHead>
@@ -642,15 +656,15 @@ const handleLandmarkAdded = () => {
         </TableContainer>
 
         {/*************************************** Pagination    ****************************************/}
-        
-        <Box sx={{}} >
+
+        <Box sx={{}}>
           <PaginationControls
-          page={page}
-          onPageChange={(newPage) => handleChangePage(null, newPage)}
-          isLoading={isLoading}
-          hasNextPage={hasNextPage}
-        />
-          </Box>
+            page={page}
+            onPageChange={(newPage) => handleChangePage(null, newPage)}
+            isLoading={isLoading}
+            hasNextPage={hasNextPage}
+          />
+        </Box>
       </Box>
 
       <Box

@@ -154,7 +154,7 @@ const BusRouteListing = () => {
             departureTime: lm.departure_delta,
             distance_from_start: lm.distance_from_start ?? 0,
           }));
-          console.log("_____+_+_+_+_+_+_+_+_+_+_+_+_++_+",processed);
+          console.log("_____+_+_+_+_+_+_+_+_+_+_+_+_++_+", processed);
 
           setSelectedRouteLandmarks(processed);
           setMapLandmarks(processed);
@@ -210,13 +210,16 @@ const BusRouteListing = () => {
   }, [page, debouncedSearch, fetchRoute]);
 
   const toggleCreationForm = () => {
-  setShowCreationForm(!showCreationForm);
-  setLandmarks([]);
-  // Disable add landmark mode on map when leaving creation form
-  if (mapRef.current && typeof mapRef.current.disableAddLandmarkMode === "function") {
-    mapRef.current.disableAddLandmarkMode();
-  }
-};
+    setShowCreationForm(!showCreationForm);
+    setLandmarks([]);
+    // Disable add landmark mode on map when leaving creation form
+    if (
+      mapRef.current &&
+      typeof mapRef.current.disableAddLandmarkMode === "function"
+    ) {
+      mapRef.current.disableAddLandmarkMode();
+    }
+  };
 
   const handleRouteCreated = () => {
     setShowCreationForm(true);
@@ -427,28 +430,13 @@ const BusRouteListing = () => {
               <Table stickyHeader>
                 <TableHead>
                   <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                    <TableCell sx={{ width: "20%" }}>
+                    <TableCell sx={{ width: "25%" }}>
                       <Box
                         display="flex"
                         flexDirection="column"
                         alignItems="center"
                       >
                         <b>ID</b>
-                        <TextField
-                          type="number"
-                          variant="outlined"
-                          size="small"
-                          placeholder="Search"
-                          value={search.id}
-                          onChange={(e) => handleSearchChange(e, "id")}
-                          fullWidth
-                          sx={{
-                            "& .MuiInputBase-root": {
-                              height: 40,
-                              padding: "4px",
-                            },
-                          }}
-                        />
                       </Box>
                     </TableCell>
                     <TableCell sx={{ width: "60%" }}>
@@ -458,26 +446,48 @@ const BusRouteListing = () => {
                         alignItems="center"
                       >
                         <b>Name</b>
-                        <TextField
-                          variant="outlined"
-                          size="small"
-                          placeholder="Search"
-                          value={search.name}
-                          onChange={(e) => handleSearchChange(e, "name")}
-                          fullWidth
-                          sx={{
-                            "& .MuiInputBase-root": {
-                              height: 40,
-                              padding: "4px",
-                            },
-                          }}
-                        />
                       </Box>
                     </TableCell>
 
                     <TableCell sx={{ width: "20%", textAlign: "center" }}>
                       <b>Actions</b>
                     </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>
+                      <TextField
+                        type="number"
+                        variant="outlined"
+                        size="small"
+                        placeholder="Search"
+                        value={search.id}
+                        onChange={(e) => handleSearchChange(e, "id")}
+                        fullWidth
+                        sx={{
+                          "& .MuiInputBase-root": {
+                            height: 40,
+                            padding: "4px",
+                          },
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <TextField
+                        variant="outlined"
+                        size="small"
+                        placeholder="Search"
+                        value={search.name}
+                        onChange={(e) => handleSearchChange(e, "name")}
+                        fullWidth
+                        sx={{
+                          "& .MuiInputBase-root": {
+                            height: 40,
+                            padding: "4px",
+                          },
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell></TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -488,7 +498,7 @@ const BusRouteListing = () => {
                   ) : routeList.length > 0 ? (
                     routeList.map((row) => (
                       <TableRow key={row.id} hover>
-                        <TableCell>{row.id}</TableCell>
+                        <TableCell align="center">{row.id}</TableCell>
                         <TableCell
                           sx={{
                             cursor: "pointer",

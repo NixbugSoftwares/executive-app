@@ -90,8 +90,8 @@ const CompanyListingTable = () => {
               : company.status === 3
               ? "Suspended"
               : "",
-              created_on: company.created_on,
-              updated_on: company.updated_on
+          created_on: company.created_on,
+          updated_on: company.updated_on,
         }));
         setCompanyList(formattedAccounts);
         setHasNextPage(items.length === rowsPerPage);
@@ -256,6 +256,64 @@ const CompanyListingTable = () => {
                   >
                     ID
                   </b>
+                </TableCell>
+
+                <TableCell>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                      textWrap: "nowrap",
+                    }}
+                  >
+                    Company Name
+                  </b>
+                </TableCell>
+
+                <TableCell>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    Address
+                  </b>
+                </TableCell>
+
+                <TableCell>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    Phone
+                  </b>
+                </TableCell>
+
+                <TableCell>
+                  <b
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: selectedCompany ? "0.8rem" : "1rem",
+                    }}
+                  >
+                    Email
+                  </b>
+                </TableCell>
+                <TableCell>
+                  <Box display="flex" justifyContent="center">
+                    <b>Status</b>
+                  </Box>
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>
                   <TextField
                     type="number"
                     variant="outlined"
@@ -278,18 +336,7 @@ const CompanyListingTable = () => {
                     }}
                   />
                 </TableCell>
-
                 <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      textWrap: "nowrap",
-                    }}
-                  >
-                    Company Name
-                  </b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -311,17 +358,7 @@ const CompanyListingTable = () => {
                     }}
                   />
                 </TableCell>
-
                 <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedCompany ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    Address
-                  </b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -343,17 +380,7 @@ const CompanyListingTable = () => {
                     }}
                   />
                 </TableCell>
-
                 <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedCompany ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    Phone
-                  </b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -375,17 +402,7 @@ const CompanyListingTable = () => {
                     }}
                   />
                 </TableCell>
-
                 <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedCompany ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    Email
-                  </b>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -406,11 +423,6 @@ const CompanyListingTable = () => {
                       },
                     }}
                   />
-                </TableCell>
-                <TableCell>
-                  <Box display="flex" justifyContent="center">
-                    <b>Status</b>
-                  </Box>
                 </TableCell>
               </TableRow>
             </TableHead>

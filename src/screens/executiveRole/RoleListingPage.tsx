@@ -226,32 +226,6 @@ const RoleListingTable = () => {
                     <b style={{ display: "block", fontSize: "0.85rem" }}>
                       {label}
                     </b>
-                    <TextField
-                      variant="outlined"
-                      size="small"
-                      placeholder="Search"
-                      value={search[key as keyof typeof search]}
-                      onChange={(e) =>
-                        handleSearchChange(e, key as keyof typeof search)
-                      }
-                      type={key === "id" ? "number" : "text"}
-                      fullWidth
-                      sx={{
-                        "& .MuiInputBase-root": {
-                          height: 36,
-                          fontSize: "0.85rem",
-                        },
-                        "& .MuiInputBase-input": {
-                          textAlign: "center",
-                          px: 1,
-                        },
-                      }}
-                      inputProps={
-                        key === "id"
-                          ? { style: { textAlign: "center" } }
-                          : undefined
-                      }
-                    />
                   </TableCell>
                 ))}
 
@@ -262,6 +236,40 @@ const RoleListingTable = () => {
                 <TableCell sx={{ minWidth: 160, textAlign: "center" }}>
                   <b style={{ fontSize: "0.85rem" }}>Last Updated at</b>
                 </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell width="10%">
+                  <TextField
+                    type="number"
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    value={search.id}
+                    onChange={(e) => handleSearchChange(e, "id")}
+                    fullWidth
+                    sx={{
+                      "& .MuiInputBase-root": { height: 40 },
+                      "& .MuiInputBase-input": { textAlign: "center" },
+                    }}
+                  />
+                </TableCell>
+                <TableCell width="20%">
+                  <TextField
+                    type="text"
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    value={search.Rolename}
+                    onChange={(e) => handleSearchChange(e, "Rolename")}
+                    fullWidth
+                    sx={{
+                      "& .MuiInputBase-root": { height: 40 },
+                      "& .MuiInputBase-input": { textAlign: "center" },
+                    }}
+                  />
+                </TableCell>
+                <TableCell width="10%"></TableCell>
+                <TableCell width="10%"></TableCell>
               </TableRow>
             </TableHead>
 
@@ -284,7 +292,7 @@ const RoleListingTable = () => {
                         }}
                       >
                         <TableCell align="center">{row.id}</TableCell>
-                        <TableCell >
+                        <TableCell>
                           <Tooltip title={row.name} placement="bottom">
                             <Typography noWrap>
                               {row.name.length > 30
@@ -305,91 +313,6 @@ const RoleListingTable = () => {
                                 .format("DD-MM-YYYY, hh:mm A")
                             : "Not updated yet"}
                         </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        {/* <TableCell
-                          style={{ paddingBottom: 0, paddingTop: 0 }}
-                          colSpan={3}
-                        >
-                          <Collapse
-                            in={expandedGroups[row.id.toString()]}
-                            timeout="auto"
-                            unmountOnExit
-                          >
-                            <Box sx={{ margin: 1 }}>
-                              <Typography
-                                variant="subtitle2"
-                                gutterBottom
-                                component="div"
-                              >
-                                Permissions
-                              </Typography>
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  flexWrap: "wrap",
-                                  gap: 1,
-                                }}
-                              >
-                                {permissionGroups.map((group) => (
-                                  <Box
-                                    key={group.groupName}
-                                    sx={{
-                                      border: "1px solid #e0e0e0",
-                                      borderRadius: 1,
-                                      p: 1,
-                                      minWidth: "120px",
-                                    }}
-                                  >
-                                    <Typography
-                                      variant="caption"
-                                      fontWeight="bold"
-                                    >
-                                      {group.groupName}
-                                    </Typography>
-                                    <Box
-                                      sx={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        mt: 0.5,
-                                      }}
-                                    >
-                                      {group.permissions.map((permission) => (
-                                        <Box
-                                          key={permission.key}
-                                          sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 0.5,
-                                          }}
-                                        >
-                                          <Typography variant="caption">
-                                            {permission.label}:
-                                          </Typography>
-                                          {row.roleDetails[permission.key] ? (
-                                            <CheckCircleIcon
-                                              sx={{
-                                                color: "#228B22",
-                                                fontSize: "14px",
-                                              }}
-                                            />
-                                          ) : (
-                                            <CancelIcon
-                                              sx={{
-                                                color: "#DE3163",
-                                                fontSize: "14px",
-                                              }}
-                                            />
-                                          )}
-                                        </Box>
-                                      ))}
-                                    </Box>
-                                  </Box>
-                                ))}
-                              </Box>
-                            </Box>
-                          </Collapse>
-                        </TableCell> */}
                       </TableRow>
                     </React.Fragment>
                   );

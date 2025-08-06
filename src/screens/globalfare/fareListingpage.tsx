@@ -221,11 +221,13 @@ const FareListingPage = () => {
                   margin: "0 auto",
                 },
               },
+              borderRadius: 2,
+            border: "1px solid #e0e0e0",
             }}
           >
             <Table stickyHeader>
               <TableHead>
-                <TableRow>
+                <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
                   {/* ID Column */}
                   <TableCell sx={{ width: "10%" }}>
                     <Box
@@ -234,19 +236,6 @@ const FareListingPage = () => {
                       alignItems="center"
                     >
                       <b>ID</b>
-                      <TextField
-                        type="number"
-                        variant="outlined"
-                        size="small"
-                        placeholder="Search"
-                        value={search.id}
-                        onChange={(e) => handleSearchChange(e, "id")}
-                        sx={{
-                          width: "100%",
-                          mt: 1,
-                          "& .MuiInputBase-root": { height: 36 },
-                        }}
-                      />
                     </Box>
                   </TableCell>
 
@@ -258,18 +247,6 @@ const FareListingPage = () => {
                       alignItems="center"
                     >
                       <b>Name</b>
-                      <TextField
-                        variant="outlined"
-                        size="small"
-                        placeholder="Search"
-                        value={search.name}
-                        onChange={(e) => handleSearchChange(e, "name")}
-                        sx={{
-                          width: "100%",
-                          mt: 1,
-                          "& .MuiInputBase-root": { height: 36 },
-                        }}
-                      />
                     </Box>
                   </TableCell>
 
@@ -293,6 +270,40 @@ const FareListingPage = () => {
                       Created On
                     </b>
                   </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>
+                    <TextField
+                      type="number"
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.id}
+                      onChange={(e) => handleSearchChange(e, "id")}
+                      sx={{
+                        width: "100%",
+                        mt: 1,
+                        "& .MuiInputBase-root": { height: 36 },
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <TextField
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.name}
+                      onChange={(e) => handleSearchChange(e, "name")}
+                      sx={{
+                        width: "100%",
+                        mt: 1,
+                        "& .MuiInputBase-root": { height: 36 },
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
                 </TableRow>
               </TableHead>
 
@@ -347,7 +358,7 @@ const FareListingPage = () => {
                               flexWrap="wrap"
                               gap={1}
                               sx={{
-                                maxWidth: "390px", 
+                                maxWidth: "390px",
                               }}
                             >
                               {fare.attributes.ticket_types.map(

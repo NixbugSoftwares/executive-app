@@ -12,7 +12,6 @@ import {
   Button,
   Dialog,
   DialogContent,
-  FormControl,
   Select,
   MenuItem,
   Typography,
@@ -357,80 +356,184 @@ const OperatorListingTable = () => {
           )}
           <Table stickyHeader>
             <TableHead>
-              <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                {["ID", "Full Name", "Phone", "Email", "Gender"].map(
-                  (header) => (
-                    <TableCell key={header}>
-                      <b style={{ display: "block", textAlign: "center" }}>
-                        {header}
-                      </b>
-                      {header === "Gender" ? (
-                        <FormControl fullWidth size="small">
-                          <Select
-                            value={search.gender}
-                            onChange={handleSelectChange}
-                            displayEmpty
-                            size="small"
-                            sx={{
-                              width: "150px",
-                              textAlign: "center",
-                              "& .MuiInputBase-root": {
-                                height: 30,
-                                padding: "4px",
-                              },
-                            }}
-                          >
-                            <MenuItem value="">All</MenuItem>
-                            <MenuItem value="Male">Male</MenuItem>
-                            <MenuItem value="Female">Female</MenuItem>
-                            <MenuItem value="Transgender">Transgender</MenuItem>
-                            <MenuItem value="Other">Other</MenuItem>
-                          </Select>
-                        </FormControl>
-                      ) : (
-                        <TextField
-                          variant="outlined"
-                          size="small"
-                          placeholder="Search"
-                          type={
-                            header === "ID" || header === "Phone"
-                              ? "number"
-                              : "text"
-                          }
-                          value={
-                            search[
-                              header
-                                .toLowerCase()
-                                .replace(" ", "_") as keyof typeof search
-                            ] || ""
-                          }
-                          onChange={(e) =>
-                            handleSearchChange(
-                              e,
-                              header
-                                .toLowerCase()
-                                .replace(" ", "_") as keyof typeof search
-                            )
-                          }
-                          sx={{
-                            "& .MuiInputBase-root": {
-                              height: 40,
-                              padding: "4px",
-                              textAlign: "center",
-                              fontSize: selectedOperator ? "0.8rem" : "1rem",
-                            },
-                            "& .MuiInputBase-input": {
-                              textAlign: "center",
-                              fontSize: selectedOperator ? "0.8rem" : "1rem",
-                            },
-                          }}
-                        />
-                      )}
-                    </TableCell>
-                  )
-                )}
-              </TableRow>
-            </TableHead>
+                          {/* Header Row */}
+                          <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+                            <TableCell
+                              sx={{
+                                width: "80px",
+                                minWidth: "80px",
+                                textAlign: "center",
+                                backgroundColor: "#fafafa",
+                                fontWeight: 600,
+                                fontSize: "0.875rem",
+                                borderBottom: "1px solid #ddd",
+                              }}
+                            >
+                              ID
+                            </TableCell>
+                            <TableCell
+                              sx={{
+                                width: "200px",
+                                minWidth: "200px",
+                                textAlign: "center",
+                                backgroundColor: "#fafafa",
+                                fontWeight: 600,
+                                fontSize: "0.875rem",
+                                borderBottom: "1px solid #ddd",
+                              }}
+                            >
+                              Full Name
+                            </TableCell>
+                            <TableCell
+                              sx={{
+                                width: "160px",
+                                minWidth: "160px",
+                                textAlign: "center",
+                                backgroundColor: "#fafafa",
+                                fontWeight: 600,
+                                fontSize: "0.875rem",
+                                borderBottom: "1px solid #ddd",
+                              }}
+                            >
+                              Phone
+                            </TableCell>
+                            <TableCell
+                              sx={{
+                                width: "220px",
+                                minWidth: "220px",
+                                textAlign: "center",
+                                backgroundColor: "#fafafa",
+                                fontWeight: 600,
+                                fontSize: "0.875rem",
+                                borderBottom: "1px solid #ddd",
+                              }}
+                            >
+                              Email
+                            </TableCell>
+                            {/* <TableCell
+                              sx={{
+                                width: "120px",
+                                minWidth: "120px",
+                                textAlign: "center",
+                                backgroundColor: "#fafafa",
+                                fontWeight: 600,
+                                fontSize: "0.875rem",
+                                borderBottom: "1px solid #ddd",
+                              }}
+                            >
+                              Designation
+                            </TableCell> */}
+                            <TableCell
+                              sx={{
+                                width: "120px",
+                                minWidth: "120px",
+                                textAlign: "center",
+                                backgroundColor: "#fafafa",
+                                fontWeight: 600,
+                                fontSize: "0.875rem",
+                                borderBottom: "1px solid #ddd",
+                              }}
+                            >
+                              Gender
+                            </TableCell>
+                          </TableRow>
+                          {/* Search Row */}
+                          <TableRow>
+                            <TableCell width="10%">
+                              <TextField
+                                type="number"
+                                variant="outlined"
+                                size="small"
+                                placeholder="Search"
+                                value={search.id}
+                                onChange={(e) => handleSearchChange(e, "id")}
+                                fullWidth
+                                sx={{
+                                  "& .MuiInputBase-root": { height: 40 },
+                                  "& .MuiInputBase-input": { textAlign: "center" },
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell width="20%">
+                              <TextField
+                                type="text"
+                                variant="outlined"
+                                size="small"
+                                placeholder="Search"
+                                value={search.full_name}
+                                onChange={(e) => handleSearchChange(e, "full_name")}
+                                fullWidth
+                                sx={{
+                                  "& .MuiInputBase-root": { height: 40 },
+                                  "& .MuiInputBase-input": { textAlign: "center" },
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell width="10%">
+                              <TextField
+                                type="number"
+                                variant="outlined"
+                                size="small"
+                                placeholder="Search"
+                                value={search.phone_number}
+                                onChange={(e) => handleSearchChange(e, "phone_number")}
+                                fullWidth
+                                sx={{
+                                  "& .MuiInputBase-root": { height: 40 },
+                                  "& .MuiInputBase-input": { textAlign: "center" },
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell width={"10%"}>
+                              <TextField
+                                type="text"
+                                variant="outlined"
+                                size="small"
+                                placeholder="Search"
+                                value={search.email_id}
+                                onChange={(e) => handleSearchChange(e, "email_id")}
+                                fullWidth
+                                sx={{
+                                  "& .MuiInputBase-root": { height: 40 },
+                                  "& .MuiInputBase-input": { textAlign: "center" },
+                                }}
+                              />
+                            </TableCell>
+            
+                            {/* <TableCell width="20%">
+                              <TextField
+                                type="text"
+                                variant="outlined"
+                                size="small"
+                                placeholder="Search"
+                                value={search.designation}
+                                onChange={(e) => handleSearchChange(e, "designation")}
+                                fullWidth
+                                sx={{
+                                  "& .MuiInputBase-root": { height: 40 },
+                                  "& .MuiInputBase-input": { textAlign: "center" },
+                                }}
+                              />
+                            </TableCell> */}
+            
+                            <TableCell width="10%">
+                              <Select
+                                value={search.gender}
+                                onChange={handleSelectChange}
+                                displayEmpty
+                                size="small"
+                                fullWidth
+                                sx={{ height: 40 }}
+                              >
+                                <MenuItem value="">All</MenuItem>
+                                <MenuItem value="Male">Male</MenuItem>
+                                <MenuItem value="Female">Female</MenuItem>
+                                <MenuItem value="Transgender">Transgender</MenuItem>
+                                <MenuItem value="Other">Other</MenuItem>
+                              </Select>
+                            </TableCell>
+                          </TableRow>
+                        </TableHead>
 
             <TableBody>
               {isLoading ? (

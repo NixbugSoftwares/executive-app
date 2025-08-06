@@ -249,32 +249,6 @@ const RoleListingTable = () => {
                     <b style={{ display: "block", fontSize: "0.85rem" }}>
                       {label}
                     </b>
-                    <TextField
-                      variant="outlined"
-                      size="small"
-                      placeholder="Search"
-                      value={search[key as keyof typeof search]}
-                      onChange={(e) =>
-                        handleSearchChange(e, key as keyof typeof search)
-                      }
-                      type={key === "id" ? "number" : "text"}
-                      fullWidth
-                      sx={{
-                        "& .MuiInputBase-root": {
-                          height: 36,
-                          fontSize: "0.85rem",
-                        },
-                        "& .MuiInputBase-input": {
-                          textAlign: "center",
-                          px: 1,
-                        },
-                      }}
-                      inputProps={
-                        key === "id"
-                          ? { style: { textAlign: "center" } }
-                          : undefined
-                      }
-                    />
                   </TableCell>
                 ))}
 
@@ -285,6 +259,40 @@ const RoleListingTable = () => {
                 <TableCell sx={{ minWidth: 160, textAlign: "center" }}>
                   <b style={{ fontSize: "0.85rem" }}>Last Updated at</b>
                 </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell width="10%">
+                  <TextField
+                    type="number"
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    value={search.id}
+                    onChange={(e) => handleSearchChange(e, "id")}
+                    fullWidth
+                    sx={{
+                      "& .MuiInputBase-root": { height: 40 },
+                      "& .MuiInputBase-input": { textAlign: "center" },
+                    }}
+                  />
+                </TableCell>
+                <TableCell width="20%">
+                  <TextField
+                    type="text"
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    value={search.Rolename}
+                    onChange={(e) => handleSearchChange(e, "Rolename")}
+                    fullWidth
+                    sx={{
+                      "& .MuiInputBase-root": { height: 40 },
+                      "& .MuiInputBase-input": { textAlign: "center" },
+                    }}
+                  />
+                </TableCell>
+                <TableCell width="10%"></TableCell>
+                <TableCell width="10%"></TableCell>
               </TableRow>
             </TableHead>
 
@@ -307,7 +315,7 @@ const RoleListingTable = () => {
                         }}
                       >
                         <TableCell align="center">{row.id}</TableCell>
-                        <TableCell >
+                        <TableCell>
                           <Tooltip title={row.name} placement="bottom">
                             <Typography noWrap>
                               {row.name.length > 30
