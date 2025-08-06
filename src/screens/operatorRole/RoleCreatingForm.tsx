@@ -313,16 +313,6 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
 
       <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
         <Button
-          type="button"
-          variant="outlined"
-          size="small"
-          fullWidth
-          onClick={onClose}
-          disabled={loading}
-        >
-          Cancel
-        </Button>
-        <Button
           type="submit"
           variant="contained"
           size="small"

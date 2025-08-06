@@ -667,6 +667,11 @@ const OperatorListingTable = () => {
             defaultCompanyId={filterCompanyId ?? undefined}
           />
         </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenCreateModal(false)} color="error">  
+            Cancel
+          </Button>
+        </DialogActions>
       </Dialog>
       {NoRolesDialog}
     </Box>
