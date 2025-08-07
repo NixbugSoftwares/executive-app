@@ -30,7 +30,7 @@ import PaginationControls from "../../common/paginationControl";
 import FormModal from "../../common/formModal";
 const getGenderBackendValue = (displayValue: string): string => {
   const genderMap: Record<string, string> = {
-     Other: "1",
+    Other: "1",
     Female: "2",
     Male: "3",
     Transgender: "4",
@@ -59,7 +59,9 @@ const AccountListingTable = () => {
   const canCreateExecutive = useSelector((state: RootState) =>
     state.app.permissions.includes("create_executive")
   );
-
+  const canAssignRole = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_ex_role")
+  );
   // Function to fetch accounts
   const fetchAccounts = useCallback((pageNumber: number, searchParams = {}) => {
     const offset = pageNumber * rowsPerPage;
@@ -68,7 +70,7 @@ const AccountListingTable = () => {
       .then((res) => {
         const items = res.data || [];
         console.log("Fetched Accounts:", items);
-        
+
         const formattedAccounts = items.map((account: any) => ({
           id: account.id,
           fullName: account.full_name || account.fullName,
@@ -93,12 +95,7 @@ const AccountListingTable = () => {
       })
       .catch((error) => {
         console.error("Fetch Error:", error);
-        showErrorToast(
-          error.detail ||
-            error.message ||
-            error ||
-            "Failed to fetch account list"
-        );
+        showErrorToast(error || "Failed to fetch account list");
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -191,8 +188,8 @@ const AccountListingTable = () => {
         <Tooltip
           title={
             <span>
-              {!canCreateExecutive
-                ? "You don't have permission, contact the admin"
+              {!canCreateExecutive || !canAssignRole
+                ? "To add an executive, you must need to have the permission to create executives and assign roles."
                 : "Click to open the account creation form"}
             </span>
           }
@@ -203,7 +200,7 @@ const AccountListingTable = () => {
               ml: "auto",
               mr: 2,
               mb: 2,
-              backgroundColor: !canCreateExecutive
+              backgroundColor: !canCreateExecutive || !canAssignRole
                 ? "#6c87b7 !important"
                 : "#00008B",
               color: "white !important",
@@ -215,9 +212,9 @@ const AccountListingTable = () => {
             }}
             variant="contained"
             onClick={() => setOpenCreateModal(true)}
-            disabled={!canCreateExecutive}
+            disabled={!canCreateExecutive || !canAssignRole}
             style={{
-              cursor: !canCreateExecutive ? "not-allowed" : "pointer",
+              cursor: !canCreateExecutive || !canAssignRole ? "not-allowed" : "pointer",
             }}
           >
             Add New Executive

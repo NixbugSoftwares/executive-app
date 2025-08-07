@@ -57,9 +57,6 @@ const OperatorListingTable = () => {
   const [openNoRolesModal, setOpenNoRolesModal] = useState(false);
   const [_rolesExist, setRolesExist] = useState(true);
   const navigate = useNavigate();
-
-  console.log("filterCompanyId", filterCompanyId);
-
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const urlCompanyId = companyId || queryParams.get("companyId");
@@ -298,7 +295,7 @@ const OperatorListingTable = () => {
           <Tooltip
             title={
               !canCreateOperator || !canAssignRole
-                ? "You don't have permission, contact the admin"
+                ? "To add an operator, you must need to have the permission to create operators and assign roles."
                 : "Click to open the operator creation form"
             }
             placement="top-end"
