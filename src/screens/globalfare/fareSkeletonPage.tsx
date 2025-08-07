@@ -337,6 +337,14 @@ const FareSkeletonPage = ({
                 value: 32,
                 message: "Fare name must be at most 32 characters",
               },
+              validate: {
+                notEmpty: (value) =>
+                  value.trim().length > 0 || "Fare name cannot be empty",
+                noLeadingTrailingSpace: (value) =>
+                  value === value.trim() || "No spaces at beginning or end",
+                noConsecutiveSpaces: (value) =>
+                  !value.includes("  ") || "No consecutive spaces allowed",
+              },
             }}
             render={({ field }) => (
               <TextField
@@ -347,6 +355,11 @@ const FareSkeletonPage = ({
                 sx={{ mb: 3 }}
                 error={!!errors.name}
                 helperText={errors.name?.message}
+                onChange={(e) => {
+                  // Optional: Prevent typing consecutive spaces
+                  const value = e.target.value.replace(/\s{2,}/g, " ");
+                  field.onChange(value);
+                }}
               />
             )}
           />
