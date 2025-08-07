@@ -90,6 +90,11 @@ const OperatorListingTable = () => {
   const canCreateOperator = useSelector((state: RootState) =>
     state.app.permissions.includes("create_operator")
   );
+  const canAssignRole = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_op_role")
+  );
+  console.log("canAssignRole", canAssignRole);
+  
   const fetchAccounts = useCallback((pageNumber: number, searchParams = {}) => {
     const offset = pageNumber * rowsPerPage;
     dispatch(
@@ -292,14 +297,14 @@ const OperatorListingTable = () => {
         >
           <Tooltip
             title={
-              !canCreateOperator
+              !canCreateOperator || !canAssignRole
                 ? "You don't have permission, contact the admin"
                 : "Click to open the operator creation form"
             }
             placement="top-end"
           >
             <span
-              style={{ cursor: !canCreateOperator ? "not-allowed" : "default" }}
+              style={{ cursor: !canCreateOperator || !canAssignRole ? "not-allowed" : "default" }}
             >
               <Button
                 sx={{
@@ -307,7 +312,7 @@ const OperatorListingTable = () => {
                   mr: 2,
                   mb: 2,
                   display: "block",
-                  backgroundColor: !canCreateOperator
+                  backgroundColor: !canCreateOperator || !canAssignRole
                     ? "#6c87b7 !important"
                     : "#00008B",
                   color: "white",
@@ -318,7 +323,7 @@ const OperatorListingTable = () => {
                 }}
                 variant="contained"
                 onClick={handleAddOperatorClick}
-                disabled={!canCreateOperator}
+                disabled={!canCreateOperator || !canAssignRole}
               >
                 Add Operator
               </Button>

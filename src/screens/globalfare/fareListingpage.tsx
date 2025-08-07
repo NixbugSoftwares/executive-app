@@ -45,8 +45,8 @@ const FareListingPage = () => {
   const rowsPerPage = 10;
   const [hasNextPage, setHasNextPage] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "create" | "view">("list");
-  const canManageFare = useSelector((state: RootState) =>
-    state.app.permissions.includes("update_fare")
+  const canCreateFare = useSelector((state: RootState) =>
+    state.app.permissions.includes("create_fare")
   );
   const fetchGlobalFares = useCallback(
     (pageNumber: number, searchParams = {}) => {
@@ -172,13 +172,13 @@ const FareListingPage = () => {
             <Typography variant="h6">Global Fares</Typography>
             <Tooltip
               title={
-                !canManageFare
+                !canCreateFare
                   ? "You don't have permission, contact the admin"
                   : "click to open the create fare page"
               }
             >
               <span
-                style={{ cursor: !canManageFare ? "not-allowed" : "default" }}
+                style={{ cursor: !canCreateFare ? "not-allowed" : "default" }}
               >
                 <Button
                   sx={{
@@ -186,7 +186,7 @@ const FareListingPage = () => {
                     mr: 2,
                     mb: 2,
                     display: "block",
-                    backgroundColor: !canManageFare
+                    backgroundColor: !canCreateFare
                       ? "#6c87b7 !important"
                       : "#00008B",
                     color: "white",
@@ -197,7 +197,7 @@ const FareListingPage = () => {
                   }}
                   variant="contained"
                   onClick={() => setViewMode("create")}
-                  disabled={!canManageFare}
+                  disabled={!canCreateFare}
                 >
                   Add New Fare
                 </Button>
