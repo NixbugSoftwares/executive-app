@@ -89,11 +89,10 @@ const LandmarkListing = () => {
   const [busStopsByLandmark, setBusStopsByLandmark] = useState<{
     [key: number]: BusStop[];
   }>({});
-  const canCreateLandmark = useSelector((state: RootState) =>
-    state.app.permissions.includes("create_landmark")
-  );
-  const canUpdateLandmark = useSelector((state: RootState) =>
-    state.app.permissions.includes("update_landmark")
+  const hasLandmarkPermission = useSelector(
+    (state: RootState) =>
+      state.app.permissions.includes("create_landmark") ||
+      state.app.permissions.includes("update_landmark")
   );
 
   //****************exctracting points of landmark and busstop**********************
@@ -336,7 +335,10 @@ const LandmarkListing = () => {
               <CircularProgress />
             </Box>
           )}
-          <Table stickyHeader sx={{ borderCollapse: "collapse", width: "100%" }}>
+          <Table
+            stickyHeader
+            sx={{ borderCollapse: "collapse", width: "100%" }}
+          >
             <TableHead>
               <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
                 <TableCell colSpan={2} sx={{ width: "25%" }}>
@@ -543,8 +545,7 @@ const LandmarkListing = () => {
                                               <TableCell align="center">
                                                 <Tooltip
                                                   title={
-                                                    !canUpdateLandmark ||
-                                                    !canCreateLandmark
+                                                    !hasLandmarkPermission
                                                       ? "You don't have permission, contact the admin"
                                                       : "Click to update the Bus stop"
                                                   }
@@ -553,8 +554,7 @@ const LandmarkListing = () => {
                                                   <span
                                                     style={{
                                                       cursor:
-                                                        !canUpdateLandmark ||
-                                                        !canCreateLandmark
+                                                        !hasLandmarkPermission
                                                           ? "not-allowed"
                                                           : "default",
                                                     }}
@@ -564,8 +564,7 @@ const LandmarkListing = () => {
                                                       color="success"
                                                       sx={{ mr: 1 }}
                                                       disabled={
-                                                        !canUpdateLandmark ||
-                                                        !canCreateLandmark
+                                                        !hasLandmarkPermission
                                                       }
                                                       onClick={(e) => {
                                                         e.stopPropagation();
@@ -584,8 +583,7 @@ const LandmarkListing = () => {
 
                                                 <Tooltip
                                                   title={
-                                                    !canUpdateLandmark ||
-                                                    !canCreateLandmark
+                                                    !hasLandmarkPermission
                                                       ? "You don't have permission, contact the admin"
                                                       : "Click to delete the Bus stop"
                                                   }
@@ -594,8 +592,7 @@ const LandmarkListing = () => {
                                                   <span
                                                     style={{
                                                       cursor:
-                                                        !canUpdateLandmark ||
-                                                        !canCreateLandmark
+                                                        !hasLandmarkPermission
                                                           ? "not-allowed"
                                                           : "default",
                                                     }}
@@ -604,8 +601,7 @@ const LandmarkListing = () => {
                                                       size="small"
                                                       color="error"
                                                       disabled={
-                                                        !canUpdateLandmark ||
-                                                        !canCreateLandmark
+                                                        !hasLandmarkPermission
                                                       }
                                                       onClick={(e) => {
                                                         e.stopPropagation();
@@ -742,6 +738,7 @@ const LandmarkListing = () => {
             <LandmarkUpdateForm
               onClose={() => setOpenUpdateModal(false)}
               refreshList={refreshList}
+              onBack={() => { setSelectedLandmark(null); setExpandedRow(null); }}
               landmarkId={selectedLandmark.id}
               landmarkData={{
                 name: selectedLandmark.name,

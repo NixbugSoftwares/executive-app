@@ -530,7 +530,7 @@ const parseWKTBoundary = (wkt: string): [number, number][] => {
     shouldFitView,
   ]);
 
-  //************************check for overlaps*********************
+  //************************check for overlaps******************************************************
 
 const checkForOverlaps = (newPolygon: Polygon): boolean => {
   if (!landmarks || landmarks.length === 0) return false;

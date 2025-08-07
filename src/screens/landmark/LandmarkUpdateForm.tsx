@@ -28,6 +28,7 @@ interface ILandmarkUpdateFormProps {
   landmarkId: number;
   boundary?: string;
   landmarkData?: ILandmarkFormInputs;
+  onBack?: () => void;
 }
 
 const typeOptions = [
@@ -61,6 +62,7 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
   landmarkId,
   boundary,
   landmarkData,
+  onBack
 }) => {
   console.log(landmarkData);
 
@@ -104,6 +106,7 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       await dispatch(landmarkUpdationApi({ landmarkId, formData })).unwrap();
       showSuccessToast("Landmark updated successfully!");
       refreshList("refresh");
+      onBack && onBack();
       onClose();
     } catch (error: any) {
       showErrorToast(error);
