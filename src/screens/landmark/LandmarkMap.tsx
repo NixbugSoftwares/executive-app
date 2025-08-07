@@ -36,6 +36,7 @@ import busstopimage from "../../assets/png/busstopimage.png";
 import { Landmark, BusStop } from "../../types/type";
 import { useAppDispatch } from "../../store/Hooks";
 import { landmarkListApi } from "../../slices/appSlice";
+import { intersects } from 'ol/extent';
 
 interface MapComponentProps {
   onDrawEnd: (coordinates: string) => void;
@@ -194,13 +195,28 @@ const MapComponent: React.FC<MapComponentProps> = ({
       showErrorToast(error);
     }
   };
-  const parseWKTBoundary = (wkt: string): [number, number][] => {
-    const cleaned = wkt.replace(/POLYGON\s*\(\(\s*/, "").replace(/\s*\)\)/, "");
-    return cleaned.split(",").map((pair) => {
-      const [lon, lat] = pair.trim().split(" ").map(Number);
+const parseWKTBoundary = (wkt: string): [number, number][] => {
+  try {
+    // Handle different WKT formats
+    const cleaned = wkt
+      .replace(/POLYGON\s*\(\(\s*/, "")
+      .replace(/\s*\)\)/, "")
+      .trim();
+    
+    if (!cleaned) throw new Error("Empty WKT after cleaning");
+    
+    return cleaned.split(",").map(pair => {
+      const coords = pair.trim().split(/\s+/);
+      if (coords.length !== 2) throw new Error("Invalid coordinate pair");
+      const [lon, lat] = coords.map(Number);
+      if (isNaN(lon) || isNaN(lat)) throw new Error("Invalid coordinates");
       return fromLonLat([lon, lat]) as [number, number];
     });
-  };
+  } catch (error) {
+    console.error("Failed to parse WKT:", wkt, error);
+    throw error;
+  }
+};
   const parseWKTPoint = (wkt: string): [number, number] | null => {
     try {
       const cleaned = wkt
@@ -515,43 +531,90 @@ const MapComponent: React.FC<MapComponentProps> = ({
   ]);
 
   //************************check for overlaps*********************
-  const checkForOverlaps = (newPolygon: Polygon): boolean => {
-    console.log("Checking for overlaps...");
-    console.log("landmarks:>>>>>>>>>>>>", landmarks);
-    
-    if (!landmarks || landmarks.length === 0) return false;
 
-    const newCoords = newPolygon.getCoordinates()[0];
+const checkForOverlaps = (newPolygon: Polygon): boolean => {
+  if (!landmarks || landmarks.length === 0) return false;
 
-    for (const landmark of landmarks) {
-      if (!landmark.boundary) continue;
+  const newExtent = newPolygon.getExtent();
+  const newCoords = newPolygon.getCoordinates()[0];
 
-      try {
-        const existingCoords = landmark.boundary
-          .split(",")
-          .map((coord) => coord.trim().split(" ").map(Number))
-          .map((coord) => fromLonLat(coord));
+  for (const landmark of landmarks) {
+    if (!landmark.boundary) continue;
 
-        const existingPolygon = new Polygon([existingCoords]);
+    try {
+      const existingCoords = parseWKTBoundary(landmark.boundary);
+      const existingPolygon = new Polygon([existingCoords]);
+      const existingExtent = existingPolygon.getExtent();
 
-        for (const coord of newCoords) {
-          if (existingPolygon.intersectsCoordinate(coord)) {
-            return true;
-          }
+      // 1. First do a quick bounding box check
+      if (!intersects(newExtent, existingExtent)) {
+        continue;
+      }
+
+      // 2. Check if any point of new polygon is inside existing polygon
+      for (const coord of newCoords) {
+        if (existingPolygon.intersectsCoordinate(coord)) {
+          return true;
         }
+      }
 
-        for (const coord of existingPolygon.getCoordinates()[0]) {
-          if (newPolygon.intersectsCoordinate(coord)) {
-            return true;
-          }
+      // 3. Check if any point of existing polygon is inside new polygon
+      const existingFlatCoords = existingPolygon.getCoordinates()[0];
+      for (const coord of existingFlatCoords) {
+        if (newPolygon.intersectsCoordinate(coord)) {
+          return true;
         }
-      } catch (error) {
-        showErrorToast(`Error processing landmark ${landmark.id}: ${error}`);
+      }
+
+      // 4. Check if edges intersect (more thorough but expensive)
+      if (polygonsIntersect(newPolygon, existingPolygon)) {
+        return true;
+      }
+
+    } catch (error) {
+      console.error(`Error processing landmark ${landmark.id}:`, error);
+      return true; // Assume overlap if we can't parse
+    }
+  }
+
+  return false;
+};
+
+// Helper function to check if two polygons intersect
+const polygonsIntersect = (poly1: Polygon, poly2: Polygon): boolean => {
+  const coords1 = poly1.getCoordinates()[0];
+  const coords2 = poly2.getCoordinates()[0];
+  
+  // Check each edge of poly1 against each edge of poly2
+  for (let i = 0; i < coords1.length - 1; i++) {
+    for (let j = 0; j < coords2.length - 1; j++) {
+      if (edgesIntersect(
+        coords1[i] as [number, number], coords1[i+1] as [number, number],
+        coords2[j] as [number, number], coords2[j+1] as [number, number]
+      )) {
+        return true;
       }
     }
+  }
+  return false;
+};
 
-    return false;
+// Helper function to check if two line segments intersect
+const edgesIntersect = (
+  a1: [number, number],
+  a2: [number, number],
+  b1: [number, number],
+  b2: [number, number]
+): boolean => {
+  // Implementation of line segment intersection check
+  // Using the cross product method
+  const ccw = (a: [number, number], b: [number, number], c: [number, number]) => {
+    return (c[1]-a[1])*(b[0]-a[0]) > (b[1]-a[1])*(c[0]-a[0]);
   };
+  
+  return ccw(a1, b1, b2) !== ccw(a2, b1, b2) && 
+         ccw(a1, a2, b1) !== ccw(a1, a2, b2);
+};
 
   //*****************************landmark drawing functions*********************
   const toggleDrawing = () => {
