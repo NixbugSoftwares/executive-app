@@ -249,7 +249,7 @@ const DutyListingTable = () => {
           title={
             !canCreateDuty
               ? "You don't have permission, contact the admin"
-              : "Click to open the Bus creation form"
+              : "Click to open the Duty creation form"
           }
           placement="top-end"
         >

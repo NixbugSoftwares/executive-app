@@ -21,13 +21,16 @@ import { useAppDispatch } from "../../store/Hooks";
 import { dutyDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import DutyUpdateForm from "./UpdationForm";
-import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/toastMessageHelper";
 import { RootState } from "../../store/Store";
 import { useSelector } from "react-redux";
 import moment from "moment";
 import { Duty } from "../../types/type";
 interface DutyCardProps {
-  duty: Duty
+  duty: Duty;
   refreshList: (value: any) => void;
   onUpdate: () => void;
   onDelete: (id: number) => void;
@@ -70,15 +73,12 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const dispatch = useAppDispatch();
   console.log("duty()()()()()()(()()", duty);
-const canUpdateDuty = useSelector((state: RootState) =>
-    state.app.permissions.includes("create_duty")
+  const canUpdateDuty = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_duty")
   );
   const canDeleteDuty = useSelector((state: RootState) =>
-    state.app.permissions.includes("create_duty")
+    state.app.permissions.includes("delete_duty")
   );
-  const deleteDutyPermission =
-    canDeleteDuty && (duty.status === "Assigned" || duty.status === "Finished");
-
 
   const handleBusDelete = async () => {
     if (!duty.id) {
@@ -167,25 +167,25 @@ const canUpdateDuty = useSelector((state: RootState) =>
               />
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-            <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
+              <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
 
-            <Typography variant="body2">
-              <b> Created at:</b>
-              {moment(duty.created_on).local().format("DD-MM-YYYY, hh:mm A")}
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-            <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
+              <Typography variant="body2">
+                <b> Created at:</b>
+                {moment(duty.created_on).local().format("DD-MM-YYYY, hh:mm A")}
+              </Typography>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+              <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
 
-            <Typography variant="body2">
-              <b> Last updated at:</b>
-              {moment(duty?.updated_on).isValid()
-                ? moment(duty.updated_on)
-                    .local()
-                    .format("DD-MM-YYYY, hh:mm A")
-                : "Not updated yet"}
-            </Typography>
-          </Box>
+              <Typography variant="body2">
+                <b> Last updated at:</b>
+                {moment(duty?.updated_on).isValid()
+                  ? moment(duty.updated_on)
+                      .local()
+                      .format("DD-MM-YYYY, hh:mm A")
+                  : "Not updated yet"}
+              </Typography>
+            </Box>
           </Box>
         </Card>
 
@@ -242,19 +242,30 @@ const canUpdateDuty = useSelector((state: RootState) =>
             </Tooltip>
 
             {/* Delete Button with Tooltip */}
+            {/* Delete Button with Tooltip */}
             <Tooltip
               title={
-                !deleteDutyPermission
-                  ? duty.status === "Started" || duty.status === "Terminated"
-                    ? "Duty cannot be deleted after it has started or terminated"
-                    : "You don't have permission, contact the admin"
-                  : ""
+                !canDeleteDuty
+                  ? "You don't have permission, contact the admin"
+                  : duty.status === "Started"
+                  ? "You can't delete a started duty"
+                  : duty.status === "Ended"
+                  ? "You can't delete an ended duty"
+                  : duty.status === "Terminated"
+                  ? "You can't delete a terminated duty"
+                  : "Click to delete this duty"
               }
               arrow
               placement="top-start"
             >
               <span
-                style={{ cursor: !deleteDutyPermission ? "not-allowed" : "pointer" }}
+                style={{
+                  cursor:
+                    !canDeleteDuty ||
+                    ["Started", "Ended", "Terminated"].includes(duty.status)
+                      ? "not-allowed"
+                      : "pointer",
+                }}
               >
                 <Button
                   variant="contained"
@@ -262,7 +273,10 @@ const canUpdateDuty = useSelector((state: RootState) =>
                   size="small"
                   onClick={() => setDeleteConfirmOpen(true)}
                   startIcon={<DeleteIcon />}
-                  disabled={!deleteDutyPermission}
+                  disabled={
+                    !canDeleteDuty ||
+                    ["Started", "Ended", "Terminated"].includes(duty.status)
+                  }
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#e57373 !important",

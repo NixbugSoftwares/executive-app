@@ -232,7 +232,7 @@ const OperatorListingTable = () => {
   };
   const NoRolesDialog = (
     <Dialog open={openNoRolesModal} onClose={() => setOpenNoRolesModal(false)}>
-      <DialogTitle>No Roles Found</DialogTitle>
+      <DialogTitle ><Typography variant="h6" fontWeight="bold">No Roles Found</Typography></DialogTitle>
       <DialogContent>
         <Typography variant="body1" gutterBottom>
           You need to create at least one role before adding operators.
@@ -242,7 +242,7 @@ const OperatorListingTable = () => {
         </Typography>
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => setOpenNoRolesModal(false)} color="primary">
+        <Button onClick={() => setOpenNoRolesModal(false)} color="error">
           Cancel
         </Button>
         <Button
@@ -253,7 +253,7 @@ const OperatorListingTable = () => {
           color="primary"
           variant="contained"
         >
-          Go to Roles
+          Go to Role
         </Button>
       </DialogActions>
     </Dialog>

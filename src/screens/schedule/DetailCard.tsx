@@ -104,10 +104,10 @@ const ScheduleDetailsCard: React.FC<ServiceCardProps> = ({
   const [busName, setBusName] = useState("Bus not found");
   const [fareName, setFareName] = useState("Fare not found");
   const canUpdateSchedule = useSelector((state: RootState) =>
-    state.app.permissions.includes("create_schedule")
+    state.app.permissions.includes("update_schedule")
   );
   const canDeleteSchedule = useSelector((state: RootState) =>
-    state.app.permissions.includes("create_schedule")
+    state.app.permissions.includes("delete_schedule")
   );
   const fetchRouteName = async () => {
     try {

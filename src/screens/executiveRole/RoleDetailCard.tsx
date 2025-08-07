@@ -513,9 +513,9 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
                   disabled={!canDeleteRole}
                   startIcon={<DeleteIcon />}
                   sx={{
-                    minWidth: 100,
                     "&.Mui-disabled": {
-                      backgroundColor: theme.palette.error.light,
+                      backgroundColor: "#e57373 !important",
+                      color: "#ffffff99",
                     },
                   }}
                 >

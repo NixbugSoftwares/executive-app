@@ -106,7 +106,7 @@ const ServiceDetailsCard: React.FC<ServiceCardProps> = ({
     state.app.permissions.includes("update_service")
   );
   const canDeleteService = useSelector((state: RootState) =>
-    state.app.permissions.includes("update_service")
+    state.app.permissions.includes("delete_service")
   );
 
   const handleServiceDelete = async () => {

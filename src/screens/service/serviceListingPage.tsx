@@ -242,28 +242,34 @@ const ServiceListingTable = () => {
           overflow: "hidden",
         }}
       >
-        {canCreateService && (
+        <Tooltip
+          title={
+            !canCreateService
+              ? "You don't have permission, contact the admin"
+              : "Click to open the Service creation form"
+          }
+          placement="top-end"
+        >
           <Button
             sx={{
               ml: "auto",
               mr: 2,
               mb: 2,
-              backgroundColor: "#00008B",
+              backgroundColor: !canCreateService
+                ? "#6c87b7 !important"
+                : "#00008B",
               color: "white",
               display: "flex",
               justifyContent: "flex-end",
-              "&:disabled": {
-                backgroundColor: "#6c87b7",
-                cursor: "not-allowed",
-              },
             }}
             variant="contained"
             onClick={() => setOpenCreateModal(true)}
             disabled={!canCreateService}
+            style={{ cursor: !canCreateService ? "not-allowed" : "pointer" }}
           >
             Add New Service
           </Button>
-        )}
+        </Tooltip>
 
         <TableContainer
           sx={{
