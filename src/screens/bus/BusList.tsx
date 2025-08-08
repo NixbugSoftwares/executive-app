@@ -297,7 +297,7 @@ const BusListingTable = () => {
                   />
                 </TableCell>
                 <TableCell>
-                  <TextField
+                  {/* <TextField
                     variant="outlined"
                     size="small"
                     placeholder="Search"
@@ -309,7 +309,7 @@ const BusListingTable = () => {
                       "& .MuiInputBase-root": { height: 40 },
                       "& .MuiInputBase-input": { textAlign: "center" },
                     }}
-                  />
+                  /> */}
                 </TableCell>
               </TableRow>
             </TableHead>

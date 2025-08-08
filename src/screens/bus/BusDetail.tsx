@@ -314,7 +314,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
       <Dialog
         open={updateFormOpen}
         onClose={() => setUpdateFormOpen(false)}
-        maxWidth="xs"
+        maxWidth="sm"
         fullWidth
       >
         <DialogContent>

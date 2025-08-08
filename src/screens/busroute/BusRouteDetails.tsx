@@ -76,7 +76,7 @@ const BusRouteDetailsPage = ({
   refreshList,
 }: BusRouteDetailsProps) => {
   console.log("starting_time", routeStartingTime);
-  
+
   const dispatch = useAppDispatch();
   const [routeLandmarks, setRouteLandmarks] = useState<RouteLandmark[]>([]);
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
@@ -89,6 +89,7 @@ const BusRouteDetailsPage = ({
     null
   );
   const [updatedRouteName, setUpdatedRouteName] = useState(routeName);
+  const [error, setError] = useState("");
   const [localHour, setLocalHour] = useState<number>(6);
   const [localMinute, setLocalMinute] = useState<number>(0);
   const [amPm, setAmPm] = useState<string>("AM");
@@ -102,16 +103,18 @@ const BusRouteDetailsPage = ({
   const [arrivalDayOffset, setArrivalDayOffset] = useState<number>(0);
   const [departureDayOffset, setDepartureDayOffset] = useState<number>(0);
   const lastLandmark = routeLandmarks[routeLandmarks.length - 1];
-const canUpdateRoutes = useSelector((state: RootState) =>
+  const canUpdateRoutes = useSelector((state: RootState) =>
     state.app.permissions.includes("update_route")
   );
   // const canCreateRoutes = useSelector((state: RootState) =>
   //     state.app.permissions.includes("create_route")
   //   );
-     const fetchRouteLandmarks = async () => {
+  const fetchRouteLandmarks = async () => {
     setIsLoading(true);
     try {
-      const response = await dispatch(busRouteLandmarkListApi(routeId)).unwrap();
+      const response = await dispatch(
+        busRouteLandmarkListApi(routeId)
+      ).unwrap();
 
       const processedLandmarks = processLandmarks(response);
       const sortedLandmarks = processedLandmarks.sort(
@@ -120,11 +123,13 @@ const canUpdateRoutes = useSelector((state: RootState) =>
 
       setRouteLandmarks(sortedLandmarks);
       updateParentMapLandmarks(sortedLandmarks);
-      const landmarkIds = sortedLandmarks.map((lm) => Number(lm.landmark_id)).filter(Boolean);
+      const landmarkIds = sortedLandmarks
+        .map((lm) => Number(lm.landmark_id))
+        .filter(Boolean);
       const landmarkRes = await dispatch(
-        landmarkListApi({ id_list: landmarkIds }) 
+        landmarkListApi({ id_list: landmarkIds })
       ).unwrap();
-console.log("landmarkRes", landmarkRes);
+      console.log("landmarkRes", landmarkRes);
 
       setLandmarks(landmarkRes.data);
     } catch (error: any) {
@@ -133,7 +138,7 @@ console.log("landmarkRes", landmarkRes);
       setIsLoading(false);
     }
   };
-const processLandmarks = (landmarks: RouteLandmark[]): RouteLandmark[] => {
+  const processLandmarks = (landmarks: RouteLandmark[]): RouteLandmark[] => {
     return landmarks
       .sort((a, b) => (a.sequence_id || 0) - (b.sequence_id || 0))
       .map((landmark, index) => ({
@@ -158,7 +163,7 @@ const processLandmarks = (landmarks: RouteLandmark[]): RouteLandmark[] => {
     };
   }, []);
 
-const getLandmarkName = (landmarkId: string | number) => {
+  const getLandmarkName = (landmarkId: string | number) => {
     const landmark = landmarks.find((l) => l.id === Number(landmarkId));
     return landmark ? landmark.name : "Unknown Landmark";
   };
@@ -199,7 +204,7 @@ const getLandmarkName = (landmarkId: string | number) => {
       }
 
       const startDate = new Date(timeString);
-      const delta = parseInt(deltaSeconds, 10); 
+      const delta = parseInt(deltaSeconds, 10);
       // Add delta seconds to starting time
       const resultDate = new Date(startDate.getTime() + delta * 1000);
 
@@ -366,13 +371,9 @@ const getLandmarkName = (landmarkId: string | number) => {
       fetchRouteLandmarks();
     } catch (error: any) {
       console.error("Error adding landmarks:", error);
-      showErrorToast(
-        error|| "Failed to add new landmarks"
-      );
+      showErrorToast(error || "Failed to add new landmarks");
     }
   };
-
-  
 
   const handleLandmarkEditClick = (landmark: RouteLandmark) => {
     const startDate = new Date(routeStartingTime);
@@ -494,8 +495,8 @@ const getLandmarkName = (landmarkId: string | number) => {
       showSuccessToast("Route details updated successfully");
       setEditMode(false);
       onBack();
-    } catch (error:any) {
-      showErrorToast(error||"Failed to update route details");
+    } catch (error: any) {
+      showErrorToast(error || "Failed to update route details");
     }
   };
 
@@ -565,11 +566,9 @@ const getLandmarkName = (landmarkId: string | number) => {
       showSuccessToast("Landmark updated successfully");
       fetchRouteLandmarks();
       setEditingLandmark(null);
-    } catch (error:any) {
+    } catch (error: any) {
       console.error("Update error:", error);
-      showErrorToast(
-        error || "Failed to update landmark"
-      );
+      showErrorToast(error || "Failed to update landmark");
     }
   };
   const handleDeleteClick = (landmark: RouteLandmark) => {
@@ -577,28 +576,26 @@ const getLandmarkName = (landmarkId: string | number) => {
     setDeleteConfirmOpen(true);
   };
 
- const handleRouteLandmarkDelete = async () => {
-  if (!routeLandmarkToDelete) return;
-  try {
-    const formData = new FormData();
-    formData.append("id", routeLandmarkToDelete.id.toString());
-    const result = await dispatch(routeLandmarkDeleteApi(formData)).unwrap();
+  const handleRouteLandmarkDelete = async () => {
+    if (!routeLandmarkToDelete) return;
+    try {
+      const formData = new FormData();
+      formData.append("id", routeLandmarkToDelete.id.toString());
+      const result = await dispatch(routeLandmarkDeleteApi(formData)).unwrap();
 
-    if (result && result.error) {
-      throw new Error(result.error);
+      if (result && result.error) {
+        throw new Error(result.error);
+      }
+
+      showSuccessToast("Landmark removed from route successfully");
+      fetchRouteLandmarks();
+    } catch (error: any) {
+      showErrorToast(error || "Failed to remove landmark from route");
+    } finally {
+      setDeleteConfirmOpen(false);
+      setRouteLandmarkToDelete(null);
     }
-
-    showSuccessToast("Landmark removed from route successfully");
-    fetchRouteLandmarks();
-  } catch (error:any) {
-    showErrorToast(
-      error|| "Failed to remove landmark from route"
-    );
-  } finally {
-    setDeleteConfirmOpen(false);
-    setRouteLandmarkToDelete(null);
-  }
-};
+  };
 
   return (
     <Box
@@ -674,7 +671,23 @@ const getLandmarkName = (landmarkId: string | number) => {
               >
                 <TextField
                   value={updatedRouteName}
-                  onChange={(e) => setUpdatedRouteName(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setUpdatedRouteName(value);
+
+                    // Inline validation
+                    if (value.trim() === "") {
+                      setError("Route name is required");
+                    } else if (/^\s|\s$/.test(value)) {
+                      setError("No leading or trailing spaces allowed");
+                    } else if (/\s{2,}/.test(value)) {
+                      setError("Consecutive spaces are not allowed");
+                    } else {
+                      setError("");
+                    }
+                  }}
+                  error={!!error}
+                  helperText={error}
                   variant="outlined"
                   size="small"
                   label="Route Name"
@@ -724,6 +737,7 @@ const getLandmarkName = (landmarkId: string | number) => {
                   variant="contained"
                   color="primary"
                   onClick={handleRouteDetailsUpdate}
+                  disabled={!!error}
                 >
                   Save
                 </Button>
@@ -1317,7 +1331,6 @@ const getLandmarkName = (landmarkId: string | number) => {
           </Button>
         </DialogActions>
       </Dialog>
-
     </Box>
   );
 };

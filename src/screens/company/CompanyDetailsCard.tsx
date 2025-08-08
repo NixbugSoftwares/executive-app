@@ -380,7 +380,7 @@ const canUpdateCompany = useSelector((state: RootState) =>
             Are you sure you want to delete this account?
           </DialogContentText>
           <Typography>
-            <b>ID:</b> {company.id}, <b>Comapany name:</b> {company.name},
+            <b>ID:</b> {company.id}, <b>Company name:</b> {company.name},
           </Typography>
         </DialogContent>
         <DialogActions>

@@ -69,7 +69,9 @@ const MapModal: React.FC<MapModalProps> = ({
         <Button
           onClick={handleConfirm}
           disabled={!selectedLocation}
-          sx={{ mt: 2 }}
+          sx={{ mt: 2, backgroundColor: "darkblue", color: "#fff" }}
+          variant="contained"
+          
         >
           Confirm
         </Button>

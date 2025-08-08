@@ -214,25 +214,32 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
       </Typography>
 
       <TextField
-        label="Role Name"
-        {...register("name", {
-          required: "Role name is required",
-          minLength: {
-            value: 4,
-            message: "Minimum 4 characters required",
-          },
-          maxLength: {
-            value: 32,
-            message: "Maximum 32 characters allowed",
-          },
-        })}
-        error={!!errors.name}
-        helperText={errors.name?.message}
-        variant="outlined"
-        size="small"
-        fullWidth
-        sx={{ mb: 2 }}
-      />
+  label="Role Name"
+  {...register("name", {
+    required: "Role name is required",
+    minLength: {
+      value: 4,
+      message: "Minimum 4 characters required",
+    },
+    maxLength: {
+      value: 32,
+      message: "Maximum 32 characters allowed",
+    },
+    validate: (value) => {
+      if (value.trim() === "") return "Role name is required";
+      if (/^\s|\s$/.test(value)) return "No leading or trailing spaces allowed";
+      if (/\s{2,}/.test(value)) return "Consecutive spaces are not allowed";
+      return true;
+    },
+  })}
+  error={!!errors.name}
+  helperText={errors.name?.message}
+  variant="outlined"
+  size="small"
+  fullWidth
+  sx={{ mb: 2 }}
+/>
+
 
       <Divider sx={{ my: 1 }} />
 

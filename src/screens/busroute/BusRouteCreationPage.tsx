@@ -295,15 +295,24 @@ const BusRouteCreation = ({
         </Typography>
 
         <TextField
-          margin="normal"
-          fullWidth
-          label="Route Name"
-          {...register("name", { required: "Route name is required" })}
-          error={!!errors.name}
-          helperText={errors.name?.message}
-          autoFocus
-          size="small"
-        />
+  margin="normal"
+  fullWidth
+  label="Route Name"
+  {...register("name", {
+    required: "Route name is required",
+    validate: (value) => {
+      if (value.trim() === "") return "Route name is required";
+      if (/^\s|\s$/.test(value)) return "No leading or trailing spaces allowed";
+      if (/\s{2,}/.test(value)) return "Consecutive spaces are not allowed";
+      return true;
+    },
+  })}
+  error={!!errors.name}
+  helperText={errors.name?.message}
+  autoFocus
+  size="small"
+/>
+
 
         <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
           Starting Time (IST)
@@ -381,7 +390,7 @@ const BusRouteCreation = ({
         </Button>
 
         <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
-          Route Landmarks
+          Route Landmark List
         </Typography>
 
         {landmarks.length === 0 ? (
@@ -411,14 +420,7 @@ const BusRouteCreation = ({
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
               Please select landmarks from the map to create your route
             </Typography>
-            <Typography
-              variant="caption"
-              color="info"
-              fontSize="0.75rem"
-              fontWeight="bold"
-            >
-              Only verified landmarks will be displayed
-            </Typography>
+            
           </Box>
         ) : (
           <List

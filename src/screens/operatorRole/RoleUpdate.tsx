@@ -114,7 +114,7 @@ const RoleUpdateForm: React.FC<RoleUpdateFormProps> = ({
   const dispatch = useAppDispatch();
   const [loading, setLoading] = React.useState(false);
 
-  const { handleSubmit, control, reset, register } = useForm({
+  const { handleSubmit, control, reset, register, formState: { errors }, } = useForm({
     defaultValues: {
       name: roleData.name,
       ...roleData.roleDetails,
@@ -184,8 +184,28 @@ const RoleUpdateForm: React.FC<RoleUpdateFormProps> = ({
         size="small"
         fullWidth
         InputLabelProps={{ shrink: true }}
-        {...register("name")}
         defaultValue={roleData.name}
+        {...register("name", {
+          required: "Role name is required",
+          minLength: {
+            value: 4,
+            message: "Role name must be at least 4 characters",
+          },
+          maxLength: {
+            value: 32,
+            message: "Role name cannot exceed 32 characters",
+          },
+          validate: {
+            noLeadingOrTrailingSpace: (value) =>
+              /^\S(?:.*\S)?$/.test(value) ||
+              "Role name cannot start or end with a space",
+            noConsecutiveSpaces: (value) =>
+              !/\s{2,}/.test(value) ||
+              "Role name cannot contain consecutive spaces",
+          },
+        })}
+        error={!!errors.name}
+        helperText={typeof errors.name?.message === 'string' ? errors.name?.message : ''}
       />
 
       <Divider sx={{ my: 1 }} />

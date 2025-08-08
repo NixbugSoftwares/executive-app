@@ -160,18 +160,36 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             fullWidth
             defaultValue={busData.name}
             label="Bus Name"
-            {...register("name")}
+            {...register("name", {
+              required: "Bus name is required",
+              validate: (value) => {
+                if (value.trim() === "") return "Bus name is required";
+                if (/^\s|\s$/.test(value))
+                  return "No leading or trailing spaces allowed";
+                if (/\s{2,}/.test(value))
+                  return "Consecutive spaces are not allowed";
+                return true;
+              },
+            })}
             error={!!errors.name}
             helperText={errors.name?.message}
             size="small"
           />
+
           <TextField
             margin="normal"
             required
+            type="number"
             fullWidth
             defaultValue={busData.capacity}
             label="Capacity"
-            {...register("capacity")}
+            {...register("capacity", {
+              required: "Capacity is required",
+              validate: (value) => {
+                if (isNaN(value)) return "Capacity must be a number";
+                return true;
+              },
+            })}
             error={!!errors.capacity}
             helperText={errors.capacity?.message}
             size="small"
@@ -212,6 +230,9 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             error={!!errors.manufactured_on}
             helperText={errors.manufactured_on?.message}
             size="small"
+            inputProps={{
+              max: new Date().toISOString().split("T")[0],
+            }}
           />
           <TextField
             margin="normal"
@@ -224,6 +245,9 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             error={!!errors.insurance_upto}
             helperText={errors.insurance_upto?.message}
             size="small"
+            inputProps={{
+              min: new Date().toISOString().split("T")[0], // Set min date to today
+            }}
           />
           <TextField
             margin="normal"
@@ -236,6 +260,9 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             error={!!errors.pollution_upto}
             helperText={errors.pollution_upto?.message}
             size="small"
+            inputProps={{
+              min: new Date().toISOString().split("T")[0], // Set min date to today
+            }}
           />
           <TextField
             margin="normal"
@@ -248,6 +275,9 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             error={!!errors.fitness_upto}
             helperText={errors.fitness_upto?.message}
             size="small"
+            inputProps={{
+              min: new Date().toISOString().split("T")[0], // Set min date to today
+            }}
           />
           <TextField
             margin="normal"
@@ -260,6 +290,9 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             error={!!errors.road_tax_upto}
             helperText={errors.road_tax_upto?.message}
             size="small"
+            inputProps={{
+              min: new Date().toISOString().split("T")[0], // Set min date to today
+            }}
           />
           <Button
             type="submit"

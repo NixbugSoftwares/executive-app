@@ -218,7 +218,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             size="small"
             color={isMarkingEnabled ? "secondary" : "primary"}
           >
-            {isMarkingEnabled ? "Disable Marking" : "Enable Marking"}
+            {isMarkingEnabled ? "Cancel" : "Select Location"}
           </Button>
         </Box>
 

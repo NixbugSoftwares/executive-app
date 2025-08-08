@@ -68,13 +68,13 @@ const statusOptions: IOption[] = [
 const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
   operatorId,
   operatorData,
-  company_id, 
+  company_id,
   onClose,
   refreshList,
   onCloseDetailCard,
 }) => {
   console.log("operatorData", operatorData);
-  
+
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
@@ -142,13 +142,13 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
         formData.append("phone_number", `+91${data.phoneNumber}`);
       if (data.email) formData.append("email_id", data.email);
 
-      if ( data.status) {
+      if (data.status) {
         formData.append("status", data.status.toString());
       }
- console.log("📦 FormData being sent:");
-    for (const [key, value] of formData.entries()) {
-      console.log(`${key}: ${value}`);
-    }
+      console.log("📦 FormData being sent:");
+      for (const [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
       // Update operator
       const operatorResponse = await dispatch(
         operatorUpdationApi({ operatorId, formData })
@@ -161,7 +161,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       }
 
       // Only handle role assignment if allowed
-      if ( data.role) {
+      if (data.role) {
         try {
           if (data.roleAssignmentId) {
             await dispatch(
@@ -169,9 +169,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
                 id: data.roleAssignmentId,
                 role_id: data.role,
               })
-              
             ).unwrap();
-            
           } else {
             await dispatch(
               operatorRoleAssignApi({
@@ -181,17 +179,18 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             ).unwrap();
           }
         } catch (error: any) {
-          showErrorToast(error||"Account updated, but role assignment failed!");
+          showErrorToast(
+            error || "Account updated, but role assignment failed!"
+          );
         }
       }
-
 
       showSuccessToast("Account Updated successfully!");
       onCloseDetailCard();
       refreshList("refresh");
       onClose();
     } catch (error: any) {
-      showErrorToast(error||"Something went wrong. Please try again.");
+      showErrorToast(error || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -226,8 +225,27 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             margin="normal"
             fullWidth
             label="Full Name"
-            {...register("fullName")}
             defaultValue={operatorData.fullName || ""}
+            {...register("fullName", {
+              required: "Full name is required",
+              maxLength: {
+                value: 32,
+                message: "Full name cannot exceed 32 characters",
+              },
+              validate: {
+                noNumbers: (value: any) =>
+                  !/[0-9]/.test(value) ||
+                  "Numbers are not allowed in the full name",
+                noSpecialChars: (value: any) =>
+                  !/[^A-Za-z ]/.test(value) ||
+                  "Special characters are not allowed",
+                endsWithLetter: (value: any) =>
+                  /[A-Za-z]$/.test(value) || "Full name must end with a letter",
+                validPattern: (value: any) =>
+                  /^[A-Za-z]+(?: [A-Za-z]+)*$/.test(value) ||
+                  "Full name should consist of letters separated by single spaces",
+              },
+            })}
             error={!!errors.fullName}
             helperText={errors.fullName?.message}
             size="small"
@@ -274,31 +292,31 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             size="small"
           />
 
-            <Controller
-              name="role"
-              control={control}
-              rules={{ required: "Role is required" }}
-              render={({ field }) => (
-                <TextField
-                  margin="normal"
-                  required
-                  fullWidth
-                  select
-                  label="Role"
-                  value={field.value || ""}
-                  onChange={field.onChange}
-                  error={!!errors.role}
-                  helperText={errors.role?.message}
-                  size="small"
-                >
-                  {roles.map((role) => (
-                    <MenuItem key={role.id} value={role.id}>
-                      {role.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              )}
-            />
+          <Controller
+            name="role"
+            control={control}
+            rules={{ required: "Role is required" }}
+            render={({ field }) => (
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                select
+                label="Role"
+                value={field.value || ""}
+                onChange={field.onChange}
+                error={!!errors.role}
+                helperText={errors.role?.message}
+                size="small"
+              >
+                {roles.map((role) => (
+                  <MenuItem key={role.id} value={role.id}>
+                    {role.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
 
           <Controller
             name="gender"
@@ -323,28 +341,28 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             )}
           />
 
-            <Controller
-              name="status"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  margin="normal"
-                  fullWidth
-                  select
-                  label="Status"
-                  {...field}
-                  error={!!errors.status}
-                  size="small"
-                  defaultValue={operatorData.status}
-                >
-                  {statusOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              )}
-            />
+          <Controller
+            name="status"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                margin="normal"
+                fullWidth
+                select
+                label="Status"
+                {...field}
+                error={!!errors.status}
+                size="small"
+                defaultValue={operatorData.status}
+              >
+                {statusOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
 
           <TextField
             margin="normal"

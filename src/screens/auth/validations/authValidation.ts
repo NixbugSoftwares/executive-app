@@ -34,13 +34,27 @@ export const accountFormSchema = yup.object().shape({
     'Username cannot have consecutive special characters',
     (value) => !/([@._-]{2,})/.test(value)
   ),
-  password: yup
-    .string()
-    .required("Password is required")
-    .matches(
-      /^[A-Za-z0-9\-+,.@_$%&*#!^=/\?]{8,64}$/,
-      "Invalid password format"
-    ),
+ password: yup
+  .string()
+  .required("Password is required")
+  .matches(
+    /^[A-Za-z0-9\-+,.@_$%&*#!^=/?](?:[A-Za-z0-9\-+,.@_$%&*#!^=/? ]*[A-Za-z0-9\-+,.@_$%&*#!^=?/])?$/,
+    "Password must be 8-64 characters, cannot start/end with space or have consecutive spaces"
+  )
+  .matches(
+    /^.{8,64}$/,
+    "Password must be between 8-64 characters"
+  )
+  .test(
+    "no-consecutive-spaces",
+    "Password cannot have consecutive spaces",
+    (value) => !/\s{2,}/.test(value)
+  )
+  .test(
+    "allowed-chars",
+    "You can use letters (A-Z, a-z), numbers (0-9), and special characters (-+,.@_$%&*#!^=/?). Spaces are allowed but not at the start/end or consecutive.",
+    (value) => /^[A-Za-z0-9\-+,.@_$%&*#!^=/? ]+$/.test(value)
+  ),
     
   fullName: yup
   .string()
@@ -244,26 +258,52 @@ export const busStopCreationSchema = yup.object().shape({
 export const companyCreationSchema = yup.object().shape({
   name: yup
   .string()
-  .required("name name  is required")
-  .min(4, "Company name must be at least 4 characters")
-  .max(32, "Company name cannot exceed 32 characters"),
+  .required("Name is required")
+  .test('no-empty-string', 'Name cannot be empty', value => value.trim().length > 0)
+  .min(4, "Name must be at least 4 characters")
+  .max(32, "Name cannot exceed 32 characters")
+  .test('no-leading-trailing-spaces', 'Name cannot start or end with spaces', value => {
+    return value === value.trim();
+  })
+  .test('no-consecutive-spaces', 'Name cannot have consecutive spaces', value => {
+    return !/\s{2,}/.test(value);
+  }),
 
   address: yup
   .string()
-  .required("address is required")
+  .required("Address is required")
+  .test('not-empty', 'Address cannot be empty', value => value.trim().length > 0)
   .min(4, "Address must be at least 4 characters")
-  .max(512, "Address name cannot exceed 32 characters"),
-
+  .max(512, "Address cannot exceed 512 characters") // Fixed the max length message
+  .test('no-leading-trailing-spaces', 'Address cannot start or end with spaces', value => {
+    return value === value.trim();
+  })
+  .test('no-consecutive-spaces', 'Address cannot have consecutive spaces', value => {
+    return !/\s{2,}/.test(value);
+  })
+  .test('valid-address', 'Address contains invalid characters', value => {
+    // Allows letters, numbers, basic punctuation, and spaces
+    return /^[a-zA-Z0-9\s\-.,#'/]+$/.test(value);
+  }),
   location: yup
   .string()
   .required("location is required"),
 
-  owner_name: yup
+owner_name: yup
   .string()
   .required("Owner name is required")
+  .test('not-empty', 'Owner name cannot be empty', value => value.trim().length > 0)
   .min(4, "Owner name must be at least 4 characters")
-  .max(64, "Owner name cannot exceed 32 characters"),
-
+  .max(64, "Owner name cannot exceed 64 characters") // Fixed: Your original had "32" in the error message
+  .test('no-leading-trailing-spaces', 'Owner name cannot start or end with spaces', value => {
+    return value === value.trim();
+  })
+  .test('no-consecutive-spaces', 'Owner name cannot have consecutive spaces', value => {
+    return !/\s{2,}/.test(value);
+  })
+  .test('valid-chars', 'Owner name can only contain letters, spaces, hyphens (-), and apostrophes (\')', value => {
+    return /^[A-Za-z\s\-']+$/.test(value); // Allows letters, spaces, hyphens, and apostrophes
+  }),
 
   phone_number: yup
   .string()
@@ -299,17 +339,47 @@ export const operatorCreationSchema = yup.object().shape({
   companyId: yup.number()
   .required("select a company"),
 
-  username: yup
-    .string()
-    .required("Username is required")
-    .matches(/^[A-Za-z][A-Za-z0-9@._-]{3,31}$/, "Invalid username format"),
-
+ username: yup
+  .string()
+  .required("Username is required")
+  .min(4, "Username must be at least 4 characters long")
+  .max(32, "Username cannot exceed 32 characters")
+  .test(
+    'starts-with-letter',
+    'Username must start with a letter (a-z or A-Z)',
+    (value) => /^[A-Za-z]/.test(value)
+  )
+  .test(
+    'valid-characters',
+    'Username can only contain letters, numbers, hyphens (-), periods (.), underscores (_), and @ symbols',
+    (value) => /^[A-Za-z][A-Za-z0-9@._-]*$/.test(value)
+  )
+  .test(
+    'no-consecutive-specials',
+    'Username cannot have consecutive special characters',
+    (value) => !/([@._-]{2,})/.test(value)
+  ),
   password: yup
-    .string()
-    .required("Password is required")
-    .matches(
-      /^[A-Za-z0-9\-+,.@_$%&*#!^=/\?]{8,64}$/,
-      "Invalid password format"),
+  .string()
+  .required("Password is required")
+  .matches(
+    /^[A-Za-z0-9\-+,.@_$%&*#!^=/?](?:[A-Za-z0-9\-+,.@_$%&*#!^=/? ]*[A-Za-z0-9\-+,.@_$%&*#!^=?/])?$/,
+    "Password must be 8-64 characters, cannot start/end with space or have consecutive spaces"
+  )
+  .matches(
+    /^.{8,64}$/,
+    "Password must be between 8-64 characters"
+  )
+  .test(
+    "no-consecutive-spaces",
+    "Password cannot have consecutive spaces",
+    (value) => !/\s{2,}/.test(value)
+  )
+  .test(
+    "allowed-chars",
+    "You can use letters (A-Z, a-z), numbers (0-9), and special characters (-+,.@_$%&*#!^=/?). Spaces are allowed but not at the start/end or consecutive.",
+    (value) => /^[A-Za-z0-9\-+,.@_$%&*#!^=/? ]+$/.test(value)
+  ),
 
   fullName: yup
     .string()
@@ -396,14 +466,37 @@ export const busCreationSchema = yup.object().shape({
    registration_number: yup
     .string()
     .required("Registration number is required")
-    .max(16, "Registration number must be at most 16 characters")
+    .max(16, "The registration number should not exceed 16 characters")
     .matches(
       /^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{1,4}$/,
       "Format: e.g., KA01AB1234 — 2 letters, 2 digits, 1-2 letters, 1-4 digits"
     ),
 
-  name: yup.string().required().min(4).max(32),
-  capacity: yup.number().required().min(1).max(120),
+   name: yup.string().required("Bus name is required")
+  .min(4, "Bus name must be at least 4 characters")
+  .max(32, "Bus name cannot exceed 32 characters")
+  .test(
+      "allowed-characters",
+      "Name can only contain letters, spaces, hyphens (-), underscores (_), and brackets ( )",
+      (value) => !value || /^[A-Za-z\s\-_()]*$/.test(value)
+    )
+    .test(
+      "no-leading-trailing-spaces",
+      "Name should not start or end with a space",
+      (value) => !value || !/^\s|\s$/.test(value)
+    )
+    .test(
+      "no-consecutive-spaces-or-specials",
+      "Name cannot have consecutive spaces or special characters",
+      (value) => !value || !/([\s\-_()]{2,})/.test(value)
+    ),
+  capacity: yup
+    .number()
+    .required('Capacity is required')
+    .typeError('Capacity must be a number')
+    .min(1, 'Capacity must be at least 1')
+    .max(120, 'Capacity cannot exceed 120')
+    .integer('Capacity must be a whole number'),
   manufactured_on: yup.string().required(),
   insurance_upto: yup.string().nullable().notRequired(),
   pollution_upto: yup.string().nullable().notRequired(),
