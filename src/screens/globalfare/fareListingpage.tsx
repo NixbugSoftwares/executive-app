@@ -165,11 +165,10 @@ const FareListingPage = () => {
             sx={{
               p: 2,
               display: "flex",
-              justifyContent: "space-between",
+              justifyContent: "right",
               alignItems: "center",
             }}
           >
-            <Typography variant="h6">Global Fares</Typography>
             <Tooltip
               title={
                 !canCreateFare

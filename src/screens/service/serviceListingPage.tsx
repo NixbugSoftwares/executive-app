@@ -408,8 +408,8 @@ const ServiceListingTable = () => {
                     <TableCell>
                       <Tooltip title={row.name} placement="bottom">
                         <Typography noWrap>
-                          {row.name.length > 15
-                            ? `${row.name.substring(0, 15)}...`
+                          {row.name.length > 40
+                            ? `${row.name.substring(0, 40)}...`
                             : row.name}
                         </Typography>
                       </Tooltip>

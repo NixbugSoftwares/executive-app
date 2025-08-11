@@ -204,7 +204,7 @@ export const loggedinUserRoleDetails = createAsyncThunk<
     return matchedRole ? [matchedRole] : [];
   } catch (error: any) {
     return rejectWithValue(
-      error.detail || "Failed to fetch Role"
+      error|| "Failed to fetch Role"
     );
   }
 });

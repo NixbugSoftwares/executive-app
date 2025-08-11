@@ -90,18 +90,21 @@ const handleResponse = async (response: any) => {
 //******************************************************  errorResponse handler  **************************************** */
 const handleErrorResponse = (errorResponse: any) => {
   if (!errorResponse) {
-    return { error: "Network error" };
+    return { error: "Network error. ", status: 0 };
   }
-  const { status, data } = errorResponse.response as {
-    status: number;
-    data: any;
-  };
-  const errorMessage = data?.detail || data?.message || "Api Failed";
-  console.log("dataaaaaa===>", status, data?.detail);
+
+  const status = errorResponse.response?.status || 0;
+  const data = errorResponse.response?.data || errorResponse.data || {};
+  
+  const errorMessage = data?.detail || data?.message || errorResponse.message || "Api Failed";
+  
+  // console.log("Error details:", { status, detail: data?.detail });
+
   if (status === 401) {
     commonHelper.logout();
   }
- if (status == 422 && Array.isArray(data?.detail)) {
+
+  if (status === 422 && Array.isArray(data?.detail)) {
     const validationErrors = data.detail
       .map((err: any) => {
         const field = err.loc?.slice(1).join('.') || 'Field'; 
@@ -111,8 +114,10 @@ const handleErrorResponse = (errorResponse: any) => {
     console.log('Validation Errors ===>', validationErrors);
     showErrorToast(validationErrors);
   } else {
-    console.log("errormessagge====>", errorMessage);
+    console.log("Error message ===>", errorMessage);
+    // showErrorToast(errorMessage);
   }
+
   return { ...data, error: errorMessage, status };
 };
 

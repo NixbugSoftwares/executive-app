@@ -384,20 +384,28 @@ console.log("Updation Data:", updationData);
           onSubmit={handleSubmit(handleScheduleUpdate)}
         >
           <Controller
-            name="name"
-            control={control}
-            rules={{ required: "Name is required" }}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                label="Schedule Name"
-                fullWidth
-                margin="normal"
-                error={!!errors.name}
-                helperText={errors.name?.message}
-              />
-            )}
-          />
+  name="name"
+  control={control}
+  rules={{
+    required: "Name is required",
+    validate: (value) => {
+      if (value.trim() === "") return "Name is required";
+      if (/^\s|\s$/.test(value)) return "No leading or trailing spaces allowed";
+      if (/\s{2,}/.test(value)) return "Consecutive spaces are not allowed";
+      return true;
+    },
+  }}
+  render={({ field }) => (
+    <TextField
+      {...field}
+      label="Schedule Name"
+      fullWidth
+      margin="normal"
+      error={!!errors.name}
+      helperText={errors.name?.message}
+    />
+  )}
+/>
 
           <Controller
             name="bus_id"

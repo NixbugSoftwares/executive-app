@@ -75,8 +75,6 @@ const BusRouteDetailsPage = ({
   setNewLandmarks,
   refreshList,
 }: BusRouteDetailsProps) => {
-  console.log("starting_time", routeStartingTime);
-
   const dispatch = useAppDispatch();
   const [routeLandmarks, setRouteLandmarks] = useState<RouteLandmark[]>([]);
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
@@ -371,7 +369,10 @@ const BusRouteDetailsPage = ({
       fetchRouteLandmarks();
     } catch (error: any) {
       console.error("Error adding landmarks:", error);
-      showErrorToast(error || "Failed to add new landmarks");
+      showErrorToast(
+        error ||
+          "Failed to add new landmarks: Make sure all times and distances are valid and in the correct format."
+      );
     }
   };
 
@@ -539,6 +540,7 @@ const BusRouteDetailsPage = ({
       );
 
       console.log(
+        "landmark update",
         "Calculated deltas - arrival:",
         arrivalDelta,
         "departure:",
@@ -647,16 +649,6 @@ const BusRouteDetailsPage = ({
             </Button>
           </span>
         </Tooltip>
-        {editMode && (
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSaveNewLandmarks}
-            disabled={newLandmarks.length === 0}
-          >
-            Save New Landmarks
-          </Button>
-        )}
       </Stack>
 
       <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
@@ -664,85 +656,160 @@ const BusRouteDetailsPage = ({
           {editMode ? (
             <>
               <Stack
-                direction="row"
-                alignItems="center"
+                direction="column"
                 spacing={2}
-                sx={{ mb: 2 }}
+                sx={{ mb: 2, width: "100%" }}
               >
-                <TextField
-                  value={updatedRouteName}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setUpdatedRouteName(value);
+                {/* Route Name Block */}
+                <Box sx={{ width: "100%" }}>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ mb: 1, fontWeight: 500 }}
+                  >
+                    Route Name
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    value={updatedRouteName}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setUpdatedRouteName(value);
 
-                    // Inline validation
-                    if (value.trim() === "") {
-                      setError("Route name is required");
-                    } else if (/^\s|\s$/.test(value)) {
-                      setError("No leading or trailing spaces allowed");
-                    } else if (/\s{2,}/.test(value)) {
-                      setError("Consecutive spaces are not allowed");
-                    } else {
-                      setError("");
-                    }
-                  }}
-                  error={!!error}
-                  helperText={error}
-                  variant="outlined"
-                  size="small"
-                  label="Route Name"
-                />
-                <FormControl size="small" sx={{ minWidth: 80 }}>
-                  <InputLabel>Hour</InputLabel>
-                  <Select
-                    value={localHour}
-                    onChange={(e) => setLocalHour(Number(e.target.value))}
-                    label="Hour"
+                      // Inline validation
+                      if (value.trim() === "") {
+                        setError("Route name is required");
+                      } else if (/^\s|\s$/.test(value)) {
+                        setError("No leading or trailing spaces allowed");
+                      } else if (/\s{2,}/.test(value)) {
+                        setError("Consecutive spaces are not allowed");
+                      } else {
+                        setError("");
+                      }
+                    }}
+                    error={!!error}
+                    helperText={error}
+                    variant="outlined"
+                    size="medium"
+                    label="Enter route name"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "8px",
+                      },
+                    }}
+                  />
+                </Box>
+
+                {/* Starting Time Block */}
+                <Box sx={{ width: "100%" }}>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ mb: 1, fontWeight: 500 }}
                   >
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
-                      <MenuItem key={h} value={h}>
-                        {String(h).padStart(2, "0")}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl size="small" sx={{ minWidth: 80 }}>
-                  <InputLabel>Minute</InputLabel>
-                  <Select
-                    value={localMinute}
-                    onChange={(e) => setLocalMinute(Number(e.target.value))}
-                    label="Minute"
+                    Starting Time (IST)
+                  </Typography>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={2}
+                    sx={{
+                      width: "100%",
+                      "& .MuiFormControl-root": {
+                        flex: 1,
+                        minWidth: "unset",
+                      },
+                    }}
                   >
-                    {Array.from({ length: 60 }, (_, i) => i).map((m) => (
-                      <MenuItem key={m} value={m}>
-                        {String(m).padStart(2, "0")}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl size="small" sx={{ minWidth: 80 }}>
-                  <InputLabel>AM/PM</InputLabel>
-                  <Select
-                    value={amPm}
-                    onChange={(e) => setAmPm(e.target.value)}
-                    label="AM/PM"
-                  >
-                    <MenuItem value="AM">AM</MenuItem>
-                    <MenuItem value="PM">PM</MenuItem>
-                  </Select>
-                </FormControl>
+                    <FormControl size="medium" fullWidth>
+                      <InputLabel>Hour</InputLabel>
+                      <Select
+                        value={localHour}
+                        onChange={(e) => setLocalHour(Number(e.target.value))}
+                        label="Hour"
+                        sx={{
+                          "& .MuiSelect-select": {
+                            padding: "12px 14px",
+                          },
+                        }}
+                      >
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map(
+                          (h) => (
+                            <MenuItem key={h} value={h}>
+                              {String(h).padStart(2, "0")}
+                            </MenuItem>
+                          )
+                        )}
+                      </Select>
+                    </FormControl>
+                    <FormControl size="medium" fullWidth>
+                      <InputLabel>Minute</InputLabel>
+                      <Select
+                        value={localMinute}
+                        onChange={(e) => setLocalMinute(Number(e.target.value))}
+                        label="Minute"
+                        sx={{
+                          "& .MuiSelect-select": {
+                            padding: "12px 14px",
+                          },
+                        }}
+                      >
+                        {Array.from({ length: 60 }, (_, i) => i).map((m) => (
+                          <MenuItem key={m} value={m}>
+                            {String(m).padStart(2, "0")}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormControl size="medium" fullWidth>
+                      <InputLabel>AM/PM</InputLabel>
+                      <Select
+                        value={amPm}
+                        onChange={(e) => setAmPm(e.target.value)}
+                        label="AM/PM"
+                        sx={{
+                          "& .MuiSelect-select": {
+                            padding: "12px 14px",
+                          },
+                        }}
+                      >
+                        <MenuItem value="AM">AM</MenuItem>
+                        <MenuItem value="PM">PM</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Stack>
+                </Box>
               </Stack>
-              <Stack direction="row" spacing={2}>
+              {/* <Button variant="outlined" onClick={() => setEditMode(false)}>
+                  Cancel
+                </Button> */}
+              <Stack
+                direction="row"
+                spacing={2}
+                justifyContent="flex-end"
+                sx={{ mt: 2 }}
+              >
+                {editMode && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleSaveNewLandmarks}
+                    disabled={newLandmarks.length === 0}
+                    sx={{
+                      minWidth: 180, // Consistent button width
+                    }}
+                  >
+                    Confirm New Landmarks
+                  </Button>
+                )}
                 <Button
                   variant="contained"
                   color="primary"
                   onClick={handleRouteDetailsUpdate}
                   disabled={!!error}
+                  sx={{
+                    minWidth: 100, // Consistent button width
+                  }}
                 >
-                  Save
-                </Button>
-                <Button variant="outlined" onClick={() => setEditMode(false)}>
-                  Cancel
+                  Update
                 </Button>
               </Stack>
             </>
@@ -973,7 +1040,7 @@ const BusRouteDetailsPage = ({
                       </Box>
                     </Box>
 
-                    {editMode && (
+                    {editMode && !(index === 0) && (
                       <Stack direction="row" spacing={1}>
                         <IconButton
                           onClick={() => handleLandmarkEditClick(landmark)}
@@ -1300,23 +1367,21 @@ const BusRouteDetailsPage = ({
               </Box>
 
               <TextField
-                label="Distance from Start (meters)"
-                type="number"
-                required
-                fullWidth
-                margin="normal"
-                value={editingLandmark.distance_from_start || ""}
-                onChange={(e) =>
-                  setEditingLandmark({
-                    ...editingLandmark,
-                    distance_from_start: parseFloat(e.target.value),
-                  })
-                }
-                disabled={editingLandmark.distance_from_start === 0}
-                InputProps={{
-                  readOnly: editingLandmark.distance_from_start === 0,
-                }}
-              />
+  label="Distance from Start (meter)"
+  required
+  fullWidth
+  margin="normal"
+  value={editingLandmark.distance_from_start || ""}
+  onChange={(e) => {
+    const value = e.target.value;
+    setEditingLandmark({
+      ...editingLandmark,
+      distance_from_start: value === "" ? undefined : Number(value),
+    });
+  }}
+  type="number"
+  inputProps={{ min: 0 }}
+/>
             </>
           )}
         </DialogContent>

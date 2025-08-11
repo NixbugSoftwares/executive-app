@@ -5,8 +5,43 @@ import * as yup from "yup";
 
 //******************************************** login validation schema ************************************************
 export const loginSchema = yup.object().shape({
-  username: yup.string().required("Username is required"),
-  password: yup.string().required("Password is required")
+  username: yup
+    .string()
+    .required("Username is required")
+    .matches(/^[a-zA-Z]/, "Username must start with an alphabet")
+    .matches(/^[a-zA-Z0-9.@_-]+$/, "Username can only contain letters, digits, ., @, _, or -")
+    .min(4, "Username must be at least 4 characters")
+    .max(32, "Username cannot exceed 32 characters")
+    .test(
+      "no-consecutive-spaces",
+      "Username cannot have consecutive spaces",
+      (value) => !/\s{2,}/.test(value)
+    )
+    .test(
+      "no-leading-trailing-spaces",
+      "Username cannot have leading or trailing spaces",
+      (value) => value?.trim() === value
+    ),
+
+  password: yup
+    .string()
+    .required("Password is required")
+    .min(8, "Password must be at least 8 characters")
+    .max(32, "Password cannot exceed 32 characters")
+    .matches(
+      /^[a-zA-Z0-9+.,@_$%&*#!^=/?-]+$/,
+      "Password contains invalid characters"
+    )
+    .test(
+      "no-consecutive-spaces",
+      "Password cannot have consecutive spaces",
+      (value) => !/\s{2,}/.test(value)
+    )
+    .test(
+      "no-leading-trailing-spaces",
+      "Password cannot have leading or trailing spaces",
+      (value) => value?.trim() === value
+    ),
 });
 
 

@@ -197,13 +197,10 @@ const CompanyFareListingPage = () => {
             sx={{
               p: 2,
               display: "flex",
-              justifyContent: "space-between",
+              justifyContent: "right",
               alignItems: "center",
             }}
           >
-            <Typography variant="h6">
-              {filterCompanyId ? "Company Fares" : "Global Fares"}
-            </Typography>
             <Tooltip
               title={
                 !canCreateFare

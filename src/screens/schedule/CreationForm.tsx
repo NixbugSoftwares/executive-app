@@ -350,31 +350,38 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
           onSubmit={handleSubmit(handleAccountCreation)}
         >
           <Controller
-            name="name"
-            control={control}
-            rules={{
-              required: "Schedule name is required",
-              minLength: {
-                value: 4,
-                message: "Schedule name must be at least 4 characters",
-              },
-              maxLength: {
-                value: 32,
-                message: "Schedule name must be at most 32 characters",
-              },
-            }}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                margin="normal"
-                fullWidth
-                label="Schedule Name"
-                error={!!errors.name}
-                helperText={errors.name?.message}
-                size="small"
-              />
-            )}
-          />
+  name="name"
+  control={control}
+  rules={{
+    required: "Schedule name is required",
+    minLength: {
+      value: 4,
+      message: "Schedule name must be at least 4 characters",
+    },
+    maxLength: {
+      value: 32,
+      message: "Schedule name must be at most 32 characters",
+    },
+    validate: (value) => {
+      if (value.trim() === "") return "Schedule name is required";
+      if (/^\s|\s$/.test(value)) return "No leading or trailing spaces allowed";
+      if (/\s{2,}/.test(value)) return "Consecutive spaces are not allowed";
+      return true;
+    },
+  }}
+  render={({ field }) => (
+    <TextField
+      {...field}
+      margin="normal"
+      fullWidth
+      label="Schedule Name"
+      error={!!errors.name}
+      helperText={errors.name?.message}
+      size="small"
+    />
+  )}
+/>
+
 
           {renderAutocomplete("route_id", "Route", memoizedRouteList, "route")}
           {renderAutocomplete("bus_id", "Bus", memoizedBusList, "bus")}

@@ -563,10 +563,11 @@ const CompanyFareSkeletonPage = ({
             pt: 2,
           }}
         >
-          <Button variant="outlined" onClick={onCancel} disabled={loading}>
+          <Button variant="outlined" onClick={onCancel} size="small" disabled={loading}>
             Cancel
           </Button>
           <Button
+          size="small"
             variant="outlined"
             onClick={() => {
               setShowCalculation(!showCalculation);

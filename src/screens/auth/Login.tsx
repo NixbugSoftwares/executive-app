@@ -126,7 +126,7 @@ const LoginPage: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Login Error:", error);
-      showErrorToast(error?.detail || error || "Login failed");
+      showErrorToast( error || "Login failed");
     }
   };
 
