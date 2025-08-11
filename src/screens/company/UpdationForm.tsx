@@ -206,10 +206,7 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
             label="Name"
             {...register("name", {
               required: "Name is required",
-              minLength: {
-                value: 8,
-                message: "Name must be at least 8 characters",
-              },
+
               maxLength: {
                 value: 32,
                 message: "Name cannot exceed 32 characters",
@@ -270,6 +267,8 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
               if (value.startsWith(" ")) value = value.trimStart();
               e.target.value = value;
             }}
+            multiline
+            rows={4}
           />
           <TextField
             margin="normal"
@@ -290,8 +289,8 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
             {...register("contact_person", {
               required: "Contact person is required",
               minLength: {
-                value: 8,
-                message: "Contact person must be at least 8 characters",
+                value: 4,
+                message: "Contact person must be at least 4 characters",
               },
               maxLength: {
                 value: 64,

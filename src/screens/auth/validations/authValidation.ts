@@ -287,7 +287,7 @@ export const companyCreationSchema = yup.object().shape({
   .string()
   .required("Name is required")
   .test('no-empty-string', 'Name cannot be empty', value => value.trim().length > 0)
-  .min(4, "Name must be at least 4 characters")
+  .min(2, "Name must be at least 2 characters")
   .max(32, "Name cannot exceed 32 characters")
   .test('no-leading-trailing-spaces', 'Name cannot start or end with spaces', value => {
     return value === value.trim();

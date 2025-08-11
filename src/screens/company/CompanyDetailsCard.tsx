@@ -11,7 +11,6 @@ import {
   DialogContent,
   DialogTitle,
   DialogContentText,
-  Tooltip,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -295,22 +294,7 @@ const canUpdateCompany = useSelector((state: RootState) =>
             >
               Back
             </Button>
-
-            {/* Update Button with Tooltip */}
-            <Tooltip
-              title={
-                !canUpdateCompany
-                  ? "You don't have permission, contact the admin"
-                  : ""
-              }
-              arrow
-              placement="top-start"
-            >
-              <span
-                style={{
-                  cursor: !canUpdateCompany ? "not-allowed" : "default",
-                }}
-              >
+{canUpdateCompany&&(
                 <Button
                   variant="contained"
                   color="success"
@@ -319,52 +303,21 @@ const canUpdateCompany = useSelector((state: RootState) =>
                     setUpdateFormOpen(true);
                   }}
                   startIcon={<EditIcon />}
-                  disabled={!canUpdateCompany}
-                  sx={{
-                    "&.Mui-disabled": {
-                      backgroundColor: "#81c784 !important",
-                      color: "#ffffff99",
-                    },
-                  }}
+                  
                 >
                   Update
-                </Button>
-              </span>
-            </Tooltip>
-
-            {/* Delete Button with Tooltip */}
-            <Tooltip
-              title={
-                !canDeleteCompany
-                  ? "You don't have permission, contact the admin"
-                  : ""
-              }
-              arrow
-              placement="top-start"
-            >
-              <span
-                style={{
-                  cursor: !canDeleteCompany ? "not-allowed" : "default",
-                }}
-              >
+                </Button>)}
+                    {canDeleteCompany&&(
                 <Button
                   variant="contained"
                   color="error"
                   size="small"
                   onClick={() => setDeleteConfirmOpen(true)}
                   startIcon={<DeleteIcon />}
-                  disabled={!canDeleteCompany}
-                  sx={{
-                    "&.Mui-disabled": {
-                      backgroundColor: "#e57373 !important",
-                      color: "#ffffff99",
-                    },
-                  }}
+                 
                 >
                   Delete
-                </Button>
-              </span>
-            </Tooltip>
+                </Button>)}
           </Box>
         </CardActions>
       </Card>

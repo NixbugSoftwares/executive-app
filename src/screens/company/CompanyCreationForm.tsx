@@ -93,6 +93,7 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
         formData.append("email_id", data.email);
       }
       formData.append("type", data.company_type);
+      formData.append("status", data.status);
       const response = await dispatch(companyCreationApi(formData)).unwrap();
 
       if (response?.id) {
@@ -149,6 +150,8 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
             error={!!errors.address}
             helperText={errors.address?.message}
             size="small"
+            multiline
+            rows={4}
           />
           <TextField
             margin="normal"
@@ -188,7 +191,7 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
                 size="small"
                 error={!!errors.phone_number}
                 helperText={errors.phone_number?.message}
-                value={field.value ? `+91${field.value}` : ""}
+                value={field.value ? `+91 ${field.value}` : ""}
                 onChange={(e) => {
                   let value = e.target.value.replace(/^\+91/, "");
                   value = value.replace(/\D/g, "");

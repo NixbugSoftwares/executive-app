@@ -84,6 +84,7 @@ interface CompanyListParams {
   contact_person?: string;
   phone_number?: string;
   email_id?: string;
+  status?: string;
 }
 
 interface OperatorListParams {
@@ -877,6 +878,7 @@ export const companyListApi = createAsyncThunk(
       contact_person,
       phone_number,
       email_id,
+      status
     } = params;
 
     const queryParams = {
@@ -888,6 +890,7 @@ export const companyListApi = createAsyncThunk(
       ...(contact_person && { contact_person }),
       ...(phone_number && { phone_number }),
       ...(email_id && { email_id }),
+      ...(status && { status }),
     };
     try {
       const response = await commonApi.apiCall(
