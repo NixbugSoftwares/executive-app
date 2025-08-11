@@ -12,7 +12,13 @@ import {
   Tooltip,
   Typography,
   CircularProgress,
+  Select,
+  Checkbox,
+  ListItemText,
+  MenuItem,
+  Stack,
 } from "@mui/material";
+import { SelectChangeEvent } from "@mui/material";
 import RoleDetailsCard from "./RoleDetailCard";
 import RoleCreatingForm from "./RoleCreatingForm";
 import { useDispatch } from "react-redux";
@@ -24,12 +30,21 @@ import { showErrorToast } from "../../common/toastMessageHelper";
 import PaginationControls from "../../common/paginationControl";
 import FormModal from "../../common/formModal";
 import moment from "moment";
+
 interface Role {
   id: number;
   name: string;
   created_on: string;
   updated_on: string;
   roleDetails: any;
+}
+
+interface ColumnConfig {
+  id: string;
+  label: string;
+  width: string;
+  minWidth: string;
+  fixed?: boolean;
 }
 
 const RoleListingTable = () => {
@@ -48,6 +63,39 @@ const RoleListingTable = () => {
     state.app.permissions.includes("create_ex_role")
   );
 
+  const columnConfig: ColumnConfig[] = [
+    { id: "id", label: "ID", width: "80px", minWidth: "80px", fixed: true },
+    {
+      id: "name",
+      label: "Role Name",
+      width: "200px",
+      minWidth: "200px",
+      fixed: true,
+    },
+    {
+      id: "created_on",
+      label: "Created Date",
+      width: "150px",
+      minWidth: "150px",
+      fixed: true,
+    },
+    {
+      id: "updated_on",
+      label: "Updated Date",
+      width: "150px",
+      minWidth: "150px",
+      fixed:true
+    },
+  ];
+
+  // Initialize visibleColumns with all fixed columns selected by default
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
+    columnConfig.reduce((acc, column) => {
+      acc[column.id] = column.fixed ? true : false;
+      return acc;
+    }, {} as Record<string, boolean>)
+  );
+
   const fetchRoleList = useCallback(
     (pageNumber: number, searchParams = {}) => {
       setIsLoading(true);
@@ -56,7 +104,6 @@ const RoleListingTable = () => {
         .unwrap()
         .then((res) => {
           const items = res.data || [];
-          console.log("Fetched Roles:", items);
           const formattedRoleList = items.map((role: any) => ({
             id: role.id,
             name: role.name,
@@ -78,6 +125,18 @@ const RoleListingTable = () => {
     },
     [dispatch]
   );
+
+  const handleColumnChange = (event: SelectChangeEvent<string[]>) => {
+    const value = event.target.value;
+    setVisibleColumns(prev => {
+      const newVisibleColumns = {...prev};
+      // Update all columns based on selection
+      Object.keys(newVisibleColumns).forEach(key => {
+        newVisibleColumns[key] = value.includes(key);
+      });
+      return newVisibleColumns;
+    });
+  };
 
   const handleSearchChange = useCallback(
     (
@@ -113,16 +172,14 @@ const RoleListingTable = () => {
     fetchRoleList(page, searchParams);
   }, [page, debouncedSearch, fetchRoleList]);
 
-  const tableHeaders = [
-    { key: "id", label: "ID" },
-    { key: "Rolename", label: "Name" },
-  ];
-
   const refreshList = (value: string) => {
     if (value === "refresh") {
       fetchRoleList(page, debouncedSearch);
     }
   };
+
+  // Get the currently selected column IDs
+  const selectedColumns = columnConfig.filter(col => visibleColumns[col.id]);
 
   return (
     <Box
@@ -146,42 +203,51 @@ const RoleListingTable = () => {
           overflow: "hidden",
         }}
       >
-        <Tooltip
-          title={
-            !canCreateRole
-              ? "You don't have permission, contact the admin"
-              : "Click to open the role creation form"
-          }
-          placement="top-end"
-        >
-          <Button
-            sx={{
-              ml: "auto",
-              mr: 2,
-              mb: 2,
-              display: "block",
-              backgroundColor: !canCreateRole
-                ? "#6c87b7 !important"
-                : "#00008B",
-              color: "white",
-              "&.Mui-disabled": {
-                backgroundColor: "#6c87b7 !important",
-                color: "#ffffff99",
-              },
-            }}
-            variant="contained"
-            disabled={!canCreateRole}
-            onClick={() => setOpenCreateModal(true)}
-            style={{ cursor: !canCreateRole ? "not-allowed" : "default" }}
+        <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ p: 2 }}>
+          <Select
+            multiple
+            value={Object.keys(visibleColumns).filter(key => visibleColumns[key])}
+            onChange={handleColumnChange}
+            renderValue={(selected) => `Columns (${selected.length})`}
+            sx={{ minWidth: 200, height: 40 }}
           >
-            Add New Role
-          </Button>
-        </Tooltip>
+            {columnConfig.map((column) => (
+              <MenuItem
+                key={column.id}
+                value={column.id}
+                disabled={column.fixed}
+              >
+                <Checkbox
+                  checked={visibleColumns[column.id]}
+                  disabled={column.fixed}
+                />
+                <ListItemText
+                  primary={column.label}
+                  secondary={column.fixed ? "(Always visible)" : undefined}
+                />
+              </MenuItem>
+            ))}
+          </Select>
+
+          {canCreateRole && (
+            <Button
+              variant="contained"
+              onClick={() => setOpenCreateModal(true)}
+              sx={{
+                backgroundColor: "#00008B",
+                color: "white",
+                height: 40,
+              }}
+            >
+              Add New Role
+            </Button>
+          )}
+        </Stack>
 
         <TableContainer
           sx={{
             flex: 1,
-            maxHeight: "calc(100vh - 100px)",
+            maxHeight: "calc(100vh - 180px)",
             overflowY: "auto",
             borderRadius: 2,
             border: "1px solid #e0e0e0",
@@ -209,117 +275,100 @@ const RoleListingTable = () => {
           <Table stickyHeader>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                {tableHeaders.map(({ key, label }) => (
+                {selectedColumns.map((column) => (
                   <TableCell
-                    key={key}
-                    sx={
-                      key === "id"
-                        ? {
-                            width: 100,
-                            maxWidth: 100,
-                            p: 1,
-                            textAlign: "center",
-                          } // slightly wider
-                        : { minWidth: 150, textAlign: "center" }
-                    }
+                    key={column.id}
+                    sx={{
+                      width: column.width,
+                      minWidth: column.minWidth,
+                      p: 1,
+                      textAlign: "center",
+                    }}
                   >
                     <b style={{ display: "block", fontSize: "0.85rem" }}>
-                      {label}
+                      {column.label}
                     </b>
                   </TableCell>
                 ))}
-
-                {/* Created Date Column */}
-                <TableCell sx={{ minWidth: 160, textAlign: "center" }}>
-                  <b style={{ fontSize: "0.85rem" }}>Created On</b>
-                </TableCell>
-                <TableCell sx={{ minWidth: 160, textAlign: "center" }}>
-                  <b style={{ fontSize: "0.85rem" }}>Last Updated at</b>
-                </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell width="10%">
-                  <TextField
-                    type="number"
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.id}
-                    onChange={(e) => handleSearchChange(e, "id")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": { height: 40 },
-                      "& .MuiInputBase-input": { textAlign: "center" },
-                    }}
-                  />
-                </TableCell>
-                <TableCell width="20%">
-                  <TextField
-                    type="text"
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.Rolename}
-                    onChange={(e) => handleSearchChange(e, "Rolename")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": { height: 40 },
-                      "& .MuiInputBase-input": { textAlign: "center" },
-                    }}
-                  />
-                </TableCell>
-                <TableCell width="10%"></TableCell>
-                <TableCell width="10%"></TableCell>
+                {selectedColumns.map((column) => (
+                  <TableCell key={`search-${column.id}`}>
+                    {column.id === "id" || column.id === "name" ? (
+                      <TextField
+                        type={column.id === "id" ? "number" : "text"}
+                        variant="outlined"
+                        size="small"
+                        placeholder="Search"
+                        value={search[column.id === "id" ? "id" : "Rolename"]}
+                        onChange={(e) => 
+                          handleSearchChange(e, column.id === "id" ? "id" : "Rolename")
+                        }
+                        fullWidth
+                        sx={{
+                          "& .MuiInputBase-root": { height: 40 },
+                          "& .MuiInputBase-input": { textAlign: "center" },
+                        }}
+                      />
+                    ) : (
+                      <Box sx={{ height: 40 }} /> // Placeholder for non-searchable columns
+                    )}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
 
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center"></TableCell>
+                  <TableCell colSpan={selectedColumns.length} align="center">
+                    Loading...
+                  </TableCell>
                 </TableRow>
               ) : roleList.length > 0 ? (
                 roleList.map((row) => {
                   const isSelected = selectedRole?.id === row.id;
                   return (
-                    <React.Fragment key={row.id}>
-                      <TableRow
-                        hover
-                        onClick={() => handleRowClick(row)}
-                        sx={{
-                          cursor: "pointer",
-                          backgroundColor: isSelected ? "#E3F2FD" : "inherit",
-                        }}
-                      >
-                        <TableCell align="center">{row.id}</TableCell>
-                        <TableCell>
-                          <Tooltip title={row.name} placement="bottom">
-                            <Typography noWrap>
-                              {row.name.length > 30
-                                ? `${row.name.substring(0, 30)}...`
-                                : row.name}
-                            </Typography>
-                          </Tooltip>
+                    <TableRow
+                      key={row.id}
+                      hover
+                      onClick={() => handleRowClick(row)}
+                      sx={{
+                        cursor: "pointer",
+                        backgroundColor: isSelected ? "#E3F2FD" : "inherit",
+                      }}
+                    >
+                      {selectedColumns.map((column) => (
+                        <TableCell key={`${row.id}-${column.id}`} align="center">
+                          {column.id === "id" ? (
+                            row.id
+                          ) : column.id === "name" ? (
+                            <Tooltip title={row.name} placement="bottom">
+                              <Typography noWrap>
+                                {row.name.length > 30
+                                  ? `${row.name.substring(0, 30)}...`
+                                  : row.name}
+                              </Typography>
+                            </Tooltip>
+                          ) : column.id === "created_on" ? (
+                            moment(row.created_on)
+                              .local()
+                              .format("DD-MM-YYYY, hh:mm A")
+                          ) : column.id === "updated_on" ? (
+                            moment(row?.updated_on).isValid()
+                              ? moment(row.updated_on)
+                                  .local()
+                                  .format("DD-MM-YYYY, hh:mm A")
+                              : "Not updated yet"
+                          ) : null}
                         </TableCell>
-                        <TableCell align="center">
-                          {moment(row.created_on)
-                            .local()
-                            .format("DD-MM-YYYY, hh:mm A")}
-                        </TableCell>
-                        <TableCell align="center">
-                          {moment(row?.updated_on).isValid()
-                            ? moment(row.updated_on)
-                                .local()
-                                .format("DD-MM-YYYY, hh:mm A")
-                            : "Not updated yet"}
-                        </TableCell>
-                      </TableRow>
-                    </React.Fragment>
+                      ))}
+                    </TableRow>
                   );
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={3} align="center">
+                  <TableCell colSpan={selectedColumns.length} align="center">
                     No roles found.
                   </TableCell>
                 </TableRow>
@@ -354,7 +403,6 @@ const RoleListingTable = () => {
           <RoleDetailsCard
             role={selectedRole}
             onBack={() => setSelectedRole(null)}
-            onUpdate={() => {}}
             onDelete={() => {}}
             refreshList={(value: any) => refreshList(value)}
             handleCloseDetailCard={() => setSelectedRole(null)}

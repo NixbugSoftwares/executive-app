@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -11,27 +11,23 @@ import {
   DialogContent,
   DialogTitle,
   Avatar,
-  Tooltip,
   Checkbox,
   FormControlLabel,
   Alert,
-  Grid,
   useTheme,
-  Divider,
+  TextField,
+  Switch,
+  Stack,
 } from "@mui/material";
 import {
   Diversity3 as RolesIcon,
   ArrowBack as BackIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Check as CheckIcon,
-  Close as CloseIcon,
-  Security as PermissionsIcon,
 } from "@mui/icons-material";
 import { useAppDispatch } from "../../store/Hooks";
-import { roleDeleteApi } from "../../slices/appSlice";
+import { roleDeleteApi, roleUpdationApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
-import RoleUpdateForm from "./RoleUpdate";
 import {
   showSuccessToast,
   showErrorToast,
@@ -39,6 +35,10 @@ import {
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
 import { RoleDetails } from "../../types/type";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { roleCreationSchema } from "../auth/validations/authValidation";
+
 interface RoleCardProps {
   role: {
     id: number;
@@ -46,7 +46,6 @@ interface RoleCardProps {
     roleDetails?: RoleDetails;
   };
   onBack: () => void;
-  onUpdate: (id: number) => void;
   onDelete: (id: number) => void;
   refreshList: (value: any) => void;
   handleCloseDetailCard: () => void;
@@ -57,273 +56,129 @@ const permissionGroups = [
   {
     groupName: "Token Management",
     permissions: [
-      {
-        label: "Executive ",
-        key: "manage_ex_token",
-      },
-      {
-        label: "Operator",
-        key: "manage_op_token",
-      },
-      {
-        label: "Vendor ",
-        key: "manage_ve_token",
-      },
+      { label: "Executive", key: "manage_ex_token" },
+      { label: "Operator", key: "manage_op_token" },
+      { label: "Vendor", key: "manage_ve_token" },
     ],
   },
   {
     groupName: "Executive Management",
     permissions: [
-      {
-        label: "Create",
-        key: "create_executive",
-      },
-      {
-        label: "Update",
-        key: "update_executive",
-      },
-      {
-        label: "Delete",
-        key: "delete_executive",
-      },
+      { label: "Create", key: "create_executive" },
+      { label: "Update", key: "update_executive" },
+      { label: "Delete", key: "delete_executive" },
     ],
   },
   {
     groupName: "Landmark Management",
     permissions: [
-      {
-        label: "Create",
-        key: "create_landmark",
-      },
-      {
-        label: "Update",
-        key: "update_landmark",
-      },
-      {
-        label: "Delete",
-        key: "delete_landmark",
-      },
+      { label: "Create", key: "create_landmark" },
+      { label: "Update", key: "update_landmark" },
+      { label: "Delete", key: "delete_landmark" },
     ],
   },
   {
     groupName: "Company Management",
     permissions: [
-      {
-        label: "Create",
-        key: "create_company",
-      },
-      {
-        label: "Update",
-        key: "update_company",
-      },
-      {
-        label: "Delete",
-        key: "delete_company",
-      },
+      { label: "Create", key: "create_company" },
+      { label: "Update", key: "update_company" },
+      { label: "Delete", key: "delete_company" },
     ],
   },
   {
     groupName: "Operator Management",
     permissions: [
-      {
-        label: "Create",
-        key: "create_operator",
-      },
-      {
-        label: "Update",
-        key: "update_operator",
-      },
-      {
-        label: "Delete",
-        key: "delete_operator",
-      },
+      { label: "Create", key: "create_operator" },
+      { label: "Update", key: "update_operator" },
+      { label: "Delete", key: "delete_operator" },
     ],
   },
   {
     groupName: "Business Management",
     permissions: [
-      {
-        label: "Create",
-        key: "create_business",
-      },
-      {
-        label: "Update",
-        key: "update_business",
-      },
-      {
-        label: "Delete",
-        key: "delete_business",
-      },
+      { label: "Create", key: "create_business" },
+      { label: "Update", key: "update_business" },
+      { label: "Delete", key: "delete_business" },
     ],
   },
   {
     groupName: "Route Management",
     permissions: [
-      {
-        label: "Create",
-        key: "create_route",
-      },
-      {
-        label: "Update",
-        key: "update_route",
-      },
-      {
-        label: "Delete",
-        key: "delete_route",
-      },
+      { label: "Create", key: "create_route" },
+      { label: "Update", key: "update_route" },
+      { label: "Delete", key: "delete_route" },
     ],
   },
   {
     groupName: "Bus Management",
     permissions: [
-      {
-        label: "Create",
-        key: "create_bus",
-      },
-      {
-        label: "Update",
-        key: "update_bus",
-      },
-      {
-        label: "Delete",
-        key: "delete_bus",
-      },
+      { label: "Create", key: "create_bus" },
+      { label: "Update", key: "update_bus" },
+      { label: "Delete", key: "delete_bus" },
     ],
   },
   {
     groupName: "Vendor Management",
     permissions: [
-      {
-        label: "Create",
-        key: "create_vendor",
-      },
-      {
-        label: "Update",
-        key: "update_vendor",
-      },
-      {
-        label: "Delete",
-        key: "delete_vendor",
-      },
+      { label: "Create", key: "create_vendor" },
+      { label: "Update", key: "update_vendor" },
+      { label: "Delete", key: "delete_vendor" },
     ],
   },
   {
     groupName: "Schedule Management",
     permissions: [
-      {
-        label: "Create",
-        key: "create_schedule",
-      },
-      {
-        label: "Update",
-        key: "update_schedule",
-      },
-      {
-        label: "Delete",
-        key: "delete_schedule",
-      },
+      { label: "Create", key: "create_schedule" },
+      { label: "Update", key: "update_schedule" },
+      { label: "Delete", key: "delete_schedule" },
     ],
   },
   {
     groupName: "Service Management",
     permissions: [
-      {
-        label: "Create",
-        key: "create_service",
-      },
-      {
-        label: "Update",
-        key: "update_service",
-      },
-      {
-        label: "Delete",
-        key: "delete_service",
-      },
+      { label: "Create", key: "create_service" },
+      { label: "Update", key: "update_service" },
+      { label: "Delete", key: "delete_service" },
     ],
   },
   {
     groupName: "Fare Management",
     permissions: [
-      {
-        label: "Create",
-        key: "create_fare",
-      },
-      {
-        label: "Update",
-        key: "update_fare",
-      },
-      {
-        label: "Delete",
-        key: "delete_fare",
-      },
+      { label: "Create", key: "create_fare" },
+      { label: "Update", key: "update_fare" },
+      { label: "Delete", key: "delete_fare" },
     ],
   },
   {
     groupName: "Duty Management",
     permissions: [
-      {
-        label: "Create",
-        key: "create_duty",
-      },
-      {
-        label: "Update",
-        key: "update_duty",
-      },
-      {
-        label: "Delete",
-        key: "delete_duty",
-      },
+      { label: "Create", key: "create_duty" },
+      { label: "Update", key: "update_duty" },
+      { label: "Delete", key: "delete_duty" },
     ],
   },
   {
     groupName: "Executive Role Management",
     permissions: [
-      {
-        label: "Create",
-        key: "create_ex_role",
-      },
-      {
-        label: "Update",
-        key: "update_ex_role",
-      },
-      {
-        label: "Delete",
-        key: "delete_ex_role",
-      },
+      { label: "Create", key: "create_ex_role" },
+      { label: "Update", key: "update_ex_role" },
+      { label: "Delete", key: "delete_ex_role" },
     ],
   },
   {
     groupName: "Operator Role Management",
     permissions: [
-      {
-        label: "Create",
-        key: "create_op_role",
-      },
-      {
-        label: "Update",
-        key: "update_op_role",
-      },
-      {
-        label: "Delete",
-        key: "delete_op_role",
-      },
+      { label: "Create", key: "create_op_role" },
+      { label: "Update", key: "update_op_role" },
+      { label: "Delete", key: "delete_op_role" },
     ],
   },
   {
     groupName: "Vendor Role Management",
     permissions: [
-      {
-        label: "Create",
-        key: "create_ve_role",
-      },
-      {
-        label: "Update",
-        key: "update_ve_role",
-      },
-      {
-        label: "Delete",
-        key: "delete_ve_role",
-      },
+      { label: "Create", key: "create_ve_role" },
+      { label: "Update", key: "update_ve_role" },
+      { label: "Delete", key: "delete_ve_role" },
     ],
   },
 ];
@@ -333,15 +188,13 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
   onBack,
   onDelete,
   refreshList,
-  handleCloseDetailCard,
   onCloseDetailCard,
 }) => {
   const theme = useTheme();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const [acknowledgedWarning, setAcknowledgedWarning] = useState(false);
+  const [loading, setLoading] = useState(false);
   const dispatch = useAppDispatch();
-
   const canDeleteRole = useSelector((state: RootState) =>
     state.app.permissions.includes("delete_ex_role")
   );
@@ -350,8 +203,65 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
     state.app.permissions.includes("update_ex_role")
   );
 
-  const handleCloseModal = () => {
-    setUpdateFormOpen(false);
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    setValue,
+    reset,
+  } = useForm({
+    resolver: yupResolver(roleCreationSchema),
+    defaultValues: {
+      name: role.name,
+      ...role.roleDetails,
+    },
+  });
+  useEffect(() => {
+    reset({
+      name: role.name,
+      ...role.roleDetails,
+    });
+  }, [role, reset]);
+
+  const handleGroupToggle = (groupName: string, checked: boolean) => {
+    const group = permissionGroups.find((g) => g.groupName === groupName);
+    if (group) {
+      group.permissions.forEach((permission) => {
+        setValue(
+          permission.key as keyof typeof role.roleDetails,
+          checked as (typeof role.roleDetails)[keyof typeof role.roleDetails]
+        );
+      });
+    }
+  };
+
+  const isGroupAllSelected = (groupName: string) => {
+    const group = permissionGroups.find((g) => g.groupName === groupName);
+    if (!group) return false;
+
+    return group.permissions.every((permission) =>
+      watch(permission.key as keyof typeof role.roleDetails)
+    );
+  };
+
+  const handleAllPermissionsToggle = (checked: boolean) => {
+    permissionGroups.forEach((group) => {
+      group.permissions.forEach((permission) => {
+        setValue(
+          permission.key as keyof typeof role.roleDetails,
+          checked as (typeof role.roleDetails)[keyof typeof role.roleDetails]
+        );
+      });
+    });
+  };
+
+  const isAllPermissionsSelected = () => {
+    return permissionGroups.every((group) =>
+      group.permissions.every((permission) =>
+        watch(permission.key as keyof typeof role.roleDetails)
+      )
+    );
   };
 
   const handleRoleDelete = async () => {
@@ -367,7 +277,7 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
       setDeleteConfirmOpen(false);
       localStorageHelper.removeStoredItem(`role_${role.id}`);
       onDelete(role.id);
-      handleCloseDetailCard();
+      onCloseDetailCard();
       showSuccessToast("Role deleted successfully!");
       refreshList("refresh");
     } catch (error) {
@@ -377,92 +287,202 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
     }
   };
 
-  const getPermissionValue = (key: string) => {
-    return role.roleDetails?.[key as keyof typeof role.roleDetails] || false;
+  const handleRoleUpdate = async (data: any) => {
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("id", String(role.id));
+      formData.append("name", data.name);
+
+      permissionGroups.forEach((group) => {
+        group.permissions.forEach((permission) => {
+          formData.append(permission.key, String(data[permission.key]));
+        });
+      });
+
+      const response = await dispatch(
+        roleUpdationApi({ roleId: role.id, formData })
+      ).unwrap();
+
+      if (response?.id) {
+        showSuccessToast("Role updated successfully!");
+        refreshList("refresh");
+        onCloseDetailCard();
+      } else {
+        showErrorToast("Role update failed. Please try again.");
+      }
+    } catch (error: any) {
+      showErrorToast(error || "Failed to update role. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <>
-      {/* Role Details Card */}
       <Card
-        sx={{ maxWidth: 500, margin: "auto", boxShadow: 3, borderRadius: 2 }}
+        sx={{ maxWidth: 800, margin: "auto", boxShadow: 3, borderRadius: 2 }}
       >
-        <Box sx={{ p: 2, bgcolor:"darkblue", color: "white" }}>
+        <Box sx={{ p: 2, bgcolor: "darkblue", color: "white" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Avatar sx={{ bgcolor: "white", width: 40, height: 40 }}>
               <RolesIcon color="primary" />
             </Avatar>
-            <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-              {role.name}
-            </Typography>
+
+            <Controller
+              name="name"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  sx={{
+                    backgroundColor: "white",
+                    borderRadius: 1,
+                    "& .MuiOutlinedInput-root": {
+                      "& fieldset": {
+                        borderColor: "transparent",
+                      },
+                      "&:hover fieldset": {
+                        borderColor: "transparent",
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "transparent",
+                      },
+                    },
+                  }}
+                  error={!!errors.name}
+                  helperText={errors.name?.message}
+                />
+              )}
+            />
           </Box>
           <Typography variant="caption" sx={{ display: "block", mt: 1 }}>
             Role ID: {role.id}
           </Typography>
         </Box>
 
-        {/* Permissions Section */}
         <CardContent>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1, backgroundColor: "rgba(42, 150, 46, 0.1)", p: 1, borderRadius: 1 }}>
-            <PermissionsIcon color="primary" />
-            <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
+          <Box display={"flex"} justifyContent={"space-between"} sx={{ mb: 1 }}>
+            <Typography variant="subtitle1" gutterBottom>
               Permissions
             </Typography>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  size="small"
+                  checked={isAllPermissionsSelected()}
+                  indeterminate={
+                    !isAllPermissionsSelected() &&
+                    permissionGroups.some((group) =>
+                      group.permissions.some((permission) =>
+                        watch(permission.key as keyof typeof role.roleDetails)
+                      )
+                    )
+                  }
+                  onChange={(e) => handleAllPermissionsToggle(e.target.checked)}
+                />
+              }
+              label="Select All Permissions"
+              labelPlacement="start"
+              sx={{ m: 0, mb: 1 }}
+            />
           </Box>
 
-          <Divider sx={{ scale: 5, fill: theme.palette.primary.main, mb: 2 }} />
-
-          <Grid container spacing={1}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, 1fr)",
+              gap: 2,
+            }}
+          >
             {permissionGroups.map((group) => (
-              <React.Fragment key={group.groupName}>
-                <Grid item xs={12}>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{
-                      fontWeight: "bold",
-                      color: theme.palette.text.primary,
-                    }}
-                  >
-                    {group.groupName}:
+              <Box
+                key={group.groupName}
+                sx={{
+                  p: 2,
+                  border: `1px solid ${theme.palette.divider}`,
+                  borderRadius: 1,
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mb: 1,
+                  }}
+                >
+                  <Typography variant="subtitle2" fontWeight="medium">
+                    {group.groupName}
                   </Typography>
-                </Grid>
-                {group.permissions.map((permission) => (
-                  <Grid item xs={6} sm={4} key={permission.key}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        p: 0.5,
-                        borderRadius: 1,
-                        bgcolor: getPermissionValue(permission.key)
-                          ? "rgba(42, 150, 46, 0.3)"
-                          : "rgba(201, 65, 56, 0.3)",
-                      }}
-                    >
-                      <Typography variant="caption" sx={{ flex: 1 }}>
-                        {permission.label}
-                      </Typography>
-                      {getPermissionValue(permission.key) ? (
-                        <CheckIcon
-                          fontSize="small"
-                          sx={{ backgroundColor: "#E8F5E9" }}
+
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={isGroupAllSelected(group.groupName)}
+                        indeterminate={
+                          !isGroupAllSelected(group.groupName) &&
+                          group.permissions.some((permission) =>
+                            watch(
+                              permission.key as keyof typeof role.roleDetails
+                            )
+                          )
+                        }
+                        onChange={(e) =>
+                          handleGroupToggle(group.groupName, e.target.checked)
+                        }
+                      />
+                    }
+                    label=""
+                    labelPlacement="start"
+                    sx={{ m: 0 }}
+                  />
+                </Box>
+
+                <Stack spacing={1}>
+                  {group.permissions.map((permission) => (
+                    <Controller
+                      key={permission.key}
+                      name={permission.key as keyof typeof role.roleDetails}
+                      control={control}
+                      render={({ field }) => (
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              size="small"
+                              checked={!!field.value}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                              color="primary"
+                            />
+                          }
+                          label={
+                            <Typography variant="body2">
+                              {permission.label}
+                            </Typography>
+                          }
+                          labelPlacement="start"
+                          sx={{
+                            m: 0,
+                            justifyContent: "space-between",
+                            width: "100%",
+                          }}
                         />
-                      ) : (
-                        <CloseIcon fontSize="small" color="error" />
                       )}
-                    </Box>
-                  </Grid>
-                ))}
-              </React.Fragment>
+                    />
+                  ))}
+                </Stack>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </CardContent>
 
-        {/* Action Buttons */}
         <CardActions
           sx={{
-            justifyContent: "space-between",
+            display: "flex",
+            justifyContent: "left",
             p: 2,
             borderTop: `1px solid ${theme.palette.divider}`,
           }}
@@ -478,17 +498,15 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
           </Button>
 
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Tooltip
-              title={!canUpdateRole ? "You don't have update permission" : ""}
-            >
-              <span>
+            <>
+              {canUpdateRole && (
                 <Button
                   variant="contained"
                   size="small"
-                  onClick={() => setUpdateFormOpen(true)}
-                  disabled={!canUpdateRole}
+                  onClick={handleSubmit(handleRoleUpdate)}
                   startIcon={<EditIcon />}
                   color="success"
+                  disabled={loading}
                   sx={{
                     minWidth: 100,
                     "&.Mui-disabled": {
@@ -498,13 +516,9 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
                 >
                   Update
                 </Button>
-              </span>
-            </Tooltip>
+              )}
 
-            <Tooltip
-              title={!canDeleteRole ? "You don't have delete permission" : ""}
-            >
-              <span>
+              {canDeleteRole && (
                 <Button
                   variant="contained"
                   color="error"
@@ -521,13 +535,12 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
                 >
                   Delete
                 </Button>
-              </span>
-            </Tooltip>
+              )}
+            </>
           </Box>
         </CardActions>
       </Card>
 
-      {/* Delete Confirmation Modal */}
       <Dialog
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
@@ -570,29 +583,6 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
             variant="contained"
           >
             Confirm Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Update Form Modal */}
-      <Dialog
-        open={updateFormOpen}
-        onClose={handleCloseModal}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogContent>
-          <RoleUpdateForm
-            roleId={role.id}
-            roleData={role}
-            refreshList={refreshList}
-            onClose={handleCloseModal}
-            onCloseDetailCard={onCloseDetailCard}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal} color="error">
-            Cancle
           </Button>
         </DialogActions>
       </Dialog>

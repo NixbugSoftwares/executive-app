@@ -5,14 +5,12 @@ import {
   Box,
   Typography,
   Switch,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   FormControlLabel,
   Divider,
   useTheme,
+  Stack,
+  Checkbox,
 } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useAppDispatch } from "../../store/Hooks";
 import { roleCreationApi } from "../../slices/appSlice";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
@@ -96,7 +94,7 @@ interface IRoleCreationFormProps {
 
 const permissionGroups = [
   {
-    groupName: "Token Management",
+    groupName: "Account Management",
     permissions: [
       { label: "Executive Token", key: "manage_ex_token" },
       { label: "Operator Token", key: "manage_op_token" },
@@ -109,6 +107,54 @@ const permissionGroups = [
       { label: "Create", key: "create_executive" },
       { label: "Update", key: "update_executive" },
       { label: "Delete", key: "delete_executive" },
+    ],
+  },
+  {
+    groupName: "Operator",
+    permissions: [
+      { label: "Create", key: "create_operator" },
+      { label: "Update", key: "update_operator" },
+      { label: "Delete", key: "delete_operator" },
+    ],
+  },
+  {
+    groupName: "Vendor",
+    permissions: [
+      { label: "Create", key: "create_vendor" },
+      { label: "Update", key: "update_vendor" },
+      { label: "Delete", key: "delete_vendor" },
+    ],
+  },
+  {
+    groupName: "Business",
+    permissions: [
+      { label: "Create", key: "create_business" },
+      { label: "Update", key: "update_business" },
+      { label: "Delete", key: "delete_business" },
+    ],
+  },
+  {
+    groupName: "Executive Role",
+    permissions: [
+      { label: "Create", key: "create_ex_role" },
+      { label: "Update", key: "update_ex_role" },
+      { label: "Delete", key: "delete_ex_role" },
+    ],
+  },
+  {
+    groupName: "Operator Role",
+    permissions: [
+      { label: "Create", key: "create_op_role" },
+      { label: "Update", key: "update_op_role" },
+      { label: "Delete", key: "delete_op_role" },
+    ],
+  },
+  {
+    groupName: "Vendor Role",
+    permissions: [
+      { label: "Create", key: "create_ve_role" },
+      { label: "Update", key: "update_ve_role" },
+      { label: "Delete", key: "delete_ve_role" },
     ],
   },
   {
@@ -127,22 +173,8 @@ const permissionGroups = [
       { label: "Delete", key: "delete_company" },
     ],
   },
-  {
-    groupName: "Operator",
-    permissions: [
-      { label: "Create", key: "create_operator" },
-      { label: "Update", key: "update_operator" },
-      { label: "Delete", key: "delete_operator" },
-    ],
-  },
-  {
-    groupName: "Business",
-    permissions: [
-      { label: "Create", key: "create_business" },
-      { label: "Update", key: "update_business" },
-      { label: "Delete", key: "delete_business" },
-    ],
-  },
+  
+  
   {
     groupName: "Route",
     permissions: [
@@ -157,14 +189,6 @@ const permissionGroups = [
       { label: "Create", key: "create_bus" },
       { label: "Update", key: "update_bus" },
       { label: "Delete", key: "delete_bus" },
-    ],
-  },
-  {
-    groupName: "Vendor",
-    permissions: [
-      { label: "Create", key: "create_vendor" },
-      { label: "Update", key: "update_vendor" },
-      { label: "Delete", key: "delete_vendor" },
     ],
   },
   {
@@ -199,30 +223,6 @@ const permissionGroups = [
       { label: "Delete", key: "delete_duty" },
     ],
   },
-  {
-    groupName: "Executive Role",
-    permissions: [
-      { label: "Create", key: "create_ex_role" },
-      { label: "Update", key: "update_ex_role" },
-      { label: "Delete", key: "delete_ex_role" },
-    ],
-  },
-  {
-    groupName: "Operator Role",
-    permissions: [
-      { label: "Create", key: "create_op_role" },
-      { label: "Update", key: "update_op_role" },
-      { label: "Delete", key: "delete_op_role" },
-    ],
-  },
-  {
-    groupName: "Vendor Role",
-    permissions: [
-      { label: "Create", key: "create_ve_role" },
-      { label: "Update", key: "update_ve_role" },
-      { label: "Delete", key: "delete_ve_role" },
-    ],
-  },
 ];
 
 const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
@@ -246,11 +246,49 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
     register,
     handleSubmit,
     control,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<RoleFormValues>({
     resolver: yupResolver(roleCreationSchema),
     defaultValues: defaultValues as RoleFormValues,
   });
+
+  const handleGroupToggle = (groupName: string, checked: boolean) => {
+    const group = permissionGroups.find((g) => g.groupName === groupName);
+    if (group) {
+      group.permissions.forEach((permission) => {
+        setValue(permission.key as keyof RoleFormValues, checked);
+      });
+    }
+  };
+
+  // Check if all permissions in a group are selected
+  const isGroupAllSelected = (groupName: string) => {
+    const group = permissionGroups.find((g) => g.groupName === groupName);
+    if (!group) return false;
+
+    return group.permissions.every((permission) =>
+      watch(permission.key as keyof RoleFormValues)
+    );
+  };
+
+  const handleAllPermissionsToggle = (checked: boolean) => {
+    permissionGroups.forEach((group) => {
+      group.permissions.forEach((permission) => {
+        setValue(permission.key as keyof RoleFormValues, checked);
+      });
+    });
+  };
+
+  // helper to check if all permissions are currently selected
+  const isAllPermissionsSelected = () => {
+    return permissionGroups.every((group) =>
+      group.permissions.every((permission) =>
+        watch(permission.key as keyof RoleFormValues)
+      )
+    );
+  };
 
   const handleRoleCreation: SubmitHandler<RoleFormValues> = async (data) => {
     setLoading(true);
@@ -282,7 +320,6 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
       setLoading(false);
     }
   };
-
   return (
     <Box
       component="form"
@@ -290,7 +327,7 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
       sx={{
         display: "flex",
         flexDirection: "column",
-        gap: 1,
+        gap: 2,
         width: "100%",
         maxHeight: "70vh",
         overflowY: "auto",
@@ -309,95 +346,117 @@ const RoleCreationForm: React.FC<IRoleCreationFormProps> = ({
         variant="outlined"
         size="small"
         fullWidth
-        sx={{ mb: 2 }}
       />
 
-      <Divider sx={{ my: 1 }} />
+      <Divider />
+      <Box display={"flex"} justifyContent={"space-between"} sx={{ mb: 1 }}>
+        <Typography variant="subtitle1" gutterBottom>
+          Permissions
+        </Typography>
+        <FormControlLabel
+          control={
+            <Checkbox
+              size="small"
+              checked={isAllPermissionsSelected()}
+              indeterminate={
+                !isAllPermissionsSelected() &&
+                permissionGroups.some((group) =>
+                  group.permissions.some((permission) =>
+                    watch(permission.key as keyof RoleFormValues)
+                  )
+                )
+              }
+              onChange={(e) => handleAllPermissionsToggle(e.target.checked)}
+            />
+          }
+          label="Select All Permissions"
+          labelPlacement="start"
+          sx={{ m: 0, mb: 1 }}
+        />
+      </Box>
 
-      <Typography variant="subtitle2" gutterBottom>
-        Permissions
-      </Typography>
-
+      {/* GRID for permission groups */}
       <Box
         sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1,
-          mb: 2,
-          alignItems: "flex-start",
+          display: "grid",
+          gridTemplateColumns: "repeat(2, 1fr)",
+          gap: 2,
         }}
       >
         {permissionGroups.map((group) => (
           <Box
             key={group.groupName}
-            sx={{ minWidth: 200, flex: "1 1 200px", maxWidth: "100%" }}
+            sx={{
+              p: 2,
+              border: `1px solid ${theme.palette.divider}`,
+              borderRadius: 1,
+            }}
           >
-            <Accordion
-              defaultExpanded={false}
-              sx={{
-                boxShadow: "none",
-                border: `1px solid ${theme.palette.divider}`,
-                "&:before": { display: "none" },
-              }}
+            <Box
+              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
             >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon fontSize="small" />}
-                sx={{
-                  minHeight: "40px !important",
-                  "& .MuiAccordionSummary-content": {
-                    my: 0.5,
-                  },
-                }}
-              >
-                <Typography variant="body2" fontWeight="medium">
-                  {group.groupName}
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0, pb: 1 }}>
-                <Box
-                  sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
-                >
-                  {group.permissions.map((permission) => (
-                    <Controller
-                      key={permission.key}
-                      name={permission.key as keyof RoleFormValues}
-                      control={control}
-                      render={({ field }) => (
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              size="small"
-                              checked={!!field.value}
-                              onChange={(e) => field.onChange(e.target.checked)}
-                              color="primary"
-                            />
-                          }
-                          label={
-                            <Typography variant="caption">
-                              {permission.label}
-                            </Typography>
-                          }
-                          labelPlacement="start"
-                          sx={{
-                            m: 0,
-                            justifyContent: "space-between",
-                            "& .MuiFormControlLabel-label": {
-                              flex: 1,
-                            },
-                          }}
+              <Typography variant="subtitle2" fontWeight="medium">
+                {group.groupName}
+              </Typography>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={isGroupAllSelected(group.groupName)}
+                    indeterminate={
+                      !isGroupAllSelected(group.groupName) &&
+                      group.permissions.some((permission) =>
+                        watch(permission.key as keyof RoleFormValues)
+                      )
+                    }
+                    onChange={(e) =>
+                      handleGroupToggle(group.groupName, e.target.checked)
+                    }
+                  />
+                }
+                label=""
+                labelPlacement="start"
+                sx={{ m: 0 }}
+              />
+            </Box>
+
+            <Stack spacing={1}>
+              {group.permissions.map((permission) => (
+                <Controller
+                  key={permission.key}
+                  name={permission.key as keyof RoleFormValues}
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          size="small"
+                          checked={!!field.value}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                          color="primary"
                         />
-                      )}
+                      }
+                      label={
+                        <Typography variant="body2">
+                          {permission.label}
+                        </Typography>
+                      }
+                      labelPlacement="start"
+                      sx={{
+                        m: 0,
+                        justifyContent: "space-between",
+                        width: "100%",
+                      }}
                     />
-                  ))}
-                </Box>
-              </AccordionDetails>
-            </Accordion>
+                  )}
+                />
+              ))}
+            </Stack>
           </Box>
         ))}
       </Box>
 
-      <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-        
+      <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
         <Button
           type="submit"
           variant="contained"

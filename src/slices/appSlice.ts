@@ -428,7 +428,7 @@ export const roleUpdationApi = createAsyncThunk(
     } catch (error: any) {
       console.error("Backend Error Response:", error.response?.data);
       return rejectWithValue(
-        error?.response?.data?.message || "Role update failed"
+        error.detail || "Role update failed"
       );
     }
   }
