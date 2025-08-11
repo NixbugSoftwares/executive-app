@@ -1,7 +1,4 @@
-
 import * as yup from "yup";
-
-
 
 //******************************************** login validation schema ************************************************
 export const loginSchema = yup.object().shape({
@@ -24,24 +21,19 @@ export const loginSchema = yup.object().shape({
     ),
 
   password: yup
-    .string()
-    .required("Password is required")
-    .min(8, "Password must be at least 8 characters")
-    .max(32, "Password cannot exceed 32 characters")
-    .matches(
-      /^[a-zA-Z0-9+.,@_$%&*#!^=/?-]+$/,
-      "Password contains invalid characters"
-    )
-    .test(
-      "no-consecutive-spaces",
-      "Password cannot have consecutive spaces",
-      (value) => !/\s{2,}/.test(value)
-    )
-    .test(
-      "no-leading-trailing-spaces",
-      "Password cannot have leading or trailing spaces",
-      (value) => value?.trim() === value
-    ),
+  .string()
+  .required("Password is required")
+  .min(8, "Password must be at least 8 characters")
+  .max(32, "Password cannot exceed 32 characters")
+  .matches(
+    /^[A-Za-z0-9\-+,.@_$%&*#!^=/?]+$/,
+    "Password can only contain: letters (A-Z, a-z), numbers (0-9), and these special characters: - + , . @ _ $ % & * # ! ^ = / ?"
+  )
+  .test(
+    "no-spaces",
+    "Password cannot contain any spaces",
+    (value) => !/\s/.test(value)
+  ),
 });
 
 
@@ -69,26 +61,19 @@ export const accountFormSchema = yup.object().shape({
     'Username cannot have consecutive special characters',
     (value) => !/([@._-]{2,})/.test(value)
   ),
- password: yup
+password: yup
   .string()
   .required("Password is required")
+  .min(8, "Password must be at least 8 characters")
+  .max(32, "Password cannot exceed 32 characters")
   .matches(
-    /^[A-Za-z0-9\-+,.@_$%&*#!^=/?](?:[A-Za-z0-9\-+,.@_$%&*#!^=/? ]*[A-Za-z0-9\-+,.@_$%&*#!^=?/])?$/,
-    "Password must be 8-64 characters, cannot start/end with space or have consecutive spaces"
-  )
-  .matches(
-    /^.{8,64}$/,
-    "Password must be between 8-64 characters"
+    /^[A-Za-z0-9\-+,.@_$%&*#!^=/?]+$/,
+    "Password can only contain: letters (A-Z, a-z), numbers (0-9), and these special characters: - + , . @ _ $ % & * # ! ^ = / ?"
   )
   .test(
-    "no-consecutive-spaces",
-    "Password cannot have consecutive spaces",
-    (value) => !/\s{2,}/.test(value)
-  )
-  .test(
-    "allowed-chars",
-    "You can use letters (A-Z, a-z), numbers (0-9), and special characters (-+,.@_$%&*#!^=/?). Spaces are allowed but not at the start/end or consecutive.",
-    (value) => /^[A-Za-z0-9\-+,.@_$%&*#!^=/? ]+$/.test(value)
+    "no-spaces",
+    "Password cannot contain any spaces",
+    (value) => !/\s/.test(value)
   ),
     
   fullName: yup
@@ -113,12 +98,20 @@ export const accountFormSchema = yup.object().shape({
   .optional()
   .matches(/^[1-9][0-9]{9}$/, "Invalid phone number format"),
  
-  email: yup
-    .string()
-    .trim()
-    .max(254, "Email cannot exceed 254 characters")
-    .matches(/^(?!.*\.\.)[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+)*@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}|^$/, "Invalid email format")
-    .optional(),
+email: yup
+  .string()
+  .trim()
+  .max(254, "Email cannot exceed 254 characters")
+  .test(
+    "is-valid-email",
+    "Please enter a valid email address eg: user@example.com",
+    (value) => {
+      if (!value) return true; 
+      return /^(?!.*\s)(?!.*\.\.)[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+)*@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/.test(value);
+    }
+  )
+  .optional(),
+
 
   gender: yup
     .number(),
@@ -145,7 +138,6 @@ export const accountFormSchema = yup.object().shape({
     ),
   role: yup
   .number()
-  .required(), 
   
 });
 

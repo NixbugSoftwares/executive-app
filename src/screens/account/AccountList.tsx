@@ -14,6 +14,8 @@ import {
   MenuItem,
   Typography,
   CircularProgress,
+  Checkbox,
+  ListItemText,
 } from "@mui/material";
 import ErrorIcon from "@mui/icons-material/Error";
 import { SelectChangeEvent } from "@mui/material";
@@ -28,6 +30,8 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
 import PaginationControls from "../../common/paginationControl";
 import FormModal from "../../common/formModal";
+import localStorageHelper from "../../utils/localStorageHelper";
+import moment from "moment";
 const getGenderBackendValue = (displayValue: string): string => {
   const genderMap: Record<string, string> = {
     Other: "1",
@@ -37,9 +41,19 @@ const getGenderBackendValue = (displayValue: string): string => {
   };
   return genderMap[displayValue] || "";
 };
+interface ColumnConfig {
+  id: string;
+  label: string;
+  width: string;
+  minWidth: string;
+  fixed?: boolean;
+}
 const AccountListingTable = () => {
+  const loggedInUserId = localStorageHelper.getItem("@user")?.executive_id;
   const dispatch = useDispatch<AppDispatch>();
   const [accountList, setAccountList] = useState<Account[]>([]);
+  const [loggedInUserAccount, setLoggedInUserAccount] =
+    useState<Account | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [search, setSearch] = useState({
     id: "",
@@ -59,47 +73,144 @@ const AccountListingTable = () => {
   const canCreateExecutive = useSelector((state: RootState) =>
     state.app.permissions.includes("create_executive")
   );
-  const canAssignRole = useSelector((state: RootState) =>
-    state.app.permissions.includes("update_ex_role")
+  const columnConfig: ColumnConfig[] = [
+    { id: "id", label: "ID", width: "80px", minWidth: "80px", fixed: true },
+    {
+      id: "fullName",
+      label: "Full Name",
+      width: "200px",
+      minWidth: "200px",
+      fixed: true,
+    },
+    {
+      id: "phoneNumber",
+      label: "Phone Number",
+      width: "160px",
+      minWidth: "160px",
+      fixed: true,
+    },
+    {
+      id: "gender",
+      label: "Gender",
+      width: "120px",
+      minWidth: "120px",
+      fixed: true,
+    },
+    { id: "email", label: "Email", width: "220px", minWidth: "220px" },
+    {
+      id: "designation",
+      label: "Designation",
+      width: "120px",
+      minWidth: "120px",
+    },
+    {
+      id: "CreatedAt",
+      label: "Created Date",
+      width: "150px",
+      minWidth: "150px",
+    },
+  ];
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
+    columnConfig.reduce((acc, column) => {
+      acc[column.id] = column.fixed ? true : false;
+      return acc;
+    }, {} as Record<string, boolean>)
   );
   // Function to fetch accounts
-  const fetchAccounts = useCallback((pageNumber: number, searchParams = {}) => {
-    const offset = pageNumber * rowsPerPage;
-    dispatch(accountListApi({ limit: rowsPerPage, offset, ...searchParams }))
-      .unwrap()
-      .then((res) => {
-        const items = res.data || [];
-        console.log("Fetched Accounts:", items);
+  const fetchAccounts = useCallback(
+    (pageNumber: number, searchParams = {}) => {
+      const offset = pageNumber * rowsPerPage;
+      dispatch(accountListApi({ limit: rowsPerPage, offset, ...searchParams }))
+        .unwrap()
+        .then((res) => {
+          const items = res.data || [];
+          const formattedAccounts = items.map((account: any) => ({
+            id: account.id,
+            fullName: account.full_name || account.fullName,
+            username: account.username,
+            gender:
+              account.gender === 1
+                ? "Other"
+                : account.gender === 2
+                ? "Female"
+                : account.gender === 3
+                ? "Male"
+                : "Transgender",
+            email_id: account.email_id,
+            phoneNumber: account.phone_number || account.phoneNumber || "",
+            status: account.status === 1 ? "Active" : "Suspended",
+            designation: account.designation || "",
+            created_on: account.created_on,
+            updated_on: account.updated_on,
+          }));
+          setAccountList(formattedAccounts);
+          setHasNextPage(items.length === rowsPerPage);
 
-        const formattedAccounts = items.map((account: any) => ({
-          id: account.id,
-          fullName: account.full_name || account.fullName,
-          username: account.username,
-          gender:
-            account.gender === 1
-              ? "Other"
-              : account.gender === 2
-              ? "Female"
-              : account.gender === 3
-              ? "Male"
-              : "Transgender",
-          email_id: account.email_id,
-          phoneNumber: account.phone_number || account.phoneNumber || "",
-          status: account.status === 1 ? "Active" : "Suspended",
-          designation: account.designation || "",
-          created_on: account.created_on,
-          updated_on: account.updated_on,
-        }));
-        setAccountList(formattedAccounts);
-        setHasNextPage(items.length === rowsPerPage);
-      })
-      .catch((error) => {
-        console.error("Fetch Error:", error);
-        showErrorToast(error || "Failed to fetch account list");
-      })
-      .finally(() => setIsLoading(false));
-  }, []);
+          if (loggedInUserId && !loggedInUserAccount) {
+            dispatch(
+              accountListApi({ limit: 1, offset: 0, id: loggedInUserId })
+            )
+              .unwrap()
+              .then((res) => {
+                const items = res.data || [];
+                const formattedAccounts = items.map((account: any) => ({
+                  id: account.id,
+                  fullName: account.full_name || account.fullName,
+                  username: account.username,
+                  gender:
+                    account.gender === 1
+                      ? "Other"
+                      : account.gender === 2
+                      ? "Female"
+                      : account.gender === 3
+                      ? "Male"
+                      : "Transgender",
+                  email_id: account.email_id,
+                  phoneNumber:
+                    account.phone_number || account.phoneNumber || "",
+                  status: account.status === 1 ? "Active" : "Suspended",
+                  designation: account.designation || "",
+                  created_on: account.created_on,
+                  updated_on: account.updated_on,
+                }));
+                setLoggedInUserAccount(formattedAccounts[0] || null);
+              });
+          }
+        })
+        .catch((error) => {
+          console.error("Fetch Error:", error);
+          showErrorToast(error || "Failed to fetch account list");
+        })
+        .finally(() => setIsLoading(false));
+    },
+    [loggedInUserId, loggedInUserAccount]
+  );
 
+  const sortedAccountList = React.useMemo(() => {
+    const combined = [...accountList];
+
+    if (
+      loggedInUserAccount &&
+      !accountList.some((a) => a.id === loggedInUserAccount.id)
+    ) {
+      combined.unshift(loggedInUserAccount);
+    }
+    return combined.sort((a, b) => {
+      if (a.id === loggedInUserId) return -1;
+      if (b.id === loggedInUserId) return 1;
+      return 0;
+    });
+  }, [accountList, loggedInUserAccount, loggedInUserId]);
+
+  const handleColumnChange = (event: SelectChangeEvent<string[]>) => {
+    const value = event.target.value;
+    // Convert array of selected values to new visibility state
+    const newVisibleColumns = Object.keys(visibleColumns).reduce((acc, key) => {
+      acc[key] = value.includes(key);
+      return acc;
+    }, {} as Record<string, boolean>);
+    setVisibleColumns(newVisibleColumns);
+  };
   const handleRowClick = (account: Account) => {
     setSelectedAccount(account);
   };
@@ -185,41 +296,60 @@ const AccountListingTable = () => {
           overflow: "hidden",
         }}
       >
-        <Tooltip
-          title={
-            <span>
-              {!canCreateExecutive || !canAssignRole
-                ? "To add an executive, you must need to have the permission to create executives and assign roles."
-                : "Click to open the account creation form"}
-            </span>
-          }
-          placement="top-end"
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "right",
+            alignItems: "center",
+            mb: 2,
+            gap: 2,
+          }}
         >
-          <Button
-            sx={{
-              ml: "auto",
-              mr: 2,
-              mb: 2,
-              backgroundColor: !canCreateExecutive || !canAssignRole
-                ? "#6c87b7 !important"
-                : "#00008B",
-              color: "white !important",
-              display: "flex",
-              justifyContent: "flex-end",
-              "&.Mui-disabled": {
-                color: "#fff !important",
-              },
-            }}
-            variant="contained"
-            onClick={() => setOpenCreateModal(true)}
-            disabled={!canCreateExecutive || !canAssignRole}
-            style={{
-              cursor: !canCreateExecutive || !canAssignRole ? "not-allowed" : "pointer",
-            }}
-          >
-            Add New Executive
-          </Button>
-        </Tooltip>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Select
+              multiple
+              value={Object.keys(visibleColumns).filter(
+                (key) => visibleColumns[key]
+              )}
+              onChange={handleColumnChange}
+              renderValue={(selected) => `Selected Columns (${selected.length})`}
+              sx={{ minWidth: 200, height: 40 }}
+            >
+              {columnConfig.map((column) => (
+                <MenuItem
+                  key={column.id}
+                  value={column.id}
+                  disabled={column.fixed}
+                >
+                  <Checkbox
+                    checked={visibleColumns[column.id]}
+                    disabled={column.fixed}
+                  />
+                  <ListItemText
+                    primary={column.label}
+                    secondary={column.fixed ? "(Always visible)" : undefined}
+                  />
+                </MenuItem>
+              ))}
+            </Select>
+          </Box>
+
+          {canCreateExecutive && (
+            <Button
+              sx={{
+                backgroundColor: "#00008B",
+                color: "white !important",
+                "&.Mui-disabled": {
+                  color: "#fff !important",
+                },
+              }}
+              variant="contained"
+              onClick={() => setOpenCreateModal(true)}
+            >
+              Add New Executive
+            </Button>
+          )}
+        </Box>
         <TableContainer
           sx={{
             flex: 1,
@@ -252,180 +382,220 @@ const AccountListingTable = () => {
             <TableHead>
               {/* Header Row */}
               <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                <TableCell
-                  sx={{
-                    width: "80px",
-                    minWidth: "80px",
-                    textAlign: "center",
-                    backgroundColor: "#fafafa",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
-                    borderBottom: "1px solid #ddd",
-                  }}
-                >
-                  ID
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: "200px",
-                    minWidth: "200px",
-                    textAlign: "center",
-                    backgroundColor: "#fafafa",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
-                    borderBottom: "1px solid #ddd",
-                  }}
-                >
-                  Full Name
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: "160px",
-                    minWidth: "160px",
-                    textAlign: "center",
-                    backgroundColor: "#fafafa",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
-                    borderBottom: "1px solid #ddd",
-                  }}
-                >
-                  Phone
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: "220px",
-                    minWidth: "220px",
-                    textAlign: "center",
-                    backgroundColor: "#fafafa",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
-                    borderBottom: "1px solid #ddd",
-                  }}
-                >
-                  Email
-                </TableCell>
-                {/* <TableCell
-                  sx={{
-                    width: "120px",
-                    minWidth: "120px",
-                    textAlign: "center",
-                    backgroundColor: "#fafafa",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
-                    borderBottom: "1px solid #ddd",
-                  }}
-                >
-                  Designation
-                </TableCell> */}
-                <TableCell
-                  sx={{
-                    width: "120px",
-                    minWidth: "120px",
-                    textAlign: "center",
-                    backgroundColor: "#fafafa",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
-                    borderBottom: "1px solid #ddd",
-                  }}
-                >
-                  Gender
-                </TableCell>
+                {visibleColumns.id && (
+                  <TableCell
+                    sx={{
+                      width: "80px",
+                      minWidth: "80px",
+                      textAlign: "center",
+                      backgroundColor: "#fafafa",
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    ID
+                  </TableCell>
+                )}
+                {visibleColumns.fullName && (
+                  <TableCell
+                    sx={{
+                      width: "200px",
+                      minWidth: "200px",
+                      textAlign: "center",
+                      backgroundColor: "#fafafa",
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    Full Name
+                  </TableCell>
+                )}
+                {visibleColumns.phoneNumber && (
+                  <TableCell
+                    sx={{
+                      width: "160px",
+                      minWidth: "160px",
+                      textAlign: "center",
+                      backgroundColor: "#fafafa",
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    Phone
+                  </TableCell>
+                )}
+                {visibleColumns.email && (
+                  <TableCell
+                    sx={{
+                      width: "220px",
+                      minWidth: "220px",
+                      textAlign: "center",
+                      backgroundColor: "#fafafa",
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    Email
+                  </TableCell>
+                )}
+                {visibleColumns.designation && (
+                  <TableCell
+                    sx={{
+                      width: "120px",
+                      minWidth: "120px",
+                      textAlign: "center",
+                      backgroundColor: "#fafafa",
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    Designation
+                  </TableCell>
+                )}
+                {visibleColumns.gender && (
+                  <TableCell
+                    sx={{
+                      width: "120px",
+                      minWidth: "120px",
+                      textAlign: "center",
+                      backgroundColor: "#fafafa",
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    Gender
+                  </TableCell>
+                )}
+                {visibleColumns.CreatedAt && (
+                  <TableCell
+                    sx={{
+                      width: "100px",
+                      minWidth: "100px",
+                      textAlign: "center",
+                      backgroundColor: "#fafafa",
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    Created At
+                  </TableCell>
+                )}
               </TableRow>
               {/* Search Row */}
               <TableRow>
-                <TableCell width="10%">
-                  <TextField
-                    type="number"
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.id}
-                    onChange={(e) => handleSearchChange(e, "id")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": { height: 40 },
-                      "& .MuiInputBase-input": { textAlign: "center" },
-                    }}
-                  />
-                </TableCell>
-                <TableCell width="20%">
-                  <TextField
-                    type="text"
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.fullName}
-                    onChange={(e) => handleSearchChange(e, "fullName")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": { height: 40 },
-                      "& .MuiInputBase-input": { textAlign: "center" },
-                    }}
-                  />
-                </TableCell>
-                <TableCell width="10%">
-                  <TextField
-                    type="number"
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.phoneNumber}
-                    onChange={(e) => handleSearchChange(e, "phoneNumber")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": { height: 40 },
-                      "& .MuiInputBase-input": { textAlign: "center" },
-                    }}
-                  />
-                </TableCell>
-                <TableCell width={"10%"}>
-                  <TextField
-                    type="text"
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.email_id}
-                    onChange={(e) => handleSearchChange(e, "email_id")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": { height: 40 },
-                      "& .MuiInputBase-input": { textAlign: "center" },
-                    }}
-                  />
-                </TableCell>
-
-                {/* <TableCell width="20%">
-                  <TextField
-                    type="text"
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.designation}
-                    onChange={(e) => handleSearchChange(e, "designation")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": { height: 40 },
-                      "& .MuiInputBase-input": { textAlign: "center" },
-                    }}
-                  />
-                </TableCell> */}
-
-                <TableCell width="10%">
-                  <Select
-                    value={search.gender}
-                    onChange={handleSelectChange}
-                    displayEmpty
-                    size="small"
-                    fullWidth
-                    sx={{ height: 40 }}
-                  >
-                    <MenuItem value="">All</MenuItem>
-                    <MenuItem value="Male">Male</MenuItem>
-                    <MenuItem value="Female">Female</MenuItem>
-                    <MenuItem value="Transgender">Transgender</MenuItem>
-                    <MenuItem value="Other">Other</MenuItem>
-                  </Select>
-                </TableCell>
+                {visibleColumns.id && (
+                  <TableCell width="10%">
+                    <TextField
+                      type="number"
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.id}
+                      onChange={(e) => handleSearchChange(e, "id")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": { height: 40 },
+                        "& .MuiInputBase-input": { textAlign: "center" },
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {visibleColumns.fullName && (
+                  <TableCell width="20%">
+                    <TextField
+                      type="text"
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.fullName}
+                      onChange={(e) => handleSearchChange(e, "fullName")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": { height: 40 },
+                        "& .MuiInputBase-input": { textAlign: "center" },
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {visibleColumns.phoneNumber && (
+                  <TableCell width="10%">
+                    <TextField
+                      type="number"
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.phoneNumber}
+                      onChange={(e) => handleSearchChange(e, "phoneNumber")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": { height: 40 },
+                        "& .MuiInputBase-input": { textAlign: "center" },
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {visibleColumns.email && (
+                  <TableCell width={"10%"}>
+                    <TextField
+                      type="text"
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.email_id}
+                      onChange={(e) => handleSearchChange(e, "email_id")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": { height: 40 },
+                        "& .MuiInputBase-input": { textAlign: "center" },
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {visibleColumns.designation && (
+                  <TableCell width="20%">
+                    <TextField
+                      type="text"
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.designation}
+                      onChange={(e) => handleSearchChange(e, "designation")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": { height: 40 },
+                        "& .MuiInputBase-input": { textAlign: "center" },
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {visibleColumns.gender && (
+                  <TableCell width="10%">
+                    <Select
+                      value={search.gender}
+                      onChange={handleSelectChange}
+                      displayEmpty
+                      size="small"
+                      fullWidth
+                      sx={{ height: 40 }}
+                    >
+                      <MenuItem value="">All</MenuItem>
+                      <MenuItem value="Male">Male</MenuItem>
+                      <MenuItem value="Female">Female</MenuItem>
+                      <MenuItem value="Transgender">Transgender</MenuItem>
+                      <MenuItem value="Other">Other</MenuItem>
+                    </Select>
+                  </TableCell>
+                )}
+                {visibleColumns.CreatedAt && (
+                  <TableCell width="10%"></TableCell>
+                )}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -433,8 +603,8 @@ const AccountListingTable = () => {
                 <TableRow>
                   <TableCell colSpan={6} align="center"></TableCell>
                 </TableRow>
-              ) : accountList.length > 0 ? (
-                accountList.map((row) => (
+              ) : sortedAccountList.length > 0 ? (
+                sortedAccountList.map((row) => (
                   <TableRow
                     key={row.id}
                     hover
@@ -444,6 +614,8 @@ const AccountListingTable = () => {
                       backgroundColor:
                         selectedAccount?.id === row.id
                           ? "#E3F2FD !important"
+                          : row.id === loggedInUserId
+                          ? "#e6f8e1ff !important"
                           : "inherit",
                       "&:hover": {
                         backgroundColor:
@@ -454,71 +626,90 @@ const AccountListingTable = () => {
                     }}
                   >
                     <TableCell sx={{ textAlign: "center" }}>{row.id}</TableCell>
-                    <TableCell>
-                      {row.fullName ? (
-                        <Tooltip title={row.fullName} placement="bottom">
-                          <Typography noWrap>
-                            {row.fullName.length > 15
-                              ? `${row.fullName.substring(0, 15)}...`
-                              : row.fullName}
-                          </Typography>
-                        </Tooltip>
-                      ) : (
-                        <Tooltip
-                          title="Full Name not added yet"
-                          placement="bottom"
-                        >
-                          <ErrorIcon sx={{ color: "#737d72" }} />
-                        </Tooltip>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {row.phoneNumber ? (
-                        <Typography noWrap>
-                          {row.phoneNumber.replace(/\D/g, "").slice(-10)}
-                        </Typography>
-                      ) : (
-                        <Tooltip
-                          title="Phone Number not added yet"
-                          placement="bottom"
-                        >
-                          <ErrorIcon sx={{ color: "#737d72" }} />
-                        </Tooltip>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {row.email_id ? (
-                        <Tooltip title={row.email_id} placement="bottom">
-                          <Typography noWrap>
-                            {row.email_id.length > 20
-                              ? `${row.email_id.substring(0, 20)}...`
-                              : row.email_id}
-                          </Typography>
-                        </Tooltip>
-                      ) : (
-                        <Tooltip title="Email not added yet" placement="bottom">
-                          <ErrorIcon sx={{ color: "#737d72" }} />
-                        </Tooltip>
-                      )}
-                    </TableCell>
-
-                    {/* <TableCell>
-                      <Typography noWrap>
-                        {row.designation ? (
-                          row.designation
+                    {visibleColumns.fullName && (
+                      <TableCell>
+                        {row.fullName ? (
+                          <Tooltip title={row.fullName} placement="bottom">
+                            <Typography noWrap>
+                              {row.fullName.length > 15
+                                ? `${row.fullName.substring(0, 15)}...`
+                                : row.fullName}
+                            </Typography>
+                          </Tooltip>
                         ) : (
                           <Tooltip
-                            title="Designation not added yet"
+                            title="Full Name not added yet"
                             placement="bottom"
                           >
-                            <ErrorIcon sx={{ color: "#737d72 " }} />
+                            <ErrorIcon sx={{ color: "#737d72" }} />
                           </Tooltip>
                         )}
-                      </Typography>
-                    </TableCell> */}
-                    <TableCell sx={{ textAlign: "center" }}>
-                      {row.gender}
-                    </TableCell>
+                      </TableCell>
+                    )}
+                    {visibleColumns.phoneNumber && (
+                      <TableCell>
+                        {row.phoneNumber ? (
+                          <Typography noWrap>
+                            {row.phoneNumber.replace(/\D/g, "").slice(-10)}
+                          </Typography>
+                        ) : (
+                          <Tooltip
+                            title="Phone Number not added yet"
+                            placement="bottom"
+                          >
+                            <ErrorIcon sx={{ color: "#737d72" }} />
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    )}
+                    {visibleColumns.email && (
+                      <TableCell>
+                        {row.email_id ? (
+                          <Tooltip title={row.email_id} placement="bottom">
+                            <Typography noWrap>
+                              {row.email_id.length > 20
+                                ? `${row.email_id.substring(0, 20)}...`
+                                : row.email_id}
+                            </Typography>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip
+                            title="Email not added yet"
+                            placement="bottom"
+                          >
+                            <ErrorIcon sx={{ color: "#737d72" }} />
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    )}
+                    {visibleColumns.designation && (
+                      <TableCell>
+                        <Typography noWrap>
+                          {row.designation ? (
+                            row.designation
+                          ) : (
+                            <Tooltip
+                              title="Designation not added yet"
+                              placement="bottom"
+                            >
+                              <ErrorIcon sx={{ color: "#737d72 " }} />
+                            </Tooltip>
+                          )}
+                        </Typography>
+                      </TableCell>
+                    )}
+                    {visibleColumns.gender && (
+                      <TableCell sx={{ textAlign: "center" }}>
+                        {row.gender}
+                      </TableCell>
+                    )}
+                    {visibleColumns.CreatedAt && (
+                      <TableCell sx={{ textAlign: "center" }}>
+                        {moment(row.created_on)
+                          .local()
+                          .format("DD-MM-YYYY, hh:mm A")}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               ) : (
