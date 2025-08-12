@@ -12,6 +12,11 @@ import {
   TextField,
   Tooltip,
   Chip,
+  SelectChangeEvent,
+  Select,
+  MenuItem,
+  Checkbox,
+  ListItemText,
 } from "@mui/material";
 import { useDispatch } from "react-redux";
 import ErrorIcon from "@mui/icons-material/Error";
@@ -28,6 +33,14 @@ import PaginationControls from "../../common/paginationControl";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
 import moment from "moment";
+
+interface ColumnConfig {
+  id: string;
+  label: string;
+  width: string;
+  minWidth: string;
+  fixed?: boolean;
+}
 
 const FareListingPage = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -48,6 +61,56 @@ const FareListingPage = () => {
   const canCreateFare = useSelector((state: RootState) =>
     state.app.permissions.includes("create_fare")
   );
+  const columnConfig: ColumnConfig[] = [
+    { id: "id", label: "ID", width: "80px", minWidth: "80px", fixed: true },
+    {
+      id: "name",
+      label: "Fare Name",
+      width: "200px",
+      minWidth: "200px",
+      fixed: true,
+    },
+    {
+      id: "version",
+      label: "DF Version",
+      width: "120px",
+      minWidth: "120px",
+      fixed: true,
+    },
+    {
+      id: "ticket_types",
+      label: "Ticket Types",
+      width: "160px",
+      minWidth: "160px",
+    },
+
+    {
+      id: "created_at",
+      label: "Created Date",
+      width: "150px",
+      minWidth: "150px",
+      fixed: true,
+    },
+  ];
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
+    columnConfig.reduce((fare, column) => {
+      fare[column.id] = column.fixed ? true : false;
+      return fare;
+    }, {} as Record<string, boolean>)
+  );
+  const handleColumnChange = (event: SelectChangeEvent<string[]>) => {
+    const value = event.target.value;
+    // Convert array of selected values to new visibility state
+    const newVisibleColumns = Object.keys(visibleColumns).reduce(
+      (fare, key) => {
+        fare[key] = value.includes(key);
+        return fare;
+      },
+      {} as Record<string, boolean>
+    );
+    setVisibleColumns(newVisibleColumns);
+  };
+
   const fetchGlobalFares = useCallback(
     (pageNumber: number, searchParams = {}) => {
       const offset = pageNumber * rowsPerPage;
@@ -165,26 +228,59 @@ const FareListingPage = () => {
             sx={{
               p: 2,
               display: "flex",
-              justifyContent: "right",
+              justifyContent: "flex-end",
               alignItems: "center",
+              gap: 2, 
+              width: "100%",
             }}
           >
-            <Tooltip
-              title={
-                !canCreateFare
-                  ? "You don't have permission, contact the admin"
-                  : "click to open the create fare page"
-              }
+            <Box
+              sx={{
+                display: "flex",
+                gap: 1,
+                alignItems: "center",
+                marginLeft: "auto", 
+              }}
             >
-              <span
-                style={{ cursor: !canCreateFare ? "not-allowed" : "default" }}
+              <Select
+                multiple
+                value={Object.keys(visibleColumns).filter(
+                  (key) => visibleColumns[key]
+                )}
+                onChange={handleColumnChange}
+                renderValue={(selected) =>
+                  `Selected Columns (${selected.length})`
+                }
+                sx={{
+                  minWidth: 200,
+                  height: 40,
+                  ".MuiSelect-select": {
+                    py: 1.2, 
+                  },
+                }}
               >
+                {columnConfig.map((column) => (
+                  <MenuItem
+                    key={column.id}
+                    value={column.id}
+                    disabled={column.fixed}
+                  >
+                    <Checkbox
+                      checked={visibleColumns[column.id]}
+                      disabled={column.fixed}
+                    />
+                    <ListItemText
+                      primary={column.label}
+                      secondary={column.fixed ? "(Always visible)" : undefined}
+                    />
+                  </MenuItem>
+                ))}
+              </Select>
+
+              {canCreateFare && (
                 <Button
                   sx={{
-                    ml: "auto",
-                    mr: 2,
-                    mb: 2,
-                    display: "block",
+                    height: 40, // Match height with Select for alignment
                     backgroundColor: !canCreateFare
                       ? "#6c87b7 !important"
                       : "#00008B",
@@ -193,6 +289,7 @@ const FareListingPage = () => {
                       backgroundColor: "#6c87b7 !important",
                       color: "#ffffff99",
                     },
+                    px: 3, // Horizontal padding
                   }}
                   variant="contained"
                   onClick={() => setViewMode("create")}
@@ -200,8 +297,8 @@ const FareListingPage = () => {
                 >
                   Add New Fare
                 </Button>
-              </span>
-            </Tooltip>
+              )}
+            </Box>
           </Box>
 
           <TableContainer
@@ -221,88 +318,101 @@ const FareListingPage = () => {
                 },
               },
               borderRadius: 2,
-            border: "1px solid #e0e0e0",
+              border: "1px solid #e0e0e0",
             }}
           >
             <Table stickyHeader>
               <TableHead>
                 <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                  {/* ID Column */}
-                  <TableCell sx={{ width: "10%" }}>
-                    <Box
-                      display="flex"
-                      flexDirection="column"
-                      alignItems="center"
-                    >
-                      <b>ID</b>
-                    </Box>
-                  </TableCell>
+                  {visibleColumns.id && (
+                    <TableCell sx={{ width: "10%" }}>
+                      <Box
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="center"
+                      >
+                        <b>ID</b>
+                      </Box>
+                    </TableCell>
+                  )}
 
                   {/* Name Column */}
-                  <TableCell sx={{ width: "25%" }}>
-                    <Box
-                      display="flex"
-                      flexDirection="column"
-                      alignItems="center"
-                    >
-                      <b>Name</b>
-                    </Box>
-                  </TableCell>
+                  {visibleColumns.name && (
+                    <TableCell sx={{ width: "25%" }}>
+                      <Box
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="center"
+                      >
+                        <b>Name</b>
+                      </Box>
+                    </TableCell>
+                  )}
 
                   {/* Ticket Types Header */}
-                  <TableCell>
-                    <b style={{ display: "block", textAlign: "center" }}>
-                      Ticket Types
-                    </b>
-                  </TableCell>
+                  {visibleColumns.ticket_types && (
+                    <TableCell>
+                      <b style={{ display: "block", textAlign: "center" }}>
+                        Ticket Types
+                      </b>
+                    </TableCell>
+                  )}
 
                   {/* Version Header */}
-                  <TableCell>
-                    <b style={{ display: "block", textAlign: "center" }}>
-                      DF Version
-                    </b>
-                  </TableCell>
+                  {visibleColumns.version && (
+                    <TableCell>
+                      <b style={{ display: "block", textAlign: "center" }}>
+                        DF Version
+                      </b>
+                    </TableCell>
+                  )}
 
                   {/* Created On Header */}
-                  <TableCell>
-                    <b style={{ display: "block", textAlign: "center" }}>
-                      Created On
-                    </b>
-                  </TableCell>
+                  {visibleColumns.created_at && (
+                    <TableCell>
+                      <b style={{ display: "block", textAlign: "center" }}>
+                        Created On
+                      </b>
+                    </TableCell>
+                  )}
                 </TableRow>
                 <TableRow>
-                  <TableCell>
-                    <TextField
-                      type="number"
-                      variant="outlined"
-                      size="small"
-                      placeholder="Search"
-                      value={search.id}
-                      onChange={(e) => handleSearchChange(e, "id")}
-                      sx={{
-                        width: "100%",
-                        mt: 1,
-                        "& .MuiInputBase-root": { height: 36 },
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <TextField
-                      variant="outlined"
-                      size="small"
-                      placeholder="Search"
-                      value={search.name}
-                      onChange={(e) => handleSearchChange(e, "name")}
-                      sx={{
-                        width: "100%",
-                        mt: 1,
-                        "& .MuiInputBase-root": { height: 36 },
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
+                  {visibleColumns.id && (
+                    <TableCell>
+                      <TextField
+                        type="number"
+                        variant="outlined"
+                        size="small"
+                        placeholder="Search"
+                        value={search.id}
+                        onChange={(e) => handleSearchChange(e, "id")}
+                        sx={{
+                          width: "100%",
+                          mt: 1,
+                          "& .MuiInputBase-root": { height: 36 },
+                        }}
+                      />
+                    </TableCell>
+                  )}
+                  {visibleColumns.name && (
+                    <TableCell>
+                      <TextField
+                        variant="outlined"
+                        size="small"
+                        placeholder="Search"
+                        value={search.name}
+                        onChange={(e) => handleSearchChange(e, "name")}
+                        sx={{
+                          width: "100%",
+                          mt: 1,
+                          "& .MuiInputBase-root": { height: 36 },
+                        }}
+                      />
+                    </TableCell>
+                  )}
+                  {visibleColumns.ticket_types && <TableCell></TableCell>}
+                  {visibleColumns.version && <TableCell></TableCell>}
+                  {visibleColumns.created_at && <TableCell></TableCell>}
                 </TableRow>
               </TableHead>
 
@@ -328,122 +438,130 @@ const FareListingPage = () => {
                         }}
                       >
                         {/* ID */}
-                        <TableCell
-                          sx={{
-                            fontWeight: 500,
-                            textAlign: "center",
-                            height: 60,
-                          }}
-                        >
-                          {fare.id}
-                        </TableCell>
+                        {visibleColumns.id && (
+                          <TableCell
+                            sx={{
+                              fontWeight: 500,
+                              textAlign: "center",
+                              height: 60,
+                            }}
+                          >
+                            {fare.id}
+                          </TableCell>
+                        )}
 
                         {/* Name */}
-                        <TableCell>
-                          <Tooltip title={fare.name} placement="bottom">
-                            <Typography noWrap>
-                              {fare.name.length > 20
-                                ? `${fare.name.substring(0, 20)}...`
-                                : fare.name}
-                            </Typography>
-                          </Tooltip>
-                        </TableCell>
+                        {visibleColumns.name && (
+                          <TableCell>
+                            <Tooltip title={fare.name} placement="bottom">
+                              <Typography noWrap>
+                                {fare.name.length > 30
+                                  ? `${fare.name.substring(0, 30)}...`
+                                  : fare.name}
+                              </Typography>
+                            </Tooltip>
+                          </TableCell>
+                        )}
 
                         {/* Ticket Types - Block Style */}
-                        <TableCell>
-                          {fare.attributes.ticket_types?.length > 0 ? (
-                            <Box
-                              display="flex"
-                              flexWrap="wrap"
-                              gap={1}
-                              sx={{
-                                maxWidth: "390px",
-                              }}
-                            >
-                              {fare.attributes.ticket_types.map(
-                                (type, index) => {
-                                  const typeName =
-                                    type.name?.toLowerCase() || "";
-                                  const typeConfig = {
-                                    adult: {
-                                      bg: "rgba(25, 118, 210, 0.1)",
-                                      color: "#1565c0",
-                                      icon: <PersonIcon fontSize="small" />,
-                                    },
-                                    child: {
-                                      bg: "rgba(255, 152, 0, 0.1)",
-                                      color: "#ef6c00",
-                                      icon: <ChildCareIcon fontSize="small" />,
-                                    },
-                                    student: {
-                                      bg: "rgba(76, 175, 80, 0.1)",
-                                      color: "#2e7d32",
-                                      icon: <SchoolIcon fontSize="small" />,
-                                    },
-                                    other: {
-                                      bg: "#554e4e3f",
-                                      color: "#080000ff",
-                                      icon: <BoyIcon fontSize="small" />,
-                                    },
-                                  };
+                        {visibleColumns.ticket_types && (
+                          <TableCell
+                            sx={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                            }}
+                          >
+                            {fare.attributes.ticket_types?.length > 0 ? (
+                              <Box
+  display="flex"
+  flexWrap="wrap"
+  gap={1}
+  sx={{
+    maxWidth: "390px",
+  }}
+>
+  {fare.attributes.ticket_types.map((type, index) => {
+    const typeName = type.name?.toLowerCase() || "";
+    const typeConfig = {
+      adult: {
+        bg: "rgba(25, 118, 210, 0.1)",
+        color: "#1565c0",
+        icon: <PersonIcon fontSize="small" />,
+      },
+      child: {
+        bg: "rgba(255, 152, 0, 0.1)",
+        color: "#ef6c00",
+        icon: <ChildCareIcon fontSize="small" />,
+      },
+      student: {
+        bg: "rgba(76, 175, 80, 0.1)",
+        color: "#2e7d32",
+        icon: <SchoolIcon fontSize="small" />,
+      },
+      other: {
+        bg: "#554e4e3f",
+        color: "#080000ff",
+        icon: <BoyIcon fontSize="small" />,
+      },
+    };
 
-                                  let typeKey:
-                                    | "adult"
-                                    | "child"
-                                    | "student"
-                                    | "other" = "other";
-                                  if (typeName.includes("adult"))
-                                    typeKey = "adult";
-                                  else if (typeName.includes("child"))
-                                    typeKey = "child";
-                                  else if (typeName.includes("student"))
-                                    typeKey = "student";
+    let typeKey: "adult" | "child" | "student" | "other" = "other";
+    if (typeName.includes("adult")) typeKey = "adult";
+    else if (typeName.includes("child")) typeKey = "child";
+    else if (typeName.includes("student")) typeKey = "student";
 
-                                  return (
-                                    <Chip
-                                      key={index}
-                                      size="small"
-                                      icon={typeConfig[typeKey].icon}
-                                      label={type.name || `Type ${index + 1}`}
-                                      sx={{
-                                        width: "120px",
-                                        justifyContent: "flex-start",
-                                        borderRadius: "4px",
-                                        backgroundColor: typeConfig[typeKey].bg,
-                                        color: typeConfig[typeKey].color,
-                                        "& .MuiChip-icon": {
-                                          color: typeConfig[typeKey].color,
-                                          opacity: 0.8,
-                                          marginLeft: "8px",
-                                        },
-                                      }}
-                                    />
-                                  );
-                                }
-                              )}
-                            </Box>
-                          ) : (
-                            <Tooltip title="No ticket types">
-                              <ErrorIcon color="disabled" />
-                            </Tooltip>
-                          )}
-                        </TableCell>
+    return (
+      <Chip
+        key={index}
+        size="small"
+        icon={typeConfig[typeKey].icon}
+        label={type.name || `Type ${index + 1}`}
+        sx={{
+          flex: "1 0 calc(50% - 8px)", // two per row
+          maxWidth: "calc(50% - 8px)",
+          justifyContent: "flex-start",
+          borderRadius: "4px",
+          backgroundColor: typeConfig[typeKey].bg,
+          color: typeConfig[typeKey].color,
+          "& .MuiChip-icon": {
+            color: typeConfig[typeKey].color,
+            opacity: 0.8,
+            marginLeft: "8px",
+          },
+        }}
+      />
+    );
+  })}
+</Box>
+
+                            ) : (
+                              <Tooltip title="No ticket types">
+                                <ErrorIcon color="disabled" />
+                              </Tooltip>
+                            )}
+                          </TableCell>
+                        )}
 
                         {/* Version */}
-                        <TableCell sx={{ textAlign: "center" }}>
-                          {fare.attributes.df_version || (
-                            <Tooltip title="Version not available">
-                              <ErrorIcon color="disabled" />
-                            </Tooltip>
-                          )}
-                        </TableCell>
+                        {visibleColumns.version && (
+                          <TableCell sx={{ textAlign: "center" }}>
+                            {fare.attributes.df_version || (
+                              <Tooltip title="Version not available">
+                                <ErrorIcon color="disabled" />
+                              </Tooltip>
+                            )}
+                          </TableCell>
+                        )}
 
                         {/* Created On */}
-                        <TableCell align="center">
-                          {moment(fare.created_on)
-                            .local()
-                            .format("DD-MM-YYYY, hh:mm A")}
-                        </TableCell>
+                        {visibleColumns.created_at && (
+                          <TableCell align="center">
+                            {moment(fare.created_on)
+                              .local()
+                              .format("DD-MM-YYYY, hh:mm A")}
+                          </TableCell>
+                        )}
                       </TableRow>
                     );
                   })

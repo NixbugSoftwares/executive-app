@@ -8,7 +8,7 @@ interface CodeEditorProps {
 }
 
 function FareCodeEditor({ value, readOnly = false, onChange }: CodeEditorProps) {
-  return (
+    return (
     <Box sx={{ height: "100%" }}>
       <Editor
         height="100%"
@@ -18,8 +18,9 @@ function FareCodeEditor({ value, readOnly = false, onChange }: CodeEditorProps) 
         options={{
           readOnly,
           minimap: { enabled: false },
-          fontSize: 12,
+          fontSize: 14,
           scrollBeyondLastLine: false,
+          automaticLayout: true,
         }}
         onChange={onChange}
       />

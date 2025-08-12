@@ -11,18 +11,21 @@ import {
   IconButton,
   Tooltip,
   FormHelperText,
-  Card,
-  CardContent,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Alert,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Collapse,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CodeEditor from "./textEditor";
 import {
@@ -87,11 +90,6 @@ const FareSkeletonPage = ({
 
   // Initialize with empty string, will be set in useEffect
   const [fareFunction, setFareFunction] = useState("");
-  const [distance, setDistance] = useState<number | "">("");
-  const [calculationResults, setCalculationResults] = useState<
-    Record<string, number>
-  >({});
-  const [showCalculation, setShowCalculation] = useState(false);
   const [output, setOutput] = useState("");
   const [_fareToDelete, setFareToDelete] = useState<number | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -101,6 +99,15 @@ const FareSkeletonPage = ({
   const canDeleteFare = useSelector((state: RootState) =>
     state.app.permissions.includes("delete_fare")
   );
+
+const [distanceKm, setDistanceKm] = useState(5);
+  const [fareResults, setFareResults] = useState<{
+    distance: number;
+    results: { type: string; fare: number }[];
+    rangeResults?: { distance: string; fares: Record<string, number> }[];
+  } | null>(null);
+  const [showOutput, setShowOutput] = useState(false);
+
   useEffect(() => {
     if (fareToEdit) {
       setFareFunction(fareToEdit.function);
@@ -137,7 +144,6 @@ const FareSkeletonPage = ({
     control,
     handleSubmit,
     formState: { errors },
-    watch,
   } = useForm<FareInputs>({
     defaultValues: fareToEdit
       ? {
@@ -165,66 +171,78 @@ const FareSkeletonPage = ({
     control,
     name: "attributes.ticket_types",
   });
-
-  const attributes = watch("attributes");
-
-  const handleRunCode = () => {
+    const handleRunCode = () => {
+    setShowOutput(true); // Show output when running code
     let logs: any[] = [];
     const customConsole = {
       log: (...args: any[]) => logs.push(args.join(" ")),
     };
 
     try {
-      // eslint-disable-next-line no-new-func
-      const func = new Function("console", fareFunction);
-      const result = func(customConsole);
+      // Check function name
+      if (!/function\s+getFare\s*\(/.test(fareFunction)) {
+        setOutput("Error: Function name must be 'getFare'");
+        setFareResults(null);
+        return;
+      }
 
-      let outputText = "";
-      if (logs.length > 0) {
-        outputText += logs.join("\n") + "\n";
+      // eslint-disable-next-line no-new-func
+      const func = new Function("console", `${fareFunction}; return getFare;`);
+      const getFare = func(customConsole);
+
+      if (typeof getFare !== "function") {
+        setOutput("Error: 'getFare' is not a valid function");
+        setFareResults(null);
+        return;
       }
-      if (result !== undefined) {
-        outputText += `Result: ${JSON.stringify(result)}`;
+
+      // Get current ticket types from form
+      const currentTicketTypes = control._formValues.attributes.ticket_types;
+
+      // Test the fare function for the specified distance
+      const singleResults = currentTicketTypes.map((ticket: TicketType) => {
+        try {
+          const fare = getFare(ticket.name, distanceKm * 1000, {}); // distance in meters
+          return { type: ticket.name, fare };
+        } catch (err: any) {
+          return { type: ticket.name, fare: -1 };
+        }
+      });
+
+      // Test the fare function for all distances up to the specified km
+      const rangeResults = [];
+      for (let km = 1; km <= distanceKm; km++) {
+        const rangeFares: Record<string, number> = {};
+        currentTicketTypes.forEach((ticket: TicketType) => {
+          try {
+            rangeFares[ticket.name] = getFare(ticket.name, km * 1000, {});
+          } catch (err) {
+            rangeFares[ticket.name] = -1;
+          }
+        });
+        rangeResults.push({
+          distance: km === 1 ? "1 km" : `${km - 1}-${km} km`,
+          fares: rangeFares,
+        });
       }
-      setOutput(outputText.trim() || "No output");
+
+      setFareResults({
+        distance: distanceKm,
+        results: singleResults,
+        rangeResults,
+      });
+
+      let outputText = logs.length > 0 ? logs.join("\n") + "\n" : "";
+      outputText += "Fare calculation completed.";
+      setOutput(outputText);
     } catch (error) {
+      setFareResults(null);
       setOutput(
         `Error: ${error instanceof Error ? error.message : "Invalid code"}`
       );
     }
   };
 
-  const handleCalculateFare = (currentDistance = distance) => {
-    if (currentDistance === "") {
-      setCalculationResults({});
-      return;
-    }
-
-    try {
-      const func = new Function(
-        "ticket_type",
-        "distance",
-        "extra",
-        `${fareFunction}\nreturn getFare(ticket_type, distance, extra);`
-      );
-
-      const results: Record<string, number> = {};
-      attributes.ticket_types.forEach((ticket) => {
-        if (ticket.name) {
-          results[ticket.name] = func(ticket.name, currentDistance, {});
-        }
-      });
-
-      setCalculationResults(results);
-    } catch (error) {
-      setCalculationResults({});
-      setOutput(
-        `Calculation error: ${
-          error instanceof Error ? error.message : "Invalid function"
-        }`
-      );
-    }
-  };
 
   const handleFareCreation: SubmitHandler<FareInputs> = async (data) => {
     try {
@@ -304,11 +322,12 @@ const FareSkeletonPage = ({
       {/* Left Side - Form */}
       <Paper
         component="form"
+        
         onSubmit={handleSubmit(handleFareCreation)}
         sx={{
-          flex: "0 0 50%",
-          maxWidth: "50%",
-          height: "100%",
+          flex: "0 0 40%",
+          maxWidth: "40%",
+          height: "100vh",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
@@ -352,11 +371,10 @@ const FareSkeletonPage = ({
                 {...field}
                 label="Fare Name"
                 fullWidth
-                sx={{ mb: 3 }}
+                sx={{  }}
                 error={!!errors.name}
                 helperText={errors.name?.message}
                 onChange={(e) => {
-                  // Optional: Prevent typing consecutive spaces
                   const value = e.target.value.replace(/\s{2,}/g, " ");
                   field.onChange(value);
                 }}
@@ -499,53 +517,6 @@ const FareSkeletonPage = ({
             </FormHelperText>
           )}
           {/* calculate fare */}
-          {showCalculation && (
-            <Card variant="outlined" sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Fare Calculation
-                </Typography>
-                <TextField
-                  label={`Distance (${attributes.distance_unit})`}
-                  type="number"
-                  fullWidth
-                  value={distance}
-                  onChange={(e) => {
-                    const newValue =
-                      e.target.value === "" ? "" : Number(e.target.value);
-                    setDistance(newValue);
-                    if (newValue !== "") {
-                      handleCalculateFare(newValue);
-                    } else {
-                      setCalculationResults({});
-                    }
-                  }}
-                  sx={{ mb: 2 }}
-                />
-                {Object.keys(calculationResults).length > 0 && (
-                  <Box>
-                    {Object.entries(calculationResults).map(
-                      ([ticketType, result]) => (
-                        <Box
-                          key={ticketType}
-                          sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            mb: 1,
-                          }}
-                        >
-                          <Typography>{ticketType}:</Typography>
-                          <Typography fontWeight="bold">
-                            {attributes.currency_type} {result}
-                          </Typography>
-                        </Box>
-                      )
-                    )}
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
-          )}
         </Box>
 
         {/* Buttons  */}
@@ -553,97 +524,57 @@ const FareSkeletonPage = ({
           sx={{
             mt: "auto",
             display: "flex",
-            justifyContent: "flex-end",
+            justifyContent: "left",
             gap: 2,
             pt: 2,
           }}
         >
-          <Button variant="outlined" onClick={onCancel} size="small" disabled={loading}>
-            Cancel
-          </Button>
           <Button
-          size="small"
             variant="outlined"
-            onClick={() => {
-              setShowCalculation(!showCalculation);
-              if (!showCalculation && distance === "") {
-                setDistance(1000); // Default test distance
-                handleCalculateFare(1000);
-              }
-            }}
+            onClick={onCancel}
+            size="small"
+            disabled={loading}
           >
-            {showCalculation ? "Hide Calculation" : "Calculate Fare"}
+            Back
           </Button>
 
           {mode === "view" ? (
             <>
-              <Tooltip
-                title={
-                  !canDeleteFare
-                    ? "You don't have permission, contact the admin"
-                    : ""
-                }
-                arrow
-                placement="top-start"
-              >
-                <span
-                  style={{
-                    cursor: !canDeleteFare ? "not-allowed" : "default",
+              {canDeleteFare && (
+                <Button
+                  variant="contained"
+                  color="error"
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteFare(fareToEdit!.id);
+                  }}
+                  sx={{
+                    "&.Mui-disabled": {
+                      backgroundColor: "#e57373 !important",
+                      color: "#ffffff99",
+                    },
                   }}
                 >
-                  <Button
-                    variant="contained"
-                    color="error"
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteFare(fareToEdit!.id);
-                    }}
-                    startIcon={<DeleteIcon />}
-                    disabled={!canDeleteFare}
-                    sx={{
-                      "&.Mui-disabled": {
-                        backgroundColor: "#e57373 !important",
-                        color: "#ffffff99",
-                      },
-                    }}
-                  >
-                    Delete
-                  </Button>
-                </span>
-              </Tooltip>
-              <Tooltip
-                title={
-                  !canUpdateFare
-                    ? "You don't have permission, contact the admin"
-                    : ""
-                }
-                arrow
-                placement="top-start"
-              >
-                <span
-                  style={{
-                    cursor: !canUpdateFare ? "not-allowed" : "default",
+                  Delete
+                </Button>
+              )}
+              {canUpdateFare && (
+                <Button
+                  variant="contained"
+                  color="success"
+                  size="small"
+                  onClick={handleSubmit(handleFareUpdate)}
+                  sx={{
+                    "&.Mui-disabled": {
+                      backgroundColor: "#81c784 !important",
+                      color: "#ffffff99",
+                    },
                   }}
                 >
-                  <Button
-                    variant="contained"
-                    color="success"
-                    size="small"
-                    onClick={handleSubmit(handleFareUpdate)}
-                    startIcon={<EditIcon />}
-                    disabled={!canUpdateFare}
-                    sx={{
-                      "&.Mui-disabled": {
-                        backgroundColor: "#81c784 !important",
-                        color: "#ffffff99",
-                      },
-                    }}
-                  >
-                    Update
-                  </Button>
-                </span>
-              </Tooltip>
+                  Update
+                </Button>
+              )}
             </>
           ) : (
             <Button
@@ -661,8 +592,8 @@ const FareSkeletonPage = ({
       {/*  Editor */}
       <Paper
         sx={{
-          flex: "0 0 50%",
-          maxWidth: "50%",
+          flex: "0 0 60%",
+          maxWidth: "60%",
           height: "100%",
           display: "flex",
           flexDirection: "column",
@@ -679,9 +610,20 @@ const FareSkeletonPage = ({
           }}
         >
           <Typography variant="h6">Fare Function</Typography>
-          <Button variant="contained" onClick={handleRunCode}>
-            Run Code
-          </Button>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <TextField
+              label="Distance (km)"
+              type="number"
+              size="small"
+              value={distanceKm}
+              onChange={(e) => setDistanceKm(Math.max(1, Number(e.target.value)))}
+              sx={{ width: 120 }}
+              inputProps={{ min: 1 }}
+            />
+            <Button variant="contained" onClick={handleRunCode}>
+              Run Code
+            </Button>
+          </Box>
         </Box>
 
         <Box sx={{ flex: 1, overflow: "hidden" }}>
@@ -691,34 +633,125 @@ const FareSkeletonPage = ({
             onChange={(value) => setFareFunction(value || "")}
           />
         </Box>
-
+<Collapse in={showOutput}>
         <Box
           sx={{
-            height: "200px",
+            height: "300px", // Increased height for better visibility
             p: 2,
             overflow: "auto",
             borderTop: "1px solid #e0e0e0",
           }}
         >
-          <Alert severity="info">
-            <Typography variant="body2">
-              Use console.log to print output from your function.
-            </Typography>
-          </Alert>
-          <Typography variant="subtitle1" gutterBottom>
-            Output:
-          </Typography>
+          
           <Paper
             sx={{
               p: 2,
               bgcolor: "#f5f5f5",
-              height: "calc(100% - 40px)",
+              height: "100%",
               overflow: "auto",
             }}
           >
-            <pre>{output}</pre>
+            
+            <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+  <Typography variant="subtitle1" gutterBottom sx={{ mb: 0 }}>
+    Console Output:
+  </Typography>
+  <IconButton onClick={() => setShowOutput(false)} sx={{ color: 'red' }}>
+    <CloseIcon />
+  </IconButton>
+</Box>
+             <Box
+  component="pre"
+  sx={{
+    p: 1,
+    bgcolor: "#fff",
+    borderRadius: 1,
+    maxHeight: 100,
+    overflow: "auto",
+  }}
+>
+  {output || "No output yet"}
+</Box>
+
+            {fareResults && (
+              <Box>
+                <Typography variant="subtitle1" gutterBottom>
+                  Fare Calculation Results:
+                </Typography>
+                
+                {/* Single distance result */}
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    For {fareResults.distance} km:
+                  </Typography>
+                  <Table size="small" sx={{ mb: 2 }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Ticket Type</TableCell>
+                        <TableCell align="right">Fare</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {fareResults.results.map((r) => (
+                        <TableRow key={r.type}>
+                          <TableCell>{r.type}</TableCell>
+                          <TableCell align="right">
+                            {r.fare === -1 ? (
+                              <Typography color="error">Error</Typography>
+                            ) : (
+                              `${r.fare} ${control._formValues.attributes.currency_type}`
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Box>
+
+                {/* Distance range results */}
+                {/* Distance range results */}
+<Box>
+  <Typography variant="body2" sx={{ mb: 1 }}>
+    Fare breakdown by distance:
+  </Typography>
+  <Box sx={{ maxHeight: 200, overflow: "auto" }}>
+    <Table size="small" stickyHeader>
+      <TableHead>
+        <TableRow>
+          <TableCell>Distance</TableCell>
+          {control._formValues.attributes.ticket_types.map(
+            (ticket: TicketType) => (
+            <TableCell key={ticket.id} align="right">
+              {ticket.name}
+            </TableCell>
+          ))}
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {fareResults.rangeResults?.map((row) => (
+          <TableRow key={row.distance}>
+            <TableCell>{row.distance}</TableCell>
+            {control._formValues.attributes.ticket_types.map(
+              (ticket: TicketType) => (
+              <TableCell key={ticket.id} align="right">
+                {row.fares[ticket.name] === -1 ? (
+                  <Typography color="error">-</Typography>
+                ) : (
+                  row.fares[ticket.name]
+                )}
+              </TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </Box>
+</Box>
+              </Box>
+            )}
           </Paper>
         </Box>
+        </Collapse>
       </Paper>
       <Dialog
         open={deleteConfirmOpen}
