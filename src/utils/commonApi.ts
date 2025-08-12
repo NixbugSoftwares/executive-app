@@ -90,7 +90,7 @@ const handleResponse = async (response: any) => {
 //******************************************************  errorResponse handler  **************************************** */
 const handleErrorResponse = (errorResponse: any) => {
   if (!errorResponse) {
-    return { error: "Network error. ", status: 0 };
+    return { error: "Network error. Please try again later.", status: 0 };
   }
 
   const status = errorResponse.response?.status || 0;
@@ -115,7 +115,7 @@ const handleErrorResponse = (errorResponse: any) => {
     showErrorToast(validationErrors);
   } else {
     console.log("Error message ===>", errorMessage);
-    // showErrorToast(errorMessage);
+    showErrorToast(errorMessage);
   }
 
   return { ...data, error: errorMessage, status };

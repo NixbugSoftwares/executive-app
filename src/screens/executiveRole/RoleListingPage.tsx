@@ -208,7 +208,7 @@ const RoleListingTable = () => {
             multiple
             value={Object.keys(visibleColumns).filter(key => visibleColumns[key])}
             onChange={handleColumnChange}
-            renderValue={(selected) => `Columns (${selected.length})`}
+            renderValue={(selected) => ` Selected Columns (${selected.length})`}
             sx={{ minWidth: 200, height: 40 }}
           >
             {columnConfig.map((column) => (

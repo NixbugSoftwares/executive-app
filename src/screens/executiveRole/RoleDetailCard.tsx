@@ -102,6 +102,30 @@ const permissionGroups = [
     ],
   },
   {
+    groupName: "Executive Role Management",
+    permissions: [
+      { label: "Create", key: "create_ex_role" },
+      { label: "Update", key: "update_ex_role" },
+      { label: "Delete", key: "delete_ex_role" },
+    ],
+  },
+  {
+    groupName: "Operator Role Management",
+    permissions: [
+      { label: "Create", key: "create_op_role" },
+      { label: "Update", key: "update_op_role" },
+      { label: "Delete", key: "delete_op_role" },
+    ],
+  },
+  {
+    groupName: "Vendor Role Management",
+    permissions: [
+      { label: "Create", key: "create_ve_role" },
+      { label: "Update", key: "update_ve_role" },
+      { label: "Delete", key: "delete_ve_role" },
+    ],
+  },
+  {
     groupName: "Route Management",
     permissions: [
       { label: "Create", key: "create_route" },
@@ -157,30 +181,7 @@ const permissionGroups = [
       { label: "Delete", key: "delete_duty" },
     ],
   },
-  {
-    groupName: "Executive Role Management",
-    permissions: [
-      { label: "Create", key: "create_ex_role" },
-      { label: "Update", key: "update_ex_role" },
-      { label: "Delete", key: "delete_ex_role" },
-    ],
-  },
-  {
-    groupName: "Operator Role Management",
-    permissions: [
-      { label: "Create", key: "create_op_role" },
-      { label: "Update", key: "update_op_role" },
-      { label: "Delete", key: "delete_op_role" },
-    ],
-  },
-  {
-    groupName: "Vendor Role Management",
-    permissions: [
-      { label: "Create", key: "create_ve_role" },
-      { label: "Update", key: "update_ve_role" },
-      { label: "Delete", key: "delete_ve_role" },
-    ],
-  },
+  
 ];
 
 const RoleDetailsCard: React.FC<RoleCardProps> = ({
