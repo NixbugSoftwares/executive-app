@@ -40,7 +40,7 @@ interface ICompanyCreationFormProps {
 
 const TypeOptions = [
   { label: "Other", value: 1 },
-  { label: "Privet", value: 2 },
+  { label: "Private", value: 2 },
   { label: "Government", value: 3 },
 ];
 const statusOptions = [

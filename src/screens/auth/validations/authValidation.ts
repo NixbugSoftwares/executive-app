@@ -503,13 +503,14 @@ export const operatorRoleCreationSchema = yup.object().shape({
 export const busCreationSchema = yup.object().shape({
   company_id: yup.number().required("Company is required"),
    registration_number: yup
-    .string()
-    .required("Registration number is required")
-    .max(16, "The registration number should not exceed 16 characters")
-    .matches(
-      /^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{1,4}$/,
-      "Format: e.g., KA01AB1234 — 2 letters, 2 digits, 1-2 letters, 1-4 digits"
-    ),
+  .string()
+  .required("Registration number is required")
+  .max(16, "The registration number should not exceed 16 characters")
+  .matches(
+    /^[A-Z]{2}[0-9]{2}(?:[A-Z]{1,2})?[0-9]{1,4}$/,
+    "Format: e.g., KA01AB1234 or KA011234 — 2 letters, 2 digits, optional 1-2 letters, 1-4 digits"
+  ),
+
 
    name: yup.string().required("Bus name is required")
   .min(4, "Bus name must be at least 4 characters")

@@ -111,7 +111,7 @@ interface BusListParams {
   id?: number;
   name?: string;
   registration_number?: string;
-  capacity?: number;
+  capacity_le?: number;
 
 }
 interface RouteListParams {
@@ -1309,7 +1309,7 @@ export const busCreationApi = createAsyncThunk(
 export const busListApi = createAsyncThunk(
   "/executive/company/bus",
   async (params: BusListParams, { rejectWithValue }) => {
-    const { limit, offset, id, name, registration_number, capacity, company_id } =
+    const { limit, offset, id, name, registration_number, capacity_le, company_id } =
       params;
     console.log("companyBusListApi called with:", params);
 
@@ -1319,7 +1319,7 @@ export const busListApi = createAsyncThunk(
       ...(id && { id }),
       ...(name && { name: name }),
       ...(registration_number && { registration_number }),
-      ...(capacity && { capacity }),
+      ...(capacity_le && { capacity_le }),
       ...(company_id && { company_id }),
     };
     try {
