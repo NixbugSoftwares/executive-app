@@ -11,6 +11,7 @@ import {
   MenuItem,
   InputAdornment,
   IconButton,
+  Alert,
 } from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
@@ -26,6 +27,8 @@ import {
   showSuccessToast,
   showErrorToast,
 } from "../../common/toastMessageHelper";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
 
 interface IAccountFormInputs {
   password?: string;
@@ -88,7 +91,9 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
     formState: { errors },
   } = useForm<IAccountFormInputs>();
   const [showPassword, setShowPassword] = useState(false);
-
+const canAssignRole = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_op_role")
+  );
   const handleTogglePassword = () => {
     setShowPassword((prev) => !prev);
   };
@@ -211,10 +216,10 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
           Update Account
         </Typography>
         {roleMappingError && (
-          <Typography color="error" variant="body2" sx={{ mt: 2 }}>
-            Note: Previous role assignment not found. Please select a new role.
-          </Typography>
-        )}
+                  <Alert severity="error">
+                    This account does not have a role assigned. Please assign a role.
+                  </Alert>
+                )}
         <Box
           component="form"
           noValidate
@@ -291,7 +296,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
             helperText={errors.email?.message}
             size="small"
           />
-
+{ canAssignRole && (
           <Controller
             name="role"
             control={control}
@@ -309,14 +314,18 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
                 helperText={errors.role?.message}
                 size="small"
               >
-                {roles.map((role) => (
-                  <MenuItem key={role.id} value={role.id}>
-                    {role.name}
-                  </MenuItem>
-                ))}
+                {roles.length > 0 ? (
+                  roles.map((role) => (
+                    <MenuItem key={role.id} value={role.id}>
+                      {role.name}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>No roles available</MenuItem>
+                )}
               </TextField>
             )}
-          />
+          />)}
 
           <Controller
             name="gender"

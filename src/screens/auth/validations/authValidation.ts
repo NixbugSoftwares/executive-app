@@ -366,7 +366,7 @@ export const operatorCreationSchema = yup.object().shape({
   companyId: yup.number()
   .required("select a company"),
 
- username: yup
+username: yup
   .string()
   .required("Username is required")
   .min(4, "Username must be at least 4 characters long")
@@ -386,52 +386,64 @@ export const operatorCreationSchema = yup.object().shape({
     'Username cannot have consecutive special characters',
     (value) => !/([@._-]{2,})/.test(value)
   ),
-  password: yup
+password: yup
   .string()
   .required("Password is required")
+  .min(8, "Password must be at least 8 characters")
+  .max(32, "Password cannot exceed 32 characters")
   .matches(
-    /^[A-Za-z0-9\-+,.@_$%&*#!^=/?](?:[A-Za-z0-9\-+,.@_$%&*#!^=/? ]*[A-Za-z0-9\-+,.@_$%&*#!^=?/])?$/,
-    "Password must be 8-64 characters, cannot start/end with space or have consecutive spaces"
-  )
-  .matches(
-    /^.{8,64}$/,
-    "Password must be between 8-64 characters"
+    /^[A-Za-z0-9\-+,.@_$%&*#!^=/?]+$/,
+    "Password can only contain: letters (A-Z, a-z), numbers (0-9), and these special characters: - + , . @ _ $ % & * # ! ^ = / ?"
   )
   .test(
-    "no-consecutive-spaces",
-    "Password cannot have consecutive spaces",
-    (value) => !/\s{2,}/.test(value)
-  )
-  .test(
-    "allowed-chars",
-    "You can use letters (A-Z, a-z), numbers (0-9), and special characters (-+,.@_$%&*#!^=/?). Spaces are allowed but not at the start/end or consecutive.",
-    (value) => /^[A-Za-z0-9\-+,.@_$%&*#!^=/? ]+$/.test(value)
+    "no-spaces",
+    "Password cannot contain any spaces",
+    (value) => !/\s/.test(value)
   ),
-
+    
   fullName: yup
-    .string()
-    .required("Full name is required")
-    .matches(/^[A-Za-z]+(?: [A-Za-z]+)*$|^$/, "Invalid full name format")
-    .min(4, "Full name must be at least 4 characters")
-    .max(32, "Full name cannot exceed 32 characters"),
+  .string()
+  .required("Full Name is required")
+  .test({
+    name: 'fullNameValidation',
+    message: (params) => {
+      const value = params.value;
+      if (/[0-9]/.test(value)) return 'Numbers are not allowed in the full name';
+      if (/[^A-Za-z ]/.test(value)) return 'Special characters are not allowed';
+      if (!/[A-Za-z]$/.test(value)) return 'Full name must end with a letter';
+      if (!/^[A-Za-z]+(?: [A-Za-z]+)*$/.test(value)) return 'Full name should consist of letters separated by single spaces';
+      return 'Invalid full name format';
+    },
+    test: (value) => !value || /^[A-Za-z]+(?: [A-Za-z]+)*$/.test(value)
+  })
+  .max(32, 'Full name cannot exceed 32 characters'),
+
   phoneNumber: yup
+  .string()
+  .optional()
+  .matches(/^[1-9][0-9]{9}$/, "Invalid phone number format"),
+ 
+email: yup
+  .string()
+  .trim()
+  .max(254, "Email cannot exceed 254 characters")
+  .test(
+    "is-valid-email",
+    "Please enter a valid email address eg: user@example.com",
+    (value) => {
+      if (!value) return true; 
+      return /^(?!.*\s)(?!.*\.\.)[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+)*@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/.test(value);
+    }
+  )
+  .optional(),
 
-    .string()
-    .optional()
-    .matches(/^[1-9][0-9]{9}$/, "Invalid phone number format"), 
-
-  email: yup
-    .string()
-    .trim()
-    .max(254, "Email cannot exceed 254 characters")
-    .matches(/^(?!.*\.\.)[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_{|}~-]+)*@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}|^$/, "Invalid email format")
-    .optional(),
 
   gender: yup
     .number(),
 
+
   role: yup.number()
-  .required("Role is required"),
+  .optional(),
 
 })
 

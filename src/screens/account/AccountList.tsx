@@ -625,7 +625,7 @@ const AccountListingTable = () => {
                       },
                     }}
                   >
-                    <TableCell sx={{ textAlign: "center" }}>{row.id}</TableCell>
+                    {visibleColumns.id && (<TableCell sx={{ textAlign: "center" }}>{row.id}</TableCell>)}
                     {visibleColumns.fullName && (
                       <TableCell>
                         {row.fullName ? (

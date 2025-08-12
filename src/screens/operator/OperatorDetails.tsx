@@ -6,7 +6,6 @@ import {
   Button,
   Box,
   Avatar,
-  Tooltip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -247,22 +246,8 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
               Back
             </Button>
 
-            {/* Update Button with Tooltip */}
-            <Tooltip
-              title={
-                !canUpdateOperator
-                  ? "You don't have permission, contact the admin"
-                  : ""
-              }
-              arrow
-              placement="top-start"
-            >
-              <span
-                style={{
-                  cursor: !canUpdateOperator ? "not-allowed" : "default",
-                }}
-              >
-                <Button
+            {canUpdateOperator && (
+              <Button
                   variant="contained"
                   color="success"
                   size="small"
@@ -279,24 +264,9 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
                   }}
                 >
                   Update
-                </Button>
-              </span>
-            </Tooltip>
+                </Button>)}
 
-            <Tooltip
-              title={
-                !canDeleteOperator
-                  ? "You don't have permission, contact the admin"
-                  : ""
-              }
-              arrow
-              placement="top-start"
-            >
-              <span
-                style={{
-                  cursor: !canDeleteOperator ? "not-allowed" : "default",
-                }}
-              >
+            {canDeleteOperator && (
                 <Button
                   variant="contained"
                   color="error"
@@ -312,9 +282,7 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
                   }}
                 >
                   Delete
-                </Button>
-              </span>
-            </Tooltip>
+                </Button>)}
           </Box>
         </CardActions>
       </Card>
