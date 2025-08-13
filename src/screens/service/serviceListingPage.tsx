@@ -242,14 +242,7 @@ const ServiceListingTable = () => {
           overflow: "hidden",
         }}
       >
-        <Tooltip
-          title={
-            !canCreateService
-              ? "You don't have permission, contact the admin"
-              : "Click to open the Service creation form"
-          }
-          placement="top-end"
-        >
+        {canCreateService && (
           <Button
             sx={{
               ml: "auto",
@@ -269,7 +262,7 @@ const ServiceListingTable = () => {
           >
             Add New Service
           </Button>
-        </Tooltip>
+        )}
 
         <TableContainer
           sx={{
@@ -304,9 +297,9 @@ const ServiceListingTable = () => {
               <TableRow>
                 {[
                   { label: "ID", width: 80, key: "id" },
-                  { label: "Name", width: 200, key: "name" },
-                  { label: "Status", width: 160, key: "status" },
-                  { label: "Ticket Mode", width: 160, key: "ticket_mode" },
+                  { label: "Name", width: 250, key: "name" },
+                  { label: "Status", width: 100, key: "status" },
+                  { label: "Ticket Mode", width: 100, key: "ticket_mode" },
                 ].map((col) => (
                   <TableCell
                     key={col.key}
@@ -408,13 +401,13 @@ const ServiceListingTable = () => {
                     <TableCell>
                       <Tooltip title={row.name} placement="bottom">
                         <Typography noWrap>
-                          {row.name.length > 40
-                            ? `${row.name.substring(0, 40)}...`
+                          {row.name.length > 60
+                            ? `${row.name.substring(0, 60)}...`
                             : row.name}
                         </Typography>
                       </Tooltip>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ textAlign: "center" }}>
                       <Chip
                         label={row.status}
                         size="small"
@@ -442,7 +435,7 @@ const ServiceListingTable = () => {
                         }}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ textAlign: "center" }}>
                       <Chip
                         label={row.ticket_mode}
                         size="small"

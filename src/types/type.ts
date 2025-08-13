@@ -225,6 +225,7 @@ export interface Schedule {
   fare_id: number;
   created_on: string;
   updated_on: string;
+  routeName: string;
 }
 
 export interface Duty {

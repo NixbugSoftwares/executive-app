@@ -9,6 +9,7 @@ import {
   CssBaseline,
   MenuItem,
   Autocomplete,
+  Checkbox,
 } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
 import {
@@ -336,7 +337,7 @@ const ScheduleUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
         route_id: data.route_id,
         frequency: data.frequency,
       };
-console.log("Updation Data:", updationData);
+      console.log("Updation Data:", updationData);
 
       await dispatch(scheduleUpdationApi(updationData)).unwrap();
 
@@ -384,28 +385,30 @@ console.log("Updation Data:", updationData);
           onSubmit={handleSubmit(handleScheduleUpdate)}
         >
           <Controller
-  name="name"
-  control={control}
-  rules={{
-    required: "Name is required",
-    validate: (value) => {
-      if (value.trim() === "") return "Name is required";
-      if (/^\s|\s$/.test(value)) return "No leading or trailing spaces allowed";
-      if (/\s{2,}/.test(value)) return "Consecutive spaces are not allowed";
-      return true;
-    },
-  }}
-  render={({ field }) => (
-    <TextField
-      {...field}
-      label="Schedule Name"
-      fullWidth
-      margin="normal"
-      error={!!errors.name}
-      helperText={errors.name?.message}
-    />
-  )}
-/>
+            name="name"
+            control={control}
+            rules={{
+              required: "Name is required",
+              validate: (value) => {
+                if (value.trim() === "") return "Name is required";
+                if (/^\s|\s$/.test(value))
+                  return "No leading or trailing spaces allowed";
+                if (/\s{2,}/.test(value))
+                  return "Consecutive spaces are not allowed";
+                return true;
+              },
+            }}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="Schedule Name"
+                fullWidth
+                margin="normal"
+                error={!!errors.name}
+                helperText={errors.name?.message}
+              />
+            )}
+          />
 
           <Controller
             name="bus_id"
@@ -577,6 +580,7 @@ console.log("Updation Data:", updationData);
               <Autocomplete
                 multiple
                 options={daysFrequency}
+                disableCloseOnSelect
                 getOptionLabel={(option) => option.label}
                 value={daysFrequency.filter((day) =>
                   field.value?.includes(day.value)
@@ -584,6 +588,12 @@ console.log("Updation Data:", updationData);
                 onChange={(_, newValue) => {
                   field.onChange(newValue.map((day) => day.value));
                 }}
+                renderOption={(props, option, { selected }) => (
+                  <li {...props}>
+                    <Checkbox style={{ marginRight: 8 }} checked={selected} />
+                    {option.label}
+                  </li>
+                )}
                 renderInput={(params) => (
                   <TextField
                     {...params}

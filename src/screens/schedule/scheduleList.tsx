@@ -18,7 +18,12 @@ import {
 } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
-import { scheduleListingApi } from "../../slices/appSlice";
+import {
+  scheduleListingApi,
+  fareListApi,
+  busRouteListApi,
+  busListApi,
+} from "../../slices/appSlice";
 import type { AppDispatch } from "../../store/Store";
 import { RootState } from "../../store/Store";
 import { showErrorToast } from "../../common/toastMessageHelper";
@@ -47,7 +52,6 @@ const getTriggerModeBackendValue = (displayValue: string): string => {
   return createdModMap[displayValue] || "";
 };
 
-// Define search filter types
 type SearchFilter = {
   id: string;
   name: string;
@@ -85,6 +89,13 @@ const ScheduleListingTable = () => {
   );
   const [openCreateModal, setOpenCreateModal] = useState(false);
 
+  // State for related entity names
+  const [relatedNames, setRelatedNames] = useState({
+    routeName: "Loading...",
+    busName: "Loading...",
+    fareName: "Loading...",
+  });
+
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const urlCompanyId = companyId || queryParams.get("companyId");
@@ -96,12 +107,12 @@ const ScheduleListingTable = () => {
       }
     }
   }, [companyId, location.search]);
-  const fetchServiceList = useCallback(
+
+  const fetchScheduleList = useCallback(
     (pageNumber: number, searchParams: Partial<SearchFilter> = {}) => {
       setIsLoading(true);
       const offset = pageNumber * rowsPerPage;
 
-      // Convert display values to backend values
       const backendSearchParams = {
         ...searchParams,
         ticketing_mode: searchParams.ticketing_mode
@@ -163,11 +174,52 @@ const ScheduleListingTable = () => {
         })
         .finally(() => setIsLoading(false));
     },
+    [dispatch, filterCompanyId]
+  );
+
+  // Function to fetch related entity names
+  const fetchRelatedNames = useCallback(
+    async (schedule: Schedule) => {
+      try {
+        // Fetch route name
+        const routeResponse = await dispatch(
+          busRouteListApi({ id: schedule.route_id })
+        ).unwrap();
+        const routeName = routeResponse.data[0]?.name || "Route not found";
+
+        // Fetch bus name
+        const busResponse = await dispatch(
+          busListApi({ id: schedule.bus_id, company_id: filterCompanyId })
+        ).unwrap();
+        const busName = busResponse.data[0]?.name || "Bus not found";
+
+        // Fetch fare name
+        const fareResponse = await dispatch(
+          fareListApi({ id: schedule.fare_id })
+        ).unwrap();
+        const fareName = fareResponse.data[0]?.name || "Fare not found";
+
+        setRelatedNames({
+          routeName,
+          busName,
+          fareName,
+        });
+      } catch (error) {
+        console.error("Error fetching related names:", error);
+        setRelatedNames({
+          routeName: "Error loading route",
+          busName: "Error loading bus",
+          fareName: "Error loading fare",
+        });
+      }
+    },
     [dispatch]
   );
 
-  const handleRowClick = (schedule: Schedule) => {
+  const handleRowClick = async (schedule: Schedule) => {
     setSelectedSchedule(schedule);
+    // Fetch related names when a schedule is selected
+    await fetchRelatedNames(schedule);
   };
 
   const handleSearchChange = useCallback(
@@ -209,14 +261,15 @@ const ScheduleListingTable = () => {
   );
 
   useEffect(() => {
-    fetchServiceList(page, debouncedSearch);
-  }, [page, debouncedSearch, fetchServiceList]);
+    fetchScheduleList(page, debouncedSearch);
+  }, [page, debouncedSearch, fetchScheduleList]);
 
   const refreshList = (value: string) => {
     if (value === "refresh") {
-      fetchServiceList(page, debouncedSearch);
+      fetchScheduleList(page, debouncedSearch);
     }
   };
+
   return (
     <Box
       sx={{
@@ -240,14 +293,7 @@ const ScheduleListingTable = () => {
           overflow: "hidden",
         }}
       >
-        <Tooltip
-          title={
-            !canCreateSchedule
-              ? "You don't have permission, contact the admin"
-              : "Click to open the Schedule creation form"
-          }
-          placement="top-end"
-        >
+        {canCreateSchedule && (
           <Button
             sx={{
               ml: "auto",
@@ -267,7 +313,7 @@ const ScheduleListingTable = () => {
           >
             Add New Schedule
           </Button>
-        </Tooltip>
+        )}
 
         <TableContainer
           sx={{
@@ -443,7 +489,7 @@ const ScheduleListingTable = () => {
                         }}
                       />
                     </TableCell>
-                    <TableCell  align="center">
+                    <TableCell align="center">
                       <Chip
                         label={row.triggering_mode}
                         size="small"
@@ -509,6 +555,7 @@ const ScheduleListingTable = () => {
         >
           <ScheduleDetailsCard
             schedule={selectedSchedule}
+            relatedNames={relatedNames} // Pass the related names to the details card
             onUpdate={() => {}}
             onDelete={() => {}}
             onBack={() => setSelectedSchedule(null)}

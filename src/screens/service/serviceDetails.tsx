@@ -328,83 +328,68 @@ const ServiceDetailsCard: React.FC<ServiceCardProps> = ({
               Back
             </Button>
 
-            {/* Update Button with Tooltip */}
-            <Tooltip
-              title={
-                !canUpdateService
-                  ? "You don't have permission, contact the admin"
-                  : ""
-              }
-              arrow
-              placement="top-start"
-            >
-              <span
-                style={{
-                  cursor: !canUpdateService ? "not-allowed" : "default",
+            {canUpdateService && (
+              <Button
+                variant="contained"
+                color="success"
+                size="small"
+                onClick={() => setUpdateFormOpen(true)}
+                disabled={!canUpdateService}
+                sx={{
+                  "&.Mui-disabled": {
+                    backgroundColor: "#81c784 !important",
+                    color: "#ffffff99",
+                  },
                 }}
               >
-                <Button
-                  variant="contained"
-                  color="success"
-                  size="small"
-                  onClick={() => setUpdateFormOpen(true)}
-                  disabled={!canUpdateService}
-                  sx={{
-                    "&.Mui-disabled": {
-                      backgroundColor: "#81c784 !important",
-                      color: "#ffffff99",
-                    },
-                  }}
-                >
-                  Update
-                </Button>
-              </span>
-            </Tooltip>
+                Update
+              </Button>
+            )}
 
             {/* Delete Button with Tooltip */}
-            <Tooltip
-              title={
-                !canDeleteService
-                  ? "You don't have permission, contact the admin"
-                  : service.status === "Started"
-                  ? "Cannot delete a service that has Started"
-                  : service.status === "Terminated"
-                  ? "Cannot delete a service that is Terminated"
-                  : service.status === "Ended"
-                  ? "Cannot delete a service that is Ended"
-                  : ""
-              }
-              arrow
-              placement="top-start"
-            >
-              <span
-                style={{
-                  cursor: !canDeleteService ? "not-allowed" : "default",
-                }}
+            {canDeleteService && (
+              <Tooltip
+                title={
+                  service.status === "Started"
+                    ? "Cannot delete a service that has Started"
+                    : service.status === "Terminated"
+                    ? "Cannot delete a service that is Terminated"
+                    : service.status === "Ended"
+                    ? "Cannot delete a service that is Ended"
+                    : ""
+                }
+                arrow
+                placement="top-start"
               >
-                <Button
-                  variant="contained"
-                  color="error"
-                  size="small"
-                  onClick={() => setDeleteConfirmOpen(true)}
-                  startIcon={<DeleteIcon />}
-                  disabled={
-                    !canDeleteService ||
-                    service.status === "Started" ||
-                    service.status === "Terminated" ||
-                    service.status === "Ended"
-                  }
-                  sx={{
-                    "&.Mui-disabled": {
-                      backgroundColor: "#e57373 !important",
-                      color: "#ffffff99",
-                    },
+                <span
+                  style={{
+                    cursor: !canDeleteService ? "not-allowed" : "default",
                   }}
                 >
-                  Delete
-                </Button>
-              </span>
-            </Tooltip>
+                  <Button
+                    variant="contained"
+                    color="error"
+                    size="small"
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    startIcon={<DeleteIcon />}
+                    disabled={
+                      !canDeleteService ||
+                      service.status === "Started" ||
+                      service.status === "Terminated" ||
+                      service.status === "Ended"
+                    }
+                    sx={{
+                      "&.Mui-disabled": {
+                        backgroundColor: "#e57373 !important",
+                        color: "#ffffff99",
+                      },
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </span>
+              </Tooltip>
+            )}
           </Box>
         </CardActions>
       </Card>

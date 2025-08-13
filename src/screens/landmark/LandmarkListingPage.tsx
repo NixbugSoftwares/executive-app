@@ -299,24 +299,25 @@ const LandmarkListing = () => {
       }}
     >
       <Box
-        sx={{
-          flex: { xs: "0 0 100%", md: "50%" },
-          maxWidth: { xs: "100%", md: "50%" },
-          transition: "all 0.3s ease",
-          overflow: "hidden",
-          overflowY: "auto",
-        }}
-      >
-        <TableContainer
-          sx={{
-            flex: 1,
-            maxHeight: "calc(100vh - 100px)",
-            overflowY: "auto",
-            borderRadius: 2,
-            border: "1px solid #e0e0e0",
-            position: "relative",
-          }}
-        >
+  sx={{
+    flex: { xs: "0 0 100%", md: "50%" },
+    maxWidth: { xs: "100%", md: "50%" },
+    transition: "all 0.3s ease",
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+    height: "100vh",
+  }}
+>
+         <TableContainer
+    sx={{
+      flex: 1,
+      overflowY: "auto",
+      borderRadius: 2,
+      border: "1px solid #e0e0e0",
+      position: "relative",
+    }}
+  >
           {isLoading && (
             <Box
               sx={{
@@ -515,10 +516,11 @@ const LandmarkListing = () => {
                                           <TableCell>
                                             <strong>Name</strong>
                                           </TableCell>
-
-                                          <TableCell align="center">
-                                            <strong>Actions</strong>
-                                          </TableCell>
+                                          {hasLandmarkPermission && (
+                                            <TableCell align="center">
+                                              <strong>Actions</strong>
+                                            </TableCell>
+                                          )}
                                         </TableRow>
                                       </TableHead>
                                       <TableBody>
@@ -541,24 +543,9 @@ const LandmarkListing = () => {
                                                   </Typography>
                                                 </Tooltip>
                                               </TableCell>
-
-                                              <TableCell align="center">
-                                                <Tooltip
-                                                  title={
-                                                    !hasLandmarkPermission
-                                                      ? "You don't have permission, contact the admin"
-                                                      : "Click to update the Bus stop"
-                                                  }
-                                                  placement="top-end"
-                                                >
-                                                  <span
-                                                    style={{
-                                                      cursor:
-                                                        !hasLandmarkPermission
-                                                          ? "not-allowed"
-                                                          : "default",
-                                                    }}
-                                                  >
+                                              {hasLandmarkPermission && (
+                                                <TableCell align="center">
+                                                  {hasLandmarkPermission && (
                                                     <Button
                                                       size="small"
                                                       color="success"
@@ -578,25 +565,9 @@ const LandmarkListing = () => {
                                                     >
                                                       Update
                                                     </Button>
-                                                  </span>
-                                                </Tooltip>
+                                                  )}
 
-                                                <Tooltip
-                                                  title={
-                                                    !hasLandmarkPermission
-                                                      ? "You don't have permission, contact the admin"
-                                                      : "Click to delete the Bus stop"
-                                                  }
-                                                  placement="top-end"
-                                                >
-                                                  <span
-                                                    style={{
-                                                      cursor:
-                                                        !hasLandmarkPermission
-                                                          ? "not-allowed"
-                                                          : "default",
-                                                    }}
-                                                  >
+                                                  {hasLandmarkPermission && (
                                                     <Button
                                                       size="small"
                                                       color="error"
@@ -612,9 +583,9 @@ const LandmarkListing = () => {
                                                     >
                                                       Delete
                                                     </Button>
-                                                  </span>
-                                                </Tooltip>
-                                              </TableCell>
+                                                  )}
+                                                </TableCell>
+                                              )}
                                             </TableRow>
                                           )
                                         )}
@@ -653,15 +624,24 @@ const LandmarkListing = () => {
 
         {/*************************************** Pagination    ****************************************/}
 
-        <Box sx={{}}>
-          <PaginationControls
-            page={page}
-            onPageChange={(newPage) => handleChangePage(null, newPage)}
-            isLoading={isLoading}
-            hasNextPage={hasNextPage}
-          />
-        </Box>
-      </Box>
+        <Box 
+    sx={{
+      width: '100%',
+      bgcolor: "#fff",
+      borderTop: "1px solid #e0e0e0",
+      p: 1,
+      position: 'sticky',
+      bottom: 0,
+    }}
+  >
+    <PaginationControls
+      page={page}
+      onPageChange={(newPage) => handleChangePage(null, newPage)}
+      isLoading={isLoading}
+      hasNextPage={hasNextPage}
+    />
+  </Box>
+</Box>
 
       <Box
         sx={{
@@ -738,7 +718,10 @@ const LandmarkListing = () => {
             <LandmarkUpdateForm
               onClose={() => setOpenUpdateModal(false)}
               refreshList={refreshList}
-              onBack={() => { setSelectedLandmark(null); setExpandedRow(null); }}
+              onBack={() => {
+                setSelectedLandmark(null);
+                setExpandedRow(null);
+              }}
               landmarkId={selectedLandmark.id}
               landmarkData={{
                 name: selectedLandmark.name,

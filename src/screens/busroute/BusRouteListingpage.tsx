@@ -304,7 +304,10 @@ const BusRouteListing = () => {
           maxWidth: { xs: "100%", md: "50%" },
           transition: "all 0.3s ease",
           overflow: "hidden",
-          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh", // Ensure full height
+          position: "relative", // Needed for absolute positioning of children
         }}
       >
         {selectedRoute ? (
@@ -367,251 +370,229 @@ const BusRouteListing = () => {
               alignItems="center"
               sx={{ mb: 2 }}
             >
-              <Tooltip
-                title={
-                  !canCreateRoutes
-                    ? "You don't have permission, contact the admin"
-                    : "click to open the route creation form"
-                }
-                placement="top-end"
-              >
-                <span
-                  style={{
-                    cursor: !canCreateRoutes ? "not-allowed" : "default",
+              {canCreateRoutes && (
+                <Button
+                  sx={{
+                    ml: "auto",
+                    mr: 2,
+                    mb: 2,
+                    display: "block",
+                    backgroundColor: !canCreateRoutes
+                      ? "#6c87b7 !important"
+                      : "#00008B",
+                    color: "white",
+                    "&.Mui-disabled": {
+                      backgroundColor: "#6c87b7 !important",
+                      color: "#ffffff99",
+                    },
                   }}
+                  variant="contained"
+                  onClick={toggleCreationForm}
+                  disabled={!canCreateRoutes}
                 >
-                  <Button
-                    sx={{
-                      ml: "auto",
-                      mr: 2,
-                      mb: 2,
-                      display: "block",
-                      backgroundColor: !canCreateRoutes
-                        ? "#6c87b7 !important"
-                        : "#00008B",
-                      color: "white",
-                      "&.Mui-disabled": {
-                        backgroundColor: "#6c87b7 !important",
-                        color: "#ffffff99",
-                      },
-                    }}
-                    variant="contained"
-                    onClick={toggleCreationForm}
-                    disabled={!canCreateRoutes}
-                  >
-                    Add New Routes
-                  </Button>
-                </span>
-              </Tooltip>
+                  Add New Routes
+                </Button>
+              )}
             </Stack>
 
-            <TableContainer
-              sx={{
-                flex: 1,
-                maxHeight: "calc(100vh - 180px)",
-                overflowY: "auto",
-                borderRadius: 2,
-                border: "1px solid #e0e0e0",
-                position: "relative",
-              }}
-            >
-              {isLoading && (
-                <Box
-                  sx={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    backgroundColor: "rgba(255, 255, 255, 0.7)",
-                    zIndex: 1,
-                  }}
-                >
-                  <CircularProgress />
-                </Box>
-              )}
-              <Table stickyHeader>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                    <TableCell sx={{ width: "25%" }}>
-                      <Box
-                        display="flex"
-                        flexDirection="column"
-                        alignItems="center"
-                      >
-                        <b>ID</b>
-                      </Box>
-                    </TableCell>
-                    <TableCell sx={{ width: "60%" }}>
-                      <Box
-                        display="flex"
-                        flexDirection="column"
-                        alignItems="center"
-                      >
-                        <b>Name</b>
-                      </Box>
-                    </TableCell>
-                    <TableCell sx={{ width: "15%", textAlign: "center" }}>
-                      <b>Status</b>
-                    </TableCell>
-                    <TableCell sx={{ width: "20%", textAlign: "center" }}>
-                      <b>Actions</b>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>
-                      <TextField
-                        type="number"
-                        variant="outlined"
-                        size="small"
-                        placeholder="Search"
-                        value={search.id}
-                        onChange={(e) => handleSearchChange(e, "id")}
-                        fullWidth
-                        sx={{
-                          "& .MuiInputBase-root": {
-                            height: 40,
-                            padding: "4px",
-                          },
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        variant="outlined"
-                        size="small"
-                        placeholder="Search"
-                        value={search.name}
-                        onChange={(e) => handleSearchChange(e, "name")}
-                        fullWidth
-                        sx={{
-                          "& .MuiInputBase-root": {
-                            height: 40,
-                            padding: "4px",
-                          },
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} align="center"></TableCell>
-                    </TableRow>
-                  ) : routeList.length > 0 ? (
-                    routeList.map((row) => (
-                      <TableRow key={row.id} hover>
-                        <TableCell align="center">{row.id}</TableCell>
-                        <TableCell
-                          sx={{
-                            cursor: "pointer",
-                          }}
-                          onClick={() =>
-                            setSelectedRoute({
-                              id: row.id,
-                              name: row.name,
-                              start_time: row.start_time,
-                            })
-                          }
-                        >
-                          <Tooltip title={row.name} placement="bottom">
-                            <Typography noWrap>
-                              {row.name.length > 15
-                                ? `${row.name.substring(0, 15)}...`
-                                : row.name}
-                            </Typography>
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell align="center">{row.status}</TableCell>
-                        <TableCell sx={{ textAlign: "center", boxShadow: 1 }}>
-                          <Tooltip
-                            title={
-                              !canDeleteRoutes
-                                ? "You don't have permission, contact the admin"
-                                : " DELETE the route"
-                            }
-                            placement="top-end"
-                          >
-                            <span
-                              style={{
-                                cursor: !canDeleteRoutes
-                                  ? "not-allowed"
-                                  : "default",
-                              }}
-                            >
-                              <Button
-                                variant="outlined"
-                                color="error"
-                                size="small"
-                                disabled={!canDeleteRoutes}
-                                onClick={() => handleDeleteClick(row)}
-                                sx={{
-                                  ml: "auto",
-                                  mr: 2,
-                                  mb: 2,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                  textTransform: "none",
-                                  borderRadius: 2,
-                                  fontWeight: 500,
-                                  boxShadow: "none",
-                                  backgroundColor: !canDeleteRoutes
-                                    ? "#f46a6a"
-                                    : "#d32f2f",
-                                  color: "#fff",
-                                  "&:hover": {
-                                    backgroundColor: !canDeleteRoutes
-                                      ? "#f46a6a"
-                                      : "#b71c1c",
-                                    boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-                                  },
-                                  "&.Mui-disabled": {
-                                    backgroundColor: "#f46a6a",
-                                    color: "#ffffff99",
-                                  },
-                                }}
-                              >
-                                Delete
-                              </Button>
-                            </span>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={3} align="center">
-                        No Routes found.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
             <Box
               sx={{
-                position: "absolute",
-                left: 0,
-                bottom: 0,
-                width: "100%",
-                bgcolor: "#fff",
-                borderTop: "1px solid #e0e0e0",
-                zIndex: 2,
-                p: 1,
+                flex: 1,
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
               }}
             >
-              <PaginationControls
-                page={page}
-                onPageChange={(newPage) => handleChangePage(null, newPage)}
-                isLoading={isLoading}
-                hasNextPage={hasNextPage}
-              />
+              <TableContainer
+                sx={{
+                  flex: 1,
+                  overflowY: "auto",
+                  borderRadius: 2,
+                  border: "1px solid #e0e0e0",
+                }}
+              >
+                {isLoading && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      backgroundColor: "rgba(255, 255, 255, 0.7)",
+                      zIndex: 1,
+                    }}
+                  >
+                    <CircularProgress />
+                  </Box>
+                )}
+                <Table stickyHeader>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+                      <TableCell sx={{ width: "25%" }}>
+                        <Box
+                          display="flex"
+                          flexDirection="column"
+                          alignItems="center"
+                        >
+                          <b>ID</b>
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ width: "60%" }}>
+                        <Box
+                          display="flex"
+                          flexDirection="column"
+                          alignItems="center"
+                        >
+                          <b>Name</b>
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ width: "15%", textAlign: "center" }}>
+                        <b>Status</b>
+                      </TableCell>
+                      {canDeleteRoutes && (
+                      <TableCell sx={{ width: "20%", textAlign: "center" }}>
+                        <b>Actions</b>
+                      </TableCell>)}
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>
+                        <TextField
+                          type="number"
+                          variant="outlined"
+                          size="small"
+                          placeholder="Search"
+                          value={search.id}
+                          onChange={(e) => handleSearchChange(e, "id")}
+                          fullWidth
+                          sx={{
+                            "& .MuiInputBase-root": {
+                              height: 40,
+                              padding: "4px",
+                            },
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <TextField
+                          variant="outlined"
+                          size="small"
+                          placeholder="Search"
+                          value={search.name}
+                          onChange={(e) => handleSearchChange(e, "name")}
+                          fullWidth
+                          sx={{
+                            "& .MuiInputBase-root": {
+                              height: 40,
+                              padding: "4px",
+                            },
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center"></TableCell>
+                      </TableRow>
+                    ) : routeList.length > 0 ? (
+                      routeList.map((row) => (
+                        <TableRow key={row.id} hover>
+                          <TableCell align="center">{row.id}</TableCell>
+                          <TableCell
+                            sx={{
+                              cursor: "pointer",
+                            }}
+                            onClick={() =>
+                              setSelectedRoute({
+                                id: row.id,
+                                name: row.name,
+                                start_time: row.start_time,
+                              })
+                            }
+                          >
+                            <Tooltip title={row.name} placement="bottom">
+                              <Typography noWrap>
+                                {row.name.length > 15
+                                  ? `${row.name.substring(0, 15)}...`
+                                  : row.name}
+                              </Typography>
+                            </Tooltip>
+                          </TableCell>
+                          <TableCell align="center">{row.status}</TableCell>
+                          {canDeleteRoutes && (
+                          <TableCell sx={{ textAlign: "center", boxShadow: 1 }}>
+                           
+                                <Button
+                                  variant="outlined"
+                                  color="error"
+                                  size="small"
+                                  disabled={!canDeleteRoutes}
+                                  onClick={() => handleDeleteClick(row)}
+                                  sx={{
+                                    ml: "auto",
+                                    mr: 2,
+                                    mb: 2,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1,
+                                    textTransform: "none",
+                                    borderRadius: 2,
+                                    fontWeight: 500,
+                                    boxShadow: "none",
+                                    backgroundColor: !canDeleteRoutes
+                                      ? "#f46a6a"
+                                      : "#d32f2f",
+                                    color: "#fff",
+                                    "&:hover": {
+                                      backgroundColor: !canDeleteRoutes
+                                        ? "#f46a6a"
+                                        : "#b71c1c",
+                                      boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+                                    },
+                                    "&.Mui-disabled": {
+                                      backgroundColor: "#f46a6a",
+                                      color: "#ffffff99",
+                                    },
+                                  }}
+                                >
+                                  Delete
+                                </Button>
+                          </TableCell>)}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={3} align="center">
+                          No Routes found.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <Box
+                sx={{
+                  width: "100%",
+                  bgcolor: "#fff",
+                  borderTop: "1px solid #e0e0e0",
+                  p: 1,
+                  position: "sticky",
+                  bottom: 0,
+                }}
+              >
+                <PaginationControls
+                  page={page}
+                  onPageChange={(newPage) => handleChangePage(null, newPage)}
+                  isLoading={isLoading}
+                  hasNextPage={hasNextPage}
+                />
+              </Box>
             </Box>
           </>
         )}

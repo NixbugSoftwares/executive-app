@@ -208,21 +208,7 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
               Back
             </Button>
 
-            {/* Update Button with Tooltip */}
-            <Tooltip
-              title={
-                !canUpdateDuty
-                  ? "You don't have permission, contact the admin"
-                  : ""
-              }
-              arrow
-              placement="top-start"
-            >
-              <span
-                style={{
-                  cursor: !canUpdateDuty ? "not-allowed" : "default",
-                }}
-              >
+           {canUpdateDuty&&(
                 <Button
                   variant="contained"
                   color="success"
@@ -237,17 +223,12 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
                   }}
                 >
                   Update
-                </Button>
-              </span>
-            </Tooltip>
+                </Button>)}
 
             {/* Delete Button with Tooltip */}
-            {/* Delete Button with Tooltip */}
+            {canDeleteDuty&&(
             <Tooltip
-              title={
-                !canDeleteDuty
-                  ? "You don't have permission, contact the admin"
-                  : duty.status === "Started"
+              title={ duty.status === "Started"
                   ? "You can't delete a started duty"
                   : duty.status === "Ended"
                   ? "You can't delete an ended duty"
@@ -287,7 +268,7 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
                   Delete
                 </Button>
               </span>
-            </Tooltip>
+            </Tooltip>)}
           </Box>
         </CardActions>
       </Card>

@@ -899,20 +899,7 @@ const edgesIntersect = (
               Search
             </Button>
           </Box>
-          {!selectedLandmark && (
-            <Tooltip
-              title={
-                !canCreateLandmark
-                  ? "You don't have permission, contact the admin"
-                  : "click to Enable Drawing the landmark."
-              }
-              placement="bottom"
-            >
-              <span
-                style={{
-                  cursor: !canCreateLandmark ? "not-allowed" : "default",
-                }}
-              >
+          {canCreateLandmark && (
                 <Button
                   size="small"
                   color={isDrawing ? "secondary" : "primary"}
@@ -931,48 +918,25 @@ const edgesIntersect = (
                   }}
                 >
                   {isDrawing ? "Finish " : "Add Landmark"}
-                </Button>
-              </span>
-            </Tooltip>
-          )}
+                </Button>)}
 
           {selectedLandmark && (
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Tooltip
-                title={
-                  !canCreateLandmark || !canUpdateLandmark
-                    ? "You don't have permission, contact the admin"
-                    : "click to add bus stop."
-                }
-                placement="bottom"
-              >
-                <span
-                  style={{
-                    cursor: !canCreateLandmark ? "not-allowed" : "default",
-                  }}
-                >
+             {(canCreateLandmark||canUpdateLandmark) && (
                   <Button
                     size="small"
                     color={isAddingBusStop ? "secondary" : "primary"}
                     variant="contained"
                     onClick={toggleBusStopAdding}
-                    disabled={!canCreateLandmark}
                     sx={{
-                      backgroundColor:
-                        !canCreateLandmark || !canUpdateLandmark
-                          ? "#6c87b7 !important"
+                      backgroundColor
                           : "#00008B",
                       color: "white",
-                      "&.Mui-disabled": {
-                        backgroundColor: "#6c87b7 !important",
-                        color: "#ffffff99",
-                      },
+                     
                     }}
                   >
                     {isAddingBusStop ? "Cancel" : "Add Bus Stop"}
-                  </Button>
-                </span>
-              </Tooltip>
+                  </Button>)}
             </Box>
           )}
 
@@ -1043,19 +1007,7 @@ const edgesIntersect = (
             >
               Back
             </Button>
-            <Tooltip
-              title={
-                !canUpdateLandmark
-                  ? "You don't have permission, contact the admin"
-                  : "click to Update the landmark."
-              }
-              placement="top-end"
-            >
-              <span
-                style={{
-                  cursor: !canUpdateLandmark ? "not-allowed" : "default",
-                }}
-              >
+            {canUpdateLandmark && (
                 <Button
                   variant="contained"
                   color="success"
@@ -1070,23 +1022,9 @@ const edgesIntersect = (
                   }}
                 >
                   Update
-                </Button>
-              </span>
-            </Tooltip>
+                </Button>)}
 
-            <Tooltip
-              title={
-                !canDeleteLandmark
-                  ? "You don't have permission, contact the admin"
-                  : "click to Delete the landmark."
-              }
-              placement="top-end"
-            >
-              <span
-                style={{
-                  cursor: !canDeleteLandmark ? "not-allowed" : "default",
-                }}
-              >
+            {canDeleteLandmark && (
                 <Button
                   variant="contained"
                   size="small"
@@ -1095,9 +1033,7 @@ const edgesIntersect = (
                   disabled={!canDeleteLandmark}
                 >
                   Delete
-                </Button>
-              </span>
-            </Tooltip>
+                </Button>)}
           </Box>
         )}
       </Box>

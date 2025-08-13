@@ -245,15 +245,8 @@ const DutyListingTable = () => {
           overflow: "hidden",
         }}
       >
-        <Tooltip
-          title={
-            !canCreateDuty
-              ? "You don't have permission, contact the admin"
-              : "Click to open the Duty creation form"
-          }
-          placement="top-end"
-        >
-          <Button
+        {canCreateDuty&&(
+         <Button
             sx={{
               ml: "auto",
               mr: 2,
@@ -271,8 +264,7 @@ const DutyListingTable = () => {
             style={{ cursor: !canCreateDuty ? "not-allowed" : "pointer" }}
           >
             Add New Duty
-          </Button>
-        </Tooltip>
+          </Button>)}
 
         <TableContainer
           sx={{
