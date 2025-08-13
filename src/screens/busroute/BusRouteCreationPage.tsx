@@ -295,31 +295,32 @@ const BusRouteCreation = ({
         </Typography>
 
         <TextField
-  margin="normal"
-  fullWidth
-  label="Route Name"
-  {...register("name", {
-    required: "Route name is required",
-    validate: (value) => {
-      if (value.trim() === "") return "Route name is required";
-      if (/^\s|\s$/.test(value)) return "No leading or trailing spaces allowed";
-      if (/\s{2,}/.test(value)) return "Consecutive spaces are not allowed";
-      return true;
-    },
-  })}
-  error={!!errors.name}
-  helperText={errors.name?.message}
-  autoFocus
-  size="small"
-/>
-
+          margin="normal"
+          fullWidth
+          label="Route Name"
+          {...register("name", {
+            required: "Route name is required",
+            validate: (value) => {
+              if (value.trim() === "") return "Route name is required";
+              if (/^\s|\s$/.test(value))
+                return "No leading or trailing spaces allowed";
+              if (/\s{2,}/.test(value))
+                return "Consecutive spaces are not allowed";
+              return true;
+            },
+          })}
+          error={!!errors.name}
+          helperText={errors.name?.message}
+          autoFocus
+          size="small"
+        />
 
         <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
           Starting Time (IST)
         </Typography>
         <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
           {/* Starting Day Offset - fixed to Day 0 */}
-          <FormControl fullWidth size="small">
+          {/* <FormControl fullWidth size="small">
             <InputLabel>Starting Day Offset</InputLabel>
             <Select
               value={0} // hardcoded to Day 0
@@ -328,7 +329,7 @@ const BusRouteCreation = ({
             >
               <MenuItem value={0}>Day 1</MenuItem>
             </Select>
-          </FormControl>
+          </FormControl> */}
 
           {/* Hour */}
           <FormControl fullWidth size="small">
@@ -420,7 +421,6 @@ const BusRouteCreation = ({
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
               Please select landmarks from the map to create your route
             </Typography>
-            
           </Box>
         ) : (
           <List

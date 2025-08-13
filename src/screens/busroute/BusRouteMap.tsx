@@ -28,8 +28,8 @@ import {
 } from "@mui/material";
 // import LocationOnIcon from "@mui/icons-material/LocationOn";
 // import { Refresh } from "@mui/icons-material";
-import { showErrorToast } from "../../common/toastMessageHelper";
-import { landmarkListApi } from "../../slices/appSlice";
+import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
+import { landmarkListApi, routeLandmarkCreationApi } from "../../slices/appSlice";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../../store/Store";
 import { Style, Stroke, Fill, Circle } from "ol/style";
@@ -41,7 +41,7 @@ import Text from "ol/style/Text";
 import { Landmark, SelectedLandmark } from "../../types/type";
 
 interface MapComponentProps {
-  onAddLandmark: (landmark: SelectedLandmark) => void;
+  onAddLandmark?: (landmark: SelectedLandmark) => void;
   onClearRoute?: () => void;
   landmarks: SelectedLandmark[];
   selectedLandmarks: SelectedLandmark[];
@@ -50,6 +50,8 @@ interface MapComponentProps {
   startingTime?: string;
   isNewRoute?: boolean;
   selectedLandmarkIds?: number[];
+  routeId?: number;
+  selectedRouteStartingTime?: string;
 }
 
 const MapComponent = React.forwardRef(
@@ -61,9 +63,13 @@ const MapComponent = React.forwardRef(
       isEditing,
       selectedLandmarks,
       startingTime,
+      routeId,
+      selectedRouteStartingTime,
     }: MapComponentProps,
     ref
   ) => {
+    console.log("selected route starting time", selectedRouteStartingTime);
+
     const mapRef = useRef<HTMLDivElement | null>(null);
     const allBoundariesSource = useRef(new VectorSource());
     const selectedLandmarksSource = useRef(new VectorSource());
@@ -754,23 +760,189 @@ const MapComponent = React.forwardRef(
       },
     }));
 
-    // const refreshMap = () => {
-    //   setTimeout(() => {
-    //     selectedLandmarksSource.current.clear();
-    //     setShowAllBoundaries(false);
-    //   }, 300);
 
-    //   if (mapInstance.current) {
-    //     mapInstance.current.getView().animate({
-    //       center: fromLonLat([76.9366, 8.5241]),
-    //       zoom: 10,
-    //       duration: 1000,
-    //     });
-    //   }
-    //   setTimeout(() => {
-    //     mapInstance.current?.render();
-    //   }, 1100);
-    // };
+    const handleAddLandmark = async () => {
+      const arrivalTS = getTimestamp(
+        arrivalHour,
+        arrivalMinute,
+        arrivalAmPm,
+        arrivalDayOffset
+      );
+      const departureTS = getTimestamp(
+        departureHour,
+        departureMinute,
+        departureAmPm,
+        departureDayOffset
+      );
+
+      if (!validateTimes()) {
+        setShowTimeError("Both departure and arrival times are required");
+        return;
+      }
+      if (departureTS < arrivalTS) {
+        setShowTimeError(
+          "Departure time must be after or equal to arrival time."
+        );
+        return;
+      }
+      setShowTimeError("");
+
+      if (
+        selectedLandmark?.distance_from_start === undefined ||
+        selectedLandmark?.distance_from_start === null ||
+        selectedLandmark?.distance_from_start === "" ||
+        isNaN(selectedLandmark?.distance_from_start)
+      ) {
+        setDistanceError("Distance from Start is required");
+        return;
+      }
+      setDistanceError("");
+
+      try {
+        // For first landmark, force times to match starting time
+        if (isFirstLandmark && startingTime) {
+          const arrivalUTC = {
+            displayTime: startingTime.replace("Z", ""),
+            fullTime: `1970-01-01T${startingTime.replace("Z", "")}Z`,
+            dayOffset: 0,
+            timestamp: new Date(
+              `1970-01-01T${startingTime.replace("Z", "")}Z`
+            ).getTime(),
+          };
+
+          const departureUTC = { ...arrivalUTC };
+
+          const landmarkWithDistance = {
+            ...selectedLandmark,
+            arrivalTime: arrivalUTC,
+            departureTime: departureUTC,
+            arrivalDayOffset: 0,
+            departureDayOffset: 0,
+            distance_from_start: 0,
+          };
+
+          if (mode === "edit" && routeId) {
+            await saveLandmarkToDatabase(landmarkWithDistance);
+          } else {
+            onAddLandmark?.(landmarkWithDistance);
+          }
+          setIsModalOpen(false);
+          return;
+        }
+
+        // Existing logic for non-first landmarks
+        const arrivalTimeUTC = convertLocalToUTC(
+          arrivalHour,
+          arrivalMinute,
+          arrivalAmPm,
+          arrivalDayOffset
+        );
+        const departureTimeUTC = convertLocalToUTC(
+          departureHour,
+          departureMinute,
+          departureAmPm,
+          departureDayOffset
+        );
+        const landmarkWithDistance = {
+          ...selectedLandmark,
+          arrivalTime: arrivalTimeUTC,
+          departureTime: departureTimeUTC,
+          arrivalDayOffset,
+          departureDayOffset,
+          distance_from_start: selectedLandmark?.distance_from_start,
+        };
+
+        if (isEditing && routeId) {
+          await saveLandmarkToDatabase(landmarkWithDistance);
+        } else {
+          onAddLandmark?.(landmarkWithDistance);
+        }
+        
+        highlightSelectedLandmark(selectedLandmark.id.toString());
+        setIsModalOpen(false);
+      } catch (error) {
+        showErrorToast("Failed to save landmark: " + error);
+      }
+    };
+
+  const saveLandmarkToDatabase = async (landmark: SelectedLandmark) => {
+  if (!routeId || !selectedRouteStartingTime) {
+    console.error("Missing required parameters:", { routeId, selectedRouteStartingTime });
+    return showErrorToast("Route ID and starting time are required");
+  }
+  try {
+    console.log("Starting saveLandmarkToDatabase with:", {
+      routeId,
+      startingTime,
+      landmark
+    });
+    // 1. Parse the UTC starting time (backend provides UTC time like "00:30:00Z")
+    const utcStartTime = selectedRouteStartingTime.endsWith("Z") 
+      ? selectedRouteStartingTime.slice(0, -1) 
+      : selectedRouteStartingTime;
+    
+    const [startHours, startMinutes, startSeconds] = utcStartTime.split(":").map(Number);
+    const utcStartDate = new Date(Date.UTC(1970, 0, 1, startHours, startMinutes, startSeconds));
+
+    // 2. The landmark times are already in UTC (fullTime is UTC)
+    const utcArrivalDate = new Date(landmark.arrivalTime.fullTime);
+    const utcDepartureDate = new Date(landmark.departureTime.fullTime);
+
+    // 3. Calculate deltas in seconds (UTC - UTC)
+    const arrivalDelta = Math.floor(
+      (utcArrivalDate.getTime() - utcStartDate.getTime()) / 1000
+    );
+    const departureDelta = Math.floor(
+      (utcDepartureDate.getTime() - utcStartDate.getTime()) / 1000
+    );
+
+    // Log all time values for verification
+    console.log("Time calculations (all in UTC):", {
+      startTime: utcStartDate.toISOString(),
+      arrivalTime: utcArrivalDate.toISOString(),
+      departureTime: utcDepartureDate.toISOString(),
+      arrivalDelta,
+      departureDelta,
+      arrivalDeltaHours: arrivalDelta / 3600,
+      departureDeltaHours: departureDelta / 3600
+    });
+
+    // Prepare form data
+    const formData = new FormData();
+    formData.append("route_id", routeId.toString());
+    formData.append("landmark_id", landmark.id.toString());
+    formData.append("arrival_delta", arrivalDelta.toString());
+    formData.append("departure_delta", departureDelta.toString());
+    formData.append(
+      "distance_from_start",
+      (landmark.distance_from_start || 0).toString()
+    );
+
+    console.log("FormData contents:", {
+      route_id: routeId,
+      landmark_id: landmark.id,
+      arrival_delta: arrivalDelta,
+      departure_delta: departureDelta,
+      distance_from_start: landmark.distance_from_start || 0
+    });
+
+    // Send to backend
+    const response = await dispatch(routeLandmarkCreationApi(formData)).unwrap();
+    console.log("API response:", response);
+    showSuccessToast("Landmark added successfully");
+  } catch (error: any) {
+    console.error("Detailed error in saveLandmarkToDatabase:", {
+      error: error.message,
+      stack: error.stack,
+      response: error.response?.data,
+      landmark,
+      startingTime
+    });
+    showErrorToast(error || "Failed to add landmark");
+    throw error;
+  }
+};
+
 
     //*************************************** time selection and logics for adding landmarks **********************************
 
@@ -878,98 +1050,6 @@ const MapComponent = React.forwardRef(
       return date.getTime();
     };
 
-    const handleAddLandmark = () => {
-      const arrivalTS = getTimestamp(
-        arrivalHour,
-        arrivalMinute,
-        arrivalAmPm,
-        arrivalDayOffset
-      );
-      const departureTS = getTimestamp(
-        departureHour,
-        departureMinute,
-        departureAmPm,
-        departureDayOffset
-      );
-
-      if (!validateTimes()) {
-        setShowTimeError("Both departure and arrival times are required");
-        return;
-      }
-      if (departureTS < arrivalTS) {
-        setShowTimeError(
-          "Departure time must be after or equal to arrival time."
-        );
-        return;
-      }
-      setShowTimeError("");
-
-      if (
-        selectedLandmark?.distance_from_start === undefined ||
-        selectedLandmark?.distance_from_start === null ||
-        selectedLandmark?.distance_from_start === "" ||
-        isNaN(selectedLandmark?.distance_from_start)
-      ) {
-        setDistanceError("Distance from Start is required");
-        return;
-      }
-      setDistanceError("");
-
-      // For first landmark, force times to match starting time
-      if (isFirstLandmark && startingTime) {
-        // Use the startingTime directly as UTC
-        const arrivalUTC = {
-          displayTime: startingTime.replace("Z", ""),
-          fullTime: `1970-01-01T${startingTime.replace("Z", "")}Z`,
-          dayOffset: 0,
-          timestamp: new Date(
-            `1970-01-01T${startingTime.replace("Z", "")}Z`
-          ).getTime(),
-        };
-
-        const departureUTC = { ...arrivalUTC };
-
-        const landmarkWithDistance = {
-          ...selectedLandmark,
-          arrivalTime: arrivalUTC,
-          departureTime: departureUTC,
-          arrivalDayOffset: 0,
-          departureDayOffset: 0,
-          distance_from_start: 0,
-        };
-
-        onAddLandmark(landmarkWithDistance);
-        setIsModalOpen(false);
-        return;
-      }
-
-      // Existing logic for non-first landmarks
-      const arrivalTimeUTC = convertLocalToUTC(
-        arrivalHour,
-        arrivalMinute,
-        arrivalAmPm,
-        arrivalDayOffset
-      );
-      const departureTimeUTC = convertLocalToUTC(
-        departureHour,
-        departureMinute,
-        departureAmPm,
-        departureDayOffset
-      );
-      const landmarkWithDistance = {
-        ...selectedLandmark,
-        arrivalTime: arrivalTimeUTC,
-        departureTime: departureTimeUTC,
-        arrivalDayOffset,
-        departureDayOffset,
-        distance_from_start: selectedLandmark?.distance_from_start,
-      };
-
-      onAddLandmark(landmarkWithDistance);
-      highlightSelectedLandmark(selectedLandmark.id.toString());
-      setIsModalOpen(false);
-    };
-
     const handleClose = () => {
       setShowTimeError("");
       setIsModalOpen(false);
@@ -1019,44 +1099,6 @@ const MapComponent = React.forwardRef(
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
             </Box>
-            {/* {isAddingLandmark && (
-              <Tooltip
-                title={showAllBoundaries ? "Hide landmarks" : "Show landmarks"}
-              >
-                <IconButton
-                  onClick={() => {
-                    const newShowState = !showAllBoundaries;
-                    setShowAllBoundaries(newShowState);
-
-                    if (mapInstance.current && isEditing) {
-                      const centerRaw = mapInstance.current
-                        .getView()
-                        .getCenter();
-                      if (centerRaw) {
-                        const center = toLonLat(centerRaw);
-                        const locationaskey = `POINT(${center[0]} ${center[1]})`;
-                        fetchLandmark(
-                          locationaskey,
-                          newShowState
-                            ? []
-                            : selectedLandmarks.map((lm) => lm.id)
-                        );
-                      }
-                    }
-                  }}
-                >
-                  <LocationOnIcon
-                    sx={{ color: showAllBoundaries ? "blue" : undefined }}
-                  />
-                </IconButton>
-              </Tooltip>
-            )} */}
-
-            {/* <Tooltip title="Refresh Map" placement="bottom">
-              <IconButton color="warning" onClick={refreshMap}>
-                <Refresh />
-              </IconButton>
-            </Tooltip> */}
           </Box>
         </Box>
 

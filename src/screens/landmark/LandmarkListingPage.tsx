@@ -665,9 +665,9 @@ const LandmarkListing = () => {
 
       <Box
         sx={{
-          flex: { xs: "0 0 100%", md: "50%" },
+          flex: { xs: "0 0 100%", md: "70%" },
           height: "100vh",
-          maxWidth: { xs: "100%", md: "50%" },
+          maxWidth: { xs: "100%", md: "70%" },
           display: "flex",
           flexDirection: "column",
           gap: 2,

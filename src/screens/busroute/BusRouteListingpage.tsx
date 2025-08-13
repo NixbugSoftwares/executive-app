@@ -19,7 +19,6 @@ import {
   Typography,
   CircularProgress,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
 import {
@@ -43,6 +42,7 @@ interface Route {
   companyId: number;
   name: string;
   start_time: string;
+  status: string;
 }
 
 const BusRouteListing = () => {
@@ -127,6 +127,12 @@ const BusRouteListing = () => {
             id: route.id,
             name: route.name,
             start_time: route.start_time,
+            status:
+              route.status === 1
+                ? "Valid"
+                : route.status === 2
+                ? "Invalid"
+                : "Unknown",
           }));
           setRouteList(formattedRoute);
           setHasNextPage(items.length === rowsPerPage);
@@ -448,7 +454,9 @@ const BusRouteListing = () => {
                         <b>Name</b>
                       </Box>
                     </TableCell>
-
+                    <TableCell sx={{ width: "15%", textAlign: "center" }}>
+                      <b>Status</b>
+                    </TableCell>
                     <TableCell sx={{ width: "20%", textAlign: "center" }}>
                       <b>Actions</b>
                     </TableCell>
@@ -519,7 +527,7 @@ const BusRouteListing = () => {
                             </Typography>
                           </Tooltip>
                         </TableCell>
-
+                        <TableCell align="center">{row.status}</TableCell>
                         <TableCell sx={{ textAlign: "center", boxShadow: 1 }}>
                           <Tooltip
                             title={
@@ -537,10 +545,9 @@ const BusRouteListing = () => {
                               }}
                             >
                               <Button
-                                variant="contained"
+                                variant="outlined"
                                 color="error"
                                 size="small"
-                                startIcon={<DeleteIcon />}
                                 disabled={!canDeleteRoutes}
                                 onClick={() => handleDeleteClick(row)}
                                 sx={{
@@ -631,6 +638,8 @@ const BusRouteListing = () => {
           isEditing={isEditingRoute}
           selectedLandmarks={isEditingRoute ? newRouteLandmarks : landmarks}
           startingTime={routeStartingTime}
+          routeId={selectedRoute?.id}
+          selectedRouteStartingTime={selectedRoute?.start_time}
         />
       </Box>
 
