@@ -96,6 +96,7 @@ interface OperatorListParams {
   email_id?: string;
   phone_number?: string;
   gender?: string;
+  status?: number;
 }
 interface OperatorRoleListParams {
   limit?: number;
@@ -993,7 +994,8 @@ export const operatorListApi = createAsyncThunk(
       phone_number,
       email_id,
       company_id,
-      gender
+      gender,
+      status
     } = params;
 
     const queryParams = {
@@ -1005,6 +1007,7 @@ export const operatorListApi = createAsyncThunk(
       ...(phone_number && { phone_number }),
       ...(email_id && { email_id }),
       ...(gender && { gender }),
+      ...(status && { status }), 
     };
     try {
       const response = await commonApi.apiCall(

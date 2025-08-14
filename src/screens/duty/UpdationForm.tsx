@@ -49,8 +49,8 @@ const statusOptions = [
 
 
 const allowedTransitions: Record<number, number[]> = {
-  1: [2,3],
-  2: [3,4],
+  1: [],
+  2: [3],
   3: [2],
   4: [2],
 };
@@ -131,7 +131,7 @@ const DutyUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
           limit: rowsPerPage,
           offset,
           name: searchText,
-          status_list: [1, 2],
+          // status_list: [1, 2],
           company_id: companyId
         })
       )

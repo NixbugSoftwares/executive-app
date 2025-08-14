@@ -91,7 +91,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
     formState: { errors },
   } = useForm<IAccountFormInputs>();
   const [showPassword, setShowPassword] = useState(false);
-const canAssignRole = useSelector((state: RootState) =>
+  const canAssignRole = useSelector((state: RootState) =>
     state.app.permissions.includes("update_op_role")
   );
   const handleTogglePassword = () => {
@@ -216,10 +216,10 @@ const canAssignRole = useSelector((state: RootState) =>
           Update Account
         </Typography>
         {roleMappingError && (
-                  <Alert severity="error">
-                    This account does not have a role assigned. Please assign a role.
-                  </Alert>
-                )}
+          <Alert severity="error">
+            This account does not have a role assigned. Please assign a role.
+          </Alert>
+        )}
         <Box
           component="form"
           noValidate
@@ -296,36 +296,35 @@ const canAssignRole = useSelector((state: RootState) =>
             helperText={errors.email?.message}
             size="small"
           />
-{ canAssignRole && (
-          <Controller
-            name="role"
-            control={control}
-            rules={{ required: "Role is required" }}
-            render={({ field }) => (
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                select
-                label="Role"
-                value={field.value || ""}
-                onChange={field.onChange}
-                error={!!errors.role}
-                helperText={errors.role?.message}
-                size="small"
-              >
-                {roles.length > 0 ? (
-                  roles.map((role) => (
-                    <MenuItem key={role.id} value={role.id}>
-                      {role.name}
-                    </MenuItem>
-                  ))
-                ) : (
-                  <MenuItem disabled>No roles available</MenuItem>
-                )}
-              </TextField>
-            )}
-          />)}
+          {canAssignRole && (
+            <Controller
+              name="role"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  margin="normal"
+                  fullWidth
+                  select
+                  label="Role"
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  error={!!errors.role}
+                  helperText={errors.role?.message}
+                  size="small"
+                >
+                  {roles.length > 0 ? (
+                    roles.map((role) => (
+                      <MenuItem key={role.id} value={role.id}>
+                        {role.name}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled>No roles available</MenuItem>
+                  )}
+                </TextField>
+              )}
+            />
+          )}
 
           <Controller
             name="gender"
