@@ -26,8 +26,9 @@ const MapModal: React.FC<MapModalProps> = ({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogContent>
+      <DialogContent sx={{ height: "100%", p: 0 }}>
         <UpdateMapComponent
+        
           initialBoundary={initialBoundary}
           onSave={handleSave}
           onClose={onClose}

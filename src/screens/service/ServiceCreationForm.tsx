@@ -107,6 +107,7 @@ const ServiceCreationForm: React.FC<IOperatorCreationFormProps> = ({
           limit: rowsPerPage,
           offset,
           name: searchText,
+          status: 1,
           company_id: companyId,
         })
       )
@@ -179,6 +180,7 @@ const ServiceCreationForm: React.FC<IOperatorCreationFormProps> = ({
           offset,
           name: searchText,
           company_id: companyId,
+          status: 1,
         })
       )
         .unwrap()

@@ -8,7 +8,7 @@ import {
 } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
 import { busStopUpdationApi } from "../../slices/appSlice";
-import { useForm, SubmitHandler,  } from "react-hook-form";
+import { useForm, SubmitHandler } from "react-hook-form";
 import MapModal from "./BUsStopMapModal";
 import {
   showSuccessToast,
@@ -46,7 +46,7 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [updatedLocation, setUpdatedLocation] = useState(busStop.location);
- 
+
   const {
     register,
     handleSubmit,
@@ -78,8 +78,13 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
       const formData = new FormData();
       formData.append("id", busStop.id.toString());
       formData.append("name", data.name);
-      formData.append("location", ensureWktPoint(data.location || updatedLocation));
-      await dispatch(busStopUpdationApi({ busStopId: busStop.id, formData })).unwrap();
+      formData.append(
+        "location",
+        ensureWktPoint(data.location || updatedLocation)
+      );
+      await dispatch(
+        busStopUpdationApi({ busStopId: busStop.id, formData })
+      ).unwrap();
       refreshBusStops("refresh");
       showSuccessToast("Bus Stop updated successfully!");
       onClose();
@@ -114,25 +119,29 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
       <TextField
         label="Name"
         {...register("name", {
-              required: " name is required",
-              maxLength: {
-                value: 128,
-                message: " name cannot exceed 128 characters",
-              },
-              validate: {
-                noNumbers: (value: any) =>
-                  !/[0-9]/.test(value) ||
-                  "Numbers are not allowed in the  name",
-                noSpecialChars: (value: any) =>
-                  !/[^A-Za-z ]/.test(value) ||
-                  "Special characters are not allowed",
-                endsWithLetter: (value: any) =>
-                  /[A-Za-z]$/.test(value) || " name must end with a letter",
-                validPattern: (value: any) =>
-                  /^[A-Za-z]+(?: [A-Za-z]+)*$/.test(value) ||
-                  "Full name should consist of letters separated by single spaces",
-              },
-            })}
+          required: "Name is required",
+          minLength: {
+            value: 4,
+            message: "Name must be at least 4 characters",
+          },
+          maxLength: {
+            value: 128,
+            message: "Name cannot exceed 128 characters",
+          },
+          validate: {
+            allowedCharacters: (value: any) =>
+              /^[A-Za-z0-9\s\-_()]*$/.test(value) ||
+              "Name can only contain letters, numbers, spaces, hyphens (-), underscores (_), and brackets ( )",
+
+            noLeadingTrailingSpaces: (value: any) =>
+              !/^\s|\s$/.test(value) ||
+              "Name should not start or end with a space",
+
+            noConsecutiveSpacesOrSpecials: (value: any) =>
+              !/([\s\-_()]{2,})/.test(value) ||
+              "Name cannot have consecutive spaces or special characters",
+          },
+        })}
         error={!!errors.name}
         helperText={errors.name?.message}
         variant="outlined"
@@ -161,7 +170,6 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
         }}
       />
 
-      
       <Button
         type="submit"
         variant="contained"

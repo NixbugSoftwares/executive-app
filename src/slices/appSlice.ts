@@ -113,6 +113,7 @@ interface BusListParams {
   name?: string;
   registration_number?: string;
   capacity_le?: number;
+  status?: number;
 
 }
 interface RouteListParams {
@@ -121,6 +122,7 @@ interface RouteListParams {
   id?: number;
   name?: string;
   company_id?: number;
+  status?: number;
 }
 
 interface ServiceListParams {
@@ -1312,7 +1314,7 @@ export const busCreationApi = createAsyncThunk(
 export const busListApi = createAsyncThunk(
   "/executive/company/bus",
   async (params: BusListParams, { rejectWithValue }) => {
-    const { limit, offset, id, name, registration_number, capacity_le, company_id } =
+    const { limit, offset, id, name, registration_number, capacity_le, company_id, status } =
       params;
     console.log("companyBusListApi called with:", params);
 
@@ -1324,6 +1326,7 @@ export const busListApi = createAsyncThunk(
       ...(registration_number && { registration_number }),
       ...(capacity_le && { capacity_le }),
       ...(company_id && { company_id }),
+      ...(status && { status }),
     };
     try {
       const response = await commonApi.apiCall(
@@ -1443,7 +1446,7 @@ export const routeLandmarkCreationApi = createAsyncThunk(
 export const busRouteListApi = createAsyncThunk(
   "/company/route",
   async (params: RouteListParams, { rejectWithValue }) => {
-    const{limit,offset,id,name,company_id}=params;
+    const{limit,offset,id,name,company_id,status}=params;
     console.log("companyBusListApi called with:", params);
     const queryParams = {
       limit,
@@ -1451,6 +1454,7 @@ export const busRouteListApi = createAsyncThunk(
       ...(id && { id }),
       ...(name && { name: name }),
       ...(company_id && { company_id }), 
+      ...(status && { status }),
     }
     try {
       

@@ -9,7 +9,9 @@ import { Polygon } from "ol/geom";
 import { fromLonLat, toLonLat } from "ol/proj";
 import { Vector as VectorSource } from "ol/source";
 import { Feature } from "ol";
-import { Style, Stroke, Fill } from "ol/style";
+import { Style, Fill, Stroke } from "ol/style";
+import Text from "ol/style/Text";
+
 import {
   Button,
   Box,
@@ -19,15 +21,13 @@ import {
   Select,
   TextField,
   Typography,
-  IconButton,
-  Tooltip,
 } from "@mui/material";
 import { landmarkListApi } from "../../slices/appSlice";
-import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { Coordinate } from "ol/coordinate";
 import { getArea } from "ol/sphere";
 import { showErrorToast } from "../../common/toastMessageHelper";
 import { useAppDispatch } from "../../store/Hooks";
+
 interface Landmark {
   id: number;
   name: string;
@@ -54,15 +54,14 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
   const boundariesSource = useRef(new VectorSource());
   const mapInstance = useRef<Map | null>(null);
   const drawInteraction = useRef<Draw | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
   const [updatedCoordinates, setUpdatedCoordinates] = useState<string | null>(
     null
   );
   const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">("osm");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [showAllBoundaries, setShowAllBoundaries] = useState(false);
   const [drawingArea, setDrawingArea] = useState<string>("");
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
+
   // Initialize map and layers
   useEffect(() => {
     if (!mapRef.current) return;
@@ -74,15 +73,23 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
         new VectorLayer({
           source: boundariesSource.current,
           zIndex: 1,
-          style: new Style({
-            stroke: new Stroke({
-              color: "rgba(0, 0, 255, 0.7)",
-              width: 2,
+          style: (feature) =>
+            new Style({
+              stroke: new Stroke({
+                color: "rgba(0, 0, 255, 0.7)",
+                width: 2,
+              }),
+              fill: new Fill({
+                color: "rgba(0, 0, 255, 0.1)",
+              }),
+              text: new Text({
+                text: feature.get("name") || "",
+                font: "14px Calibri,sans-serif",
+                fill: new Fill({ color: "darkblue" }),
+                stroke: new Stroke({ color: "#ffffffff", width: 3 }),
+                overflow: true,
+              }),
             }),
-            fill: new Fill({
-              color: "rgba(0, 0, 255, 0.1)",
-            }),
-          }),
         }),
         new VectorLayer({
           source: initialVectorSource.current,
@@ -138,46 +145,24 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
       }
     }
 
+    // Enable drawing by default
+    startDrawing();
+
+    // Fetch landmarks initially
+    fetchLandmarksInView();
+
     return () => {
       map.setTarget(undefined);
     };
   }, [initialBoundary]);
 
-  const fetchLandmarksInView = async () => {
-    if (!mapInstance.current) return;
-    const centerRaw = mapInstance.current.getView().getCenter();
-    if (!centerRaw) return;
-    const center = toLonLat(centerRaw);
-    const [lon, lat] = center;
-    const locationaskey = `POINT(${lon} ${lat})`;
-
-    // Get zoom and set limit like in LandmarkMap.tsx
-    const zoom = mapInstance.current.getView().getZoom()!;
-    const limit = Math.min(100, Math.max(20, Math.floor(zoom * 5))); 
-
-    try {
-      const response = await dispatch(
-        landmarkListApi({
-          location: locationaskey,
-          limit,
-          order_by: 2, // Order by distance
-          order_in: 1, // ASC (nearest first)
-        })
-      ).unwrap();
-      setLandmarks(response.data);
-    } catch (error: any) {
-      showErrorToast(error);
-    }
-  };
   useEffect(() => {
     if (!mapInstance.current) return;
 
     const map = mapInstance.current;
 
     const handleMoveEnd = () => {
-      if (showAllBoundaries) {
-        fetchLandmarksInView();
-      }
+      fetchLandmarksInView();
     };
 
     map.on("moveend", handleMoveEnd);
@@ -185,12 +170,12 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
     return () => {
       map.un("moveend", handleMoveEnd);
     };
-  }, [showAllBoundaries]);
+  }, []);
 
   useEffect(() => {
     boundariesSource.current.clear();
 
-    if (showAllBoundaries && landmarks.length > 0) {
+    if (landmarks.length > 0) {
       landmarks.forEach((landmark) => {
         if (landmark.boundary) {
           try {
@@ -207,6 +192,8 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
             if (coordinates.length >= 3) {
               const polygon = new Polygon([coordinates]);
               const feature = new Feature(polygon);
+              feature.set("name", landmark.name);
+
               if (landmark.boundary !== initialBoundary) {
                 boundariesSource.current.addFeature(feature);
               }
@@ -217,7 +204,33 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
         }
       });
     }
-  }, [showAllBoundaries, landmarks, initialBoundary]);
+  }, [landmarks, initialBoundary]);
+
+  const fetchLandmarksInView = async () => {
+    if (!mapInstance.current) return;
+    const centerRaw = mapInstance.current.getView().getCenter();
+    if (!centerRaw) return;
+    const center = toLonLat(centerRaw);
+    const [lon, lat] = center;
+    const locationaskey = `POINT(${lon} ${lat})`;
+
+    const zoom = mapInstance.current.getView().getZoom()!;
+    const limit = Math.min(100, Math.max(20, Math.floor(zoom * 5)));
+
+    try {
+      const response = await dispatch(
+        landmarkListApi({
+          location: locationaskey,
+          limit,
+          order_by: 2,
+          order_in: 1,
+        })
+      ).unwrap();
+      setLandmarks(response.data);
+    } catch (error: any) {
+      showErrorToast(error);
+    }
+  };
 
   const checkForOverlaps = (newPolygon: Polygon): boolean => {
     if (!landmarks || landmarks.length === 0) return false;
@@ -225,7 +238,6 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
     const newCoords = newPolygon.getCoordinates()[0];
 
     for (const landmark of landmarks) {
-      // Skip the landmark we're currently updating by comparing ID
       if (!landmark.boundary) continue;
       if (landmark.id === editingLandmarkId) continue;
 
@@ -265,7 +277,6 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
     if (!mapInstance.current) return;
 
     vectorSource.current.clear();
-    setIsDrawing(true);
     setUpdatedCoordinates(null);
 
     const draw = new Draw({
@@ -295,7 +306,6 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
           ],
         ]);
 
-        // Calculate area
         const area = getArea(geometry);
         setDrawingArea(`${(area / 1000000).toFixed(2)} km²`);
 
@@ -317,14 +327,12 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
     }
 
     draw.on("drawstart", () => {
-      // Clear any existing features when starting to draw
       vectorSource.current.clear();
     });
 
     draw.on("drawend", (event) => {
       const polygon = event.feature.getGeometry() as Polygon;
 
-      // Validate area
       const area = getArea(polygon);
       if (area < 2 || area > 5000000) {
         showErrorToast("Area must be between 2 m² and 5 km².");
@@ -333,7 +341,6 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
         return;
       }
 
-      // Check for overlaps with other landmarks (excluding the one being updated)
       if (checkForOverlaps(polygon)) {
         showErrorToast(
           "Boundary overlaps with an existing landmark. Please choose a different area."
@@ -352,7 +359,6 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
       const wktCoordinates = `POLYGON ((${formattedCoordinates}))`;
       setUpdatedCoordinates(wktCoordinates);
       setDrawingArea("");
-      setIsDrawing(false);
     });
 
     if (drawInteraction.current) {
@@ -367,7 +373,6 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
     if (updatedCoordinates) {
       onSave(updatedCoordinates);
       vectorSource.current.clear();
-      setShowAllBoundaries(false);
       onClose();
     }
   };
@@ -429,8 +434,6 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
           center: coordinates,
           zoom: 14,
         });
-      } else {
-        // alert("Location not found. Please try a different query.");
       }
     } catch (error: any) {
       showErrorToast(error);
@@ -490,68 +493,26 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
       <Box
         sx={{
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "right",
           alignItems: "center",
           mt: 2,
           flexWrap: "wrap",
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={startDrawing}
-            disabled={isDrawing}
-          >
-            {isDrawing ? "Drawing..." : "Draw New Boundary"}
-          </Button>
+        {drawingArea && (
+          <Typography variant="body2">
+            <strong>Area: {drawingArea}</strong>
+          </Typography>
+        )}
 
-          {isDrawing && (
-            <Typography variant="body2">
-              <strong>Area: {drawingArea}</strong>
-            </Typography>
-          )}
-        </Box>
-
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Tooltip
-            title={
-              showAllBoundaries
-                ? "Hide all landmarks"
-                : "Click to view all landmarks"
-            }
-            arrow
-          >
-            <IconButton
-              onClick={() => {
-                const newValue = !showAllBoundaries;
-                setShowAllBoundaries(newValue);
-                if (newValue) {
-                  fetchLandmarksInView();
-                } else {
-                  setLandmarks([]);
-                  boundariesSource.current.clear();
-                }
-              }}
-              // sx={{ ml: 1 }}
-            >
-              {showAllBoundaries ? (
-                <LocationOnIcon sx={{ color: "blue" }} />
-              ) : (
-                <LocationOnIcon />
-              )}
-            </IconButton>
-          </Tooltip>
-
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={handleConfirm}
-            disabled={!updatedCoordinates}
-          >
-            Confirm
-          </Button>
-        </Box>
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={handleConfirm}
+          disabled={!updatedCoordinates}
+        >
+          Confirm
+        </Button>
       </Box>
     </Box>
   );

@@ -62,7 +62,7 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
   landmarkId,
   boundary,
   landmarkData,
-  onBack
+  onBack,
 }) => {
   console.log(landmarkData);
 
@@ -143,21 +143,25 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       <TextField
         label="Name"
         {...register("name", {
-          required: " name is required",
+          required: "Landmark name is required",
+          minLength: {
+            value: 4,
+            message: "Landmark name must be at least 4 characters",
+          },
           maxLength: {
             value: 32,
-            message: " name cannot exceed 32 characters",
+            message: "Landmark name cannot exceed 32 characters",
           },
           validate: {
-            noNumbers: (value: any) =>
-              !/[0-9]/.test(value) || "Numbers are not allowed in the  name",
-            noSpecialChars: (value: any) =>
-              !/[^A-Za-z ]/.test(value) || "Special characters are not allowed",
-            endsWithLetter: (value: any) =>
-              /[A-Za-z]$/.test(value) || " name must end with a letter",
-            validPattern: (value: any) =>
-              /^[A-Za-z]+(?: [A-Za-z]+)*$/.test(value) ||
-              "Full name should consist of letters separated by single spaces",
+            allowedChars: (value: any) =>
+              /^[A-Za-z0-9\s\-_()]*$/.test(value) ||
+              "Name can only contain letters, numbers, spaces, hyphens (-), underscores (_), and brackets ( )",
+            noLeadingTrailingSpaces: (value: any) =>
+              !/^\s|\s$/.test(value) ||
+              "Name should not start or end with a space",
+            noConsecutiveSpecials: (value: any) =>
+              !/([\s\-_()]{2,})/.test(value) ||
+              "Name cannot have consecutive spaces or special characters",
           },
         })}
         error={!!errors.name}

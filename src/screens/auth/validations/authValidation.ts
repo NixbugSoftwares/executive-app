@@ -233,13 +233,15 @@ export const roleCreationSchema = yup.object().shape({
 //*********************************************************landmark creating validation schema********************************************** 
 
 export const landMarkAddSchema = yup.object().shape({
-  name: yup.string().required("landmark name  is required")
-  .min(4, "landmark name must be at least 4 characters")
-  .max(32, "landmark name cannot exceed 32 characters")
-  .test(
+  name: yup
+    .string()
+    .required("landmark name is required")
+    .min(4, "landmark name must be at least 4 characters")
+    .max(32, "landmark name cannot exceed 32 characters")
+    .test(
       "allowed-characters",
-      "Name can only contain letters, spaces, hyphens (-), underscores (_), and brackets ( )",
-      (value) => !value || /^[A-Za-z\s\-_()]*$/.test(value)
+      "Name can only contain letters, numbers, spaces, hyphens (-), underscores (_), and brackets ( )",
+      (value) => !value || /^[A-Za-z0-9\s\-_()]*$/.test(value) // ✅ added 0-9
     )
     .test(
       "no-leading-trailing-spaces",
@@ -253,17 +255,20 @@ export const landMarkAddSchema = yup.object().shape({
     ),
 
   boundary: yup.string().required("Boundary is required"),
-  type:yup.string().optional(),
-})
+  type: yup.string().optional(),
+});
+
 
 export const busStopCreationSchema = yup.object().shape({
-  name: yup.string().required("Bus stop name is required")
-  .min(4, "Bus stop name must be at least 4 characters")
-  .max(128, "Bus stop name cannot exceed 128 characters")
-  .test(
+  name: yup
+    .string()
+    .required("Bus stop name is required")
+    .min(4, "Bus stop name must be at least 4 characters")
+    .max(128, "Bus stop name cannot exceed 128 characters")
+    .test(
       "allowed-characters",
-      "Name can only contain letters, spaces, hyphens (-), underscores (_), and brackets ( )",
-      (value) => !value || /^[A-Za-z\s\-_()]*$/.test(value)
+      "Name can only contain letters, numbers, spaces, hyphens (-), underscores (_), and brackets ( )",
+      (value) => !value || /^[A-Za-z0-9\s\-_()]*$/.test(value) // ✅ Added 0-9
     )
     .test(
       "no-leading-trailing-spaces",
@@ -275,9 +280,11 @@ export const busStopCreationSchema = yup.object().shape({
       "Name cannot have consecutive spaces or special characters",
       (value) => !value || !/([\s\-_()]{2,})/.test(value)
     ),
+
   location: yup.string().required("Location coordinates are required"),
   landmark_id: yup.string().required("Landmark ID is required"),
-})
+});
+
 
 
 //*********************************************************company  creating validation schema**********************************************

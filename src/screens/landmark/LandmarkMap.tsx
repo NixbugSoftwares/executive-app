@@ -12,23 +12,19 @@ import {
   Box,
   Button,
   FormControl,
-  IconButton,
   InputLabel,
   MenuItem,
   Select,
   SelectChangeEvent,
   TextField,
-  Tooltip,
   Typography,
 } from "@mui/material";
-import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { useNavigate } from "react-router-dom";
 import * as ol from "ol";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
 import { Coordinate } from "ol/coordinate";
 import { Style, Stroke, Fill, Text } from "ol/style";
-import { Refresh } from "@mui/icons-material";
 import { getArea } from "ol/sphere";
 import Icon from "ol/style/Icon";
 import { showErrorToast, showInfoToast } from "../../common/toastMessageHelper";
@@ -36,8 +32,6 @@ import busstopimage from "../../assets/png/busstopimage.png";
 import { Landmark, BusStop } from "../../types/type";
 import { useAppDispatch } from "../../store/Hooks";
 import { landmarkListApi } from "../../slices/appSlice";
-import { intersects } from 'ol/extent';
-
 interface MapComponentProps {
   onDrawEnd: (coordinates: string) => void;
   isOpen: boolean;
@@ -90,12 +84,18 @@ const MapComponent: React.FC<MapComponentProps> = ({
     state.app.permissions.includes("delete_landmark")
   );
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [showAllBoundaries, setShowAllBoundaries] = useState(false);
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
   const isProgrammaticMove = useRef(false);
   const [shouldFitView, setShouldFitView] = useState(false);
-  //*********************Initialize the map**************************************
+  const [isDrawingFinished, setIsDrawingFinished] = useState(false);
+  const [drawnCoordinates, setDrawnCoordinates] = useState<string>("");
+  const [drawnFeature, setDrawnFeature] = useState<ol.Feature<Polygon> | null>(
+    null
+  );
+  const isInitialLoad = useRef(true);
+const lastSelectedLandmarkId = useRef<number | null>(null);
 
+  //*********************Initialize the map**************************************
   const initializeMap = () => {
     if (!mapRef.current) return null;
 
@@ -124,9 +124,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       if (currentZoom !== previousZoom) {
         previousZoom = currentZoom;
-        if (showAllBoundaries) {
-          fetchLandmarksInView();
-        }
+        fetchLandmarksInView();
       }
 
       isProgrammaticMove.current = false;
@@ -151,10 +149,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
         if (currentZoom !== previousZoom) {
           previousZoom = currentZoom;
-
-          if (showAllBoundaries) {
-            fetchLandmarksInView();
-          }
+          fetchLandmarksInView();
         }
 
         isProgrammaticMove.current = false;
@@ -166,7 +161,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         mapInstance.current.un("moveend", moveEndKey);
       }
     };
-  }, [isOpen, onDrawEnd, navigate, showAllBoundaries, landmarkRefreshKey]);
+  }, [isOpen, onDrawEnd, navigate, landmarkRefreshKey]);
 
   const fetchLandmarksInView = async () => {
     if (!mapInstance.current || isProgrammaticMove.current) return;
@@ -195,28 +190,30 @@ const MapComponent: React.FC<MapComponentProps> = ({
       showErrorToast(error);
     }
   };
-const parseWKTBoundary = (wkt: string): [number, number][] => {
-  try {
-    // Handle different WKT formats
-    const cleaned = wkt
-      .replace(/POLYGON\s*\(\(\s*/, "")
-      .replace(/\s*\)\)/, "")
-      .trim();
-    
-    if (!cleaned) throw new Error("Empty WKT after cleaning");
-    
-    return cleaned.split(",").map(pair => {
-      const coords = pair.trim().split(/\s+/);
-      if (coords.length !== 2) throw new Error("Invalid coordinate pair");
-      const [lon, lat] = coords.map(Number);
-      if (isNaN(lon) || isNaN(lat)) throw new Error("Invalid coordinates");
-      return fromLonLat([lon, lat]) as [number, number];
-    });
-  } catch (error) {
-    console.error("Failed to parse WKT:", wkt, error);
-    throw error;
-  }
-};
+
+  const parseWKTBoundary = (wkt: string): [number, number][] => {
+    try {
+      // Handle different WKT formats
+      const cleaned = wkt
+        .replace(/POLYGON\s*\(\(\s*/, "")
+        .replace(/\s*\)\)/, "")
+        .trim();
+
+      if (!cleaned) throw new Error("Empty WKT after cleaning");
+
+      return cleaned.split(",").map((pair) => {
+        const coords = pair.trim().split(/\s+/);
+        if (coords.length !== 2) throw new Error("Invalid coordinate pair");
+        const [lon, lat] = coords.map(Number);
+        if (isNaN(lon) || isNaN(lat)) throw new Error("Invalid coordinates");
+        return fromLonLat([lon, lat]) as [number, number];
+      });
+    } catch (error) {
+      console.error("Failed to parse WKT:", wkt, error);
+      throw error;
+    }
+  };
+
   const parseWKTPoint = (wkt: string): [number, number] | null => {
     try {
       const cleaned = wkt
@@ -239,7 +236,6 @@ const parseWKTBoundary = (wkt: string): [number, number][] => {
   const clearBoundaries = () => {
     vectorSource.current.clear();
     setDrawingArea("");
-    setShowAllBoundaries(false);
     setIsAddingBusStop(false);
     removePointInteraction();
   };
@@ -248,21 +244,6 @@ const parseWKTBoundary = (wkt: string): [number, number][] => {
     if (mapInstance.current && pointInteraction.current) {
       mapInstance.current.removeInteraction(pointInteraction.current);
       pointInteraction.current = null;
-    }
-  };
-
-  const handleLocationIconClick = async () => {
-    if (!mapInstance.current) return;
-
-    const newShowAllValue = !showAllBoundaries;
-    setShowAllBoundaries(newShowAllValue);
-
-    if (newShowAllValue) {
-      await fetchLandmarksInView(); // Load landmarks for current view
-      setShouldFitView(true);
-    } else {
-      setLandmarks([]); // Clear landmarks when toggle is off
-      vectorSource.current.clear();
     }
   };
 
@@ -306,408 +287,413 @@ const parseWKTBoundary = (wkt: string): [number, number][] => {
   }, [selectedBoundary, selectedLandmark]);
 
   //*****************Combined display logic for landmarks and bus stops*********
-  useEffect(() => {
-    if (!mapInstance.current) return;
-    vectorSource.current.clear();
-    const features: ol.Feature[] = [];
+useEffect(() => {
+  if (!mapInstance.current) return;
 
-    // 1. Show all landmarks if toggle is active
-    if (showAllBoundaries && landmarks.length > 0) {
-      landmarks.forEach((landmark) => {
-        if (!landmark.boundary) return;
-        try {
-          const coordinates = parseWKTBoundary(landmark.boundary);
-          const polygon = new Polygon([coordinates]);
-          const feature = new ol.Feature(polygon);
+  vectorSource.current.clear();
+  const features: ol.Feature[] = [];
 
-          const isSelected = selectedLandmark?.id === landmark.id;
+  // ===== 1. Drawn polygon before saving =====
+  if (drawnFeature) {
+    drawnFeature.setStyle(
+      new Style({
+        stroke: new Stroke({
+          color: "rgba(17, 98, 105, 1)",
+          width: 4,
+        }),
+        fill: new Fill({
+          color: "rgba(16, 219, 219, 0.2)",
+        }),
+      })
+    );
+    features.push(drawnFeature);
+  }
 
-          // Create polygon style
-          feature.setStyle(
-            new Style({
-              stroke: new Stroke({
-                color: isSelected ? "rgb(255, 149, 0)" : "rgba(0, 0, 255, 0.7)",
-                width: isSelected ? 3 : 2,
-              }),
-              fill: new Fill({
-                color: isSelected
-                  ? "rgba(221, 201, 75, 0.3)"
-                  : "rgba(0, 0, 255, 0.1)",
-              }),
-            })
-          );
+  // ===== 2. All landmarks =====
+  if (landmarks.length > 0) {
+    landmarks.forEach((landmark) => {
+      if (!landmark.boundary) return;
 
-          features.push(feature);
-
-          // Add label for each landmark when showing all boundaries
-          const interiorPoint = polygon.getInteriorPoint();
-          const labelFeature = new ol.Feature(interiorPoint);
-
-          labelFeature.setStyle(
-            new Style({
-              text: new Text({
-                text: landmark.name || "Landmark",
-                font: "bold 12px Arial",
-                fill: new Fill({ color: "darkblue" }),
-                stroke: new Stroke({ color: "#FFF", width: 3 }),
-                offsetY: 0,
-                textAlign: "center",
-              }),
-            })
-          );
-
-          features.push(labelFeature);
-        } catch (err) {
-          console.error(`Error processing landmark ${landmark.id}:`, err);
-        }
-      });
-    }
-
-    // 2. Show specific boundary from selectedBoundary string
-    else if (selectedBoundary) {
       try {
-        const coordinates = selectedBoundary
-          .split(",")
-          .map((coord) => coord.trim().split(" ").map(Number))
-          .map((coord) => fromLonLat(coord));
-
+        const coordinates = parseWKTBoundary(landmark.boundary);
         const polygon = new Polygon([coordinates]);
         const feature = new ol.Feature(polygon);
 
-        // Get the polygon's extent (bounding box)
-        const extent = polygon.getExtent();
-        const [minX, _minY, maxX, maxY] = extent;
+        const isSelected = selectedLandmark?.id === landmark.id;
 
-        // Calculate top-center position
-        const centerX = (minX + maxX) / 2;
-        const topY = maxY;
+        feature.setStyle(
+          new Style({
+            stroke: new Stroke({
+              color: isSelected ? "rgb(255, 149, 0)" : "rgba(0, 0, 255, 0.7)",
+              width: isSelected ? 3 : 2,
+            }),
+            fill: new Fill({
+              color: isSelected
+                ? "rgba(221, 201, 75, 0.3)"
+                : "rgba(0, 0, 255, 0.1)",
+            }),
+          })
+        );
 
-        // Create a point feature for the label
-        const labelFeature = new ol.Feature({
-          geometry: new Point([centerX, topY]),
-          name: selectedLandmark?.name || "Landmark",
-        });
+        features.push(feature);
 
-        // Style for the label
+        // Landmark label
+        const interiorPoint = polygon.getInteriorPoint();
+        const labelFeature = new ol.Feature(interiorPoint);
+
         labelFeature.setStyle(
           new Style({
             text: new Text({
-              text: `LANDMARK NAME: ${(
-                selectedLandmark?.name || "Landmark"
-              ).toUpperCase()}`,
-              font: "bold 15px Arial",
+              text: landmark.name || "Landmark",
+              font: "bold 12px Arial",
               fill: new Fill({ color: "darkblue" }),
               stroke: new Stroke({ color: "#FFF", width: 3 }),
-              offsetY: -10,
               textAlign: "center",
             }),
           })
         );
 
-        // Style for the polygon
-        feature.setStyle(
-          new Style({
-            stroke: new Stroke({ color: "rgb(255, 149, 0)", width: 3 }),
-            fill: new Fill({ color: "rgba(221, 201, 75, 0.3)" }),
-          })
-        );
-
-        features.push(feature);
         features.push(labelFeature);
-      } catch (error) {
-        console.error("Error parsing selectedBoundary:", error);
+      } catch (err) {
+        console.error(`Error processing landmark ${landmark.id}:`, err);
       }
+    });
+  }
+
+  // ===== 3. Selected boundary (manual boundary string) =====
+  if (selectedBoundary) {
+    try {
+      const coordinates = selectedBoundary
+        .split(",")
+        .map((coord) => coord.trim().split(" ").map(Number))
+        .map((coord) => fromLonLat(coord));
+
+      const polygon = new Polygon([coordinates]);
+      const feature = new ol.Feature(polygon);
+
+      // Label for top-center
+      const extent = polygon.getExtent();
+      const [minX, , maxX, maxY] = extent;
+      const centerX = (minX + maxX) / 2;
+      const topY = maxY;
+
+      const labelFeature = new ol.Feature({
+        geometry: new Point([centerX, topY]),
+        name: selectedLandmark?.name || "Landmark",
+      });
+
+      labelFeature.setStyle(
+        new Style({
+          text: new Text({
+            text: `LANDMARK NAME: ${(selectedLandmark?.name || "Landmark").toUpperCase()}`,
+            font: "bold 15px Arial",
+            fill: new Fill({ color: "darkblue" }),
+            stroke: new Stroke({ color: "#FFF", width: 3 }),
+            offsetY: -10,
+            textAlign: "center",
+          }),
+        })
+      );
+
+      feature.setStyle(
+        new Style({
+          stroke: new Stroke({ color: "rgb(255, 149, 0)", width: 3 }),
+          fill: new Fill({ color: "rgba(221, 201, 75, 0.3)" }),
+        })
+      );
+
+      features.push(feature, labelFeature);
+    } catch (error) {
+      console.error("Error parsing selectedBoundary:", error);
     }
-    // 3. Show selected landmark only (if not all)
-    else if (selectedLandmark?.boundary && !showAllBoundaries) {
-      try {
-        const coordinates = parseWKTBoundary(selectedLandmark.boundary);
-        const polygon = new Polygon([coordinates]);
-        const feature = new ol.Feature(polygon);
+  }
+  // ===== 4. Selected landmark =====
+  else if (selectedLandmark?.boundary) {
+    try {
+      const coordinates = parseWKTBoundary(selectedLandmark.boundary);
+      const polygon = new Polygon([coordinates]);
+      const feature = new ol.Feature(polygon);
 
-        // Debugging logs
-        console.log("Selected Landmark:", selectedLandmark);
-        console.log("Landmark name:", selectedLandmark.name);
-        console.log("Boundary coordinates:", coordinates);
-
-        // Create style with conditional text
-        const landmarkName = selectedLandmark.name || "Unnamed Landmark";
-        const style = new Style({
+      feature.setStyle(
+        new Style({
           stroke: new Stroke({ color: "rgb(255, 149, 0)", width: 3 }),
           fill: new Fill({ color: "rgba(221, 201, 75, 0.3)" }),
           text: new Text({
-            text: landmarkName,
+            text: selectedLandmark.name || "Unnamed Landmark",
             font: "bold 12px Arial",
             fill: new Fill({ color: "#000" }),
             stroke: new Stroke({ color: "#FFF", width: 3 }),
             offsetY: -25,
           }),
-        });
-
-        feature.setStyle(style);
-        features.push(feature);
-      } catch (err) {
-        console.error("Error parsing selectedLandmark:", {
-          error: err,
-          landmark: selectedLandmark,
-        });
-      }
-    }
-
-    // 4. Bus Stops inside selected landmark
-    if (busStops && selectedLandmark && !showAllBoundaries) {
-      const busStopFeatures = busStops
-        .filter((stop) => stop.landmark_id === selectedLandmark.id)
-        .map((stop) => {
-          try {
-            const parsed = parseWKTPoint(stop.location);
-            if (!parsed) return null;
-
-            const [lon, lat] = parsed;
-            const point = new Point(fromLonLat([lon, lat]));
-            const feature = new ol.Feature(point);
-
-            feature.setStyle(
-              new Style({
-                image: new Icon({
-                  src: busstopimage,
-                  scale: 0.1,
-                  anchor: [0.5, 1],
-                }),
-                text: new Text({
-                  text: ` ${stop.name || "Bus Stop"}`,
-                  font: "bold 12px Arial",
-                  fill: new Fill({ color: "#000" }),
-                  stroke: new Stroke({ color: "#FFF", width: 3 }),
-                  offsetY: -25,
-                }),
-              })
-            );
-
-            return feature;
-          } catch (e) {
-            console.error("Error creating bus stop feature:", e);
-            return null;
-          }
         })
-        .filter(Boolean);
+      );
 
-      console.log(`Created ${busStopFeatures.length} bus stop features`);
-      features.push(...busStopFeatures.map((feature) => feature!));
+      features.push(feature);
+    } catch (err) {
+      console.error("Error parsing selectedLandmark:", err);
     }
+  }
 
-    // 5. Add all features
-    if (features.length > 0) {
-      vectorSource.current.addFeatures(features);
+  // ===== 5. Bus stops inside selected landmark =====
+  if (busStops && selectedLandmark) {
+    const busStopFeatures = busStops
+      .filter((stop) => stop.landmark_id === selectedLandmark.id)
+      .map((stop) => {
+        try {
+          const parsed = parseWKTPoint(stop.location);
+          if (!parsed) return null;
 
-      // Only fit view if we explicitly want to (for selected boundaries/landmarks)
-      // or when first showing all landmarks
-      if (
-        selectedBoundary ||
-        selectedLandmark ||
-        (showAllBoundaries && shouldFitView)
-      ) {
-        const extent = vectorSource.current.getExtent();
-        if (extent[0] !== Infinity) {
-          isProgrammaticMove.current = true;
-          mapInstance.current.getView().fit(extent, {
-            padding: [50, 50, 50, 50],
-            duration: 1000,
-            callback: () => {
-              isProgrammaticMove.current = false;
-              setShouldFitView(false); // Reset after fitting
-            },
-          });
+          const [lon, lat] = parsed;
+          const point = new Point(fromLonLat([lon, lat]));
+          const feature = new ol.Feature(point);
+
+          feature.setStyle(
+            new Style({
+              image: new Icon({
+                src: busstopimage,
+                scale: 0.1,
+                anchor: [0.5, 1],
+              }),
+              text: new Text({
+                text: ` ${stop.name || "Bus Stop"}`,
+                font: "bold 12px Arial",
+                fill: new Fill({ color: "#000" }),
+                stroke: new Stroke({ color: "#FFF", width: 3 }),
+                offsetY: -25,
+              }),
+            })
+          );
+
+          return feature;
+        } catch (e) {
+          console.error("Error creating bus stop feature:", e);
+          return null;
         }
+      })
+      .filter(Boolean) as ol.Feature[];
+
+    features.push(...busStopFeatures);
+  }
+
+  // ===== 6. Add features =====
+   if (features.length > 0) {
+    vectorSource.current.addFeatures(features);
+
+    // Only fit view if:
+    // 1. It's the initial load, OR
+    // 2. The selected landmark has changed, OR
+    // 3. We explicitly requested a fit (shouldFitView)
+    const landmarkChanged = selectedLandmark && 
+                          selectedLandmark.id !== lastSelectedLandmarkId.current;
+    
+    if (isInitialLoad.current || landmarkChanged || shouldFitView) {
+      const extent = vectorSource.current.getExtent();
+      if (extent[0] !== Infinity) {
+        isProgrammaticMove.current = true;
+        mapInstance.current.getView().fit(extent, {
+          padding: [50, 50, 50, 50],
+          duration: 1000,
+          callback: () => {
+            isProgrammaticMove.current = false;
+            isInitialLoad.current = false;
+            lastSelectedLandmarkId.current = selectedLandmark?.id || null;
+            setShouldFitView(false);
+          }
+        });
       }
     }
-  }, [
-    showAllBoundaries,
-    landmarks,
-    selectedBoundary,
-    selectedLandmark,
-    busStops,
-    shouldFitView,
-  ]);
+  }
+}, [landmarks, selectedLandmark?.id, shouldFitView, drawnFeature])
 
   //************************check for overlaps******************************************************
 
 const checkForOverlaps = (newPolygon: Polygon): boolean => {
-  if (!landmarks || landmarks.length === 0) return false;
-
-  const newExtent = newPolygon.getExtent();
-  const newCoords = newPolygon.getCoordinates()[0];
-
-  for (const landmark of landmarks) {
-    if (!landmark.boundary) continue;
-
-    try {
-      const existingCoords = parseWKTBoundary(landmark.boundary);
-      const existingPolygon = new Polygon([existingCoords]);
-      const existingExtent = existingPolygon.getExtent();
-
-      // 1. First do a quick bounding box check
-      if (!intersects(newExtent, existingExtent)) {
-        continue;
-      }
-
-      // 2. Check if any point of new polygon is inside existing polygon
-      for (const coord of newCoords) {
-        if (existingPolygon.intersectsCoordinate(coord)) {
-          return true;
-        }
-      }
-
-      // 3. Check if any point of existing polygon is inside new polygon
-      const existingFlatCoords = existingPolygon.getCoordinates()[0];
-      for (const coord of existingFlatCoords) {
-        if (newPolygon.intersectsCoordinate(coord)) {
-          return true;
-        }
-      }
-
-      // 4. Check if edges intersect (more thorough but expensive)
-      if (polygonsIntersect(newPolygon, existingPolygon)) {
-        return true;
-      }
-
-    } catch (error) {
-      console.error(`Error processing landmark ${landmark.id}:`, error);
-      return true; // Assume overlap if we can't parse
-    }
-  }
-
-  return false;
-};
-
-// Helper function to check if two polygons intersect
-const polygonsIntersect = (poly1: Polygon, poly2: Polygon): boolean => {
-  const coords1 = poly1.getCoordinates()[0];
-  const coords2 = poly2.getCoordinates()[0];
+  const features = vectorSource.current.getFeatures();
   
-  // Check each edge of poly1 against each edge of poly2
-  for (let i = 0; i < coords1.length - 1; i++) {
-    for (let j = 0; j < coords2.length - 1; j++) {
-      if (edgesIntersect(
-        coords1[i] as [number, number], coords1[i+1] as [number, number],
-        coords2[j] as [number, number], coords2[j+1] as [number, number]
-      )) {
-        return true;
-      }
+  for (const feature of features) {
+    const geometry = feature.getGeometry();
+    if (!(geometry instanceof Polygon)) continue;
+
+    if (
+      geometry.intersectsExtent(newPolygon.getExtent()) &&
+      polygonsIntersect(newPolygon, geometry)
+    ) {
+      return true;
     }
   }
   return false;
 };
 
-// Helper function to check if two line segments intersect
-const edgesIntersect = (
-  a1: [number, number],
-  a2: [number, number],
-  b1: [number, number],
-  b2: [number, number]
-): boolean => {
-  // Implementation of line segment intersection check
-  // Using the cross product method
-  const ccw = (a: [number, number], b: [number, number], c: [number, number]) => {
-    return (c[1]-a[1])*(b[0]-a[0]) > (b[1]-a[1])*(c[0]-a[0]);
+
+  // Helper function to check if two polygons intersect
+  const polygonsIntersect = (poly1: Polygon, poly2: Polygon): boolean => {
+    const coords1 = poly1.getCoordinates()[0];
+    const coords2 = poly2.getCoordinates()[0];
+
+    // Check each edge of poly1 against each edge of poly2
+    for (let i = 0; i < coords1.length - 1; i++) {
+      for (let j = 0; j < coords2.length - 1; j++) {
+        if (
+          edgesIntersect(
+            coords1[i] as [number, number],
+            coords1[i + 1] as [number, number],
+            coords2[j] as [number, number],
+            coords2[j + 1] as [number, number]
+          )
+        ) {
+          return true;
+        }
+      }
+    }
+    return false;
   };
-  
-  return ccw(a1, b1, b2) !== ccw(a2, b1, b2) && 
-         ccw(a1, a2, b1) !== ccw(a1, a2, b2);
-};
+
+  // Helper function to check if two line segments intersect
+  const edgesIntersect = (
+    a1: [number, number],
+    a2: [number, number],
+    b1: [number, number],
+    b2: [number, number]
+  ): boolean => {
+    // Implementation of line segment intersection check
+    // Using the cross product method
+    const ccw = (
+      a: [number, number],
+      b: [number, number],
+      c: [number, number]
+    ) => {
+      return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0]);
+    };
+
+    return (
+      ccw(a1, b1, b2) !== ccw(a2, b1, b2) && ccw(a1, a2, b1) !== ccw(a1, a2, b2)
+    );
+  };
 
   //*****************************landmark drawing functions*********************
-  const toggleDrawing = () => {
-    if (!mapInstance.current) return;
 
-    if (isDrawing) {
-      if (drawInteraction.current) {
-        mapInstance.current.removeInteraction(drawInteraction.current);
+const startDrawing = () => {
+  if (!mapInstance.current) return;
+
+  // Clear any existing draw interaction
+  removeDrawInteraction();
+  
+  // Clear any existing drawn feature
+  clearDrawnFeature();
+
+  const draw = new Draw({
+    source: vectorSource.current,
+    type: "Circle",
+    geometryFunction: (coordinates, geometry) => {
+      if (!geometry) {
+        geometry = new Polygon([[]]);
       }
+      const coords = coordinates as Coordinate[];
+      const start = coords[0];
+      const end = coords[1];
+      const minX = Math.min(start[0], end[0]);
+      const maxX = Math.max(start[0], end[0]);
+      const minY = Math.min(start[1], end[1]);
+      const maxY = Math.max(start[1], end[1]);
+
+      geometry.setCoordinates([
+        [
+          [minX, minY],
+          [maxX, minY],
+          [maxX, maxY],
+          [minX, maxY],
+          [minX, minY],
+        ],
+      ]);
+
+      const area = getArea(geometry);
+      setDrawingArea(`${(area / 1000000).toFixed(2)} km²`);
+
+      return geometry;
+    },
+    style: new Style({
+      stroke: new Stroke({ color: "rgba(0, 0, 255, 1)", width: 2 }),
+      fill: new Fill({ color: "rgba(0, 0, 255, 0.2)" }),
+    }),
+  });
+
+  draw.on("drawend", (event) => {
+    const polygon = event.feature.getGeometry() as Polygon;
+
+    const area = getArea(polygon);
+    if (area < 2 || area > 5000000) {
+      showErrorToast("Area must be between 2 m² and 5 km².");
+      vectorSource.current.clear();
       setDrawingArea("");
-    } else {
-      const draw = new Draw({
-        source: vectorSource.current,
-        type: "Circle",
-        geometryFunction: (coordinates, geometry) => {
-          if (!geometry) {
-            geometry = new Polygon([[]]);
-          }
-
-          const coords = coordinates as Coordinate[];
-          const start = coords[0];
-          const end = coords[1];
-          const minX = Math.min(start[0], end[0]);
-          const maxX = Math.max(start[0], end[0]);
-          const minY = Math.min(start[1], end[1]);
-          const maxY = Math.max(start[1], end[1]);
-
-          geometry.setCoordinates([
-            [
-              [minX, minY],
-              [maxX, minY],
-              [maxX, maxY],
-              [minX, maxY],
-              [minX, minY],
-            ],
-          ]);
-
-          const area = getArea(geometry);
-          setDrawingArea(`${(area / 1000000).toFixed(2)} km²`);
-
-          return geometry;
-        },
-        style: new Style({
-          stroke: new Stroke({
-            color: "rgba(0, 0, 255, 1)",
-            width: 2,
-          }),
-          fill: new Fill({
-            color: "rgba(0, 0, 255, 0.2)",
-          }),
-        }),
-      });
-
-      draw.on("drawend", (event) => {
-        const polygon = event.feature.getGeometry() as Polygon;
-
-        const area = getArea(polygon);
-        if (area < 2 || area > 5000000) {
-          showErrorToast("Area must be between 2 m² and 5 km².");
-          vectorSource.current.clear();
-          setDrawingArea("");
-          return;
-        }
-
-        if (checkForOverlaps(polygon)) {
-          showErrorToast(
-            "Boundary overlaps with an existing landmark. Please choose a different area."
-          );
-          vectorSource.current.clear();
-          setDrawingArea("");
-          return;
-        }
-
-        const coordinates = polygon
-          .getCoordinates()[0]
-          .map((coord) => toLonLat(coord));
-        const formattedCoordinates = coordinates
-          .map((coord) => coord.join(" "))
-          .join(",");
-
-        onDrawEnd(formattedCoordinates);
-      });
-
-      drawInteraction.current = draw;
-      mapInstance.current.addInteraction(draw);
+      return;
     }
 
-    const newDrawingState = !isDrawing;
-    setIsDrawing(newDrawingState);
-    onDrawingChange(newDrawingState);
-    showAllBoundaries && setShowAllBoundaries(false);
-  };
+    if (checkForOverlaps(polygon)) {
+      showErrorToast(
+        "Boundary overlaps with an existing landmark. Please choose a different area."
+      );
+      vectorSource.current.clear();
+      setDrawingArea("");
+      return;
+    }
 
+    setDrawnFeature(event.feature as ol.Feature<Polygon>);
+    const coordinates = polygon
+      .getCoordinates()[0]
+      .map((coord) => toLonLat(coord));
+    const formattedCoordinates = coordinates
+      .map((coord) => coord.join(" "))
+      .join(",");
+
+    setDrawnCoordinates(formattedCoordinates);
+    setIsDrawing(false);
+    setIsDrawingFinished(true);
+    onDrawingChange(false);
+  });
+
+  drawInteraction.current = draw;
+  mapInstance.current.addInteraction(draw);
+  setIsDrawing(true);
+  onDrawingChange(true);
+  setDrawingArea(""); // Reset area display when starting new drawing
+};
+  const removeDrawInteraction = () => {
+  if (mapInstance.current && drawInteraction.current) {
+    mapInstance.current.removeInteraction(drawInteraction.current);
+    drawInteraction.current = null;
+    setIsDrawing(false);
+    onDrawingChange(false);
+  }
+};
+const clearDrawnFeature = () => {
+  if (drawnFeature) {
+    vectorSource.current.removeFeature(drawnFeature);
+    setDrawnFeature(null);
+  }
+  setDrawnCoordinates("");
+  setDrawingArea(""); // Clear the area display
+  setIsDrawingFinished(false);
+  setIsDrawing(false); // Ensure drawing state is reset
+};
+
+useEffect(() => {
+  if (!mapInstance.current) {
+    mapInstance.current = initializeMap();
+    fetchLandmarksInView();
+  }
+  
+  if (selectedLandmark) {
+    removeDrawInteraction();
+    return;
+  }
+
+  // Only start drawing if conditions are met
+  if (canCreateLandmark && !selectedLandmark) {
+    if (!isDrawing && !isDrawingFinished) {
+      startDrawing();
+    }
+  }
+}, [canCreateLandmark, isDrawing, isDrawingFinished, selectedLandmark]);
   //*********************************bus stop adding functions************************************
   const toggleBusStopAdding = () => {
     if (!mapInstance.current || !selectedLandmark) return;
@@ -780,7 +766,6 @@ const edgesIntersect = (
   };
 
   //*******************************searching for location****************************
-
   const handleSearch = async () => {
     if (!searchQuery || !mapInstance.current) return;
 
@@ -846,6 +831,7 @@ const edgesIntersect = (
       setMapType(type);
     }
   };
+
   return (
     <Box height="100%">
       <Box
@@ -899,73 +885,54 @@ const edgesIntersect = (
               Search
             </Button>
           </Box>
-          {canCreateLandmark && (
-                <Button
-                  size="small"
-                  color={isDrawing ? "secondary" : "primary"}
-                  variant="contained"
-                  onClick={toggleDrawing}
-                  disabled={!canCreateLandmark}
-                  sx={{
-                    backgroundColor: !canCreateLandmark
-                      ? "#6c87b7 !important"
-                      : "#00008B",
-                    color: "white",
-                    "&.Mui-disabled": {
-                      backgroundColor: "#6c87b7 !important",
-                      color: "#ffffff99",
-                    },
-                  }}
-                >
-                  {isDrawing ? "Finish " : "Add Landmark"}
-                </Button>)}
+          {canCreateLandmark && isDrawingFinished && (
+            <Box sx={{ display: "flex", gap: 1 }}>
+              
+              <Button
+                size="small"
+                color="primary"
+                variant="contained"
+                onClick={() => {
+                  if (drawnCoordinates) {
+                    onDrawEnd(drawnCoordinates);
+                    clearDrawnFeature();
+                  }
+                }}
+                sx={{
+                  backgroundColor: "#00008B",
+                  color: "white",
+                }}
+              >
+                Add Landmark
+              </Button>
+              <Button
+                size="small"
+                color="error"
+                variant="outlined"
+                onClick={clearDrawnFeature}
+              >
+                Cancel
+              </Button>
+            </Box>
+          )}
 
           {selectedLandmark && (
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-             {(canCreateLandmark||canUpdateLandmark) && (
-                  <Button
-                    size="small"
-                    color={isAddingBusStop ? "secondary" : "primary"}
-                    variant="contained"
-                    onClick={toggleBusStopAdding}
-                    sx={{
-                      backgroundColor
-                          : "#00008B",
-                      color: "white",
-                     
-                    }}
-                  >
-                    {isAddingBusStop ? "Cancel" : "Add Bus Stop"}
-                  </Button>)}
+              {(canCreateLandmark || canUpdateLandmark) && (
+                <Button
+                  size="small"
+                  color={isAddingBusStop ? "secondary" : "primary"}
+                  variant="contained"
+                  onClick={toggleBusStopAdding}
+                  sx={{
+                    backgroundColor: "#00008B",
+                    color: "white",
+                  }}
+                >
+                  {isAddingBusStop ? "Cancel" : "Add Bus Stop"}
+                </Button>
+              )}
             </Box>
-          )}
-
-          {!selectedLandmark && isDrawing && (
-            <Box>
-              <Tooltip title="Clear Drawings" placement="bottom">
-                <IconButton color="warning" onClick={clearBoundaries}>
-                  <Refresh />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          )}
-          {!selectedLandmark && isDrawing && (
-            <Tooltip
-              title={
-                showAllBoundaries
-                  ? "Hide all landmarks"
-                  : "Click to view all landmarks"
-              }
-              arrow
-            >
-              <IconButton onClick={handleLocationIconClick}>
-                {showAllBoundaries ? (
-                  <LocationOnIcon sx={{ color: "blue" }} />
-                ) : (
-                  <LocationOnIcon />
-                )}
-              </IconButton>
-            </Tooltip>
           )}
         </Box>
       </Box>
@@ -1008,32 +975,34 @@ const edgesIntersect = (
               Back
             </Button>
             {canUpdateLandmark && (
-                <Button
-                  variant="contained"
-                  color="success"
-                  size="small"
-                  onClick={onUpdateClick}
-                  disabled={!canUpdateLandmark}
-                  sx={{
-                    "&.Mui-disabled": {
-                      backgroundColor: "#81c784 !important",
-                      color: "#ffffff99",
-                    },
-                  }}
-                >
-                  Update
-                </Button>)}
+              <Button
+                variant="contained"
+                color="success"
+                size="small"
+                onClick={onUpdateClick}
+                disabled={!canUpdateLandmark}
+                sx={{
+                  "&.Mui-disabled": {
+                    backgroundColor: "#81c784 !important",
+                    color: "#ffffff99",
+                  },
+                }}
+              >
+                Update
+              </Button>
+            )}
 
             {canDeleteLandmark && (
-                <Button
-                  variant="contained"
-                  size="small"
-                  color="error"
-                  onClick={onDeleteClick}
-                  disabled={!canDeleteLandmark}
-                >
-                  Delete
-                </Button>)}
+              <Button
+                variant="contained"
+                size="small"
+                color="error"
+                onClick={onDeleteClick}
+                disabled={!canDeleteLandmark}
+              >
+                Delete
+              </Button>
+            )}
           </Box>
         )}
       </Box>

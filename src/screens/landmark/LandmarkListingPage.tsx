@@ -94,6 +94,7 @@ const LandmarkListing = () => {
       state.app.permissions.includes("create_landmark") ||
       state.app.permissions.includes("update_landmark")
   );
+  const [selectedRow, setSelectedRow] = useState<number | null>(null);
 
   //****************exctracting points of landmark and busstop**********************
   const extractRawPoints = (polygonString: string): string => {
@@ -164,11 +165,20 @@ const LandmarkListing = () => {
       });
   };
   const handleRowClick = (landmark: Landmark) => {
-    if (isDrawing) return;
-    setSelectedLandmark(landmark);
-    setExpandedRow(expandedRow === landmark.id ? null : landmark.id);
-    if (!busStopsByLandmark[landmark.id]) {
-      fetchBusStopsForLandmark(landmark.id);
+    // Toggle selection
+    if (selectedRow === landmark.id) {
+      setSelectedRow(null);
+      setSelectedLandmark(null);
+      setExpandedRow(null);
+    } else {
+      setSelectedRow(landmark.id);
+      setSelectedLandmark(landmark);
+      setExpandedRow(landmark.id);
+
+      // Fetch bus stops if not already loaded
+      if (!busStopsByLandmark[landmark.id]) {
+        fetchBusStopsForLandmark(landmark.id);
+      }
     }
   };
 
@@ -235,16 +245,12 @@ const LandmarkListing = () => {
 
   const handlePolygonSelect = (coordinates: string) => {
     setBoundary(coordinates);
-    setTimeout(() => setOpenCreateModal(true), 0);
+    setOpenCreateModal(true);
   };
 
   const handlePointSelect = (coordinates: string) => {
     setLocation(coordinates);
     setTimeout(() => setOpenBusStopModal(true), 0);
-  };
-
-  const handleDrawingChange = (drawingState: boolean) => {
-    setIsDrawing(drawingState);
   };
 
   const handleSearchChange = useCallback(
@@ -299,25 +305,25 @@ const LandmarkListing = () => {
       }}
     >
       <Box
-  sx={{
-    flex: { xs: "0 0 100%", md: "50%" },
-    maxWidth: { xs: "100%", md: "50%" },
-    transition: "all 0.3s ease",
-    overflow: "hidden",
-    display: "flex",
-    flexDirection: "column",
-    height: "100vh",
-  }}
->
-         <TableContainer
-    sx={{
-      flex: 1,
-      overflowY: "auto",
-      borderRadius: 2,
-      border: "1px solid #e0e0e0",
-      position: "relative",
-    }}
-  >
+        sx={{
+          flex: { xs: "0 0 100%", md: "50%" },
+          maxWidth: { xs: "100%", md: "50%" },
+          transition: "all 0.3s ease",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+        }}
+      >
+        <TableContainer
+          sx={{
+            flex: 1,
+            overflowY: "auto",
+            borderRadius: 2,
+            border: "1px solid #e0e0e0",
+            position: "relative",
+          }}
+        >
           {isLoading && (
             <Box
               sx={{
@@ -424,56 +430,45 @@ const LandmarkListing = () => {
                 </TableRow>
               ) : landmarkList.length > 0 ? (
                 landmarkList.map((row) => {
-                  const isSelected = selectedLandmark?.id === row.id;
-
                   return (
                     <React.Fragment key={row.id}>
-                      <Tooltip
-                        title={
-                          isDrawing
-                            ? "Finish drawing on the map first"
-                            : "Click to view details"
-                        }
-                      >
-                        <TableRow
-                          hover
-                          onClick={() => handleRowClick(row)}
-                          sx={{
-                            cursor: isDrawing ? "not-allowed" : "pointer",
-                            backgroundColor: isSelected ? "#E3F2FD" : "inherit",
-                            opacity: isDrawing ? 0.7 : 1,
-                            "&:hover": {
-                              backgroundColor: isDrawing
-                                ? "inherit"
-                                : isSelected
+                      <TableRow
+                        hover
+                        onClick={() => handleRowClick(row)}
+                        sx={{
+                          cursor: "pointer",
+                          backgroundColor:
+                            selectedRow === row.id ? "#E3F2FD" : "inherit",
+                          "&:hover": {
+                            backgroundColor:
+                              selectedRow === row.id
                                 ? "#E3F2FD !important"
                                 : "#E3F2FD",
-                            },
-                          }}
-                        >
-                          <TableCell>
-                            <IconButton
-                              aria-label="expand row"
-                              size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedRow(
-                                  expandedRow === row.id ? null : row.id
-                                );
-                              }}
-                            >
-                              {expandedRow === row.id ? (
-                                <KeyboardArrowUpIcon />
-                              ) : (
-                                <KeyboardArrowDownIcon />
-                              )}
-                            </IconButton>
-                          </TableCell>
-                          <TableCell>{row.id}</TableCell>
-                          <TableCell>{row.name}</TableCell>
-                          <TableCell>{row.type}</TableCell>
-                        </TableRow>
-                      </Tooltip>
+                          },
+                        }}
+                      >
+                        <TableCell>
+                          <IconButton
+                            aria-label="expand row"
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedRow(
+                                expandedRow === row.id ? null : row.id
+                              );
+                            }}
+                          >
+                            {expandedRow === row.id ? (
+                              <KeyboardArrowUpIcon />
+                            ) : (
+                              <KeyboardArrowDownIcon />
+                            )}
+                          </IconButton>
+                        </TableCell>
+                        <TableCell>{row.id}</TableCell>
+                        <TableCell>{row.name}</TableCell>
+                        <TableCell>{row.type}</TableCell>
+                      </TableRow>
                       <TableRow>
                         <TableCell
                           style={{ paddingBottom: 0, paddingTop: 0 }}
@@ -624,24 +619,24 @@ const LandmarkListing = () => {
 
         {/*************************************** Pagination    ****************************************/}
 
-        <Box 
-    sx={{
-      width: '100%',
-      bgcolor: "#fff",
-      borderTop: "1px solid #e0e0e0",
-      p: 1,
-      position: 'sticky',
-      bottom: 0,
-    }}
-  >
-    <PaginationControls
-      page={page}
-      onPageChange={(newPage) => handleChangePage(null, newPage)}
-      isLoading={isLoading}
-      hasNextPage={hasNextPage}
-    />
-  </Box>
-</Box>
+        <Box
+          sx={{
+            width: "100%",
+            bgcolor: "#fff",
+            borderTop: "1px solid #e0e0e0",
+            p: 1,
+            position: "sticky",
+            bottom: 0,
+          }}
+        >
+          <PaginationControls
+            page={page}
+            onPageChange={(newPage) => handleChangePage(null, newPage)}
+            isLoading={isLoading}
+            hasNextPage={hasNextPage}
+          />
+        </Box>
+      </Box>
 
       <Box
         sx={{
@@ -675,7 +670,7 @@ const LandmarkListing = () => {
             clearBoundaries={clearBoundaries}
             vectorSource={vectorSource}
             isDrawing={isDrawing}
-            onDrawingChange={handleDrawingChange}
+            onDrawingChange={setIsDrawing} // Pass setIsDrawing directly
             busStops={
               selectedLandmark ? busStopsByLandmark[selectedLandmark.id] : []
             }
