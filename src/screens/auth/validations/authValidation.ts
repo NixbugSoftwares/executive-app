@@ -520,7 +520,7 @@ export const busCreationSchema = yup.object().shape({
 
 
    name: yup.string().required("Bus name is required")
-  .min(4, "Bus name must be at least 4 characters")
+  .min(2, "Bus name must be at least 4 characters")
   .max(32, "Bus name cannot exceed 32 characters")
   .test(
       "allowed-characters",

@@ -167,6 +167,7 @@ const ScheduleUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
               offset,
               name: searchText,
               company_id: companyId,
+              status: 1,
             })
           ).unwrap();
           items = response.data || [];

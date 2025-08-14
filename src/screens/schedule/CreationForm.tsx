@@ -122,6 +122,7 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
           offset,
           name: searchText,
           company_id: companyId,
+          status:1
         })
       )
         .unwrap()
@@ -193,6 +194,7 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
           offset,
           name: searchText,
           company_id: companyId,
+          status:1
         })
       )
         .unwrap()

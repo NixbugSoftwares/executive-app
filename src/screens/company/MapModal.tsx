@@ -42,41 +42,46 @@ const MapModal: React.FC<MapModalProps> = ({
 
   return (
     <Modal open={open} onClose={onClose}>
-      <Box
-        sx={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: 800,
-          height: 600,
-          bgcolor: "background.paper",
-          boxShadow: 24,
-          p: 3,
-          borderRadius: 2,
-        }}
+  <Box
+    sx={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: 800,
+      height: 600,
+      bgcolor: "background.paper",
+      boxShadow: 24,
+      p: 3,
+      borderRadius: 2,
+    }}
+  >
+    <Typography variant="h6" component="h2">
+      Select Location
+    </Typography>
+    <Box sx={{ height: 450, overflow: "hidden" }}>
+      <MapComponent
+        onSelectLocation={handleLocationSelect}
+        isOpen={open}
+        initialCoordinates={initialCoordinates}
+      />
+    </Box>
+    
+    {/* Wrap button in a flex container */}
+    <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+      <Button
+        onClick={handleConfirm}
+        disabled={!selectedLocation}
+        sx={{ backgroundColor: "darkblue", color: "#fff" }}
+        variant="contained"
       >
-        <Typography variant="h6" component="h2">
-          Select Location
-        </Typography>
-        <Box sx={{ height: 450, overflow: "hidden" }}>
-          <MapComponent
-            onSelectLocation={handleLocationSelect}
-            isOpen={open}
-            initialCoordinates={initialCoordinates}
-          />
-        </Box>
-        <Button
-          onClick={handleConfirm}
-          disabled={!selectedLocation}
-          sx={{ mt: 2, backgroundColor: "darkblue", color: "#fff" }}
-          variant="contained"
-          
-        >
-          Confirm
-        </Button>
-      </Box>
-    </Modal>
+        Confirm
+      </Button>
+    </Box>
+    
+  </Box>
+</Modal>
+
   );
 };
 

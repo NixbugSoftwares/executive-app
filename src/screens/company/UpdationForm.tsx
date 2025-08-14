@@ -241,8 +241,8 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
             {...register("address", {
               required: "Address is required",
               minLength: {
-                value: 8,
-                message: "Address must be at least 8 characters",
+                value: 3,
+                message: "Address must be at least 3 characters",
               },
               maxLength: {
                 value: 512,
