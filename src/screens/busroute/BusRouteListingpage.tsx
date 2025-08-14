@@ -18,7 +18,10 @@ import {
   Tooltip,
   Typography,
   CircularProgress,
+  Chip,
 } from "@mui/material";
+import VerifiedIcon from "@mui/icons-material/Verified";
+import ErrorIcon from "@mui/icons-material/Error";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
 import {
@@ -218,13 +221,7 @@ const BusRouteListing = () => {
   const toggleCreationForm = () => {
     setShowCreationForm(!showCreationForm);
     setLandmarks([]);
-    // Disable add landmark mode on map when leaving creation form
-    if (
-      mapRef.current &&
-      typeof mapRef.current.disableAddLandmarkMode === "function"
-    ) {
-      mapRef.current.disableAddLandmarkMode();
-    }
+    // No need to disable add landmark mode anymore
   };
 
   const handleRouteCreated = () => {
@@ -454,9 +451,10 @@ const BusRouteListing = () => {
                         <b>Status</b>
                       </TableCell>
                       {canDeleteRoutes && (
-                      <TableCell sx={{ width: "20%", textAlign: "center" }}>
-                        <b>Actions</b>
-                      </TableCell>)}
+                        <TableCell sx={{ width: "20%", textAlign: "center" }}>
+                          <b>Actions</b>
+                        </TableCell>
+                      )}
                     </TableRow>
                     <TableRow>
                       <TableCell>
@@ -492,7 +490,7 @@ const BusRouteListing = () => {
                           }}
                         />
                       </TableCell>
-                      <TableCell></TableCell>
+                      <TableCell colSpan={2}></TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -524,46 +522,60 @@ const BusRouteListing = () => {
                               </Typography>
                             </Tooltip>
                           </TableCell>
-                          <TableCell align="center">{row.status}</TableCell>
+                          <TableCell align="center">
+                            {row.status === "Invalid" ? (
+                              <Tooltip title="Not in usable state" placement="bottom">
+                              <ErrorIcon sx={{ color: "#e64747ff" }} />
+                              </Tooltip>
+                            ) : row.status === "Valid" ? (
+                              <Tooltip title="Usable" placement="bottom">
+                              <VerifiedIcon  sx={{ color: "#5cca60ff" }}/>
+                              </Tooltip>
+                            ) : (
+                              <Chip
+                                label="Unknown"
+                                color="default"
+                                size="small"
+                              />
+                            )}
+                          </TableCell>
+
                           {canDeleteRoutes && (
-                          <TableCell sx={{ textAlign: "center", boxShadow: 1 }}>
-                           
-                                <Button
-                                  variant="outlined"
-                                  color="error"
-                                  size="small"
-                                  disabled={!canDeleteRoutes}
-                                  onClick={() => handleDeleteClick(row)}
-                                  sx={{
-                                    ml: "auto",
-                                    mr: 2,
-                                    mb: 2,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 1,
-                                    textTransform: "none",
-                                    borderRadius: 2,
-                                    fontWeight: 500,
-                                    boxShadow: "none",
+                            <TableCell
+                              sx={{ textAlign: "center", }}
+                            >
+                              <Button
+                                variant="outlined"
+                                color="error"
+                                size="small"
+                                disabled={!canDeleteRoutes}
+                                onClick={() => handleDeleteClick(row)}
+                                sx={{
+                                  ml: "auto",
+                                  mr: 2,
+                                  mb: 2,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                  textTransform: "none",
+                                  borderRadius: 2,
+                                  fontWeight: 500,
+                                  boxShadow: "none",
+                                  backgroundColor: "#e64747ff",
+                                  color: "#fff",
+                                  "&:hover": {
                                     backgroundColor: !canDeleteRoutes
                                       ? "#f46a6a"
-                                      : "#d32f2f",
-                                    color: "#fff",
-                                    "&:hover": {
-                                      backgroundColor: !canDeleteRoutes
-                                        ? "#f46a6a"
-                                        : "#b71c1c",
-                                      boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-                                    },
-                                    "&.Mui-disabled": {
-                                      backgroundColor: "#f46a6a",
-                                      color: "#ffffff99",
-                                    },
-                                  }}
-                                >
-                                  Delete
-                                </Button>
-                          </TableCell>)}
+                                      : "#b71c1c",
+                                    boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+                                  },
+                                  
+                                }}
+                              >
+                                Delete
+                              </Button>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))
                     ) : (
@@ -616,7 +628,7 @@ const BusRouteListing = () => {
           ref={mapRef}
           landmarks={selectedRoute ? mapLandmarks : landmarks}
           mode={selectedRoute ? "view" : "create"}
-          isEditing={isEditingRoute}
+          isEditing={isEditingRoute || showCreationForm}
           selectedLandmarks={isEditingRoute ? newRouteLandmarks : landmarks}
           startingTime={routeStartingTime}
           routeId={selectedRoute?.id}

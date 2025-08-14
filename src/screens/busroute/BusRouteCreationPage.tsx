@@ -66,7 +66,6 @@ const BusRouteCreation = ({
   const [localHour, setLocalHour] = useState<number>(6);
   const [localMinute, setLocalMinute] = useState<number>(0);
   const [amPm, setAmPm] = useState<string>("AM");
-  const [isAddingLandmark, setIsAddingLandmark] = useState(false);
   const [startingDayOffset] = useState(0);
   const {
     register,
@@ -146,16 +145,6 @@ const BusRouteCreation = ({
     setValue,
     onStartingTimeChange,
   ]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (mapRef.current?.isAddingLandmark !== undefined) {
-        setIsAddingLandmark(mapRef.current.isAddingLandmark);
-      }
-    }, 200);
-    return () => clearInterval(interval);
-  }, [mapRef]);
-
   const handleRouteCreation: SubmitHandler<BusRouteFormInputs> = async (
     data
   ) => {
@@ -377,7 +366,7 @@ const BusRouteCreation = ({
           </FormControl>
         </Box>
 
-        <Button
+        {/* <Button
           variant={isAddingLandmark ? "outlined" : "contained"}
           color={isAddingLandmark ? "error" : "primary"}
           sx={{ mt: 2, mb: 2 }}
@@ -388,151 +377,179 @@ const BusRouteCreation = ({
           }}
         >
           {isAddingLandmark ? "Cancel" : "Add Landmark"}
-        </Button>
+        </Button> */}
 
         <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
           Route Landmark List
         </Typography>
 
         {landmarks.length === 0 ? (
-          <Box
-            sx={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              textAlign: "center",
-              p: 4,
-              backgroundColor: "action.hover",
-              borderRadius: 1,
-              my: 2,
-              border: "1px dashed",
-              borderColor: "divider",
-            }}
-          >
-            <Typography
-              variant="body1"
-              color="text.secondary"
-              sx={{ mb: 1, fontWeight: 500 }}
+  <Box
+    sx={{
+      flex: 1,
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      textAlign: "center",
+      p: 4,
+      backgroundColor: "action.hover",
+      borderRadius: 1,
+      my: 2,
+      border: "1px dashed",
+      borderColor: "divider",
+    }}
+  >
+    <Typography
+      variant="body1"
+      color="text.secondary"
+      sx={{ mb: 1, fontWeight: 500 }}
+    >
+      No landmarks selected
+    </Typography>
+    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+      Please select landmarks from the map to create your route
+    </Typography>
+  </Box>
+) : (
+  <List sx={{ width: "100%", maxHeight: 400, overflow: "auto", flex: 1 }}>
+    {landmarks
+      .slice()
+      .sort(
+        (a, b) =>
+          (a.distance_from_start || 0) - (b.distance_from_start || 0)
+      )
+      .map((landmark, index) => {
+        const isFirstLandmark = index === 0;
+        const isLastLandmark = index === landmarks.length - 1;
+
+        return (
+          <Box key={`${landmark.id}-${index}`}>
+            <ListItem
+              sx={{
+                display: "flex",
+                alignItems: "flex-start",
+                py: 1,
+                px: 1,
+                backgroundColor: isFirstLandmark 
+                  ? "#dbf1d9ff" 
+                  : isLastLandmark
+                    ? "#ebcacaff"
+                    : index % 2 === 0 
+                      ? "action.hover" 
+                      : "background.paper",
+                borderRadius: 1,
+                gap: 1,
+              }}
             >
-              No landmarks selected
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Please select landmarks from the map to create your route
-            </Typography>
-          </Box>
-        ) : (
-          <List
-            sx={{ width: "100%", maxHeight: 400, overflow: "auto", flex: 1 }}
-          >
-            {landmarks
-              .slice()
-              .sort(
-                (a, b) =>
-                  (a.distance_from_start || 0) - (b.distance_from_start || 0)
-              )
-              .map((landmark, index) => (
-                <Box key={`${landmark.id}-${index}`}>
-                  <ListItem
-                    sx={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      py: 2,
-                      px: 2,
-                      backgroundColor:
-                        index % 2 === 0 ? "action.hover" : "background.paper",
-                      borderRadius: 1,
-                      gap: 2,
-                    }}
-                  >
-                    <Chip
-                      label={index + 1}
-                      color="primary"
+              <Chip
+                label={index + 1}
+                color="primary"
+                size="small"
+                sx={{
+                  minWidth: 28,
+                  height: 28,
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                  mt: 0.5,
+                }}
+              />
+
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <Box>
+                    <Typography
+                      variant="subtitle2"
+                      fontWeight={600}
                       sx={{
-                        mr: 1,
-                        minWidth: 32,
-                        height: 32,
-                        fontSize: "0.875rem",
-                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
                       }}
-                    />
+                    >
+                      {landmark.name}
+                    </Typography>
 
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        {landmark.name}
-                      </Typography>
-
+                    {landmark.distance_from_start !== undefined && (
                       <Box
                         sx={{
                           display: "flex",
                           alignItems: "center",
-                          gap: 2,
                           mt: 0.5,
-                          flexWrap: "wrap",
+                          fontSize: "0.7rem",
+                          color: "text.secondary",
                         }}
                       >
-                        {landmark.distance_from_start !== undefined && (
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              backgroundColor: "primary.light",
-                              color: "primary.contrastText",
-                              px: 1.5,
-                              py: 0.5,
-                              borderRadius: 1,
-                              fontSize: "0.75rem",
-                            }}
-                          >
-                            <DirectionsIcon
-                              sx={{ fontSize: "1rem", mr: 0.5 }}
-                            />
-                            {landmark.distance_from_start}m
-                          </Box>
-                        )}
+                        <DirectionsIcon
+                          sx={{ fontSize: "0.8rem", mr: 0.5 }}
+                        />
+                        {landmark.distance_from_start}m
+                      </Box>
+                    )}
+                  </Box>
 
-                        <Box
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      ml: 2,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 1,
+                        minWidth: 200,
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      {/* Arrival Time - show for all except first */}
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          minWidth: 100,
+                          visibility: isFirstLandmark ? "hidden" : "visible",
+                        }}
+                      >
+                        <ArrowDownwardIcon
                           sx={{
-                            display: "flex",
-                            gap: 1.5,
                             fontSize: "0.8rem",
-                            color: "text.secondary",
+                            mr: 0.5,
+                            color: "error.main",
                           }}
-                        >
-                          <Box sx={{ display: "flex", alignItems: "center" }}>
-                            <ArrowDownwardIcon
-                              sx={{
-                                fontSize: "1rem",
-                                mr: 0.5,
-                                color: "error.main",
-                              }}
-                            />
-                            <span>
-                              Arrive:{" "}
-                              {formatTimeForDisplayIST(
-                                landmark.arrivalTime.fullTime,
-                                index !== 0 // false for first, true for others
-                              )}
-                            </span>
-                          </Box>
-                          <Box sx={{ display: "flex", alignItems: "center" }}>
-                            <ArrowUpwardIcon
-                              sx={{
-                                fontSize: "1rem",
-                                mr: 0.5,
-                                color: "success.main",
-                              }}
-                            />
-                            <span>
-                              Depart:{" "}
-                              {formatTimeForDisplayIST(
-                                landmark.departureTime.fullTime,
-                                index !== 0 // false for first, true for others
-                              )}
-                            </span>
-                          </Box>
-                        </Box>
+                        />
+                        <span>
+                          Arr: {formatTimeForDisplayIST(landmark.arrivalTime.fullTime)}
+                        </span>
+                      </Box>
+
+                      {/* Departure Time - show for all except last */}
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          minWidth: 100,
+                          visibility: isLastLandmark ? "hidden" : "visible",
+                        }}
+                      >
+                        <ArrowUpwardIcon
+                          sx={{
+                            fontSize: "0.8rem",
+                            mr: 0.5,
+                            color: "success.main",
+                          }}
+                        />
+                        <span>
+                          Dep: {formatTimeForDisplayIST(landmark.departureTime.fullTime)}
+                        </span>
                       </Box>
                     </Box>
 
@@ -541,28 +558,33 @@ const BusRouteCreation = ({
                       aria-label="delete"
                       color="error"
                       size="small"
+                      sx={{ width: 24, height: 24 }}
                     >
                       <DeleteIcon fontSize="small" />
                     </IconButton>
-                  </ListItem>
-
-                  {index < landmarks.length - 1 && (
-                    <Divider
-                      component="li"
-                      sx={{
-                        borderLeftWidth: 2,
-                        borderLeftStyle: "dashed",
-                        borderColor: "divider",
-                        height: 20,
-                        ml: 4.5,
-                        listStyle: "none",
-                      }}
-                    />
-                  )}
+                  </Box>
                 </Box>
-              ))}
-          </List>
-        )}
+              </Box>
+            </ListItem>
+
+            {index < landmarks.length - 1 && (
+              <Divider
+                component="li"
+                sx={{
+                  borderLeftWidth: 2,
+                  borderLeftStyle: "dashed",
+                  borderColor: "divider",
+                  height: 16,
+                  ml: 3.5,
+                  listStyle: "none",
+                }}
+              />
+            )}
+          </Box>
+        );
+      })}
+  </List>
+)}
 
         <Box sx={{ mt: "auto", pt: 2 }}>
           <Stack direction="row" spacing={2} justifyContent="flex-end">
