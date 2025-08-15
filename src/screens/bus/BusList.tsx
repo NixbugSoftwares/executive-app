@@ -176,7 +176,7 @@ const BusListingTable = () => {
         })
         .catch((error: any) => {
           console.error("Fetch Error:", error);
-          showErrorToast(error || "Failed to fetch Bus list");
+          showErrorToast(error.message || "Failed to fetch Bus list");
         })
         .finally(() => setIsLoading(false));
     },

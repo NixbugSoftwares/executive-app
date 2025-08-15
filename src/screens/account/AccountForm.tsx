@@ -84,8 +84,8 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
         .then((res: { data: any[] }) => {
           setRoles(res.data.map((role) => ({ id: role.id, name: role.name })));
         })
-        .catch((err: any) => {
-          showErrorToast(err);
+        .catch((error: any) => {
+          showErrorToast(error.message || " Failed to fetch roles ");
         });
     }
   }, [dispatch, canAssignRole]);
@@ -134,7 +134,7 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
         throw new Error("Account creation failed!");
       }
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error.message|| "Account creation failed");
     } finally {
       setLoading(false);
     }

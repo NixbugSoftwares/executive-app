@@ -57,7 +57,7 @@ const BusStopAddForm: React.FC<IBusStopCreationFormProps> = ({
       showSuccessToast("Bus Stop created successfully!");
       onClose();
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error.message|| "Error creating bus stop");
     }
   };
 

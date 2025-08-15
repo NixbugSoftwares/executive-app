@@ -179,7 +179,7 @@ const AccountListingTable = () => {
         })
         .catch((error) => {
           console.error("Fetch Error:", error);
-          showErrorToast(error || "Failed to fetch account list");
+          showErrorToast(error.message || "Failed to fetch account list");
         })
         .finally(() => setIsLoading(false));
     },

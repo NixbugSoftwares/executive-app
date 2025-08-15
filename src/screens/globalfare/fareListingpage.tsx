@@ -144,7 +144,7 @@ const FareListingPage = () => {
         .catch((error) => {
           console.error("Error fetching fares:", error);
           showErrorToast(
-            error || "Failed to fetch fare list. Please try again."
+            error.message || "Failed to fetch fare list. Please try again."
           );
         })
         .finally(() => setIsLoading(false));

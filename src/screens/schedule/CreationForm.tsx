@@ -145,7 +145,7 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
           }));
         })
         .catch((error: any) => {
-          showErrorToast(error || "Failed to fetch Bus list");
+          showErrorToast(error.message || "Failed to fetch Bus list");
         });
     },
     [dispatch, companyId]
@@ -179,7 +179,7 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
               : [...prev.fareList, ...formattedFareList],
         }));
       } catch (error: any) {
-        showErrorToast(error || "Failed to fetch Fare list");
+        showErrorToast(error.message || "Failed to fetch Fare list");
       }
     },
     [dispatch, rowsPerPage, companyId]
@@ -217,7 +217,7 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
           }));
         })
         .catch((error: any) => {
-          showErrorToast(error || "Failed to fetch Route list");
+          showErrorToast(error.message || "Failed to fetch Route list");
         });
     },
     [dispatch, companyId]
@@ -257,7 +257,7 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
       }
     } catch (error: any) {
       showErrorToast(
-        error?.message || "Something went wrong. Please try again."
+        error.message || "Something went wrong. Please try again."
       );
     } finally {
       setLoading(false);

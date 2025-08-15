@@ -125,7 +125,7 @@ const ScheduleDetailsCard: React.FC<ServiceCardProps> = ({
       refreshList("refresh");
     } catch (error: any) {
       console.error("Delete error:", error);
-      showErrorToast(error || "Schedule deletion failed. Please try again.");
+      showErrorToast(error.message || "Schedule deletion failed. Please try again.");
     }
   };
 

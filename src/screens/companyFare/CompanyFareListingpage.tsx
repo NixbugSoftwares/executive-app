@@ -177,7 +177,7 @@ const CompanyFareListingPage = () => {
         setFareList(formattedFares);
         setHasNextPage(allFares.length === rowsPerPage);
       } catch (error: any) {
-        showErrorToast(error || "Failed to fetch fare list. Please try again.");
+        showErrorToast(error.message || "Failed to fetch fare list. Please try again.");
       } finally {
         setIsLoading(false);
       }

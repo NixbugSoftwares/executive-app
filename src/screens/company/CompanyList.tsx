@@ -169,9 +169,9 @@ const CompanyListingTable = () => {
         setCompanyList(formattedAccounts);
         setHasNextPage(items.length === rowsPerPage);
       })
-      .catch((err: any) => {
+      .catch((error: any) => {
         showErrorToast(
-          err || "Failed to fetch company list. Please try again."
+          error.message || "Failed to fetch company list. Please try again."
         );
       })
       .finally(() => setIsLoading(false));

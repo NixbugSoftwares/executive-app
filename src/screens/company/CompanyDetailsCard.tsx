@@ -100,7 +100,7 @@ const canUpdateCompany = useSelector((state: RootState) =>
       handleCloseDetailCard();
       refreshList("refresh");
     } catch (error : any) {
-      showErrorToast(error || "Failed to delete company");
+      showErrorToast(error.message || "Failed to delete company");
     }
   };
   return (

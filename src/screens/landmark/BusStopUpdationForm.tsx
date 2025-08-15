@@ -89,7 +89,7 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
       showSuccessToast("Bus Stop updated successfully!");
       onClose();
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error.message|| "Error updating bus stop");
     } finally {
       setLoading(false);
     }

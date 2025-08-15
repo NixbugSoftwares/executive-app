@@ -87,7 +87,7 @@ const BusDetailsCard: React.FC<BusCardProps> = ({
       refreshList("refresh");
     } catch (error: any) {
       console.error("Delete error:", error);
-      showErrorToast(error || "Failed to delete bus. Please try again.");
+      showErrorToast(error.message || "Failed to delete bus. Please try again.");
     }
   };
 

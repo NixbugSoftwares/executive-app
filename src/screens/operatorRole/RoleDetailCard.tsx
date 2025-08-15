@@ -334,8 +334,8 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
       onCloseDetailCard();
       showSuccessToast("Role deleted successfully!");
       refreshList("refresh");
-    } catch (error) {
-      showErrorToast("Failed to delete role. Please try again.");
+    } catch (error:any) {
+      showErrorToast(error.message||"Failed to delete role. Please try again.");
     } finally {
       setAcknowledgedWarning(false);
     }
@@ -368,7 +368,7 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
         showErrorToast("Role update failed. Please try again.");
       }
     } catch (error: any) {
-      showErrorToast(error || "Failed to update role. Please try again.");
+      showErrorToast(error.message || "Failed to update role. Please try again.");
     } finally {
       setLoading(false);
     }

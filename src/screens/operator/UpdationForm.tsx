@@ -105,7 +105,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       })
 
       .catch((err: any) => {
-        showErrorToast(err);
+        showErrorToast(err.message||"Error fetching roles");
       });
 
     // Fetch role mapping for this operator
@@ -127,7 +127,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
         }
       })
       .catch((error: any) => {
-        showErrorToast(error);
+        showErrorToast(error.message||"Error fetching mapped role");
         reset(operatorData);
         setRoleMappingError(true); // Show error if API call fails
       });
@@ -185,7 +185,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
           }
         } catch (error: any) {
           showErrorToast(
-            error || "Account updated, but role assignment failed!"
+            error.message || "Account updated, but role assignment failed!"
           );
         }
       }
@@ -195,7 +195,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       refreshList("refresh");
       onClose();
     } catch (error: any) {
-      showErrorToast(error || "Something went wrong. Please try again.");
+      showErrorToast(error.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

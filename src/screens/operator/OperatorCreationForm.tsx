@@ -101,7 +101,7 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
       })
 
       .catch((err: any) => {
-        showErrorToast(err);
+        showErrorToast(err.message||"Error fetching roles");
       });
   }, [dispatch]);
 
@@ -154,8 +154,8 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
               })
             ).unwrap();
             showSuccessToast("Account created and role assigned successfully!");
-          } catch (roleError) {
-            showSuccessToast("Account created but role assignment failed!");
+          } catch (roleError:any) {
+            showSuccessToast(roleError.message||"Account created but role assignment failed!");
             console.error("Role assignment failed:", roleError);
           }
         } else {
@@ -168,7 +168,7 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
         throw new Error("Account creation failed!");
       }
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error.message || "Operator creation failed");
     } finally {
       setLoading(false);
     }

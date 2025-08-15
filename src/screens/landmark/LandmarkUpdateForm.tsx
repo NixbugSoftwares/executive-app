@@ -109,7 +109,7 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       onBack && onBack();
       onClose();
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error.message || "Error updating landmark");
     } finally {
       setLoading(false);
     }

@@ -116,7 +116,7 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
       onClose();
     } catch (error: any) {
       console.error("Error updating bus:", error);
-      showErrorToast(error || "Failed to update bus. Please try again.");
+      showErrorToast(error.message || "Failed to update bus. Please try again.");
     } finally {
       setLoading(false);
     }

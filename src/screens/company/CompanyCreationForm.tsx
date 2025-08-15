@@ -104,7 +104,7 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
         showErrorToast("Company creation failed. Please try again.");
       }
     } catch (error: any) {
-      showErrorToast(error || "Error during company creation:");
+      showErrorToast(error.message || "Error during company creation:");
     } finally {
       setLoading(false);
     }

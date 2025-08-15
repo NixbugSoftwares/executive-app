@@ -192,7 +192,7 @@ const ProfilePage: React.FC = () => {
         });
       }
     } catch (error: any) {
-      showErrorToast(error || "Failed to load profile");
+      showErrorToast(error.message || "Failed to load profile");
     } finally {
       setIsLoading(false);
     }
@@ -259,9 +259,9 @@ const ProfilePage: React.FC = () => {
               setRoleAssignmentId(roleAssignResponse.id);
             }
           }
-        } catch (error) {
+        } catch (error:any) {
           showErrorToast("Account updated, but role assignment failed!");
-          console.error(error || "Role assignment error:", error);
+          console.error(error.message || "Role assignment error:", error);
           return;
         }
       }
@@ -292,7 +292,7 @@ const ProfilePage: React.FC = () => {
       showSuccessToast("Logout successful!");
     } catch (error: any) {
       console.error("Logout Error:", error);
-      showErrorToast(error || "Logout failed. Please try again.");
+      showErrorToast(error.message || "Logout failed. Please try again.");
     }
   };
 

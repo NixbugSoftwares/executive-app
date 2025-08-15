@@ -96,7 +96,7 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
       refreshList("refresh");
       showSuccessToast("Operator deleted successfully!");
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error.message);
     }
   };
 

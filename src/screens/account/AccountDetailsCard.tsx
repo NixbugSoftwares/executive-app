@@ -92,7 +92,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
       refreshList("refresh");
       showSuccessToast("Account deleted successfully!");
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error.message);
     }
   };
   const getGenderValue = (genderText: string): number | undefined => {

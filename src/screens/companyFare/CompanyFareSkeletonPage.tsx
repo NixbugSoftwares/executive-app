@@ -262,7 +262,7 @@ const [distanceKm, setDistanceKm] = useState(5);
       showSuccessToast("Fare created successfully");
     } catch (error: any) {
       console.error("Error creating fare:", error);
-      showErrorToast(error || "Error creating fare");
+      showErrorToast(error.message || "Error creating fare");
     } finally {
       setLoading(false);
     }
@@ -285,7 +285,7 @@ const [distanceKm, setDistanceKm] = useState(5);
       showSuccessToast("Fare updated successfully");
     } catch (error: any) {
       console.error("Error updating fare:", error);
-      showErrorToast(error || "Error updating fare");
+      showErrorToast(error.message || "Error updating fare");
     } finally {
       setLoading(false);
     }
@@ -308,7 +308,7 @@ const [distanceKm, setDistanceKm] = useState(5);
       showSuccessToast("Fare deleted successfully");
     } catch (error: any) {
       console.error("Error deleting fare:", error);
-      showErrorToast(error || "Error deleting fare");
+      showErrorToast(error.message || "Error deleting fare");
     } finally {
       setLoading(false);
     }

@@ -128,7 +128,7 @@ const ServiceDetailsCard: React.FC<ServiceCardProps> = ({
       refreshList("refresh");
     } catch (error: any) {
       console.error("Delete error:", error);
-      showErrorToast(error || "Service deletion failed. Please try again.");
+      showErrorToast(error.message || "Service deletion failed. Please try again.");
     }
   };
   return (

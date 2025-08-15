@@ -140,11 +140,13 @@ const DutyListingTable = () => {
                 created_on: duty.created_on,
                 updated_on: duty.updated_on,
               };
-            } catch (error) {
+            } catch (error:any) {
               console.error(
                 `Error fetching details for duty ${duty.id}:`,
                 error
               );
+              
+                showErrorToast(error.message||"Failed fetch duty list");
               return {
                 ...duty,
                 serviceName: `Service ${duty.service_id}`,
@@ -160,7 +162,7 @@ const DutyListingTable = () => {
         setHasNextPage(items.length === rowsPerPage);
       } catch (error: any) {
         console.error("Fetch Error:", error);
-        showErrorToast(error || "Failed to fetch Duty list");
+        showErrorToast(error.message || "Failed to fetch Duty list");
       } finally {
         setIsLoading(false);
       }

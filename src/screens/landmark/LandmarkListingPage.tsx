@@ -134,9 +134,7 @@ const LandmarkListing = () => {
       .catch((error) => {
         console.error("Fetch Error:", error);
         showErrorToast(
-          error.detail ||
             error.message ||
-            error ||
             "Failed to fetch account list"
         );
       })
@@ -159,8 +157,7 @@ const LandmarkListing = () => {
         }));
       })
       .catch((error) => {
-        showErrorToast(
-          error.detail || error.message || error || "Failed to fetch bus stops"
+        showErrorToast( error.message || "Failed to fetch bus stops"
         );
       });
   };
@@ -208,7 +205,7 @@ const LandmarkListing = () => {
       setExpandedRow(null);
       setSelectedLandmark(null);
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error.message || " Error deleting landmark");
     }
   };
 
@@ -229,7 +226,7 @@ const LandmarkListing = () => {
       setBusStopDeleteConfirmOpen(false);
       fetchBusStopsForLandmark(busStopToDelete.landmark_id!);
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error.message || "Error deleting bus");
     }
   };
 

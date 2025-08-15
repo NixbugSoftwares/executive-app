@@ -228,7 +228,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
       ).unwrap();
       setLandmarks(response.data);
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error.message|| " Error fetching landmarks ");
     }
   };
 

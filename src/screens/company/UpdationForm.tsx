@@ -116,9 +116,9 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
           });
         }
       })
-      .catch((err: any) => {
+      .catch((error: any) => {
         showErrorToast(
-          err || "Failed to fetch company data. Please try again."
+          error.message || "Failed to fetch company data. Please try again."
         );
       });
   }, [companyId, dispatch, reset]);
@@ -168,7 +168,7 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
       handleCloseDetailCard();
       onClose();
     } catch (error: any) {
-      showErrorToast(error || "Error updating company:");
+      showErrorToast(error.message || "Error updating company:");
     } finally {
       setLoading(false);
     }

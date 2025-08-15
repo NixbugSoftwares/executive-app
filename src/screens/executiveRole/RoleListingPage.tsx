@@ -116,8 +116,8 @@ const RoleListingTable = () => {
           setRoleList(formattedRoleList);
           setHasNextPage(items.length === rowsPerPage);
         })
-        .catch((errorMessage) => {
-          showErrorToast(errorMessage);
+        .catch((error) => {
+          showErrorToast(error.message);
         })
         .finally(() => {
           setIsLoading(false);

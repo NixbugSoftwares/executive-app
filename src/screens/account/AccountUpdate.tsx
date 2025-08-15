@@ -111,7 +111,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       })
 
       .catch((err: any) => {
-        showErrorToast(err);
+        showErrorToast(err.message);
       });
 
     // Fetch role mapping for this account
@@ -133,7 +133,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
         }
       })
       .catch((error: any) => {
-        showErrorToast(error);
+        showErrorToast(error.message);
         reset(accountData);
         setRoleMappingError(true);
       });
@@ -188,7 +188,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
         } catch (error: any) {
           console.error("Role assignment error:", error);
           showErrorToast(
-            error || "Account updated, but role assignment failed!"
+            error.message || "Account updated, but role assignment failed!"
           );
         }
       }
@@ -198,7 +198,7 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       refreshList("refresh");
       onClose();
     } catch (error: any) {
-      showErrorToast(error || "Something went wrong. Please try again.");
+      showErrorToast(error.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

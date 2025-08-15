@@ -128,7 +128,7 @@ const BusRouteDetailsPage = ({
 
       setLandmarks(landmarkRes.data);
     } catch (error: any) {
-      showErrorToast(error || "Failed to fetch route landmarks");
+      showErrorToast(error.message || "Failed to fetch route landmarks");
     } finally {
       setIsLoading(false);
     }
@@ -388,7 +388,7 @@ const BusRouteDetailsPage = ({
       showSuccessToast("Route details updated successfully");
       onBack();
     } catch (error: any) {
-      showErrorToast(error || "Failed to update route details");
+      showErrorToast(error.message || "Failed to update route details");
     }
   };
 
@@ -461,7 +461,7 @@ const BusRouteDetailsPage = ({
       setEditingLandmark(null);
     } catch (error: any) {
       console.error("Update error:", error);
-      showErrorToast(error || "Failed to update landmark");
+      showErrorToast(error.message || "Failed to update landmark");
     }
   };
 

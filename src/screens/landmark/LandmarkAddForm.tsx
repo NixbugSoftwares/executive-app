@@ -74,7 +74,7 @@ const LandmarkAddForm: React.FC<ILandmarkCreationFormProps> = ({
       }
       onClose();
     } catch(error:any) {
-      showErrorToast(error||"Something went wrong. Please try again.");
+      showErrorToast(error.message||"Something went wrong. Please try again.");
     }
   };
 

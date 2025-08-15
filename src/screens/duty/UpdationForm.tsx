@@ -167,7 +167,7 @@ const DutyUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
           }
         })
         .catch((error) => {
-          showErrorToast(error || "Failed to fetch Service list");
+          showErrorToast(error.message || "Failed to fetch Service list");
         })
         .finally(() => setLoading(false));
     },
@@ -211,7 +211,7 @@ const DutyUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
       onClose();
     } catch (error: any) {
       console.error("Error updating duty:", error);
-      showErrorToast(error || "Failed to update duty. Please try again.");
+      showErrorToast(error.message || "Failed to update duty. Please try again.");
     } finally {
       setLoading(false);
     }

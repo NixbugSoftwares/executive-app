@@ -99,7 +99,7 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
       refreshList("refresh");
     } catch (error: any) {
       console.error("Delete error:", error);
-      showErrorToast(error || "Failed to delete duty. Please try again.");
+      showErrorToast(error.message || "Failed to delete duty. Please try again.");
     }
   };
 

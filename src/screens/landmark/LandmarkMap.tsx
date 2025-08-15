@@ -187,7 +187,7 @@ const lastSelectedLandmarkId = useRef<number | null>(null);
 
       setLandmarks(response.data);
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error.message|| "Error fetching landmarks");
     }
   };
 

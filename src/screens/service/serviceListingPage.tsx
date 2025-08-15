@@ -155,7 +155,7 @@ const ServiceListingTable = () => {
         setHasNextPage(items.length === rowsPerPage);
       } catch (error: any) {
         console.error("Fetch Error:", error);
-        showErrorToast(error || "Failed to fetch Service list");
+        showErrorToast(error.message || "Failed to fetch Service list");
         setServiceList([]);
       } finally {
         setIsLoading(false);

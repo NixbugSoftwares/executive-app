@@ -93,8 +93,8 @@ const Sidebar: React.FC = () => {
             console.warn("Company not found in response");
             setCompanyName("");
           }
-        } catch (error) {
-          console.error("Failed to fetch company list:", error);
+        } catch (error:any) {
+          console.error(error.message||"Failed to fetch company list:");
           setCompanyName("");
         }
       } else {

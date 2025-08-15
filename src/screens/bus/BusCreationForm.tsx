@@ -108,7 +108,7 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
         showErrorToast("Bus creation failed. Please try again.");
       }
     } catch (error: any) {
-      showErrorToast(error || "Something went wrong. Please try again.");
+      showErrorToast(error.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

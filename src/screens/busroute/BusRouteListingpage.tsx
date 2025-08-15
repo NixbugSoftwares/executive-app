@@ -142,7 +142,7 @@ const BusRouteListing = () => {
         })
         .catch((error) => {
           console.error("Fetch Error:", error);
-          showErrorToast(error || "Failed to fetch Bus Route list");
+          showErrorToast(error.message || "Failed to fetch Bus Route list");
         })
         .finally(() => setIsLoading(false));
     },
@@ -167,8 +167,8 @@ const BusRouteListing = () => {
 
           setSelectedRouteLandmarks(processed);
           setMapLandmarks(processed);
-        } catch (error) {
-          showErrorToast("Failed to load route landmarks");
+        } catch (error:any) {
+          showErrorToast(error.message||"Failed to load route landmarks");
         }
       }
     };

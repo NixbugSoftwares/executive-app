@@ -180,7 +180,7 @@ const OperatorListingTable = () => {
       })
       .catch((error: any) => {
         console.error("Error fetching accounts", error);
-        showErrorToast(error || "Failed to fetch accounts");
+        showErrorToast(error.message || "Failed to fetch accounts");
       })
       .finally(() => setIsLoading(false));
   }, []);

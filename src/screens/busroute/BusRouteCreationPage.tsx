@@ -217,7 +217,7 @@ const BusRouteCreation = ({
       if (onClose) onClose();
     } catch (error: any) {
       console.error("Error in route creation process:", error);
-      showErrorToast(error || "Failed to create route and landmarks");
+      showErrorToast(error.message || "Failed to create route and landmarks");
     } finally {
       setIsSubmitting(false);
     }
