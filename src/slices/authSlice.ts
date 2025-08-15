@@ -30,7 +30,13 @@ export const LoginApi = createAsyncThunk(
       );
       return response;
     } catch (error: any) {
-      return rejectWithValue(error.detail);
+      return rejectWithValue({
+        message: error.error || "Login failed",
+        status: error.status,
+        type: error.type,
+        details: error.details,
+        rawError: error
+      });
     }
   }
 );

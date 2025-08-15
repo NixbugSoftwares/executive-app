@@ -267,7 +267,7 @@ const BusRouteListing = () => {
       showSuccessToast("Route deleted successfully");
       fetchRoute(page, debouncedSearch);
     } catch (error: any) {
-      showErrorToast(error || "Failed to delete route");
+      showErrorToast(error.message || "Failed to delete route");
     } finally {
       setDeleteConfirmOpen(false);
       setRouteToDelete(null);
@@ -575,7 +575,7 @@ const BusRouteListing = () => {
                                 Delete
                               </Button>
                             </TableCell>
-                          )}
+                           )}
                         </TableRow>
                       ))
                     ) : (

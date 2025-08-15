@@ -1,6 +1,5 @@
 import axios from "axios";
 import localStorageHelper from "./localStorageHelper";
-import { showErrorToast } from "../common/toastMessageHelper";
 import commonHelper from "./commonHelper";
 
 export const base_URL = "https://api.entebus.nixbug.com/executive/"; //base URL

@@ -1434,9 +1434,13 @@ export const routeLandmarkCreationApi = createAsyncThunk(
       );
       return response;
     } catch (error: any) {
-      return rejectWithValue(
-        error.detail || error.message || error || "route-landmark creation failed"
-      );
+      return rejectWithValue({
+        message: error.error || "Error creating route-landmark",
+        status: error.status,
+        type: error.type,
+        details: error.details,
+        rawError: error
+      });
     }
   }
 );
@@ -1533,8 +1537,12 @@ export const routeDeleteApi = createAsyncThunk(
 
       return response;
     } catch (error: any) {
-      return rejectWithValue(
-        error.detail || error.message || "Account deletion failed"
+      return rejectWithValue({
+        message: error.error || "Error deleting route",
+        status: error.status,
+        type: error.type,
+        details: error.details,
+        rawError: error}
       );
     }
   }
