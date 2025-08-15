@@ -39,7 +39,7 @@ interface ILoginFormInputs {
 }
 const LoginPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const [loading, _setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const {
     handleSubmit,
@@ -53,13 +53,14 @@ const LoginPage: React.FC = () => {
     setShowPassword((prev) => !prev);
   };
   const handleLogin: SubmitHandler<ILoginFormInputs> = async (data) => {
+    setLoading(true);
     try {
       const formData = new FormData();
       formData.append("username", data.username);
       formData.append("password", data.password);
 
       const response = await dispatch(LoginApi(formData)).unwrap();
-
+ 
       if (response?.access_token) {
         const user = {
           username: data?.username,
