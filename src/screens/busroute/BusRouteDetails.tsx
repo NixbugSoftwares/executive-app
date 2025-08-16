@@ -104,6 +104,7 @@ const BusRouteDetailsPage = ({
     state.app.permissions.includes("create_route")
   );
 
+
   const fetchRouteLandmarks = async () => {
     setIsLoading(true);
     try {
@@ -490,6 +491,7 @@ const BusRouteDetailsPage = ({
       setRouteLandmarkToDelete(null);
     }
   };
+
   return (
     <Box
       sx={{ p: 3, display: "flex", flexDirection: "column", height: "100%" }}

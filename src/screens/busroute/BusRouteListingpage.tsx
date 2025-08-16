@@ -167,8 +167,8 @@ const BusRouteListing = () => {
 
           setSelectedRouteLandmarks(processed);
           setMapLandmarks(processed);
-        } catch (error:any) {
-          showErrorToast(error.message||"Failed to load route landmarks");
+        } catch (error: any) {
+          showErrorToast(error.message || "Failed to load route landmarks");
         }
       }
     };
@@ -524,12 +524,15 @@ const BusRouteListing = () => {
                           </TableCell>
                           <TableCell align="center">
                             {row.status === "Invalid" ? (
-                              <Tooltip title="Not in usable state" placement="bottom">
-                              <ErrorIcon sx={{ color: "#e64747ff" }} />
+                              <Tooltip
+                                title="Not in usable state"
+                                placement="bottom"
+                              >
+                                <ErrorIcon sx={{ color: "#e64747ff" }} />
                               </Tooltip>
                             ) : row.status === "Valid" ? (
                               <Tooltip title="Usable" placement="bottom">
-                              <VerifiedIcon  sx={{ color: "#5cca60ff" }}/>
+                                <VerifiedIcon sx={{ color: "#5cca60ff" }} />
                               </Tooltip>
                             ) : (
                               <Chip
@@ -541,9 +544,7 @@ const BusRouteListing = () => {
                           </TableCell>
 
                           {canDeleteRoutes && (
-                            <TableCell
-                              sx={{ textAlign: "center", }}
-                            >
+                            <TableCell sx={{ textAlign: "center" }}>
                               <Button
                                 variant="outlined"
                                 color="error"
@@ -569,13 +570,12 @@ const BusRouteListing = () => {
                                       : "#b71c1c",
                                     boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
                                   },
-                                  
                                 }}
                               >
                                 Delete
                               </Button>
                             </TableCell>
-                           )}
+                          )}
                         </TableRow>
                       ))
                     ) : (
@@ -627,7 +627,7 @@ const BusRouteListing = () => {
           }
           ref={mapRef}
           landmarks={selectedRoute ? mapLandmarks : landmarks}
-          mode={selectedRoute ? "view" : "create"}
+          mode={selectedRoute ? "view" : showCreationForm ? "create" : "list"}
           isEditing={isEditingRoute || showCreationForm}
           selectedLandmarks={isEditingRoute ? newRouteLandmarks : landmarks}
           startingTime={routeStartingTime}
