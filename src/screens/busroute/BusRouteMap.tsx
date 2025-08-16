@@ -55,6 +55,7 @@ interface MapComponentProps {
   selectedLandmarkIds?: number[];
   routeId?: number;
   selectedRouteStartingTime?: string;
+  onLandmarkAdded: () => void;
 }
 
 const MapComponent = React.forwardRef(
@@ -68,6 +69,7 @@ const MapComponent = React.forwardRef(
       startingTime,
       routeId,
       selectedRouteStartingTime,
+      onLandmarkAdded,
     }: MapComponentProps,
     ref
   ) => {
@@ -910,6 +912,7 @@ const MapComponent = React.forwardRef(
 
         await dispatch(routeLandmarkCreationApi(formData)).unwrap();
         showSuccessToast("Landmark added successfully");
+        onLandmarkAdded();
         return { success: true };
       } catch (error: any) {
         if (error?.status === 422) {

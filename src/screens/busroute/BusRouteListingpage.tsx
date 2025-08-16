@@ -93,6 +93,8 @@ const BusRouteListing = () => {
   const canDeleteRoutes = useSelector((state: RootState) =>
     state.app.permissions.includes("delete_route")
   );
+  const [newLandmarkTrigger, setNewLandmarkTrigger] = useState(false);
+
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const urlCompanyId = companyId || queryParams.get("companyId");
@@ -175,7 +177,12 @@ const BusRouteListing = () => {
 
     fetchRouteLandmarks();
   }, [selectedRoute]);
-
+useEffect(() => {
+  if (newLandmarkTrigger) {
+    const timer = setTimeout(() => setNewLandmarkTrigger(false), 100);
+    return () => clearTimeout(timer);
+  }
+}, [newLandmarkTrigger]);
   useEffect(() => {
     return () => {
       setMapLandmarks([]);
@@ -332,6 +339,7 @@ const BusRouteListing = () => {
             onCancelEdit={() => setIsEditingRoute(false)}
             newLandmarks={newRouteLandmarks}
             setNewLandmarks={setNewRouteLandmarks}
+            newLandmarkTrigger={newLandmarkTrigger}
           />
         ) : showCreationForm ? (
           <>
@@ -633,6 +641,7 @@ const BusRouteListing = () => {
           startingTime={routeStartingTime}
           routeId={selectedRoute?.id}
           selectedRouteStartingTime={selectedRoute?.start_time}
+          onLandmarkAdded={() => setNewLandmarkTrigger(true)}
         />
       </Box>
 

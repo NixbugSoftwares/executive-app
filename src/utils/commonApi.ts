@@ -90,49 +90,47 @@ const handleResponse = async (response: any) => {
 // Updated handleErrorResponse function
 const handleErrorResponse = (errorResponse: any) => {
   if (!errorResponse) {
-    return { 
-      error: "Network error. Please try again later.", 
+    return {
+      error: "Network error. Please try again later.",
       status: 0,
-      type: 'network',
-      details: []
+      type: "network",
+      details: [],
     };
   }
 
   const status = errorResponse.response?.status || 0;
   const data = errorResponse.response?.data || errorResponse.data || {};
-  
+
   // Handle validation errors (422)
   if (status === 422 && Array.isArray(data?.detail)) {
     const validationErrors = data.detail.map((err: any) => {
-      const field = err.loc?.slice(1).join('.') || 'Field';
+      const field = err.loc?.slice(1).join(".") || "Field";
       return {
         field,
         message: err.msg,
-        type: err.type || 'validation'
+        type: err.type || "validation",
       };
     });
 
     return {
       status,
       error: "Validation failed",
-      type: 'validation',
+      type: "validation",
       details: validationErrors,
-      ...data
+      ...data,
     };
   }
 
   // Handle other errors
-  const errorMessage = data?.detail || 
-                      data?.message || 
-                      errorResponse.message || 
-                      "Request failed";
+  const errorMessage =
+    data?.detail || data?.message || errorResponse.message || "Request failed";
 
   return {
     status,
     error: errorMessage,
-    type: status === 401 ? 'authentication' : 'api',
+    type: status === 401 ? "authentication" : "api",
     details: [],
-    ...data
+    ...data,
   };
 };
 
@@ -171,12 +169,12 @@ const apiCall = async (
     return await handleResponse(response);
   } catch (err: any) {
     const error = handleErrorResponse(err);
-    
+
     // Special case - force logout on 401
     if (error.status === 401) {
       commonHelper.logout();
     }
-    
+
     throw error;
   }
 };

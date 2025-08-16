@@ -59,6 +59,7 @@ interface BusRouteDetailsProps {
   newLandmarks: SelectedLandmark[];
   setNewLandmarks: React.Dispatch<React.SetStateAction<SelectedLandmark[]>>;
   refreshList: (value: any) => void;
+  newLandmarkTrigger: boolean;
 }
 
 const BusRouteDetailsPage = ({
@@ -71,6 +72,7 @@ const BusRouteDetailsPage = ({
   newLandmarks,
   setNewLandmarks,
   refreshList,
+  newLandmarkTrigger,
 }: BusRouteDetailsProps) => {
   const dispatch = useAppDispatch();
   const [routeLandmarks, setRouteLandmarks] = useState<RouteLandmark[]>([]);
@@ -145,7 +147,8 @@ const BusRouteDetailsPage = ({
 
   useEffect(() => {
     fetchRouteLandmarks();
-  }, [routeId]);
+  }, [routeId, newLandmarkTrigger ]);
+
 
   useEffect(() => {
     return () => {
