@@ -128,6 +128,8 @@ const LoginPage: React.FC = () => {
     } catch (error: any) {
       console.error("Login Error:", error);
      showErrorToast(error.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
     }
   };
 
