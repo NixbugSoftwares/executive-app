@@ -488,7 +488,7 @@ const BusRouteDetailsPage = ({
       showSuccessToast("Landmark removed from route successfully");
       fetchRouteLandmarks();
     } catch (error: any) {
-      showErrorToast(error || "Failed to remove landmark from route");
+      showErrorToast(error.message || "Failed to remove landmark from route");
     } finally {
       setDeleteConfirmOpen(false);
       setRouteLandmarkToDelete(null);

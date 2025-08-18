@@ -1739,9 +1739,13 @@ export const routeLandmarkDeleteApi = createAsyncThunk(
 
       return response;
     } catch (error: any) {
-      return rejectWithValue(
-        error.detail || error.message || "Account deletion failed"
-      );
+      return rejectWithValue({
+        message: error.error || " Error deleting route-landmark",
+        status: error.status,
+        type: error.type,
+        details: error.details,
+        rawError: error
+      });
     }
   }
 );

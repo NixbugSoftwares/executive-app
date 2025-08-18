@@ -2,7 +2,7 @@ import axios from "axios";
 import localStorageHelper from "./localStorageHelper";
 import commonHelper from "./commonHelper";
 
-export const base_URL = "https://api.entebus.nixbug.com/executive/"; //base URL
+export const base_URL = "http://localhost:8080/executive/"; //base URL
 
 //******************************************************Token **************************************** */
 const getAuthToken = async () => {

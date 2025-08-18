@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Checkbox,
+  Chip,
   CircularProgress,
   ListItemText,
   MenuItem,
@@ -37,6 +38,14 @@ interface ColumnConfig {
   minWidth: string;
   fixed?: boolean;
 }
+const getStatusBackendValue = (displayValue: string): string => {
+  const statusMap: Record<string, string> = {
+    Active: "1",
+    Maintenance: "2",
+    Suspended: "3",
+  };
+  return statusMap[displayValue] || "";
+};
 const BusListingTable = () => {
   const { companyId } = useParams();
   const location = useLocation();
@@ -51,6 +60,7 @@ const BusListingTable = () => {
     registrationNumber: "",
     name: "",
     capacity_le: "",
+    status: "",
   });
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const debounceRef = useRef<number | null>(null);
@@ -84,6 +94,13 @@ const BusListingTable = () => {
       width: "120px",
       minWidth: "120px",
       fixed: true,
+    },
+    
+    {
+      id: "status",
+      label: "Status",
+      width: "150px",
+      minWidth: "150px",
     },
     {
       id: "manufactured_on",
@@ -204,6 +221,16 @@ const BusListingTable = () => {
     []
   );
 
+    const handleSelectChange = useCallback((e: SelectChangeEvent<string>) => {
+    const value = e.target.value;
+    setSearch((prev) => ({ ...prev, status: value }));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      setDebouncedSearch((prev) => ({ ...prev, status: value }));
+      setPage(0);
+    }, 700);
+  }, []);
+
   const handleChangePage = useCallback(
     (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
       setPage(newPage);
@@ -211,12 +238,14 @@ const BusListingTable = () => {
     []
   );
 
-  useEffect(() => {
+useEffect(() => {
+    const statusBackendValue=getStatusBackendValue(debouncedSearch.status);
     const searchParams: any = {
       ...(debouncedSearch.id && { id: debouncedSearch.id }),
       ...(debouncedSearch.registrationNumber && {
         registration_number: debouncedSearch.registrationNumber,
       }),
+      ...(debouncedSearch.status && { status: statusBackendValue }),
       ...(debouncedSearch.name && { name: debouncedSearch.name }),
       ...(debouncedSearch.capacity_le && {
         capacity_le: debouncedSearch.capacity_le,
@@ -399,6 +428,21 @@ const BusListingTable = () => {
                     Capacity Up To
                   </TableCell>
                 )}
+                 {visibleColumns.status && (
+                  <TableCell
+                    sx={{
+                      width: "120px",
+                      minWidth: "120px",
+                      textAlign: "center",
+                      backgroundColor: "#fafafa",
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    Status
+                  </TableCell>
+                )}
                 {visibleColumns.manufactured_on && (
                   <TableCell
                     sx={{
@@ -538,6 +582,23 @@ const BusListingTable = () => {
                     }}
                   />
                 </TableCell>
+                {visibleColumns.status && (
+                  <TableCell width="10%">
+                    <Select
+                      value={search.status}
+                      onChange={handleSelectChange}
+                      displayEmpty
+                      size="small"
+                      fullWidth
+                      sx={{ height: 40 }}
+                    >
+                      <MenuItem value="">All</MenuItem>
+                      <MenuItem value="Active">Active</MenuItem>
+                      <MenuItem value="Maintenance">Maintenance</MenuItem>
+                      <MenuItem value="Suspended">Suspended</MenuItem>
+                    </Select>
+                  </TableCell>
+                )}
                 {visibleColumns.manufactured_on && <TableCell></TableCell>}
                 {visibleColumns.insurance_upto && <TableCell></TableCell>}
                 {visibleColumns.pollution_upto && <TableCell></TableCell>}
@@ -591,6 +652,41 @@ const BusListingTable = () => {
                         {row.capacity}
                       </TableCell>
                     )}
+                    {visibleColumns.status && (
+                      <TableCell sx={{ textAlign: "center" }}>
+                        {row.status === 1 ? (
+                          <Chip
+                            label="Active"
+                            size="small"
+                            sx={{
+                              backgroundColor: "rgba(0, 128, 0, 0.1)", // transparent green
+                              color: "green",
+                              fontWeight: 500,
+                            }}
+                          />
+                        ) : row.status === 2 ? (
+                          <Chip
+                            label="Maintenance"
+                            size="small"
+                            sx={{
+                              backgroundColor: "rgba(255, 215, 0, 0.1)", // transparent yellow
+                              color: "#b8860b", // dark goldenrod text
+                              fontWeight: 500,
+                            }}
+                          />
+                        ) : row.status === 3 ? (
+                          <Chip
+                            label="Suspended"
+                            size="small"
+                            sx={{
+                              backgroundColor: "rgba(255, 0, 0, 0.1)", // transparent red
+                              color: "red",
+                              fontWeight: 500,
+                            }}
+                          />
+                        ) : null}
+                      </TableCell>
+                    )}
                     {visibleColumns.manufactured_on && (
                       <TableCell sx={{ textAlign: "center" }}>
                         {moment(row.manufactured_on)
@@ -638,7 +734,7 @@ const BusListingTable = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} align="center">
+                  <TableCell colSpan={10} align="center">
                     No Bus found.
                   </TableCell>
                 </TableRow>

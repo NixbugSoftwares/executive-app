@@ -9,7 +9,7 @@ import {
   CssBaseline,
   CircularProgress,
   Autocomplete,
-  Grid,
+  Stack,
 } from "@mui/material";
 import { useAppDispatch } from "../../store/Hooks";
 import {
@@ -263,27 +263,32 @@ const DutyCreationForm: React.FC<IOperatorCreationFormProps> = ({
         </Typography>
 
         <Box component="form" noValidate onSubmit={handleSubmit(handleDutyCreation)}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              {renderOperatorAutocomplete()}
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              {renderServiceAutocomplete()}
-            </Grid>
-          </Grid>
+  <Stack 
+    direction={{ xs: "column", sm: "row" }} 
+    spacing={2} 
+    sx={{ width: "100%" }}
+  >
+    <Box flex={1}>{renderOperatorAutocomplete()}</Box>
+    <Box flex={1}>{renderServiceAutocomplete()}</Box>
+  </Stack>
 
-          <Box sx={{ mt: 4, display: "flex", justifyContent: "center" }}>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              sx={{ minWidth: 150, bgcolor: "darkblue" }}
-              disabled={loading}
-            >
-              {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Create Duty"}
-            </Button>
-          </Box>
-        </Box>
+  <Box sx={{ mt: 4, display: "flex", justifyContent: "center" }}>
+    <Button
+      type="submit"
+      variant="contained"
+      color="primary"
+      sx={{ minWidth: 150, bgcolor: "darkblue" }}
+      disabled={loading}
+    >
+      {loading ? (
+        <CircularProgress size={24} sx={{ color: "white" }} />
+      ) : (
+        "Create Duty"
+      )}
+    </Button>
+  </Box>
+</Box>
+
       </Box>
     </Container>
   );

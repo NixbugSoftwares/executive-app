@@ -239,7 +239,7 @@ const ScheduleUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
           }
         }
       } catch (error: any) {
-        showErrorToast(error || `Failed to fetch ${type} list`);
+        showErrorToast(error.message || `Failed to fetch ${type} list`);
       } finally {
         if (type === "fare") isFirstLoad.current = false;
         setLoading(false);

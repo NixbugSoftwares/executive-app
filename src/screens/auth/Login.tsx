@@ -52,86 +52,101 @@ const LoginPage: React.FC = () => {
   const handleTogglePassword = () => {
     setShowPassword((prev) => !prev);
   };
-  const handleLogin: SubmitHandler<ILoginFormInputs> = async (data) => {
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append("username", data.username);
-      formData.append("password", data.password);
+const handleLogin: SubmitHandler<ILoginFormInputs> = async (data) => {
+  setLoading(true);
+  try {
+    const formData = new FormData();
+    formData.append("username", data.username);
+    formData.append("password", data.password);
 
-      const response = await dispatch(LoginApi(formData)).unwrap();
- 
-      if (response?.access_token) {
-        const user = {
-          username: data?.username,
-          executive_id: response?.executive_id,
-        };
-        const access_token = response?.access_token;
-        const expiresAt = Date.now() + response?.expires_in * 1000;
+    const response = await dispatch(LoginApi(formData)).unwrap();
 
-        localStorageHelper.storeItem("@token", access_token);
-        localStorageHelper.storeItem("@token_expires", expiresAt);
-        localStorageHelper.storeItem("@user", user);
+    if (response?.access_token) {
+      // Store basic user info
+      const user = {
+        username: data?.username,
+        executive_id: response?.executive_id,
+      };
+      const access_token = response?.access_token;
+      const expiresAt = Date.now() + response?.expires_in * 1000;
 
-        dispatch(userLoggedIn(user));
-        showSuccessToast("Login successful");
+      // Store authentication data
+      localStorageHelper.storeItem("@token", access_token);
+      localStorageHelper.storeItem("@token_expires", expiresAt);
+      localStorageHelper.storeItem("@user", user);
+      dispatch(userLoggedIn(user));
+      showSuccessToast("Login successful");
 
-        const roleResponse = await dispatch(
-          fetchRoleMappingApi(response.executive_id)
-        ).unwrap();
+      // Fetch role mapping
+      const roleResponse = await dispatch(
+        fetchRoleMappingApi(response.executive_id)
+      ).unwrap();
 
-        if (!roleResponse) {
-          throw new Error("No role mapping found for this user");
-        }
-        const assignedRole = {
-          id: roleResponse?.id,
-          userId: roleResponse?.operator_id,
-          roleId: roleResponse?.role_id,
-        };
-
-        localStorage.setItem("@assignedRole", JSON.stringify(assignedRole));
-
-        const roleListingResponse = await dispatch(
-          loggedinUserRoleDetails(assignedRole.roleId)
-        ).unwrap();
-
-        console.log(
-          "roleDetails=================================",
-          roleListingResponse[0]
-        );
-
-        if (roleListingResponse.length > 0) {
-          dispatch(setRoleDetails(roleListingResponse[0]));
-
-          const roleDetails = roleListingResponse[0];
-          dispatch(setRoleDetails(roleDetails));
-
-          const permissions = Object.entries(roleDetails)
-            .filter(([_, value]) => value === true)
-            .map(([key]) => key);
-
-          localStorage.setItem("@permissions", JSON.stringify(permissions));
-          dispatch(setPermissions(permissions));
-          console.log(
-            "Permissions=================================s:",
-            permissions
-          );
-
-          if (permissions) {
-            localStorage.setItem("@permissions", JSON.stringify(permissions));
-            dispatch(setPermissions(permissions));
-          }
-        } else {
-          showErrorToast("Role details not found");
-        }
+      if (!roleResponse || !roleResponse.role_id) {
+        // Clear any existing permissions if no role found
+        localStorage.removeItem("@permissions");
+        localStorage.removeItem("@assignedRole");
+        dispatch(setPermissions([]));
+        dispatch(setRoleDetails(null));
+        throw new Error("No role assigned to this user");
       }
-    } catch (error: any) {
-      console.error("Login Error:", error);
-     showErrorToast(error.message || 'Something went wrong');
-    } finally {
-      setLoading(false);
+
+      // Store assigned role
+      const assignedRole = {
+        id: roleResponse?.id,
+        userId: roleResponse?.operator_id,
+        roleId: roleResponse?.role_id,
+      };
+      localStorage.setItem("@assignedRole", JSON.stringify(assignedRole));
+
+      // Fetch role details
+      const roleListingResponse = await dispatch(
+        loggedinUserRoleDetails(assignedRole.roleId)
+      ).unwrap();
+
+      console.log("Role details:", roleListingResponse[0]);
+
+      if (!roleListingResponse || roleListingResponse.length === 0) {
+        // Clear permissions if role details not found
+        localStorage.removeItem("@permissions");
+        dispatch(setPermissions([]));
+        dispatch(setRoleDetails(null));
+        throw new Error("Role details not found");
+      }
+
+      // Process role details
+      const roleDetails = roleListingResponse[0];
+      dispatch(setRoleDetails(roleDetails));
+
+      // Extract permissions (only keys with true values)
+      const permissions = Object.entries(roleDetails)
+        .filter(([_, value]) => value === true)
+        .map(([key]) => key);
+
+      console.log("Permissions:", permissions);
+
+      if (permissions.length > 0) {
+        localStorage.setItem("@permissions", JSON.stringify(permissions));
+        dispatch(setPermissions(permissions));
+      } else {
+        // No permissions found for this role
+        localStorage.removeItem("@permissions");
+        dispatch(setPermissions([]));
+        // throw new Error("No permissions assigned for this role");
+      }
     }
-  };
+  } catch (error: any) {
+    console.error("Login Error:", error);
+    // Clear sensitive data on error
+    localStorage.removeItem("@permissions");
+    localStorage.removeItem("@assignedRole");
+    dispatch(setPermissions([]));
+    dispatch(setRoleDetails(null));
+    showErrorToast(error.message || 'Login failed. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <Container component="main" maxWidth="xs" sx={{ mb: 10 }}>

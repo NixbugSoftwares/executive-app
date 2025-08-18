@@ -6,7 +6,6 @@ import {
   Typography,
   TextField,
   MenuItem,
-  Grid,
   Divider,
   IconButton,
   Tooltip,
@@ -22,6 +21,7 @@ import {
   TableHead,
   TableRow,
   Collapse,
+  Stack,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
@@ -314,7 +314,7 @@ const [distanceKm, setDistanceKm] = useState(5);
     }
   };
 
-  return (
+return (
     <Box
       sx={{
         display: "flex",
@@ -326,7 +326,6 @@ const [distanceKm, setDistanceKm] = useState(5);
       {/* Left Side - Form */}
       <Paper
         component="form"
-        
         onSubmit={handleSubmit(handleFareCreation)}
         sx={{
           flex: "0 0 40%",
@@ -375,7 +374,7 @@ const [distanceKm, setDistanceKm] = useState(5);
                 {...field}
                 label="Fare Name"
                 fullWidth
-                sx={{  }}
+                sx={{}}
                 error={!!errors.name}
                 helperText={errors.name?.message}
                 onChange={(e) => {
@@ -390,8 +389,9 @@ const [distanceKm, setDistanceKm] = useState(5);
             Attributes
           </Typography>
 
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={6}>
+          <Stack spacing={2} sx={{ mb: 3 }}>
+            {/* First row with 2 items side by side */}
+            <Stack direction="row" spacing={2}>
               <Controller
                 name="attributes.currency_type"
                 control={control}
@@ -405,8 +405,7 @@ const [distanceKm, setDistanceKm] = useState(5);
                   </TextField>
                 )}
               />
-            </Grid>
-            <Grid item xs={6}>
+
               <Controller
                 name="attributes.distance_unit"
                 control={control}
@@ -420,25 +419,31 @@ const [distanceKm, setDistanceKm] = useState(5);
                   </TextField>
                 )}
               />
-            </Grid>
-            <Grid item xs={12}>
-              <Controller
-                name="attributes.df_version"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="DF Version"
-                    type="number"
-                    fullWidth
-                    onChange={(e) =>
-                      field.onChange(parseInt(e.target.value) || 0)
-                    }
-                  />
-                )}
-              />
-            </Grid>
-          </Grid>
+            </Stack>
+
+            {/* Full width field */}
+            <Controller
+              name="attributes.df_version"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="DF Version"
+                  type="number"
+                  fullWidth
+                  onChange={(e) =>
+                    field.onChange(parseInt(e.target.value) || 0)
+                  }
+                   InputProps={{
+                    inputProps: {
+                      min: 1,
+                      max: 1,
+                    },
+                  }}
+                />
+              )}
+            />
+          </Stack>
 
           <Divider sx={{ my: 2 }} />
 
@@ -469,50 +474,58 @@ const [distanceKm, setDistanceKm] = useState(5);
           </Box>
 
           {fields.map((field, index) => (
-            <Grid container spacing={2} key={field.id} sx={{ mb: 2 }}>
-              <Grid item xs={5}>
-                <Controller
-                  name={`attributes.ticket_types.${index}.name`}
-                  control={control}
-                  rules={{ required: "Name is required" }}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Ticket Type Name"
-                      fullWidth
-                      error={!!errors.attributes?.ticket_types?.[index]?.name}
-                      helperText={
-                        errors.attributes?.ticket_types?.[index]?.name?.message
-                      }
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={5}>
-                <Controller
-                  name={`attributes.ticket_types.${index}.id`}
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="ID"
-                      type="number"
-                      fullWidth
-                      onChange={(e) =>
-                        field.onChange(parseInt(e.target.value) || 0)
-                      }
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={2} sx={{ display: "flex", alignItems: "center" }}>
-                <Tooltip title="Remove ticket type">
-                  <IconButton onClick={() => remove(index)}>
-                    <DeleteIcon color="error" />
-                  </IconButton>
-                </Tooltip>
-              </Grid>
-            </Grid>
+            <Stack
+              key={field.id}
+              direction="row"
+              spacing={2}
+              sx={{ mb: 2 }}
+              alignItems="center"
+            >
+              {/* Ticket Name */}
+              <Controller
+                name={`attributes.ticket_types.${index}.name`}
+                control={control}
+                rules={{ required: "Name is required" }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Ticket Type Name"
+                    fullWidth
+                    error={!!errors.attributes?.ticket_types?.[index]?.name}
+                    helperText={
+                      errors.attributes?.ticket_types?.[index]?.name?.message
+                    }
+                    sx={{ flex: 5 }}
+                  />
+                )}
+              />
+
+              {/* Ticket ID */}
+              <Controller
+                name={`attributes.ticket_types.${index}.id`}
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="ID"
+                    type="number"
+                    fullWidth
+                    onChange={(e) =>
+                      field.onChange(parseInt(e.target.value) || 0)
+                    }
+                    sx={{ flex: 2 }}
+                    InputProps={{ inputProps: { min: 1 } }}
+                  />
+                )}
+              />
+
+              {/* Delete Button */}
+              <Tooltip title="Remove ticket type">
+                <IconButton onClick={() => remove(index)}>
+                  <DeleteIcon color="error" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
           ))}
 
           {errors.attributes?.ticket_types && (
@@ -620,7 +633,9 @@ const [distanceKm, setDistanceKm] = useState(5);
               type="number"
               size="small"
               value={distanceKm}
-              onChange={(e) => setDistanceKm(Math.max(1, Number(e.target.value)))}
+              onChange={(e) =>
+                setDistanceKm(Math.max(1, Number(e.target.value)))
+              }
               sx={{ width: 120 }}
               inputProps={{ min: 1 }}
             />
@@ -637,124 +652,134 @@ const [distanceKm, setDistanceKm] = useState(5);
             onChange={(value) => setFareFunction(value || "")}
           />
         </Box>
-<Collapse in={showOutput}>
-        <Box
-          sx={{
-            height: "300px", // Increased height for better visibility
-            p: 2,
-            overflow: "auto",
-            borderTop: "1px solid #e0e0e0",
-          }}
-        >
-          
-          <Paper
+        <Collapse in={showOutput}>
+          <Box
             sx={{
+              height: "300px", // Increased height for better visibility
               p: 2,
-              bgcolor: "#f5f5f5",
-              height: "100%",
               overflow: "auto",
+              borderTop: "1px solid #e0e0e0",
             }}
           >
-            
-            <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-  <Typography variant="subtitle1" gutterBottom sx={{ mb: 0 }}>
-    Console Output:
-  </Typography>
-  <IconButton onClick={() => setShowOutput(false)} sx={{ color: 'red' }}>
-    <CloseIcon />
-  </IconButton>
-</Box>
-             <Box
-  component="pre"
-  sx={{
-    p: 1,
-    bgcolor: "#fff",
-    borderRadius: 1,
-    maxHeight: 100,
-    overflow: "auto",
-  }}
->
-  {output || "No output yet"}
-</Box>
-
-            {fareResults && (
-              <Box>
-                <Typography variant="subtitle1" gutterBottom>
-                  Fare Calculation Results:
+            <Paper
+              sx={{
+                p: 2,
+                bgcolor: "#f5f5f5",
+                height: "100%",
+                overflow: "auto",
+              }}
+            >
+              <Box
+                sx={{
+                  mb: 2,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Typography variant="subtitle1" gutterBottom sx={{ mb: 0 }}>
+                  Console Output:
                 </Typography>
-                
-                {/* Single distance result */}
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    For {fareResults.distance} km:
-                  </Typography>
-                  <Table size="small" sx={{ mb: 2 }}>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Ticket Type</TableCell>
-                        <TableCell align="right">Fare</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {fareResults.results.map((r) => (
-                        <TableRow key={r.type}>
-                          <TableCell>{r.type}</TableCell>
-                          <TableCell align="right">
-                            {r.fare === -1 ? (
-                              <Typography color="error">Error</Typography>
-                            ) : (
-                              `${r.fare} ${control._formValues.attributes.currency_type}`
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </Box>
-
-                {/* Distance range results */}
-                {/* Distance range results */}
-<Box>
-  <Typography variant="body2" sx={{ mb: 1 }}>
-    Fare breakdown by distance:
-  </Typography>
-  <Box sx={{ maxHeight: 200, overflow: "auto" }}>
-    <Table size="small" stickyHeader>
-      <TableHead>
-        <TableRow>
-          <TableCell>Distance</TableCell>
-          {control._formValues.attributes.ticket_types.map(
-            (ticket: TicketType) => (
-            <TableCell key={ticket.id} align="right">
-              {ticket.name}
-            </TableCell>
-          ))}
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {fareResults.rangeResults?.map((row) => (
-          <TableRow key={row.distance}>
-            <TableCell>{row.distance}</TableCell>
-            {control._formValues.attributes.ticket_types.map(
-              (ticket: TicketType) => (
-              <TableCell key={ticket.id} align="right">
-                {row.fares[ticket.name] === -1 ? (
-                  <Typography color="error">-</Typography>
-                ) : (
-                  row.fares[ticket.name]
-                )}
-              </TableCell>
-            ))}
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  </Box>
-</Box>
+                <IconButton
+                  onClick={() => setShowOutput(false)}
+                  sx={{ color: "red" }}
+                >
+                  <CloseIcon />
+                </IconButton>
               </Box>
-            )}
-          </Paper>
-        </Box>
+              <Box
+                component="pre"
+                sx={{
+                  p: 1,
+                  bgcolor: "#fff",
+                  borderRadius: 1,
+                  maxHeight: 100,
+                  overflow: "auto",
+                }}
+              >
+                {output || "No output yet"}
+              </Box>
+
+              {fareResults && (
+                <Box>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Fare Calculation Results:
+                  </Typography>
+
+                  {/* Single distance result */}
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      For {fareResults.distance} km:
+                    </Typography>
+                    <Table size="small" sx={{ mb: 2 }}>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Ticket Type</TableCell>
+                          <TableCell align="right">Fare</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {fareResults.results.map((r) => (
+                          <TableRow key={r.type}>
+                            <TableCell>{r.type}</TableCell>
+                            <TableCell align="right">
+                              {r.fare === -1 ? (
+                                <Typography color="error">Error</Typography>
+                              ) : (
+                                `${r.fare} ${control._formValues.attributes.currency_type}`
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Box>
+
+                  {/* Distance range results */}
+                  {/* Distance range results */}
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      Fare breakdown by distance:
+                    </Typography>
+                    <Box sx={{ maxHeight: 200, overflow: "auto" }}>
+                      <Table size="small" stickyHeader>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Distance</TableCell>
+                            {control._formValues.attributes.ticket_types.map(
+                              (ticket: TicketType) => (
+                                <TableCell key={ticket.id} align="right">
+                                  {ticket.name}
+                                </TableCell>
+                              )
+                            )}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {fareResults.rangeResults?.map((row) => (
+                            <TableRow key={row.distance}>
+                              <TableCell>{row.distance}</TableCell>
+                              {control._formValues.attributes.ticket_types.map(
+                                (ticket: TicketType) => (
+                                  <TableCell key={ticket.id} align="right">
+                                    {row.fares[ticket.name] === -1 ? (
+                                      <Typography color="error">-</Typography>
+                                    ) : (
+                                      row.fares[ticket.name]
+                                    )}
+                                  </TableCell>
+                                )
+                              )}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+            </Paper>
+          </Box>
         </Collapse>
       </Paper>
       <Dialog

@@ -242,10 +242,6 @@ const OperatorListingTable = () => {
     }
   };
 
-  const handleCloseDetailCard = () => {
-    setSelectedOperator(null);
-  };
-
   const handleRowClick = (account: Operator) => {
     setSelectedOperator(account);
   };
@@ -677,7 +673,7 @@ const OperatorListingTable = () => {
             onDelete={() => {}}
             onBack={() => setSelectedOperator(null)}
             refreshList={refreshList}
-            onCloseDetailCard={handleCloseDetailCard}
+            onCloseDetailCard={() => setSelectedOperator(null)}
           />
         </Box>
       )}

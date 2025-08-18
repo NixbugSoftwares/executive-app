@@ -63,7 +63,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
           center: initialCoordinates
             ? fromLonLat([initialCoordinates.lng, initialCoordinates.lat])
             : fromLonLat([76.9366, 8.5241]),
-          zoom: 10,
+          zoom: 13,
           minZoom: 3,
           maxZoom: 18,
         }),
