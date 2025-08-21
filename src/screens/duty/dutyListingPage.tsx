@@ -477,8 +477,6 @@ const DutyListingTable = () => {
       <FormModal
         open={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
-        title="Create Duty"
-        showCancel
       >
         <DutyCreationForm
           refreshList={refreshList}

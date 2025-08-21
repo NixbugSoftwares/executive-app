@@ -33,6 +33,7 @@ import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import PersonIcon from '@mui/icons-material/Person';
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import { useTheme, useMediaQuery } from "@mui/material";
 import LogoutConfirmationModal from "./logoutModal";
 import { companyListApi } from "../slices/appSlice";
@@ -42,7 +43,7 @@ import { useDispatch } from "react-redux";
 // Styled component for smooth transitions
 const StableCollapse = styled(Collapse)({
   "&.MuiCollapse-hidden": {
-    visibility: "visible", // Prevents visual glitches
+    visibility: "visible",
   },
 });
 
@@ -58,6 +59,7 @@ const Sidebar: React.FC = () => {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
   // Memoized company check
   const isCompanySelected = useMemo(
     () =>
@@ -70,8 +72,6 @@ const Sidebar: React.FC = () => {
 
     [companyId, location.pathname]
   );
-
-  // Fetch company name when companyId changes
   // Updated fetchCompanyName useEffect
   useEffect(() => {
     const fetchCompanyName = async () => {
@@ -177,6 +177,11 @@ const Sidebar: React.FC = () => {
         label:"Duty"
         ,path:`/executive/company/duty${companyId ? `/${companyId}` : ""}`
         ,icon:<AssignmentTurnedInRoundedIcon/>
+      },
+      {
+        label:"Statment"
+        ,path:`/executive/company/statment${companyId ? `/${companyId}` : ""}`
+        ,icon:<ReceiptLongIcon/>
       },
 
 
@@ -471,5 +476,4 @@ const Sidebar: React.FC = () => {
     </>
   );
 };
-
 export default React.memo(Sidebar);

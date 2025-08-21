@@ -146,8 +146,13 @@ const DutyCreationForm: React.FC<IOperatorCreationFormProps> = ({
         showErrorToast("Duty creation failed. Please try again.");
       }
     } catch (error: any) {
-      showErrorToast(error.message || "Something went wrong. Please try again.");
-    } finally {
+  if (error.status === 406) {
+    showErrorToast("Duty already exists for this operator and service.");
+  } else {
+    showErrorToast(error.message || "Something went wrong. Please try again.");
+  }
+}
+ finally {
       setLoading(false);
     }
   };

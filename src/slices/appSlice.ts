@@ -134,6 +134,11 @@ interface ServiceListParams {
   ticket_mode?: number;
   status?: number;
   status_list?: number[];
+  bus_id?: number;
+  starting_at_ge?: string;
+  starting_at_le?: string;
+  order_by?: number;
+  order_in?: number;
 }
 
 interface ScheduleListParams {
@@ -155,6 +160,8 @@ interface DutyListParams {
   status?: number;
   type?: number;
   company_id?: number;
+  service_id?: number;
+  service_id_list?: number[];
 }
 
 interface paperTicketListParams {
@@ -1815,7 +1822,7 @@ export const routeLandmarkUpdationApi = createAsyncThunk(
 export const serviceListingApi = createAsyncThunk(
   "/service",
   async (params: ServiceListParams, { rejectWithValue }) => {
-    const { limit, offset, id, company_id, name,  ticket_mode, status, status_list  } =
+    const { limit, offset, id, company_id, name,  ticket_mode, status, status_list,bus_id, starting_at_ge, starting_at_le, order_by, order_in  } =
       params;
 
     const queryParams = {
@@ -1827,6 +1834,11 @@ export const serviceListingApi = createAsyncThunk(
       ...(ticket_mode && { ticket_mode }),
       ...(status && { status }),
       ...(status_list && { status_list }),
+      ...(bus_id && { bus_id }),
+      ...(starting_at_ge && { starting_at_ge }),
+      ...(starting_at_le && { starting_at_le }),
+      ...(order_by && { order_by }),
+      ...(order_in && { order_in }),
     };
     try {
       const response = await commonApi.apiCall(
@@ -2061,7 +2073,7 @@ export const scheduleDeleteApi = createAsyncThunk(
 export const dutyListingApi = createAsyncThunk(
   "/duty",
   async (params: DutyListParams, { rejectWithValue }) => {
-    const { limit, offset, id, name, status, type, company_id } = params;
+    const { limit, offset, id, name, status, type, company_id, service_id, service_id_list } = params;
     const queryParams = {
       limit,
       offset,
@@ -2070,6 +2082,8 @@ export const dutyListingApi = createAsyncThunk(
       ...(status && { status }),
       ...(type && { type }),
       ...(company_id && { company_id }),
+      ...(service_id && { service_id }),
+      ...(service_id_list && { service_id_list }),
     };
     try {
       const response = await commonApi.apiCall(

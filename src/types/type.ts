@@ -74,6 +74,8 @@ export interface Landmark {
   status: string;
   importance: string;
   type: string;
+  arrivalTime: string;
+  departureTime: string;
 }
 
 export interface BusStop {
@@ -239,6 +241,7 @@ export interface Duty {
   type: string;
   created_on: string;
   updated_on: string;
+  collection: number;
 }
 
 export interface PaperTicket {
