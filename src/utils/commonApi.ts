@@ -3,14 +3,13 @@ import localStorageHelper from "./localStorageHelper";
 import { showErrorToast } from "../common/toastMessageHelper";
 import commonHelper from "./commonHelper";
 
-export const base_URL = "https://api.entebus.nixbug.com/executive/"; //base URL
-
+export const base_URL = (window as any).__ENV__?.EXECUTIVE_APP_API_BASE_URL
 //******************************************************Token **************************************** */
 const getAuthToken = async () => {
   try {
     const token = await localStorageHelper.getItem("@token");
     const response = await axios.patch(
-      `${base_URL}/entebus/account/token`,
+      `${base_URL}/executive/entebus/account/token`,
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -133,7 +132,7 @@ const apiCall = async (
 
     const config = {
       method,
-      url: `${base_URL}${route}`,
+      url: `${base_URL}${/executive/}${route}`,
       headers,
       data: method !== "get" ? params : undefined,
       params: method === "get" ? params : undefined,
