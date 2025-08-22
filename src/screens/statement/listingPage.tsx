@@ -55,11 +55,15 @@ const StatementListingPage = () => {
   const [busList, setBusList] = useState<Bus[]>([]);
   const [selectedBus, setSelectedBus] = useState<number | null>(null);
   const [serviceList, setServiceList] = useState<Service[]>([]);
-  const [selectedServices, setSelectedServices] = useState<SelectedService[]>([]);
+  const [selectedServices, setSelectedServices] = useState<SelectedService[]>(
+    []
+  );
   const [_dutyList, setDutyList] = useState<Duty[]>([]);
   const [_operatorList, setOperatorList] = useState<Operator[]>([]);
   const [statementData, setStatementData] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<"services" | "statement">("services");
+  const [activeTab, setActiveTab] = useState<"services" | "statement">(
+    "services"
+  );
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
   const [page, setPage] = useState(0);
@@ -174,7 +178,7 @@ const StatementListingPage = () => {
         setIsLoading(false);
       }
     },
-    [selectedBus, fromDate, toDate, rowsPerPage, dispatch] // ✅ dependencies
+    [selectedBus, fromDate, toDate, rowsPerPage, dispatch] 
   );
 
   useEffect(() => {
@@ -217,7 +221,6 @@ const StatementListingPage = () => {
       )
     );
   };
-
   // Select all services
   const handleSelectAll = () => {
     const allSelected = selectedServices.every((service) => service.isSelected);
@@ -227,32 +230,39 @@ const StatementListingPage = () => {
   };
 
   // *********************************************Generate statement************************************
-  const generateStatement = async () => {
-    const selectedServiceIds = selectedServices
-      .filter((service) => service.isSelected)
-      .map((service) => service.id);
-    if (selectedServiceIds.length === 0) {
-      showErrorToast("Please select at least one service");
-      return;
-    }
-    try {
-      setIsGeneratingStatement(true);
-      const dutyRes = await dispatch(
-        dutyListingApi({
-          service_id: selectedServiceIds[0],
-          service_id_list: selectedServiceIds,
-        })
-      ).unwrap();
-      const duties = dutyRes?.data || [];
-      setDutyList(duties);
-      // Extract unique operator IDs from duties
-      const operatorIds = [
-        ...new Set(duties.map((duty: any) => duty.operator_id)),
-      ];
-      // Fetch operator details
-      const operatorDetails = await Promise.all(
-        operatorIds.map(async (id: unknown) => {
-          const operatorId = id as number;
+const generateStatement = async () => {
+  const selectedServiceIds = selectedServices
+    .filter((service) => service.isSelected)
+    .map((service) => service.id);
+    
+  if (selectedServiceIds.length === 0) {
+    showErrorToast("Please select at least one service");
+    return;
+  }
+  
+  try {
+    setIsGeneratingStatement(true);
+    
+    // Single API call with all service IDs
+    const dutyRes = await dispatch(
+      dutyListingApi({
+        service_id_list: selectedServiceIds, // Pass array of service IDs
+      })
+    ).unwrap();
+    
+    const allDuties = dutyRes?.data || [];
+    setDutyList(allDuties);
+    
+    // Extract unique operator IDs from duties
+    const operatorIds = [
+      ...new Set(allDuties.map((duty: any) => duty.operator_id)),
+    ];
+    
+    // Fetch operator details for all unique operator IDs
+    const operatorDetails = await Promise.all(
+      operatorIds.map(async (id: unknown) => {
+        const operatorId = id as number;
+        try {
           const operatorRes = await dispatch(
             operatorListApi({
               id: operatorId,
@@ -261,35 +271,42 @@ const StatementListingPage = () => {
           return Array.isArray(operatorRes?.data) && operatorRes.data.length > 0
             ? operatorRes.data[0]
             : null;
-        })
+        } catch (error) {
+          console.error(`Error fetching operator ${operatorId}`, error);
+          return null;
+        }
+      })
+    );
+    
+    // Filter out any null values
+    const validOperators = operatorDetails.filter((op) => op !== null);
+    setOperatorList(validOperators);
+    
+    // Combine duty and operator data
+    const statement = allDuties.map((duty: any) => {
+      const operator = validOperators.find(
+        (op) => op.id === duty.operator_id
       );
-      // Filter out any null values
-      const validOperators = operatorDetails.filter((op) => op !== null);
-      setOperatorList(validOperators);
-      // Combine duty and operator data
-      const statement = duties.map((duty: any) => {
-        const operator = validOperators.find(
-          (op) => op.id === duty.operator_id
-        );
-        return {
-          dutyId: duty.id,
-          collection: duty.collection,
-          operatorId: duty.operator_id,
-          operatorName: operator?.full_name || "Unknown",
-          serviceId: duty.service_id,
-          date: duty.date || new Date().toISOString().split("T")[0],
-        };
-      });
-      setStatementData(statement);
-      setActiveTab("statement");
-      showSuccessToast("Statement generated successfully");
-    } catch (error: any) {
-      console.error("Error generating statement", error);
-      showErrorToast(error.message || "Failed to generate statement");
-    } finally {
-      setIsGeneratingStatement(false);
-    }
-  };
+      return {
+        dutyId: duty.id,
+        collection: duty.collection,
+        operatorId: duty.operator_id,
+        operatorName: operator?.full_name || "Unknown",
+        serviceId: duty.service_id,
+        date: duty.date || new Date().toISOString().split("T")[0],
+      };
+    });
+    
+    setStatementData(statement);
+    setActiveTab("statement");
+    showSuccessToast("Statement generated successfully");
+  } catch (error: any) {
+    console.error("Error generating statement", error);
+    showErrorToast(error.message || "Failed to generate statement");
+  } finally {
+    setIsGeneratingStatement(false);
+  }
+};
   // ******************************************Calculate total collection******************************
   const totalCollection = statementData.reduce(
     (sum, item) => sum + (item.collection || 0),
@@ -428,7 +445,7 @@ const StatementListingPage = () => {
               <TableContainer
                 sx={{
                   flex: 1,
-                  maxHeight: "calc(100vh - 100px)",
+                  maxHeight: "400px", // Set a fixed height for scroll
                   overflowY: "auto",
                   borderRadius: 2,
                   border: "1px solid #e0e0e0",
@@ -627,7 +644,6 @@ const StatementListingPage = () => {
                 )}
               </TableContainer>
 
-              {/* Fixed Pagination at bottom */}
               <Box
                 sx={{ p: 2, borderTop: 1, borderColor: "divider", mt: "auto" }}
               >
@@ -655,7 +671,6 @@ const StatementListingPage = () => {
                 </Alert>
                 <Button
                   variant="contained"
-
                   onClick={() => setIsOperatorWise((prev) => !prev)}
                   sx={{ ml: 2, backgroundColor: "darkblue" }}
                 >
@@ -672,7 +687,7 @@ const StatementListingPage = () => {
                           <TableCell
                             sx={{ fontWeight: "bold", textAlign: "center" }}
                           >
-                           <b>Operator</b>
+                            <b>Operator</b>
                           </TableCell>
                           <TableCell
                             sx={{ fontWeight: "bold", textAlign: "center" }}
@@ -700,31 +715,105 @@ const StatementListingPage = () => {
                 <TableContainer
                   sx={{
                     flex: 1,
-                    maxHeight: "calc(100vh - 100px)",
+                    maxHeight: "400px", // Set a fixed height for scroll
                     overflowY: "auto",
                     borderRadius: 2,
                     border: "1px solid #e0e0e0",
                     position: "relative",
                   }}
                 >
-                  <Table>
+                  <Table stickyHeader>
                     <TableHead>
                       <TableRow>
-                        <TableCell><b>Operator Name</b></TableCell>
-                        <TableCell><b>Service ID</b></TableCell>
-                        <TableCell><b>Duty ID</b></TableCell>
-                        <TableCell><b>Date</b></TableCell>
-                        <TableCell align="right"><b>Collection (₹)</b></TableCell>
+                        <TableCell
+                          sx={{
+                            textAlign: "center",
+                            backgroundColor: "#fafafa",
+                            fontWeight: 600,
+                            fontSize: "0.875rem",
+                            borderBottom: "1px solid #ddd",
+                            position: "sticky",
+                            top: 0,
+                            zIndex: 2,
+                          }}
+                        >
+                          <b>Operator Name</b>
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            textAlign: "center",
+                            backgroundColor: "#fafafa",
+                            fontWeight: 600,
+                            fontSize: "0.875rem",
+                            borderBottom: "1px solid #ddd",
+                            position: "sticky",
+                            top: 0,
+                            zIndex: 2,
+                          }}
+                        >
+                          <b>Service ID</b>
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            textAlign: "center",
+                            backgroundColor: "#fafafa",
+                            fontWeight: 600,
+                            fontSize: "0.875rem",
+                            borderBottom: "1px solid #ddd",
+                            position: "sticky",
+                            top: 0,
+                            zIndex: 2,
+                          }}
+                        >
+                          <b>Duty ID</b>
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            textAlign: "center",
+                            backgroundColor: "#fafafa",
+                            fontWeight: 600,
+                            fontSize: "0.875rem",
+                            borderBottom: "1px solid #ddd",
+                            position: "sticky",
+                            top: 0,
+                            zIndex: 2,
+                          }}
+                        >
+                          <b>Date</b>
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            textAlign: "center",
+                            backgroundColor: "#fafafa",
+                            fontWeight: 600,
+                            fontSize: "0.875rem",
+                            borderBottom: "1px solid #ddd",
+                            position: "sticky",
+                            top: 0,
+                            zIndex: 2,
+                          }}
+                          align="right"
+                        >
+                          <b>Collection (₹)</b>
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {statementData.map((item) => (
                         <TableRow key={item.dutyId}>
-                          <TableCell>{item.operatorName}</TableCell>
-                          <TableCell>{item.serviceId}</TableCell>
-                          <TableCell>{item.dutyId}</TableCell>
-                          <TableCell>{item.date}</TableCell>
-                          <TableCell align="right">
+                          <TableCell sx={{ textAlign: "center" }}>
+                            {item.operatorName}
+                          </TableCell>
+                          <TableCell sx={{ textAlign: "center" }}>
+                            {item.serviceId}
+                          </TableCell>
+                          <TableCell sx={{ textAlign: "center" }}>
+                            {item.dutyId}
+                          </TableCell>
+                          <TableCell sx={{ textAlign: "center" }}>
+                            {item.date}
+                          </TableCell>
+                          <TableCell sx={{ textAlign: "center" }} align="right">
                             {item.collection?.toFixed(2)}
                           </TableCell>
                         </TableRow>
