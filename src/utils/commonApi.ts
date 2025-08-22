@@ -2,14 +2,13 @@ import axios from "axios";
 import localStorageHelper from "./localStorageHelper";
 import commonHelper from "./commonHelper";
 
-export const base_URL = "http://localhost:8080/executive/"; //base URL
-
+export const base_URL = (window as any).__ENV__?.EXECUTIVE_APP_API_BASE_URL
 //******************************************************Token **************************************** */
 const getAuthToken = async () => {
   try {
     const token = await localStorageHelper.getItem("@token");
     const response = await axios.patch(
-      `${base_URL}/entebus/account/token`,
+      `${base_URL}/executive/entebus/account/token`,
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -149,7 +148,7 @@ const apiCall = async (
 
     const config = {
       method,
-      url: `${base_URL}${route}`,
+      url: `${base_URL}${/executive/}${route}`,
       headers,
       data: method !== "get" ? params : undefined,
       params: method === "get" ? params : undefined,

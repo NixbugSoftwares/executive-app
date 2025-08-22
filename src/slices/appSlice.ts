@@ -207,7 +207,7 @@ export const loggedinUserRoleDetails = createAsyncThunk<
   try {
     const response = await commonApi.apiCall(
       "get",
-      "role",
+      "entebus/role",
       {},
       true,
       "application/json"
@@ -397,7 +397,7 @@ export const roleCreationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "role",
+        "entebus/role",
         data,
         true,
         "application/www-form-urlencoded"
@@ -431,7 +431,7 @@ export const roleListApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "get",
-        "role",
+        "entebus/role",
         queryParams,
         true,
         "application/json"
@@ -463,7 +463,7 @@ export const roleUpdationApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "patch",
-        `role`,
+        `entebus/role`,
         formData,
         true,
         "application/x-www-form-urlencoded"
@@ -489,7 +489,7 @@ export const roleDeleteApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "delete",
-        "role",
+        "entebus/role",
         data,
         true,
         "application/x-www-form-urlencoded"
@@ -519,7 +519,7 @@ export const roleAssignApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "post",
-        "account/role",
+        "entebus/account/role",
         { executive_id, role_id },
         true,
         "application/x-www-form-urlencoded"
@@ -546,7 +546,7 @@ export const fetchRoleMappingApi = createAsyncThunk(
     try {
       const response = await commonApi.apiCall(
         "get",
-        "account/role",
+        "entebus/account/role",
         { executive_id },
         true,
         "application/json"
@@ -583,7 +583,7 @@ export const roleAssignUpdateApi = createAsyncThunk(
 
       const response = await commonApi.apiCall(
         "patch",
-        "account/role",
+        "entebus/account/role",
         formData,
         true,
         "application/x-www-form-urlencoded"
