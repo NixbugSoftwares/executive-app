@@ -3,7 +3,7 @@ import localStorageHelper from "./localStorageHelper";
 import { showErrorToast } from "../common/toastMessageHelper";
 import commonHelper from "./commonHelper";
 
-export const base_URL = (window as any).__ENV__?.EXECUTIVE_APP_API_BASE_URL
+export const base_URL = (window as any).__ENV__?.API_BASE_URL
 //******************************************************Token **************************************** */
 const getAuthToken = async () => {
   try {
