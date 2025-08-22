@@ -51,7 +51,7 @@ If you don't have Node.js and npm installed, follow these steps:
 - If you want to run the application in a Docker container, you can use the provided Dockerfile.
 - The base API URL is passed as an environment variable (`EXECUTIVE_APP_API_BASE_URL`) at runtime.
 - Build the Docker image: `docker build -t docker.nixbug.com/entebus/executive-app:main-a2923dd -t docker.nixbug.com/entebus/executive-app:main-latest .`
-- Run the Docker container : `docker run -p 80:80 --name docker.nixbug.com/entebus/executive-app:main-latest -e EXECUTIVE_APP_API_BASE_URL="https://api.entebus.com" `.
+- Run the Docker container : `docker run -d -p 80:80 --name executive-app -e EXECUTIVE_APP_API_BASE_URL="https://api.entebus.com" docker.nixbug.com/entebus/executive-app:main-latest`.
 
 
 **Running the Server on a Global Network Interface**
