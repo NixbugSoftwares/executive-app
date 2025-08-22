@@ -47,6 +47,12 @@ If you don't have Node.js and npm installed, follow these steps:
 ```npm run dev```
 4.Open your browser and navigate to [http://localhost:5173/] or the link provided in the terminal.
 
+**Docker Image**
+- If you want to run the application in a Docker container, you can use the provided Dockerfile.
+- The base API URL is passed as an environment variable (`EXECUTIVE_APP_API_BASE_URL`) at runtime.
+- Build the Docker image: `docker build -t docker.nixbug.com/entebus/executive-app:main-a2923dd -t docker.nixbug.com/entebus/executive-app:main-latest .`
+- Run the Docker container : `docker run -p 80:80 --name docker.nixbug.com/entebus/executive-app:main-latest -e EXECUTIVE_APP_API_BASE_URL="https://api.entebus.com" `.
+
 
 **Running the Server on a Global Network Interface**
 -- If you want to access the application from another device on the same network, you can run the server on a global network interface. Use the following command:
@@ -63,8 +69,6 @@ Here’s a quick summary of the commands you’ll need:
 4. Start the application: `npm run dev`
 5. Run the server on a global network interface: `npm run dev -- --host`
 
-
-
 **Troubleshooting**
 - Port already in use: If the default port 5173 is already in use, Vite will automatically try the next available port. Check the terminal for the correct URL.
 - Dependency issues: If you encounter issues during npm install, try deleting the node_modules folder and the package-lock.json file, then run npm install again.
@@ -79,6 +83,7 @@ Here’s a quick summary of the commands you’ll need:
 - This setup guide assumes you have a basic understanding of Node.js and npm.
 - Make sure to check out the [Executive App GitHub repository](https://github.com/your-username/executive-app) for updates and additional information.
 - Replace your-username in the repository URL with the actual username or organization name where the repository is hosted.
+
 
 
 **Conclusion**
