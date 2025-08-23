@@ -50,12 +50,6 @@ const typeValueMap: Record<string, string> = {
   NATIONAL: "5",
   National: "5",
 };
-function toWKTPolygon(boundary: string) {
-  if (!boundary) return "";
-  if (boundary.trim().startsWith("POLYGON")) return boundary;
-  return `POLYGON((${boundary}))`;
-}
-
 const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
   onClose,
   refreshList,
@@ -69,7 +63,7 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
-  const [updatedBoundary, setUpdatedBoundary] = useState(
+  const [updatedBoundary, _setUpdatedBoundary] = useState(
     landmarkData?.boundary || boundary || ""
   );
   const {
@@ -85,10 +79,6 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
     },
   });
 
-  const handleSaveBoundary = (coordinates: string) => {
-    setUpdatedBoundary(coordinates);
-    setMapModalOpen(false);
-  };
   const handleLandmarkUpdate: SubmitHandler<ILandmarkFormInputs> = async (
     data
   ) => {
@@ -98,11 +88,13 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
       const formData = new FormData();
       formData.append("id", landmarkId.toString());
       formData.append("name", data.name);
-      formData.append(
-        "boundary",
-        toWKTPolygon(data.boundary || updatedBoundary)
-      );
       formData.append("type", data.type);
+
+      console.log("📦 FormData being sent (without boundary):");
+      for (const [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
+
       await dispatch(landmarkUpdationApi({ landmarkId, formData })).unwrap();
       showSuccessToast("Landmark updated successfully!");
       refreshList("refresh");
@@ -118,6 +110,11 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
   if (!landmarkData) {
     return <CircularProgress />;
   }
+  const handleBoundaryUpdated = () => {
+    refreshList("refresh");
+    onClose();
+    onBack && onBack();
+  };
 
   return (
     <Box
@@ -171,23 +168,6 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
         fullWidth
       />
 
-      <TextField
-        label="Boundary"
-        {...register("boundary", { required: "Boundary is required" })}
-        value={updatedBoundary}
-        InputProps={{ readOnly: true }}
-        onClick={() => setMapModalOpen(true)}
-        fullWidth
-      />
-
-      <MapModal
-        open={mapModalOpen}
-        onClose={() => setMapModalOpen(false)}
-        initialBoundary={updatedBoundary}
-        onSave={handleSaveBoundary}
-        editingLandmarkId={landmarkId}
-      />
-
       <Controller
         name="type"
         control={control}
@@ -209,20 +189,60 @@ const LandmarkUpdateForm: React.FC<ILandmarkUpdateFormProps> = ({
           </TextField>
         )}
       />
-
-      <Button
-        type="submit"
-        variant="contained"
-        color="primary"
-        fullWidth
-        disabled={loading}
+      <Controller
+  name="boundary"
+  control={control}
+  rules={{ required: "Boundary is required" }}
+  render={({ field, fieldState }) => (
+    <Box>
+      <Typography
+        onClick={() => setMapModalOpen(true)}
+        sx={{
+          cursor: "pointer",
+          color: field.value ? "primary.main" : "text.secondary",
+          textDecoration: "underline",
+          display: "inline-block",
+          mb: 1,
+        }}
       >
-        {loading ? (
-          <CircularProgress size={24} sx={{ color: "white" }} />
-        ) : (
-          "Update Landmark"
-        )}
-      </Button>
+        Update Boundary here
+      </Typography>
+      {fieldState.error && (
+        <Typography variant="caption" color="error">
+          {fieldState.error.message}
+        </Typography>
+      )}
+    </Box>
+  )}
+/>
+
+
+      <MapModal
+        open={mapModalOpen}
+        onClose={() => setMapModalOpen(false)}
+        initialBoundary={updatedBoundary}
+        editingLandmarkId={landmarkId}
+        refreshList={refreshList}
+        onBoundaryUpdated={handleBoundaryUpdated}
+      />
+      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+        <Button
+          type="submit"
+          variant="contained"
+          sx={{ background: "darkblue", color: "white" }}
+          fullWidth
+          disabled={loading}
+        >
+          {loading ? (
+            <CircularProgress size={24} sx={{ color: "white" }} />
+          ) : (
+            "Update Landmark"
+          )}
+        </Button>
+        <Button color="error" fullWidth onClick={onClose} size="small">
+          cancel
+        </Button>
+      </Box>
     </Box>
   );
 };

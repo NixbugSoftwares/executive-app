@@ -429,7 +429,7 @@ const LandmarkListing = () => {
                       <Tooltip
                         title={
                           hasDrawn
-                            ? "You cant select a landamrk at this mode. Clear drawn boundaries first."
+                            ? "Landmark selection is disabled while boundaries are drawn. Clear boundaries to continue."
                             : ""
                         }
                         placement="top"
@@ -439,8 +439,8 @@ const LandmarkListing = () => {
                           onClick={() => !hasDrawn && handleRowClick(row)}
                           sx={{
                             cursor: hasDrawn ? "not-allowed" : "pointer",
-                            opacity: hasDrawn ? 0.5 : 1, // 🔹 dim effect
-                            pointerEvents: hasDrawn ? "auto" : "auto", // allow tooltip hover even if disabled
+                            opacity: hasDrawn ? 0.5 : 1,
+                            pointerEvents: hasDrawn ? "auto" : "auto",
                             backgroundColor:
                               selectedRow === row.id ? "#E3F2FD" : "inherit",
                             "&:hover": {
@@ -735,11 +735,6 @@ const LandmarkListing = () => {
             />
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenUpdateModal(false)} color="error">
-            Cancel
-          </Button>
-        </DialogActions>
       </Dialog>
 
       <Dialog

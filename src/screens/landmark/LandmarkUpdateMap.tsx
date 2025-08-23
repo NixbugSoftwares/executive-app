@@ -22,10 +22,10 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { landmarkListApi } from "../../slices/appSlice";
+import { landmarkListApi, landmarkUpdationApi } from "../../slices/appSlice";
 import { Coordinate } from "ol/coordinate";
 import { getArea } from "ol/sphere";
-import { showErrorToast } from "../../common/toastMessageHelper";
+import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
 import { useAppDispatch } from "../../store/Hooks";
 
 interface Landmark {
@@ -36,16 +36,18 @@ interface Landmark {
 
 interface MapComponentProps {
   initialBoundary?: string;
-  onSave: (coordinates: string) => void;
   onClose: () => void;
   editingLandmarkId: number;
+  refreshList?: (value: string) => void;
+   onBoundaryUpdated?: () => void;
 }
 
 const UpdateMapComponent: React.FC<MapComponentProps> = ({
   initialBoundary,
-  onSave,
   onClose,
   editingLandmarkId,
+  refreshList,
+  onBoundaryUpdated 
 }) => {
   const dispatch = useAppDispatch();
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -369,13 +371,31 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
     mapInstance.current.addInteraction(draw);
   };
 
-  const handleConfirm = () => {
-    if (updatedCoordinates) {
-      onSave(updatedCoordinates);
+const handleConfirm = async () => {
+    if (!updatedCoordinates) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("id", editingLandmarkId.toString());
+      formData.append("boundary", updatedCoordinates);
+
+      await dispatch(
+        landmarkUpdationApi({ landmarkId: editingLandmarkId, formData })
+      ).unwrap();
+
+      showSuccessToast("Boundary updated successfully!");
+      
+      // Call both refreshList and the callback
+      refreshList?.("refresh");
+      onBoundaryUpdated?.(); // Notify parent that boundary was updated
+      
       vectorSource.current.clear();
       onClose();
+    } catch (error: any) {
+      showErrorToast(error.message || "Error updating boundary");
     }
   };
+
 
   const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
     if (!mapInstance.current) return;
@@ -497,6 +517,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
           alignItems: "center",
           mt: 2,
           flexWrap: "wrap",
+          gap: 2,
         }}
       >
         {drawingArea && (
@@ -507,7 +528,7 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
 
         <Button
           variant="contained"
-          color="secondary"
+          sx={{ backgroundColor:"darkblue"}}
           onClick={handleConfirm}
           disabled={!updatedCoordinates}
         >
