@@ -95,6 +95,7 @@ const LandmarkListing = () => {
       state.app.permissions.includes("update_landmark")
   );
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
+  const [hasDrawn, setHasDrawn] = useState(false);
 
   //****************exctracting points of landmark and busstop**********************
   const extractRawPoints = (polygonString: string): string => {
@@ -133,10 +134,7 @@ const LandmarkListing = () => {
       })
       .catch((error) => {
         console.error("Fetch Error:", error);
-        showErrorToast(
-            error.message ||
-            "Failed to fetch account list"
-        );
+        showErrorToast(error.message || "Failed to fetch account list");
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -157,8 +155,7 @@ const LandmarkListing = () => {
         }));
       })
       .catch((error) => {
-        showErrorToast( error.message || "Failed to fetch bus stops"
-        );
+        showErrorToast(error.message || "Failed to fetch bus stops");
       });
   };
   const handleRowClick = (landmark: Landmark) => {
@@ -429,43 +426,57 @@ const LandmarkListing = () => {
                 landmarkList.map((row) => {
                   return (
                     <React.Fragment key={row.id}>
-                      <TableRow
-                        hover
-                        onClick={() => handleRowClick(row)}
-                        sx={{
-                          cursor: "pointer",
-                          backgroundColor:
-                            selectedRow === row.id ? "#E3F2FD" : "inherit",
-                          "&:hover": {
-                            backgroundColor:
-                              selectedRow === row.id
-                                ? "#E3F2FD !important"
-                                : "#E3F2FD",
-                          },
-                        }}
+                      <Tooltip
+                        title={
+                          hasDrawn
+                            ? "You cant select a landamrk at this mode. Clear drawn boundaries first."
+                            : ""
+                        }
+                        placement="top"
                       >
-                        <TableCell>
-                          <IconButton
-                            aria-label="expand row"
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedRow(
-                                expandedRow === row.id ? null : row.id
-                              );
-                            }}
-                          >
-                            {expandedRow === row.id ? (
-                              <KeyboardArrowUpIcon />
-                            ) : (
-                              <KeyboardArrowDownIcon />
-                            )}
-                          </IconButton>
-                        </TableCell>
-                        <TableCell>{row.id}</TableCell>
-                        <TableCell>{row.name}</TableCell>
-                        <TableCell>{row.type}</TableCell>
-                      </TableRow>
+                        <TableRow
+                          hover={!hasDrawn}
+                          onClick={() => !hasDrawn && handleRowClick(row)}
+                          sx={{
+                            cursor: hasDrawn ? "not-allowed" : "pointer",
+                            opacity: hasDrawn ? 0.5 : 1, // 🔹 dim effect
+                            pointerEvents: hasDrawn ? "auto" : "auto", // allow tooltip hover even if disabled
+                            backgroundColor:
+                              selectedRow === row.id ? "#E3F2FD" : "inherit",
+                            "&:hover": {
+                              backgroundColor:
+                                selectedRow === row.id
+                                  ? "#E3F2FD !important"
+                                  : hasDrawn
+                                  ? "inherit" // no hover effect if drawn
+                                  : "#E3F2FD",
+                            },
+                          }}
+                        >
+                          <TableCell>
+                            <IconButton
+                              aria-label="expand row"
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedRow(
+                                  expandedRow === row.id ? null : row.id
+                                );
+                              }}
+                              disabled={hasDrawn} // 🔹 disable expand if drawn
+                            >
+                              {expandedRow === row.id ? (
+                                <KeyboardArrowUpIcon />
+                              ) : (
+                                <KeyboardArrowDownIcon />
+                              )}
+                            </IconButton>
+                          </TableCell>
+                          <TableCell>{row.id}</TableCell>
+                          <TableCell>{row.name}</TableCell>
+                          <TableCell>{row.type}</TableCell>
+                        </TableRow>
+                      </Tooltip>
                       <TableRow>
                         <TableCell
                           style={{ paddingBottom: 0, paddingTop: 0 }}
@@ -673,6 +684,7 @@ const LandmarkListing = () => {
             }
             onBusStopPointSelect={handlePointSelect}
             landmarkRefreshKey={landmarkRefreshKey}
+            onDrawingStatusChange={(status) => setHasDrawn(status)}
           />
         </Box>
       </Box>
