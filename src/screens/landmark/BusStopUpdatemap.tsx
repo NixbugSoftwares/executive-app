@@ -197,7 +197,7 @@ const parseWKTPolygon = (wkt: string): [number, number][] | null => {
         new Style({
           image: new Icon({
             src: busstopimage,
-            scale: 0.1,
+            scale: 0.07,
             anchor: [0.5, 1],
           }),
           
@@ -250,7 +250,7 @@ const parseWKTPolygon = (wkt: string): [number, number][] | null => {
         new Style({
           image: new Icon({
             src: busstopimage,
-            scale: 0.15,
+            scale: 0.07,
             anchor: [0.5, 1],
           }),
         })

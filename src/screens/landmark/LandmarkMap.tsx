@@ -498,7 +498,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
               new Style({
                 image: new Icon({
                   src: busstopimage,
-                  scale: 0.1,
+                  scale: 0.07,
                   anchor: [0.5, 1],
                 }),
                 text: new Text({
@@ -754,7 +754,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         style: new Style({
           image: new Icon({
             src: busstopimage,
-            scale: 0.1,
+            scale: 0.07,
             anchor: [0.5, 1],
           }),
         }),
