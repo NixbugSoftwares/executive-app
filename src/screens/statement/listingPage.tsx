@@ -456,196 +456,176 @@ const generateStatement = async () => {
                 minHeight: 0,
               }}
             >
-              <TableContainer
-                sx={{
-                  flex: 1,
-                  maxHeight: "400px", // Set a fixed height for scroll
-                  overflowY: "auto",
-                  borderRadius: 2,
-                  border: "1px solid #e0e0e0",
-                  position: "relative",
-                }}
+<TableContainer
+  sx={{
+    flex: 1,
+    maxHeight: "calc(100vh - 100px)",
+    overflowY: "auto",
+    borderRadius: 2,
+    border: "1px solid #e0e0e0",
+    position: "relative",
+  }}
+>
+  {isLoading && (
+    <Box
+      sx={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "rgba(255, 255, 255, 0.7)",
+        zIndex: 1,
+      }}
+    >
+      <CircularProgress />
+    </Box>
+  )}
+  <Table stickyHeader>
+    <TableHead>
+      <TableRow>
+        <TableCell
+          padding="checkbox"
+          sx={{
+            backgroundColor: "#fafafa",
+            fontWeight: 600,
+            fontSize: "0.875rem",
+            borderBottom: "1px solid #ddd",
+          }}
+        >
+          <Checkbox
+            indeterminate={
+              selectedServices.some((service) => service.isSelected) &&
+              !selectedServices.every((service) => service.isSelected)
+            }
+            checked={selectedServices.every((service) => service.isSelected)}
+            onChange={handleSelectAll}
+            disabled={
+              !serviceList.some(
+                (service) =>
+                  service.status === "Terminated" || service.status === "Ended"
+              )
+            }
+          />
+        </TableCell>
+        <TableCell
+          sx={{
+            backgroundColor: "#fafafa",
+            fontWeight: 600,
+            fontSize: "0.875rem",
+            borderBottom: "1px solid #ddd",
+          }}
+        >
+          Service Name
+        </TableCell>
+        <TableCell
+          sx={{
+            backgroundColor: "#fafafa",
+            fontWeight: 600,
+            fontSize: "0.875rem",
+            borderBottom: "1px solid #ddd",
+          }}
+        >
+          Route
+        </TableCell>
+        <TableCell
+          sx={{
+            backgroundColor: "#fafafa",
+            fontWeight: 600,
+            fontSize: "0.875rem",
+            borderBottom: "1px solid #ddd",
+          }}
+        >
+          Status
+        </TableCell>
+      </TableRow>
+    </TableHead>
+    <TableBody>
+      {isLoading ? (
+        <TableRow>
+          <TableCell colSpan={6} align="center"></TableCell>
+        </TableRow>
+      ) : (
+        serviceList
+          .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+          .map((service) => {
+            const isSelected =
+              selectedServices.find((s) => s.id === service.id)?.isSelected ||
+              false;
+
+            const canSelect =
+              service.status === "Terminated" || service.status === "Ended";
+            const cannotSelectTooltip =
+              "Cannot generate statement for services in Started or Created state";
+
+            return (
+              <TableRow
+                key={service.id}
+                hover
+                sx={{ cursor: canSelect ? "pointer" : "default" }}
+                onClick={() => canSelect && handleServiceSelection(service.id)}
               >
-                {isLoading && (
-                  <Box
+                <TableCell padding="checkbox">
+                  {canSelect ? (
+                    <Checkbox
+                      checked={isSelected}
+                      onChange={() => handleServiceSelection(service.id)}
+                    />
+                  ) : (
+                    <Tooltip title={cannotSelectTooltip} arrow>
+                      <span>
+                        <Checkbox checked={false} disabled sx={{ opacity: 0.5 }} />
+                      </span>
+                    </Tooltip>
+                  )}
+                </TableCell>
+                <TableCell>{service.name}</TableCell>
+                <TableCell>{service.routeName}</TableCell>
+                <TableCell>
+                  <Chip
+                    label={service.status}
+                    size="small"
                     sx={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      backgroundColor: "rgba(255, 255, 255, 0.7)",
-                      zIndex: 1,
+                      width: 100,
+                      backgroundColor:
+                        service.status === "Created"
+                          ? "rgba(33, 150, 243, 0.12)"
+                          : service.status === "Started"
+                          ? "rgba(76, 175, 80, 0.12)"
+                          : service.status === "Terminated"
+                          ? "rgba(244, 67, 54, 0.12)"
+                          : "rgba(158, 158, 158, 0.12)",
+                      color:
+                        service.status === "Created"
+                          ? "#1976D2"
+                          : service.status === "Started"
+                          ? "#388E3C"
+                          : service.status === "Terminated"
+                          ? "#D32F2F"
+                          : "#616161",
+                      fontWeight: 600,
+                      fontSize: "0.75rem",
+                      borderRadius: "8px",
                     }}
-                  >
-                    <CircularProgress />
-                  </Box>
-                )}
-                <Table stickyHeader>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell
-                        sx={{
-                          textAlign: "center",
-                          backgroundColor: "#fafafa",
-                          fontWeight: 600,
-                          fontSize: "0.875rem",
-                          borderBottom: "1px solid #ddd",
-                        }}
-                        padding="checkbox"
-                      >
-                        <Checkbox
-                          indeterminate={
-                            selectedServices.some(
-                              (service) => service.isSelected
-                            ) &&
-                            !selectedServices.every(
-                              (service) => service.isSelected
-                            )
-                          }
-                          checked={selectedServices.every(
-                            (service) => service.isSelected
-                          )}
-                          onChange={handleSelectAll}
-                          disabled={
-                            !serviceList.some(
-                              (service) =>
-                                service.status === "Terminated" ||
-                                service.status === "Ended"
-                            )
-                          }
-                        />
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          textAlign: "center",
-                          backgroundColor: "#fafafa",
-                          fontWeight: 600,
-                          fontSize: "0.875rem",
-                          borderBottom: "1px solid #ddd",
-                        }}
-                      >
-                        Service Name
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          textAlign: "center",
-                          backgroundColor: "#fafafa",
-                          fontWeight: 600,
-                          fontSize: "0.875rem",
-                          borderBottom: "1px solid #ddd",
-                        }}
-                      >
-                        Route
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          textAlign: "center",
-                          backgroundColor: "#fafafa",
-                          fontWeight: 600,
-                          fontSize: "0.875rem",
-                          borderBottom: "1px solid #ddd",
-                        }}
-                      >
-                        Status
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {isLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={6} align="center"></TableCell>
-                      </TableRow>
-                    ) : (
-                      serviceList
-                        .slice(
-                          page * rowsPerPage,
-                          page * rowsPerPage + rowsPerPage
-                        )
-                        .map((service) => {
-                          const isSelected =
-                            selectedServices.find((s) => s.id === service.id)
-                              ?.isSelected || false;
-
-                          const canSelect =
-                            service.status === "Terminated" ||
-                            service.status === "Ended";
-                          const cannotSelectTooltip =
-                            "Cannot generate statement for services in Started or Created state";
-
-                          return (
-                            <TableRow key={service.id}>
-                              <TableCell padding="checkbox">
-                                {canSelect ? (
-                                  <Checkbox
-                                    checked={isSelected}
-                                    onChange={() =>
-                                      handleServiceSelection(service.id)
-                                    }
-                                  />
-                                ) : (
-                                  <Tooltip title={cannotSelectTooltip} arrow>
-                                    <span>
-                                      <Checkbox
-                                        checked={false}
-                                        disabled
-                                        sx={{ opacity: 0.5 }}
-                                      />
-                                    </span>
-                                  </Tooltip>
-                                )}
-                              </TableCell>
-                              <TableCell align="center">
-                                {service.name}
-                              </TableCell>
-                              <TableCell align="center">
-                                {service.routeName}
-                              </TableCell>
-                              <TableCell sx={{ textAlign: "center" }}>
-                                <Chip
-                                  label={service.status}
-                                  size="small"
-                                  sx={{
-                                    width: 100,
-                                    backgroundColor:
-                                      service.status === "Created"
-                                        ? "rgba(33, 150, 243, 0.12)"
-                                        : service.status === "Started"
-                                        ? "rgba(76, 175, 80, 0.12)"
-                                        : service.status === "Terminated"
-                                        ? "rgba(244, 67, 54, 0.12)"
-                                        : "rgba(158, 158, 158, 0.12)",
-                                    color:
-                                      service.status === "Created"
-                                        ? "#1976D2"
-                                        : service.status === "Started"
-                                        ? "#388E3C"
-                                        : service.status === "Terminated"
-                                        ? "#D32F2F"
-                                        : "#616161",
-                                    fontWeight: 600,
-                                    fontSize: "0.75rem",
-                                    borderRadius: "8px",
-                                  }}
-                                />
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })
-                    )}
-                  </TableBody>
-                </Table>
-                {serviceList.length === 0 && !isLoading && (
-                  <Box sx={{ p: 3, textAlign: "center" }}>
-                    <Typography variant="body1" color="textSecondary">
-                      No services found for the selected bus or date range.
-                    </Typography>
-                  </Box>
-                )}
-              </TableContainer>
+                  />
+                </TableCell>
+              </TableRow>
+            );
+          })
+      )}
+    </TableBody>
+  </Table>
+  {serviceList.length === 0 && !isLoading && (
+    <Box sx={{ p: 3, textAlign: "center" }}>
+      <Typography variant="body1" color="textSecondary">
+        No services found for the selected bus or date range.
+      </Typography>
+    </Box>
+  )}
+</TableContainer>
 
               <Box
                 sx={{ p: 2, borderTop: 1, borderColor: "divider", mt: "auto" }}
