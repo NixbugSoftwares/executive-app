@@ -144,26 +144,26 @@ export interface SelectedLandmark {
   id: number;
   name: string;
   sequenceId?: number;
-  start_time: string;
+  starting_time: string;
 
-  // Final UTC-converted times
-  arrivalTime: { fullTime: string };
-  departureTime: { fullTime: string };
-
-  // Day offsets and deltas
-  arrivalDayOffset: number;
+  arrivalTime: { fullTime: string, timestamp: number };
+  departureTime: { fullTime: string, timestamp: number };
+  arrival_delta:number;
+  departure_delta:number;
+  arrivalDayOffset: number; 
   departureDayOffset: number;
   arrivalDelta: number;
   departureDelta: number;
   distance_from_start: number;
 
-  // These are needed during the conversion
   arrivalHour?: number;
   arrivalMinute?: number;
   arrivalAmPm?: "AM" | "PM";
   departureHour?: number;
   departureMinute?: number;
   departureAmPm?: "AM" | "PM";
+
+  location: { lat: number; lon: number };
 }
 export interface RouteLandmark {
   id: number;

@@ -67,7 +67,7 @@ const StatementListingPage = () => {
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
   const [page, setPage] = useState(0);
-  const [hasNextPage, setHasNextPage] = useState(false);
+  const [_hasNextPage, setHasNextPage] = useState(false);
   const rowsPerPage = 10;
   const [isOperatorWise, setIsOperatorWise] = useState(false);
 
@@ -118,12 +118,16 @@ const StatementListingPage = () => {
   }, [companyId, dispatch]);
 
   // Fetch services when a bus is selected or dates change
-  const fetchServices = useCallback(
-    async (pageNumber: number = page) => {
-      const offset = pageNumber * rowsPerPage;
-      if (!selectedBus) return;
-      try {
-        setIsLoading(true);
+  const fetchServices = useCallback(async () => {
+    if (!selectedBus) return;
+    try {
+      setIsLoading(true);
+      let allServices: Service[] = [];
+      let offset = 0;
+      let hasMore = true;
+
+      // Fetch ALL services in a loop
+      while (hasMore) {
         const res = await dispatch(
           serviceListingApi({
             limit: rowsPerPage,
@@ -137,54 +141,64 @@ const StatementListingPage = () => {
         ).unwrap();
 
         const items = res?.data || [];
-        const formattedServices =
-          items.map((service: any) => ({
-            id: service.id,
-            name: service.name || "",
-            routeName: service.route?.name || "",
-            status:
-              service.status === 1
-                ? "Created"
-                : service.status === 2
-                ? "Started"
-                : service.status === 3
-                ? "Terminated"
-                : service.status === 4
-                ? "Ended"
-                : service.status === 5
-                ? "Audited"
-                : "",
-            starting_at: service.starting_at || "",
-            ending_at: service.ending_at || "",
-          })) || [];
+        const formatted = items.map((service: any) => ({
+          id: service.id,
+          name: service.name || "",
+          routeName: service.route?.name || "",
+          status:
+            service.status === 1
+              ? "Created"
+              : service.status === 2
+              ? "Started"
+              : service.status === 3
+              ? "Terminated"
+              : service.status === 4
+              ? "Ended"
+              : service.status === 5
+              ? "Audited"
+              : "",
+          starting_at: service.starting_at || "",
+          ending_at: service.ending_at || "",
+        }));
 
-        setServiceList(formattedServices);
-        setHasNextPage(items.length === rowsPerPage);
-
-        // Initialize selected services
-        setSelectedServices(
-          formattedServices.map((service: Service) => ({
-            id: service.id,
-            name: service.name,
-            isSelected: false,
-          }))
-        );
-      } catch (error: any) {
-        console.error("Error fetching services", error);
-        showErrorToast(error.message || "Failed to fetch services");
-        setServiceList([]);
-        setSelectedServices([]);
-      } finally {
-        setIsLoading(false);
+        allServices = [...allServices, ...formatted];
+        hasMore = items.length === rowsPerPage;
+        offset += rowsPerPage;
       }
-    },
-    [selectedBus, fromDate, toDate, rowsPerPage, dispatch] 
-  );
 
+      // 🔥 GLOBAL sort by status
+      const statusOrder: Record<string, number> = {
+        Terminated: 1,
+        Ended: 2,
+        Started: 3,
+        Created: 4,
+        Audited: 5,
+      };
+      allServices.sort(
+        (a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99)
+      );
+
+      setServiceList(allServices);
+      setHasNextPage(false); // Local pagination handles this now
+      setSelectedServices(
+        allServices.map((service) => ({
+          id: service.id,
+          name: service.name,
+          isSelected: false,
+        }))
+      );
+    } catch (error: any) {
+      console.error("Error fetching services", error);
+      showErrorToast(error.message || "Failed to fetch services");
+      setServiceList([]);
+      setSelectedServices([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedBus, fromDate, toDate, dispatch]);
   useEffect(() => {
-    fetchServices(page);
+    fetchServices();
   }, [fetchServices, page]);
-
   const handleChangePage = useCallback(
     (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
       setPage(newPage);
@@ -354,7 +368,7 @@ const generateStatement = async () => {
           </FormControl>
           <Button
             variant="outlined"
-            onClick={() => fetchServices(page)}
+            onClick={() => fetchServices()}
             disabled={isLoading}
           >
             Refresh
@@ -547,21 +561,10 @@ const generateStatement = async () => {
                       </TableRow>
                     ) : (
                       serviceList
-                        .slice()
-                        .sort((a, b) => {
-                          // Define the priority order
-                          const statusOrder: any = {
-                            Terminated: 1,
-                            Ended: 2,
-                            Started: 3,
-                            Created: 4,
-                          };
-                          const priorityA = statusOrder[a.status] || 5;
-                          const priorityB = statusOrder[b.status] || 5;
-
-                          // Sort by priority
-                          return priorityA - priorityB;
-                        })
+                        .slice(
+                          page * rowsPerPage,
+                          page * rowsPerPage + rowsPerPage
+                        )
                         .map((service) => {
                           const isSelected =
                             selectedServices.find((s) => s.id === service.id)
@@ -651,7 +654,7 @@ const generateStatement = async () => {
                   page={page}
                   onPageChange={(newPage) => handleChangePage(null, newPage)}
                   isLoading={isLoading}
-                  hasNextPage={hasNextPage}
+                  hasNextPage={(page + 1) * rowsPerPage < serviceList.length}
                 />
               </Box>
             </Box>

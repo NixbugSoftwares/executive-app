@@ -61,7 +61,7 @@ const FareListingPage = () => {
   const canCreateFare = useSelector((state: RootState) =>
     state.app.permissions.includes("create_fare")
   );
-  const columnConfig: ColumnConfig[] = [
+const columnConfig: ColumnConfig[] = [
     { id: "id", label: "ID", width: "80px", minWidth: "80px", fixed: true },
     {
       id: "name",
@@ -71,17 +71,11 @@ const FareListingPage = () => {
       fixed: true,
     },
     {
-      id: "version",
-      label: "DF Version",
-      width: "120px",
-      minWidth: "120px",
-      fixed: true,
-    },
-    {
       id: "ticket_types",
       label: "Ticket Types",
       width: "160px",
       minWidth: "160px",
+      fixed: true,
     },
 
     {
@@ -242,6 +236,7 @@ const FareListingPage = () => {
                 marginLeft: "auto", 
               }}
             >
+               {1 > 100 && (
               <Select
                 multiple
                 value={Object.keys(visibleColumns).filter(
@@ -276,6 +271,7 @@ const FareListingPage = () => {
                   </MenuItem>
                 ))}
               </Select>
+              )}
 
               {canCreateFare && (
                 <Button
@@ -358,14 +354,7 @@ const FareListingPage = () => {
                     </TableCell>
                   )}
 
-                  {/* Version Header */}
-                  {visibleColumns.version && (
-                    <TableCell>
-                      <b style={{ display: "block", textAlign: "center" }}>
-                        DF Version
-                      </b>
-                    </TableCell>
-                  )}
+                  
 
                   {/* Created On Header */}
                   {visibleColumns.created_at && (
@@ -464,77 +453,85 @@ const FareListingPage = () => {
                         )}
 
                         {/* Ticket Types - Block Style */}
+
                         {visibleColumns.ticket_types && (
                           <TableCell
                             sx={{
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
+                              maxWidth: 300, // Prevents cell from stretching
                             }}
                           >
                             {fare.attributes.ticket_types?.length > 0 ? (
                               <Box
-  display="flex"
-  flexWrap="wrap"
-  gap={1}
-  sx={{
-    maxWidth: "390px",
-  }}
->
-  {fare.attributes.ticket_types.map((type, index) => {
-    const typeName = type.name?.toLowerCase() || "";
-    const typeConfig = {
-      adult: {
-        bg: "rgba(25, 118, 210, 0.1)",
-        color: "#1565c0",
-        icon: <PersonIcon fontSize="small" />,
-      },
-      child: {
-        bg: "rgba(255, 152, 0, 0.1)",
-        color: "#ef6c00",
-        icon: <ChildCareIcon fontSize="small" />,
-      },
-      student: {
-        bg: "rgba(76, 175, 80, 0.1)",
-        color: "#2e7d32",
-        icon: <SchoolIcon fontSize="small" />,
-      },
-      other: {
-        bg: "#554e4e3f",
-        color: "#080000ff",
-        icon: <BoyIcon fontSize="small" />,
-      },
-    };
+                                sx={{
+                                  display: "grid",
+                                  gridTemplateColumns: "repeat(2, 1fr)", // 2 chips per row
+                                  gap: 1, // spacing
+                                }}
+                              >
+                                {fare.attributes.ticket_types.map(
+                                  (type, index) => {
+                                    const typeName =
+                                      type.name?.toLowerCase() || "";
+                                    const typeConfig = {
+                                      adult: {
+                                        bg: "rgba(25, 118, 210, 0.1)",
+                                        color: "#1565c0",
+                                        icon: <PersonIcon fontSize="small" />,
+                                      },
+                                      child: {
+                                        bg: "rgba(255, 152, 0, 0.1)",
+                                        color: "#ef6c00",
+                                        icon: (
+                                          <ChildCareIcon fontSize="small" />
+                                        ),
+                                      },
+                                      student: {
+                                        bg: "rgba(76, 175, 80, 0.1)",
+                                        color: "#2e7d32",
+                                        icon: <SchoolIcon fontSize="small" />,
+                                      },
+                                      other: {
+                                        bg: "#554e4e3f",
+                                        color: "#080000ff",
+                                        icon: <BoyIcon fontSize="small" />,
+                                      },
+                                    };
 
-    let typeKey: "adult" | "child" | "student" | "other" = "other";
-    if (typeName.includes("adult")) typeKey = "adult";
-    else if (typeName.includes("child")) typeKey = "child";
-    else if (typeName.includes("student")) typeKey = "student";
+                                    let typeKey:
+                                      | "adult"
+                                      | "child"
+                                      | "student"
+                                      | "other" = "other";
+                                    if (typeName.includes("adult"))
+                                      typeKey = "adult";
+                                    else if (typeName.includes("child"))
+                                      typeKey = "child";
+                                    else if (typeName.includes("student"))
+                                      typeKey = "student";
 
-    return (
-      <Chip
-        key={index}
-        size="small"
-        icon={typeConfig[typeKey].icon}
-        label={type.name || `Type ${index + 1}`}
-        sx={{
-          flex: "1 0 calc(50% - 8px)", // two per row
-          maxWidth: "calc(50% - 8px)",
-          justifyContent: "flex-start",
-          borderRadius: "4px",
-          backgroundColor: typeConfig[typeKey].bg,
-          color: typeConfig[typeKey].color,
-          "& .MuiChip-icon": {
-            color: typeConfig[typeKey].color,
-            opacity: 0.8,
-            marginLeft: "8px",
-          },
-        }}
-      />
-    );
-  })}
-</Box>
-
+                                    return (
+                                      <Chip
+                                        key={index}
+                                        size="small"
+                                        icon={typeConfig[typeKey].icon}
+                                        label={type.name || `Type ${index + 1}`}
+                                        sx={{
+                                          justifyContent: "flex-start",
+                                          borderRadius: "4px",
+                                          backgroundColor:
+                                            typeConfig[typeKey].bg,
+                                          color: typeConfig[typeKey].color,
+                                          "& .MuiChip-icon": {
+                                            color: typeConfig[typeKey].color,
+                                            opacity: 0.8,
+                                            marginLeft: "8px",
+                                          },
+                                        }}
+                                      />
+                                    );
+                                  }
+                                )}
+                              </Box>
                             ) : (
                               <Tooltip title="No ticket types">
                                 <ErrorIcon color="disabled" />
@@ -543,16 +540,7 @@ const FareListingPage = () => {
                           </TableCell>
                         )}
 
-                        {/* Version */}
-                        {visibleColumns.version && (
-                          <TableCell sx={{ textAlign: "center" }}>
-                            {fare.attributes.df_version || (
-                              <Tooltip title="Version not available">
-                                <ErrorIcon color="disabled" />
-                              </Tooltip>
-                            )}
-                          </TableCell>
-                        )}
+                       
 
                         {/* Created On */}
                         {visibleColumns.created_at && (

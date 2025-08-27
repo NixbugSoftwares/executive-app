@@ -273,7 +273,7 @@ const ServiceDetailsCard: React.FC<ServiceCardProps> = ({
               <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
 
               <Typography variant="body2">
-                <b> Created at:</b>
+                <b> Created At:</b>
                 {moment(service.created_on)
                   .local()
                   .format("DD-MM-YYYY, hh:mm A")}
@@ -283,7 +283,7 @@ const ServiceDetailsCard: React.FC<ServiceCardProps> = ({
               <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
 
               <Typography variant="body2">
-                <b> Last updated at:</b>
+                <b> Last Updated At:</b>
                 {moment(service?.updated_on).isValid()
                   ? moment(service.updated_on)
                       .local()
@@ -304,7 +304,7 @@ const ServiceDetailsCard: React.FC<ServiceCardProps> = ({
               }
             >
               <ConfirmationNumberIcon sx={{ mr: 1 }} />
-              View All Ticketss
+              View All Tickets
             </Button>
           </Box>
         </Card>

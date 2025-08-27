@@ -425,7 +425,7 @@ useEffect(() => {
                       borderBottom: "1px solid #ddd",
                     }}
                   >
-                    Capacity Up To
+                    Capacity
                   </TableCell>
                 )}
                  {visibleColumns.status && (

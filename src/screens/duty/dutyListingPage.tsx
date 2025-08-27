@@ -38,7 +38,8 @@ const getStatusBackendValue = (displayValue: string): string => {
     Assigned: "1",
     Started: "2",
     Terminated: "3",
-    Finished: "4",
+    Ended: "4",
+    Discarded: "5",
   };
   return statusMap[displayValue] || "";
 };
@@ -136,6 +137,8 @@ const DutyListingTable = () => {
                     ? "Terminated"
                     : duty.status === 4
                     ? "Ended"
+                    : duty.status === 5
+                    ? "Discarded"
                     : "",
                 created_on: duty.created_on,
                 updated_on: duty.updated_on,
@@ -351,6 +354,8 @@ const DutyListingTable = () => {
                     <MenuItem value="Started">Started</MenuItem>
                     <MenuItem value="Terminated">Terminated</MenuItem>
                     <MenuItem value="Finished">Finished</MenuItem>
+                    <MenuItem value="Ended">Ended</MenuItem>
+                    <MenuItem value="Discarded">Discarded</MenuItem>
                   </Select>
                 </TableCell>
                 <TableCell />
@@ -392,7 +397,8 @@ const DutyListingTable = () => {
                               ? "rgba(76, 175, 80, 0.12)"
                               : row.status === "Terminated"
                               ? "rgba(244, 67, 54, 0.12)"
-                              : "rgba(158, 158, 158, 0.12)",
+                              :row.status === "Ended" ? "rgba(158, 158, 158, 0.12)"
+                               : "#afaaaaff",
                           color:
                             row.status === "Assigned"
                               ? "#1976D2"
@@ -400,7 +406,8 @@ const DutyListingTable = () => {
                               ? "#388E3C"
                               : row.status === "Terminated"
                               ? "#D32F2F"
-                              : "#616161",
+                              :  row.status === "Ended" ? "#616161":
+                               "#423e3eff",
                           fontWeight: 600,
                           fontSize: "0.75rem",
                           borderRadius: "8px",
@@ -431,7 +438,7 @@ const DutyListingTable = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} align="center">
-                    No Duty found.
+                    No Duty Found.
                   </TableCell>
                 </TableRow>
               )}

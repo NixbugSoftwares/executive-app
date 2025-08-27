@@ -421,6 +421,7 @@ return (
             <Controller
               name="attributes.df_version"
               control={control}
+              disabled
               render={({ field }) => (
                 <TextField
                   {...field}
