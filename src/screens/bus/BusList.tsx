@@ -313,7 +313,6 @@ useEffect(() => {
                   />
                   <ListItemText
                     primary={column.label}
-                    secondary={column.fixed ? "(Always visible)" : undefined}
                   />
                 </MenuItem>
               ))}

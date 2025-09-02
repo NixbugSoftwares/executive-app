@@ -68,37 +68,19 @@ const permissionGroups = [
       { label: "Update", key: "update_executive" },
       { label: "Delete", key: "delete_executive" },
     ],
-  },
-  {
-    groupName: "Landmark Management",
-    permissions: [
-      { label: "Create", key: "create_landmark" },
-      { label: "Update", key: "update_landmark" },
-      { label: "Delete", key: "delete_landmark" },
-    ],
-  },
-  {
-    groupName: "Company Management",
-    permissions: [
-      { label: "Create", key: "create_company" },
-      { label: "Update", key: "update_company" },
-      { label: "Delete", key: "delete_company" },
-    ],
-  },
-  {
+  },  {
     groupName: "Operator Management",
     permissions: [
       { label: "Create", key: "create_operator" },
       { label: "Update", key: "update_operator" },
       { label: "Delete", key: "delete_operator" },
     ],
-  },
-  {
-    groupName: "Business Management",
+  },  {
+    groupName: "Vendor Management",
     permissions: [
-      { label: "Create", key: "create_business" },
-      { label: "Update", key: "update_business" },
-      { label: "Delete", key: "delete_business" },
+      { label: "Create", key: "create_vendor" },
+      { label: "Update", key: "update_vendor" },
+      { label: "Delete", key: "delete_vendor" },
     ],
   },
   {
@@ -124,7 +106,32 @@ const permissionGroups = [
       { label: "Update", key: "update_ve_role" },
       { label: "Delete", key: "delete_ve_role" },
     ],
+  },  {
+    groupName: "Company Management",
+    permissions: [
+      { label: "Create", key: "create_company" },
+      { label: "Update", key: "update_company" },
+      { label: "Delete", key: "delete_company" },
+    ],
   },
+
+  {
+    groupName: "Business Management",
+    permissions: [
+      { label: "Create", key: "create_business" },
+      { label: "Update", key: "update_business" },
+      { label: "Delete", key: "delete_business" },
+    ],
+  },
+  {
+    groupName: "Landmark Management",
+    permissions: [
+      { label: "Create", key: "create_landmark" },
+      { label: "Update", key: "update_landmark" },
+      { label: "Delete", key: "delete_landmark" },
+    ],
+  },
+
   {
     groupName: "Route Management",
     permissions: [
@@ -141,14 +148,7 @@ const permissionGroups = [
       { label: "Delete", key: "delete_bus" },
     ],
   },
-  {
-    groupName: "Vendor Management",
-    permissions: [
-      { label: "Create", key: "create_vendor" },
-      { label: "Update", key: "update_vendor" },
-      { label: "Delete", key: "delete_vendor" },
-    ],
-  },
+
   {
     groupName: "Schedule Management",
     permissions: [
@@ -181,7 +181,6 @@ const permissionGroups = [
       { label: "Delete", key: "delete_duty" },
     ],
   },
-  
 ];
 
 const RoleDetailsCard: React.FC<RoleCardProps> = ({
@@ -281,8 +280,10 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
       onCloseDetailCard();
       showSuccessToast("Role deleted successfully!");
       refreshList("refresh");
-    } catch (error:any) {
-      showErrorToast( error.message||"Failed to delete role. Please try again.");
+    } catch (error: any) {
+      showErrorToast(
+        error.message || "Failed to delete role. Please try again."
+      );
     } finally {
       setAcknowledgedWarning(false);
     }
@@ -313,7 +314,9 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
         showErrorToast("Role update failed. Please try again.");
       }
     } catch (error: any) {
-      showErrorToast(error.message || "Failed to update role. Please try again.");
+      showErrorToast(
+        error.message || "Failed to update role. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -322,8 +325,18 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
   return (
     <>
       <Card
-        sx={{ maxWidth: 800, margin: "auto", boxShadow: 3, borderRadius: 2 }}
+        sx={{
+          maxWidth: 800,
+          margin: "auto",
+          boxShadow: 3,
+          borderRadius: 2,
+          display: "flex",
+          flexDirection: "column",
+          height: "100%", // Ensure the card takes full height
+          maxHeight: "100vh", // Limit maximum height
+        }}
       >
+        {/* Header Section */}
         <Box sx={{ p: 2, bgcolor: "darkblue", color: "white" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Avatar sx={{ bgcolor: "white", width: 40, height: 40 }}>
@@ -333,6 +346,32 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
             <Controller
               name="name"
               control={control}
+              rules={{
+                required: "Name is required",
+                minLength: {
+                  value: 3,
+                  message: "Name must be at least 3 characters",
+                },
+                maxLength: {
+                  value: 32,
+                  message: "Name cannot exceed 32 characters",
+                },
+                validate: (value) => {
+                  if (!value.trim()) {
+                    return "Name cannot be empty or only spaces";
+                  }
+                  if (/^\s/.test(value)) {
+                    return "Name cannot start with a space";
+                  }
+                  if (/\s$/.test(value)) {
+                    return "Name cannot end with a space";
+                  }
+                  if (/\s{2,}/.test(value)) {
+                    return "Name cannot contain consecutive spaces";
+                  }
+                  return true;
+                },
+              }}
               render={({ field }) => (
                 <TextField
                   {...field}
@@ -365,7 +404,8 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
           </Typography>
         </Box>
 
-        <CardContent>
+        {/* Scrollable Content Section */}
+        <CardContent sx={{ flex: 1, overflow: "auto", p: 2 }}>
           <Box display={"flex"} justifyContent={"space-between"} sx={{ mb: 1 }}>
             <Typography variant="subtitle1" gutterBottom>
               Permissions
@@ -480,12 +520,18 @@ const RoleDetailsCard: React.FC<RoleCardProps> = ({
           </Box>
         </CardContent>
 
+        {/* Sticky Footer Section */}
         <CardActions
           sx={{
             display: "flex",
             justifyContent: "left",
             p: 2,
             borderTop: `1px solid ${theme.palette.divider}`,
+            position: "sticky",
+            bottom: 0,
+            backgroundColor: "white",
+            zIndex: 10,
+            boxShadow: "0 -2px 4px rgba(0,0,0,0.1)",
           }}
         >
           <Button

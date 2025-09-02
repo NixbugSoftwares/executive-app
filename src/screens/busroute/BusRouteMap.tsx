@@ -1005,7 +1005,7 @@ if (landmark.distance_from_start <= 0) {
           return { success: false };
         }
         // Validate deltas
-        if (arrivalDelta < 0 || departureDelta < 0) {
+        if (arrivalDelta <= 0 || departureDelta <= 0) {
           showErrorToast(
             "Arrival and departure times must be after the starting time."
           );

@@ -73,6 +73,7 @@ const AccountListingTable = () => {
   const canCreateExecutive = useSelector((state: RootState) =>
     state.app.permissions.includes("create_executive")
   );
+  const [isSearching, setIsSearching] = useState(false);
   const columnConfig: ColumnConfig[] = [
     { id: "id", label: "ID", width: "80px", minWidth: "80px", fixed: true },
     {
@@ -120,6 +121,11 @@ const AccountListingTable = () => {
   const fetchAccounts = useCallback(
     (pageNumber: number, searchParams = {}) => {
       const offset = pageNumber * rowsPerPage;
+      // Check if we're searching (any search parameter is present)
+      const hasSearchParams = Object.values(searchParams).some(
+        (param) => param !== undefined && param !== ""
+      );
+      setIsSearching(hasSearchParams);
       dispatch(accountListApi({ limit: rowsPerPage, offset, ...searchParams }))
         .unwrap()
         .then((res) => {
@@ -146,7 +152,10 @@ const AccountListingTable = () => {
           setAccountList(formattedAccounts);
           setHasNextPage(items.length === rowsPerPage);
 
-          if (loggedInUserId && !loggedInUserAccount) {
+          if ( pageNumber === 0 &&
+            !hasSearchParams &&
+            loggedInUserId &&
+            !loggedInUserAccount) {
             dispatch(
               accountListApi({ limit: 1, offset: 0, id: loggedInUserId })
             )
@@ -187,20 +196,25 @@ const AccountListingTable = () => {
   );
 
   const sortedAccountList = React.useMemo(() => {
-    const combined = [...accountList];
+    // Only add logged-in user to the first page when not searching
+    if (page === 0 && !isSearching && loggedInUserAccount) {
+      const combined = [...accountList];
 
-    if (
-      loggedInUserAccount &&
-      !accountList.some((a) => a.id === loggedInUserAccount.id)
-    ) {
-      combined.unshift(loggedInUserAccount);
+      // Check if logged-in user is not already in the list
+      if (!accountList.some((a) => a.id === loggedInUserAccount.id)) {
+        combined.unshift(loggedInUserAccount);
+      }
+
+      return combined.sort((a, b) => {
+        if (a.id === loggedInUserId) return -1;
+        if (b.id === loggedInUserId) return 1;
+        return 0;
+      });
     }
-    return combined.sort((a, b) => {
-      if (a.id === loggedInUserId) return -1;
-      if (b.id === loggedInUserId) return 1;
-      return 0;
-    });
-  }, [accountList, loggedInUserAccount, loggedInUserId]);
+
+    // For other pages or when searching, return the account list as is
+    return accountList;
+  }, [accountList, loggedInUserAccount, loggedInUserId, page, isSearching]);
 
   const handleColumnChange = (event: SelectChangeEvent<string[]>) => {
     const value = event.target.value;
@@ -327,7 +341,6 @@ const AccountListingTable = () => {
                   />
                   <ListItemText
                     primary={column.label}
-                    secondary={column.fixed ? "(Always visible)" : undefined}
                   />
                 </MenuItem>
               ))}

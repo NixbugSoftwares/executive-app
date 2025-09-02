@@ -204,6 +204,7 @@ const RoleListingTable = () => {
         }}
       >
         <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ p: 2 }}>
+          {1>2&&(
           <Select
             multiple
             value={Object.keys(visibleColumns).filter(key => visibleColumns[key])}
@@ -227,7 +228,7 @@ const RoleListingTable = () => {
                 />
               </MenuItem>
             ))}
-          </Select>
+          </Select>)}
 
           {canCreateRole && (
             <Button

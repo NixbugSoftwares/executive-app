@@ -72,7 +72,6 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
   onDelete,
   onBack,
   onCloseDetailCard,
-  companyId,
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
@@ -313,12 +312,10 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
               id: duty.id,
               status: duty.status,
               type: duty.type,
-              service_id: duty.service_id,
             }}
             refreshList={(value: any) => refreshList(value)}
             onClose={() => setUpdateFormOpen(false)}
             onCloseDetailCard={onCloseDetailCard}
-            companyId={companyId}
           />
         </DialogContent>
 

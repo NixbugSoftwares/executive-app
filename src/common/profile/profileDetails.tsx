@@ -14,7 +14,6 @@ import {
   IconButton,
   useTheme,
   Divider,
-  Button,
 } from "@mui/material";
 import {
   Person,
@@ -32,15 +31,12 @@ import {
 import Diversity3Icon from "@mui/icons-material/Diversity3";
 import { useDispatch } from "react-redux";
 import {
-  clearRoleDetails,
   fetchRoleMappingApi,
-  logoutApi,
   accountListApi,
   roleAssignApi,
   roleListApi,
   accountupdationApi,
   roleAssignUpdateApi,
-  userLoggedOut,
 } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import { showErrorToast, showSuccessToast } from "../toastMessageHelper";
@@ -48,7 +44,6 @@ import { Account } from "../../types/type";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
-import commonHelper from "../../utils/commonHelper";
 
 interface IAccountFormInputs {
   username?: string;
@@ -277,24 +272,6 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleLogout = async () => {
-    console.log("Attempting to logout...");
-    try {
-      console.log("Dispatching logoutApi...");
-      const response = await dispatch(logoutApi({})).unwrap();
-      console.log("Logout response:", response);
-
-      localStorageHelper.clearStorage();
-      localStorageHelper.removeStoredItem("@user");
-      dispatch(clearRoleDetails());
-      commonHelper.logout();
-      dispatch(userLoggedOut());
-      showSuccessToast("Logout successful!");
-    } catch (error: any) {
-      console.error("Logout Error:", error);
-      showErrorToast(error.message || "Logout failed. Please try again.");
-    }
-  };
 
   if (isLoading) {
     return (
@@ -651,15 +628,7 @@ const ProfilePage: React.FC = () => {
                 Account Created: {formatUTCDateToLocal(profile.created_on)}
               </Typography>
             </Box>
-            <Button
-              variant="outlined"
-              color="error"
-              // startIcon={<LogoutIcon />}
-              onClick={handleLogout}
-              sx={{ fontWeight: 600 }}
-            >
-              Logout
-            </Button>
+           
           </Box>
         </Box>
 

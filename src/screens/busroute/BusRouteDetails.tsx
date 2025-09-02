@@ -490,7 +490,7 @@ const BusRouteDetailsPage = ({
       );
 
       // Validate that times are after starting time
-      if (arrivalDelta < 0 || departureDelta < 0) {
+      if (arrivalDelta <= 0 || departureDelta <= 0) {
         throw new Error(
           "Arrival and departure times must be after the starting time"
         );

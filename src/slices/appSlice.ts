@@ -91,6 +91,7 @@ interface OperatorListParams {
   limit?: number;
   offset?: number;
   id?: number;
+  id_list?: number[];
   company_id?: number;
   full_name?: string;
   email_id?: string;
@@ -130,6 +131,7 @@ interface ServiceListParams {
   offset?: number;
   company_id?: number;
   id?: string;
+  id_list?: string[];
   name?: string;
   ticket_mode?: number;
   status?: number;
@@ -158,6 +160,7 @@ interface DutyListParams {
   id?: number;
   name?: string;
   status?: number;
+  status_list?: number[];
   type?: number;
   company_id?: number;
   service_id?: number;
@@ -2073,13 +2076,14 @@ export const scheduleDeleteApi = createAsyncThunk(
 export const dutyListingApi = createAsyncThunk(
   "/duty",
   async (params: DutyListParams, { rejectWithValue }) => {
-    const { limit, offset, id, name, status, type, company_id, service_id, service_id_list } = params;
+    const { limit, offset, id, name, status_list, status, type, company_id, service_id, service_id_list } = params;
     const queryParams = {
       limit,
       offset,
       ...(id && { id }),
       ...(name && { name }),
       ...(status && { status }),
+      ...(status_list && { status_list }),
       ...(type && { type }),
       ...(company_id && { company_id }),
       ...(service_id && { service_id }),

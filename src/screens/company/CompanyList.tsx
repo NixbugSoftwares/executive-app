@@ -106,6 +106,13 @@ const CompanyListingTable = () => {
       fixed: true,
     },
     {
+      id: "status",
+      label: "Status",
+      width: "120px",
+      minWidth: "120px",
+      fixed: true,
+    },
+    {
       id: "address",
       label: "Address",
       width: "120px",
@@ -116,13 +123,6 @@ const CompanyListingTable = () => {
       label: "Owner",
       width: "120px",
       minWidth: "120px",
-    },
-    {
-      id: "status",
-      label: "Status",
-      width: "120px",
-      minWidth: "120px",
-      fixed: true,
     },
   ];
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
@@ -306,7 +306,6 @@ const CompanyListingTable = () => {
                   />
                   <ListItemText
                     primary={column.label}
-                    secondary={column.fixed ? "(Always visible)" : undefined}
                   />
                 </MenuItem>
               ))}

@@ -419,27 +419,22 @@ return (
 
             {/* Full width field */}
             <Controller
-              name="attributes.df_version"
-              control={control}
-              disabled
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="DF Version"
-                  type="number"
-                  fullWidth
-                  onChange={(e) =>
-                    field.onChange(parseInt(e.target.value) || 0)
-                  }
-                   InputProps={{
-                    inputProps: {
-                      min: 1,
-                      max: 1,
-                    },
-                  }}
-                />
-              )}
-            />
+  name="attributes.df_version"
+  control={control}
+  defaultValue={1} // Always 1
+  render={({ field }) => (
+    <TextField
+      {...field}
+      label="DF Version"
+      type="number"
+      fullWidth
+      value={1} // Force value to always be 1
+      InputProps={{
+        readOnly: true, // Prevent typing
+      }}
+    />
+  )}
+/>
           </Stack>
 
           <Divider sx={{ my: 2 }} />
@@ -637,7 +632,7 @@ return (
               inputProps={{ min: 1 }}
             />
             <Button variant="contained" onClick={handleRunCode}>
-              Run Code
+              Calculate
             </Button>
           </Box>
         </Box>

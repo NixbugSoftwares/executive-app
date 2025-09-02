@@ -102,7 +102,7 @@ const CompanyFareSkeletonPage = ({
     state.app.permissions.includes("delete_fare")
   );
 
-const [distanceKm, setDistanceKm] = useState(5);
+  const [distanceKm, setDistanceKm] = useState(5);
   const [fareResults, setFareResults] = useState<{
     distance: number;
     results: { type: string; fare: number }[];
@@ -173,7 +173,7 @@ const [distanceKm, setDistanceKm] = useState(5);
     control,
     name: "attributes.ticket_types",
   });
-    const handleRunCode = () => {
+  const handleRunCode = () => {
     setShowOutput(true); // Show output when running code
     let logs: any[] = [];
     const customConsole = {
@@ -245,7 +245,6 @@ const [distanceKm, setDistanceKm] = useState(5);
     }
   };
 
-
   const handleFareCreation: SubmitHandler<FareInputs> = async (data) => {
     try {
       setLoading(true);
@@ -314,7 +313,7 @@ const [distanceKm, setDistanceKm] = useState(5);
     }
   };
 
-return (
+  return (
     <Box
       sx={{
         display: "flex",
@@ -425,21 +424,16 @@ return (
             <Controller
               name="attributes.df_version"
               control={control}
-              disabled
+              defaultValue={1} // Always 1
               render={({ field }) => (
                 <TextField
                   {...field}
                   label="DF Version"
                   type="number"
                   fullWidth
-                  onChange={(e) =>
-                    field.onChange(parseInt(e.target.value) || 0)
-                  }
-                   InputProps={{
-                    inputProps: {
-                      min: 1,
-                      max: 1,
-                    },
+                  value={1} // Force value to always be 1
+                  InputProps={{
+                    readOnly: true, // Prevent typing
                   }}
                 />
               )}
@@ -641,7 +635,7 @@ return (
               inputProps={{ min: 1 }}
             />
             <Button variant="contained" onClick={handleRunCode}>
-              Run Code
+             Calculate
             </Button>
           </Box>
         </Box>
