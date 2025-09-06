@@ -5,7 +5,7 @@ import TileLayer from "ol/layer/Tile";
 import VectorLayer from "ol/layer/Vector";
 import { OSM, XYZ } from "ol/source";
 import { Draw, Select as _OlSelect } from "ol/interaction";
-import { Polygon, Point } from "ol/geom";
+import { Polygon, Point, Circle } from "ol/geom";
 import { fromLonLat, toLonLat } from "ol/proj";
 import { Vector as VectorSource } from "ol/source";
 import {
@@ -23,7 +23,6 @@ import { useNavigate } from "react-router-dom";
 import * as ol from "ol";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
-import { Coordinate } from "ol/coordinate";
 import { Style, Stroke, Fill, Text } from "ol/style";
 import { getArea } from "ol/sphere";
 import Icon from "ol/style/Icon";
@@ -92,14 +91,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
   const isProgrammaticMove = useRef(false);
-  const [shouldFitView, setShouldFitView] = useState(false);
+  // const [shouldFitView, setShouldFitView] = useState(false);
   const [_isDrawingFinished, setIsDrawingFinished] = useState(false);
   const [drawnCoordinates, setDrawnCoordinates] = useState<string>("");
   const [drawnFeature, setDrawnFeature] = useState<ol.Feature<Polygon> | null>(
     null
   );
-  const isInitialLoad = useRef(true);
-  const lastSelectedLandmarkId = useRef<number | null>(null);
+  // const isInitialLoad = useRef(true);
+  // const lastSelectedLandmarkId = useRef<number | null>(null);
   const isDrawingMode = useRef(false);
   const [showAddLandmarkButton, setShowAddLandmarkButton] = useState(false);
   // Initialize the map
@@ -128,20 +127,20 @@ const MapComponent: React.FC<MapComponentProps> = ({
     map.addLayer(baseLayer);
 
     // DB landmarks layer
-    const landmarksLayer = new VectorLayer({
-      source: landmarksSource.current,
-    });
-    map.addLayer(landmarksLayer);
+    // const landmarksLayer = new VectorLayer({
+    //   source: landmarksSource.current,
+    // });
+    // map.addLayer(landmarksLayer);
 
     // Temporary drawn landmark layer
-    const drawLayer = new VectorLayer({
-      source: drawSource.current,
-      style: new Style({
-        stroke: new Stroke({ color: "rgba(0, 0, 255, 1)", width: 2 }),
-        fill: new Fill({ color: "rgba(0, 0, 255, 0.2)" }),
-      }),
-    });
-    map.addLayer(drawLayer);
+    // const drawLayer = new VectorLayer({
+    //   source: drawSource.current,
+    //   style: new Style({
+    //     stroke: new Stroke({ color: "rgba(0, 0, 255, 1)", width: 2 }),
+    //     fill: new Fill({ color: "rgba(0, 0, 255, 0.2)" }),
+    //   }),
+    // });
+    // map.addLayer(drawLayer);
 
     // For bus stops or selected boundaries, you can still keep vectorSource
     const overlayLayer = new VectorLayer({
@@ -309,6 +308,19 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   }, [selectedBoundary, selectedLandmark]);
 
+
+  function polygonToCircle(polygon: Polygon): Circle {
+  const extent = polygon.getExtent();
+  const [minX, minY, maxX, maxY] = extent;
+
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+  const radius = Math.max(maxX - minX, maxY - minY) / 2;
+
+  return new Circle([centerX, centerY], radius);
+}
+
+
   useEffect(() => {
     if (!mapInstance.current) return;
 
@@ -316,20 +328,27 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const features: ol.Feature[] = [];
 
     // 1. Drawn polygon before saving
-    if (drawnFeature) {
-      drawnFeature.setStyle(
-        new Style({
-          stroke: new Stroke({
-            color: "rgba(17, 98, 105, 1)",
-            width: 4,
-          }),
-          fill: new Fill({
-            color: "rgba(16, 219, 219, 0.2)",
-          }),
-        })
-      );
-      features.push(drawnFeature);
-    }
+if (drawnFeature) {
+  const geom = drawnFeature.getGeometry();
+  if (geom instanceof Polygon) {
+    const circle = polygonToCircle(geom); // 🔹 convert rectangle back to circle
+    const feature = new ol.Feature(circle);
+
+    feature.setStyle(
+      new Style({
+        stroke: new Stroke({
+          color: "rgba(17, 98, 105, 1)",
+          width: 4,
+        }),
+        fill: new Fill({
+          color: "rgba(16, 219, 219, 0.2)",
+        }),
+      })
+    );
+
+    features.push(feature);
+  }
+}
 
     // 2. All landmarks
     if (landmarks.length > 0) {
@@ -339,7 +358,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
         try {
           const coordinates = parseWKTBoundary(landmark.boundary);
           const polygon = new Polygon([coordinates]);
-          const feature = new ol.Feature(polygon);
+const circle = polygonToCircle(polygon); // convert rectangle to circle
+const feature = new ol.Feature(circle);  // use circle geometry for rendering
           const isSelected = selectedLandmark?.id === landmark.id;
 
           feature.setStyle(
@@ -394,7 +414,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
           .map((coord) => fromLonLat(coord));
 
         const polygon = new Polygon([coordinates]);
-        const feature = new ol.Feature(polygon);
+const circle = polygonToCircle(polygon); // convert rectangle to circle
+const feature = new ol.Feature(circle);  // use circle geometry for rendering
 
         // Label for top-center
         const extent = polygon.getExtent();
@@ -448,8 +469,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
     else if (selectedLandmark?.boundary) {
       try {
         const coordinates = parseWKTBoundary(selectedLandmark.boundary);
-        const polygon = new Polygon([coordinates]);
-        const feature = new ol.Feature(polygon);
+       const polygon = new Polygon([coordinates]);
+const circle = polygonToCircle(polygon); // convert rectangle to circle
+const feature = new ol.Feature(circle);  // use circle geometry for rendering
 
         feature.setStyle(
           new Style({
@@ -528,31 +550,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
 
     // 6. Add features
-    if (features.length > 0) {
-      vectorSource.current.addFeatures(features);
+   if (features.length > 0) {
+  vectorSource.current.addFeatures(features);
 
-      const landmarkChanged =
-        selectedLandmark &&
-        selectedLandmark.id !== lastSelectedLandmarkId.current;
-
-      if (isInitialLoad.current || landmarkChanged || shouldFitView) {
-        const extent = vectorSource.current.getExtent();
-        if (extent[0] !== Infinity) {
-          isProgrammaticMove.current = true;
-          mapInstance.current.getView().fit(extent, {
-            padding: [50, 50, 50, 50],
-            duration: 1000,
-            callback: () => {
-              isProgrammaticMove.current = false;
-              isInitialLoad.current = false;
-              lastSelectedLandmarkId.current = selectedLandmark?.id || null;
-              setShouldFitView(false);
-            },
-          });
-        }
-      }
-    }
-  }, [landmarks, selectedLandmark?.id, shouldFitView, drawnFeature]);
+  // ❌ remove the fit() logic here
+  // let the selection effect handle centering/fitting
+}
+  }, [landmarks, selectedLandmark?.id,  drawnFeature, busStops]);
 
   //***************************************Check for overlaps with existing landmarks********************
   const checkForOverlaps = (newPolygon: Polygon): boolean => {
@@ -618,78 +622,102 @@ const MapComponent: React.FC<MapComponentProps> = ({
   };
 
   //****************************************Landmark drawing functions*******************************
-  const startDrawing = () => {
-    if (!mapInstance.current) return;
-    removeDrawInteraction();
+const startDrawing = () => {
+  if (!mapInstance.current) return;
+  removeDrawInteraction();
+  clearDrawnFeature();
+
+  const draw = new Draw({
+    source: drawSource.current,
+    type: "Circle",
+  });
+
+  draw.on("drawstart", (event) => {
     clearDrawnFeature();
-    const draw = new Draw({
-      source: drawSource.current,
-      type: "Circle",
-      geometryFunction: (coordinates, geometry) => {
-        if (!geometry) geometry = new Polygon([[]]);
+    setIsDrawing(true);
+    onDrawingChange(true);
+    isDrawingMode.current = true;
+    setShowAddLandmarkButton(false);
 
-        const coords = coordinates as Coordinate[];
-        const start = coords[0];
-        const end = coords[1];
-        const minX = Math.min(start[0], end[0]);
-        const maxX = Math.max(start[0], end[0]);
-        const minY = Math.min(start[1], end[1]);
-        const maxY = Math.max(start[1], end[1]);
+    // 🔹 live area updates
+    event.feature.getGeometry()?.on("change", () => {
+      const circle = event.feature.getGeometry() as Circle;
+      if (!circle) return;
 
-        geometry.setCoordinates([
-          [
-            [minX, minY],
-            [maxX, minY],
-            [maxX, maxY],
-            [minX, maxY],
-            [minX, minY],
-          ],
-        ]);
+      const extent = circle.getExtent();
+      const [minX, minY, maxX, maxY] = extent;
 
-        setDrawingArea(`${(getArea(geometry) / 1000000).toFixed(2)} km²`);
-        return geometry;
-      },
+      const rectangle = new Polygon([
+        [
+          [minX, minY],
+          [maxX, minY],
+          [maxX, maxY],
+          [minX, maxY],
+          [minX, minY],
+        ],
+      ]);
+
+      const area = getArea(rectangle);
+      setDrawingArea(
+        area > 1000000
+          ? `${(area / 1000000).toFixed(2)} km²`
+          : `${area.toFixed(0)} m²`
+      );
     });
+  });
 
-    draw.on("drawstart", () => {
-      clearDrawnFeature(); 
-      setIsDrawing(true);
-      onDrawingChange(true);
-      isDrawingMode.current = true;
-      setShowAddLandmarkButton(false);
-    });
+  draw.on("drawend", (event) => {
+    const circle = event.feature.getGeometry() as Circle;
+    const extent = circle.getExtent();
+    const [minX, minY, maxX, maxY] = extent;
 
-    draw.on("drawend", (event) => {
-      const polygon = event.feature.getGeometry() as Polygon;
-      const area = getArea(polygon);
+    const rectangle = new Polygon([
+      [
+        [minX, minY],
+        [maxX, minY],
+        [maxX, maxY],
+        [minX, maxY],
+        [minX, minY],
+      ],
+    ]);
 
-      if (area < 2 || area > 5000000) {
-        showErrorToast("Area must be between 2 m² and 5 km².");
-        clearDrawnFeature();
-        return;
-      }
+    event.feature.setGeometry(rectangle);
 
-      if (checkForOverlaps(polygon)) {
-        showErrorToast("Boundary overlaps with an existing landmark.");
-        clearDrawnFeature();
+    const coords = rectangle.getCoordinates()[0].map((c) => toLonLat(c));
+    setDrawnCoordinates(coords.map((c) => c.join(" ")).join(","));
 
-        return;
-      }
+    const area = getArea(rectangle);
+    setDrawingArea(
+      area > 1000000
+        ? `${(area / 1000000).toFixed(2)} km²`
+        : `${area.toFixed(0)} m²`
+    );
 
-      setDrawnFeature(event.feature as ol.Feature<Polygon>);
-      const coords = polygon.getCoordinates()[0].map((c) => toLonLat(c));
-      setDrawnCoordinates(coords.map((c) => c.join(" ")).join(","));
-      setIsDrawing(false);
-      setIsDrawingFinished(true);
-      onDrawingChange(false);
-      isDrawingMode.current = false;
-      setShowAddLandmarkButton(true);
-      onDrawingStatusChange?.(true);
-    });
+    if (area < 2 || area > 5000000) {
+      showErrorToast("Area must be between 2 m² and 5 km².");
+      clearDrawnFeature();
+      return;
+    }
 
-    drawInteraction.current = draw;
-    mapInstance.current.addInteraction(draw);
-  };
+    if (checkForOverlaps(rectangle)) {
+      showErrorToast("Boundary overlaps with an existing landmark.");
+      clearDrawnFeature();
+      return;
+    }
+
+    setDrawnFeature(event.feature as ol.Feature<Polygon>);
+    setIsDrawing(false);
+    setIsDrawingFinished(true);
+    onDrawingChange(false);
+    isDrawingMode.current = false;
+    setShowAddLandmarkButton(true);
+    onDrawingStatusChange?.(true);
+  });
+
+  drawInteraction.current = draw;
+  mapInstance.current.addInteraction(draw);
+};
+
 
   const removeDrawInteraction = () => {
     if (mapInstance.current && drawInteraction.current) {
