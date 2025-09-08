@@ -64,6 +64,7 @@ const BusRouteListing = () => {
     id: number;
     name: string;
     start_time: string;
+    status: string;
   } | null>(null);
 
   const mapRef = useRef<{
@@ -343,6 +344,7 @@ const BusRouteListing = () => {
           <BusRouteDetailsPage
             routeId={selectedRoute.id}
             routeName={selectedRoute.name}
+            routeStatus={selectedRoute.status}
             routeStartingTime={formatStartTimeToIST(selectedRoute.start_time)}
             refreshList={(value: any) => refreshList(value)}
             onBack={() => {
@@ -545,6 +547,7 @@ const BusRouteListing = () => {
                                 id: row.id,
                                 name: row.name,
                                 start_time: row.start_time,
+                                status: row.status,
                               })
                             }
                           >
@@ -614,7 +617,7 @@ const BusRouteListing = () => {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={3} align="center">
+                        <TableCell colSpan={4} align="center">
                           No Routes found.
                         </TableCell>
                       </TableRow>
