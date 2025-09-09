@@ -244,84 +244,85 @@ const StatementListingPage = () => {
   };
 
   // *********************************************Generate statement************************************
-const generateStatement = async () => {
-  const selectedServiceIds = selectedServices
-    .filter((service) => service.isSelected)
-    .map((service) => service.id);
-    
-  if (selectedServiceIds.length === 0) {
-    showErrorToast("Please select at least one service");
-    return;
-  }
-  
-  try {
-    setIsGeneratingStatement(true);
-    
-    // Single API call with all service IDs
-    const dutyRes = await dispatch(
-      dutyListingApi({
-        service_id_list: selectedServiceIds, // Pass array of service IDs
-        status_list: [3, 4],
-      })
-    ).unwrap();
-    
-    const allDuties = dutyRes?.data || [];
-    setDutyList(allDuties);
-    
-    // Extract unique operator IDs from duties
-    const operatorIds = [
-      ...new Set(allDuties.map((duty: any) => duty.operator_id)),
-    ];
-    
-    // Fetch operator details for all unique operator IDs
-    const operatorDetails = await Promise.all(
-      operatorIds.map(async (id: unknown) => {
-        const operatorId = id as number;
-        try {
-          const operatorRes = await dispatch(
-            operatorListApi({
-              id: operatorId,
-            })
-          ).unwrap();
-          return Array.isArray(operatorRes?.data) && operatorRes.data.length > 0
-            ? operatorRes.data[0]
-            : null;
-        } catch (error) {
-          console.error(`Error fetching operator ${operatorId}`, error);
-          return null;
-        }
-      })
-    );
-    
-    // Filter out any null values
-    const validOperators = operatorDetails.filter((op) => op !== null);
-    setOperatorList(validOperators);
-    
-    // Combine duty and operator data
-    const statement = allDuties.map((duty: any) => {
-      const operator = validOperators.find(
-        (op) => op.id === duty.operator_id
+  const generateStatement = async () => {
+    const selectedServiceIds = selectedServices
+      .filter((service) => service.isSelected)
+      .map((service) => service.id);
+
+    if (selectedServiceIds.length === 0) {
+      showErrorToast("Please select at least one service");
+      return;
+    }
+
+    try {
+      setIsGeneratingStatement(true);
+
+      // Single API call with all service IDs
+      const dutyRes = await dispatch(
+        dutyListingApi({
+          service_id_list: selectedServiceIds, // Pass array of service IDs
+          status_list: [3, 4],
+        })
+      ).unwrap();
+
+      const allDuties = dutyRes?.data || [];
+      setDutyList(allDuties);
+
+      // Extract unique operator IDs from duties
+      const operatorIds = [
+        ...new Set(allDuties.map((duty: any) => duty.operator_id)),
+      ];
+
+      // Fetch operator details for all unique operator IDs
+      const operatorDetails = await Promise.all(
+        operatorIds.map(async (id: unknown) => {
+          const operatorId = id as number;
+          try {
+            const operatorRes = await dispatch(
+              operatorListApi({
+                id: operatorId,
+              })
+            ).unwrap();
+            return Array.isArray(operatorRes?.data) &&
+              operatorRes.data.length > 0
+              ? operatorRes.data[0]
+              : null;
+          } catch (error) {
+            console.error(`Error fetching operator ${operatorId}`, error);
+            return null;
+          }
+        })
       );
-      return {
-        dutyId: duty.id,
-        collection: duty.collection,
-        operatorId: duty.operator_id,
-        operatorName: operator?.full_name || "Unknown",
-        serviceId: duty.service_id,
-        date: duty.date || new Date().toISOString().split("T")[0],
-      };
-    });
-    
-    setStatementData(statement);
-    setActiveTab("statement");
-    showSuccessToast("Statement generated successfully");
-  } catch (error: any) {
-    console.error("Error generating statement", error);
-    showErrorToast(error.message || "Failed to generate statement");
-  } finally {
-    setIsGeneratingStatement(false);
-  }
-};
+
+      // Filter out any null values
+      const validOperators = operatorDetails.filter((op) => op !== null);
+      setOperatorList(validOperators);
+
+      // Combine duty and operator data
+      const statement = allDuties.map((duty: any) => {
+        const operator = validOperators.find(
+          (op) => op.id === duty.operator_id
+        );
+        return {
+          dutyId: duty.id,
+          collection: duty.collection,
+          operatorId: duty.operator_id,
+          operatorName: operator?.full_name || "Unknown",
+          serviceId: duty.service_id,
+          date: duty.date || new Date().toISOString().split("T")[0],
+        };
+      });
+
+      setStatementData(statement);
+      setActiveTab("statement");
+      showSuccessToast("Statement generated successfully");
+    } catch (error: any) {
+      console.error("Error generating statement", error);
+      showErrorToast(error.message || "Failed to generate statement");
+    } finally {
+      setIsGeneratingStatement(false);
+    }
+  };
   // ******************************************Calculate total collection******************************
   const totalCollection = statementData.reduce(
     (sum, item) => sum + (item.collection || 0),
@@ -342,155 +343,163 @@ const generateStatement = async () => {
 
   return (
     <Box
-    sx={{
-      p: { xs: 1.5, sm: 2, md: 3 },
-      display: "flex",
-      flexDirection: "column",
-      height: "100vh",
-      gap: 2,
-    }}
-  >
-    {!(activeTab === "statement") && (
-      <Stack
-      direction={{ xs: "column", md: "row" }}
-      spacing={2}
-      alignItems={{ xs: "stretch", md: "center" }}
-      justifyContent="space-between"
+      sx={{
+        mt: { xs: 4, sm: 0 },
+        p: { xs: 1.5, sm: 2, md: 3 },
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        minHeight: 0,
+        gap: 2,
+      }}
     >
+      {!(activeTab === "statement") && (
         <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={2}
-        alignItems={{ xs: "stretch", sm: "center" }}
-        flex={1}
-      >
-          <FormControl sx={{ minWidth: { xs: "100%", sm: 200 } }}>
-            <InputLabel id="bus-select-label">Select Bus</InputLabel>
-            <Select
-              labelId="bus-select-label"
-              value={selectedBus || ""}
-              label="Select Bus"
-              onChange={handleBusChange}
-              disabled={isLoading}
-            >
-              {busList.map((bus) => (
-                <MenuItem key={bus.id} value={bus.id}>
-                  {bus.name} ({bus.registrationNumber})
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Button
-            variant="outlined"
-            onClick={() => fetchServices()}
-            disabled={isLoading}
+          direction={{ xs: "column", md: "row" }}
+          spacing={2}
+          alignItems={{ xs: "stretch", md: "center" }}
+          justifyContent="space-between"
+        >
+          {/* Bus select + refresh */}
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            alignItems={{ xs: "stretch", sm: "center" }}
+            flex={1}
           >
-            Refresh
-          </Button>
-        </Stack>
+            <FormControl size="small" fullWidth>
+              <InputLabel id="bus-select-label">Select Bus</InputLabel>
+              <Select
+                labelId="bus-select-label"
+                value={selectedBus || ""}
+                label="Select Bus"
+                onChange={handleBusChange}
+                disabled={isLoading}
+              >
+                {busList.map((bus) => (
+                  <MenuItem key={bus.id} value={bus.id}>
+                    {bus.name} ({bus.registrationNumber})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-        {/* Date range filters */}
-         <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={2}
-        flex={1}
-        justifyContent="flex-end"
-      >
-          <TextField
-            label="From"
-          type="date"
-          value={fromDate}
-          onChange={handleFromDateChange}
-          InputLabelProps={{ shrink: true }}
-          size="small"
-          sx={{ minWidth: { xs: "100%", sm: 150 } }}
-          />
+            {selectedBus && (
+              <Button
+                variant="outlined"
+                onClick={() => fetchServices()}
+                disabled={isLoading}
+              >
+                Refresh
+              </Button>
+            )}
+          </Stack>
 
-          <TextField
-           label="To"
-          type="date"
-          value={toDate}
-          onChange={handleToDateChange}
-          InputLabelProps={{ shrink: true }}
-          size="small"
-          sx={{ minWidth: { xs: "100%", sm: 150 } }}
-          />
+          {/* Date range filters */}
+          <Stack
+            direction="row"
+            spacing={1}
+            flex={1}
+            justifyContent="flex-end"
+            sx={{ mt: { xs: 2, sm: 0 } }}
+          >
+            <TextField
+              fullWidth
+              size="small"
+              label="From"
+              type="date"
+              value={fromDate}
+              onChange={handleFromDateChange}
+              InputLabelProps={{ shrink: true }}
+            />
+
+            <TextField
+              fullWidth
+              size="small"
+              label="To"
+              type="date"
+              value={toDate}
+              onChange={handleToDateChange}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Stack>
         </Stack>
-      </Stack>
-    
-    )}
-{!(activeTab === "statement") && (
-      <Divider sx={{ my: 2 }} />)}
+      )}
+      {!(activeTab === "statement") && <Divider sx={{ my: 2 }} />}
 
       {selectedBus && (
         <>
           <Box
             display="flex"
-          flexDirection={{ xs: "column", sm: "row" }}
-          justifyContent="space-between"
-          gap={2}
+            flexDirection={{ xs: "column", sm: "row" }}
+            justifyContent="space-between"
+            gap={2}
           >
-             <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1}>
               {activeTab === "statement" && (
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => setActiveTab("services")}
-            >
-              Services
-            </Button>)}
-          </Stack>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setActiveTab("services")}
+                >
+                  Services
+                </Button>
+              )}
+            </Stack>
             {activeTab === "services" &&
-            selectedServices.filter((s) => s.isSelected).length > 0 && (
-              <Button
-                variant="contained"
-                size="small"
-                onClick={generateStatement}
-                disabled={isGeneratingStatement}
-                sx={{
-                  backgroundColor: "darkblue",
-                  color: "white",
-                  alignSelf: { xs: "stretch", sm: "center" },
-                }}
-                startIcon={
-                  isGeneratingStatement ? <CircularProgress size={18} /> : null
-                }
-              >
-                Generate Statement
-              </Button>
-            )}
-        </Box>
+              selectedServices.filter((s) => s.isSelected).length > 0 && (
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={generateStatement}
+                  disabled={isGeneratingStatement}
+                  sx={{
+                    backgroundColor: "darkblue",
+                    color: "white",
+                    alignSelf: { xs: "stretch", sm: "center" },
+                  }}
+                  startIcon={
+                    isGeneratingStatement ? (
+                      <CircularProgress size={18} />
+                    ) : null
+                  }
+                >
+                  Generate Statement
+                </Button>
+              )}
+          </Box>
           {activeTab === "services" ? (
             /* Services Table with fixed pagination */
             <Box
-            sx={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 0,
-            }}
-          >
-              <TableContainer
               sx={{
                 flex: 1,
-                maxHeight: { xs: "60vh", md: "calc(100vh - 200px)" },
-                overflowY: "auto",
-                borderRadius: 2,
-                border: "1px solid #e0e0e0",
-                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                minHeight: 0,
               }}
             >
+              <TableContainer
+                sx={{
+                  flex: 1,
+                  maxHeight: { xs: "60vh", md: "calc(100vh - 200px)" },
+                  overflowY: "auto",
+                  borderRadius: 2,
+                  border: "1px solid #e0e0e0",
+                  position: "relative",
+                }}
+              >
                 {isLoading && (
                   <Box
-                  sx={{
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    backgroundColor: "rgba(255, 255, 255, 0.7)",
-                    zIndex: 1,
-                  }}
-                >
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      backgroundColor: "rgba(255, 255, 255, 0.7)",
+                      zIndex: 1,
+                    }}
+                  >
                     <CircularProgress />
                   </Box>
                 )}
@@ -504,6 +513,9 @@ const generateStatement = async () => {
                           fontWeight: 600,
                           fontSize: "0.875rem",
                           borderBottom: "1px solid #ddd",
+                          width: 60,
+                          textAlign: "center", // <-- Add this
+                          p: 0, // <-- Remove default padding
                         }}
                       >
                         <Checkbox
@@ -526,6 +538,7 @@ const generateStatement = async () => {
                                 service.status === "Ended"
                             )
                           }
+                          sx={{ m: 0 }} // <-- Remove margin
                         />
                       </TableCell>
                       <TableCell
@@ -534,6 +547,8 @@ const generateStatement = async () => {
                           fontWeight: 600,
                           fontSize: "0.875rem",
                           borderBottom: "1px solid #ddd",
+                          minWidth: 160,
+                          width: 180,
                         }}
                       >
                         Service Name
@@ -544,6 +559,9 @@ const generateStatement = async () => {
                           fontWeight: 600,
                           fontSize: "0.875rem",
                           borderBottom: "1px solid #ddd",
+                          minWidth: 100,
+                          width: 140,
+                          // pl: 2, // <-- Remove this for better alignment
                         }}
                       >
                         Route
@@ -554,6 +572,8 @@ const generateStatement = async () => {
                           fontWeight: 600,
                           fontSize: "0.875rem",
                           borderBottom: "1px solid #ddd",
+                          width: 110,
+                          textAlign: "center",
                         }}
                       >
                         Status
@@ -582,43 +602,44 @@ const generateStatement = async () => {
                           const cannotSelectTooltip =
                             "Cannot generate statement for services in Started or Created state";
 
-                          return (
-                            <TableRow
-                              key={service.id}
-                              hover
-                              sx={{ cursor: canSelect ? "pointer" : "default" }}
-                              onClick={() =>
-                                canSelect && handleServiceSelection(service.id)
-                              }
-                            >
-                              <TableCell padding="checkbox">
-                                {canSelect ? (
-                                  <Checkbox
-                                    checked={isSelected}
-                                    onChange={() =>
-                                      handleServiceSelection(service.id)
-                                    }
-                                  />
-                                ) : (
-                                  <Tooltip title={cannotSelectTooltip} arrow>
-                                    <span>
-                                      <Checkbox
-                                        checked={false}
-                                        disabled
-                                        sx={{ opacity: 0.5 }}
-                                      />
-                                    </span>
-                                  </Tooltip>
-                                )}
+                          const rowContent = (
+                            <>
+                              <TableCell
+                                padding="checkbox"
+                                sx={{ textAlign: "center", width: 60, p: 0 }} // <-- Match header
+                              >
+                                <Checkbox
+                                  checked={canSelect ? isSelected : false}
+                                  onChange={() =>
+                                    canSelect &&
+                                    handleServiceSelection(service.id)
+                                  }
+                                  disabled={!canSelect}
+                                  sx={{ opacity: canSelect ? 1 : 0.5, m: 0 }} // <-- Remove margin
+                                />
                               </TableCell>
-                              <TableCell>{service.name}</TableCell>
-                              <TableCell>{service.routeName}</TableCell>
-                              <TableCell>
+                              <TableCell
+                                align="left"
+                                sx={{
+                                  minWidth: 160,
+                                  width: 180,
+                                  fontWeight: 500,
+                                }}
+                              >
+                                {service.name}
+                              </TableCell>
+                              <TableCell
+                                align="left"
+                                sx={{ minWidth: 100, width: 140 }}
+                              >
+                                {service.routeName}
+                              </TableCell>
+                              <TableCell align="center" sx={{ width: 110 }}>
                                 <Chip
                                   label={service.status}
                                   size="small"
                                   sx={{
-                                    width: 100,
+                                    width: 90,
                                     backgroundColor:
                                       service.status === "Created"
                                         ? "rgba(33, 150, 243, 0.12)"
@@ -641,7 +662,35 @@ const generateStatement = async () => {
                                   }}
                                 />
                               </TableCell>
+                            </>
+                          );
+
+                          return canSelect ? (
+                            <TableRow
+                              key={service.id}
+                              hover
+                              sx={{ cursor: "pointer" }}
+                              onClick={() => handleServiceSelection(service.id)}
+                            >
+                              {rowContent}
                             </TableRow>
+                          ) : (
+                            <Tooltip
+                              title={cannotSelectTooltip}
+                              arrow
+                              placement="top"
+                            >
+                              <TableRow
+                                key={service.id}
+                                sx={{
+                                  cursor: "not-allowed",
+                                  backgroundColor: "#f9f9f9",
+                                  "&:hover": { backgroundColor: "#f0f0f0" },
+                                }}
+                              >
+                                {rowContent}
+                              </TableRow>
+                            </Tooltip>
                           );
                         })
                     )}
@@ -657,7 +706,7 @@ const generateStatement = async () => {
               </TableContainer>
 
               {/* Fixed Pagination at bottom */}
-               <Box sx={{ p: 1.5, borderTop: 1, borderColor: "divider" }}>
+              <Box sx={{ p: 1.5, borderTop: 1, borderColor: "divider" }}>
                 <PaginationControls
                   page={page}
                   onPageChange={(newPage) => handleChangePage(null, newPage)}
@@ -668,26 +717,26 @@ const generateStatement = async () => {
             </Box>
           ) : (
             <Card sx={{ p: 2 }}>
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              spacing={2}
-              alignItems={{ xs: "stretch", sm: "center" }}
-              justifyContent="space-between"
-              mb={2}
-            >
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={2}
+                alignItems={{ xs: "stretch", sm: "center" }}
+                justifyContent="space-between"
+                mb={2}
+              >
                 <Alert severity="info" sx={{ flex: 1 }}>
                   Total Collection:{" "}
                   <strong>₹{totalCollection.toFixed(2)}</strong>
                 </Alert>
                 <Button
-                variant="contained"
-                onClick={() => setIsOperatorWise((prev) => !prev)}
-                sx={{ backgroundColor: "darkblue" }}
-                size="small"
-              >
-                {isOperatorWise ? "Duty wise" : "Operator wise"}
-              </Button>
-            </Stack>
+                  variant="contained"
+                  onClick={() => setIsOperatorWise((prev) => !prev)}
+                  sx={{ backgroundColor: "darkblue" }}
+                  size="small"
+                >
+                  {isOperatorWise ? "Duty wise" : "Operator wise"}
+                </Button>
+              </Stack>
 
               {isOperatorWise ? (
                 <Box sx={{ display: "flex", justifyContent: "center" }}>
@@ -714,13 +763,14 @@ const generateStatement = async () => {
                               {op.name}
                             </TableCell>
                             <TableCell sx={{ textAlign: "center" }}>
-  <b>
-    {op.total !== null && op.total !== undefined && !isNaN(op.total)
-      ? op.total.toFixed(2)
-      : "Duty Not Finished"}
-  </b>
-</TableCell>
-
+                              <b>
+                                {op.total !== null &&
+                                op.total !== undefined &&
+                                !isNaN(op.total)
+                                  ? op.total.toFixed(2)
+                                  : "Duty Not Finished"}
+                              </b>
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -830,13 +880,14 @@ const generateStatement = async () => {
                             {item.date}
                           </TableCell>
                           <TableCell sx={{ textAlign: "center" }} align="right">
-  <b>
-    {item.collection !== null && item.collection !== undefined && !isNaN(item.collection)
-      ? item.collection.toFixed(2)
-      : "Duty Not Finished"}
-  </b>
-</TableCell>
-
+                            <b>
+                              {item.collection !== null &&
+                              item.collection !== undefined &&
+                              !isNaN(item.collection)
+                                ? item.collection.toFixed(2)
+                                : "Duty Not Finished"}
+                            </b>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -858,28 +909,32 @@ const generateStatement = async () => {
       {/*************************************************************when no bus is selected*************************************/}
       {!selectedBus && (
         <Box
-        flex={1}
-        display="flex"
-        flexDirection="column"
-        justifyContent="center"
-        alignItems="center"
-        textAlign="center"
-        p={3}
-      >
-        <Box mb={2}>
-          <img
-            src={nodataimage}
-            alt="No data"
-            style={{ width: 120, height: 120, opacity: 0.7 }}
-          />
+          flex={1}
+          display="flex"
+          flexDirection="column"
+          justifyContent="center"
+          alignItems="center"
+          textAlign="center"
+          p={3}
+        >
+          <Box mb={2}>
+            <img
+              src={nodataimage}
+              alt="No data"
+              style={{ width: 120, height: 120, opacity: 0.7 }}
+            />
+          </Box>
+          <Typography variant="h6" gutterBottom>
+            No Statement Available
+          </Typography>
+          <Typography
+            variant="body2"
+            color="textSecondary"
+            sx={{ maxWidth: 400 }}
+          >
+            Please select a bus and date range to generate a statement.
+          </Typography>
         </Box>
-        <Typography variant="h6" gutterBottom>
-          No Statement Available
-        </Typography>
-        <Typography variant="body2" color="textSecondary" sx={{ maxWidth: 400 }}>
-          Please select a bus and date range to generate a statement.
-        </Typography>
-      </Box>
       )}
     </Box>
   );

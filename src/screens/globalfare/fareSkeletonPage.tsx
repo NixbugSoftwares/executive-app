@@ -309,14 +309,17 @@ const [distanceKm, setDistanceKm] = useState(5);
       setLoading(false);
     }
   };
-
+const [showEditor, setShowEditor] = useState(false);
 return (
     <Box
       sx={{
         display: "flex",
+        flexDirection: { xs: "column", sm: "row" }, // Stack on mobile, side-by-side on larger screens
         width: "100%",
         height: "100vh",
         overflow: "hidden",
+        maxWidth: { sm: "1200px" }, // Limit max width on larger screens
+        margin: "0 auto",
       }}
     >
       {/* Left Side - Form */}
@@ -324,14 +327,17 @@ return (
         component="form"
         onSubmit={handleSubmit(handleFareCreation)}
         sx={{
-          flex: "0 0 40%",
-          maxWidth: "40%",
-          height: "100vh",
+          flex: { xs: "1", sm: "0 0 40%" },
+          maxWidth: { xs: "100%", sm: "40%" },
+          height: { xs: "100%", sm: "100vh" },
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          borderRight: "1px solid #e0e0e0",
-          p: 3,
+          p: { xs: 2, sm: 3 },
+          zIndex: 1,
+          boxShadow: "none",
+          borderRadius: 0,
+          border: "none",
         }}
       >
         <Box sx={{ flex: 1, overflowY: "auto", mb: 2 }}>
@@ -370,75 +376,83 @@ return (
                 {...field}
                 label="Fare Name"
                 fullWidth
-                sx={{}}
                 error={!!errors.name}
                 helperText={errors.name?.message}
                 onChange={(e) => {
                   const value = e.target.value.replace(/\s{2,}/g, " ");
                   field.onChange(value);
                 }}
+                sx={{ mb: 3 }}
               />
             )}
           />
 
-          <Typography variant="h6" gutterBottom>
+          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
             Attributes
           </Typography>
 
-          <Stack spacing={2} sx={{ mb: 3 }}>
-            {/* First row with 2 items side by side */}
-            <Stack direction="row" spacing={2}>
-              <Controller
-                name="attributes.currency_type"
-                control={control}
-                render={({ field }) => (
-                  <TextField {...field} select label="Currency Type" fullWidth>
-                    {["INR"].map((currency) => (
-                      <MenuItem key={currency} value={currency}>
-                        {currency}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                )}
-              />
-
-              <Controller
-                name="attributes.distance_unit"
-                control={control}
-                render={({ field }) => (
-                  <TextField {...field} select label="Distance Unit" fullWidth>
-                    {["m"].map((unit) => (
-                      <MenuItem key={unit} value={unit}>
-                        {unit}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                )}
-              />
-            </Stack>
-
-            {/* Full width field */}
+          <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
             <Controller
-  name="attributes.df_version"
-  control={control}
-  defaultValue={1} // Always 1
-  render={({ field }) => (
-    <TextField
-      {...field}
-      label="DF Version"
-      type="number"
-      fullWidth
-      value={1} // Force value to always be 1
-      InputProps={{
-        readOnly: true, // Prevent typing
-      }}
-    />
-  )}
-/>
+              name="attributes.currency_type"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  select
+                  label="Currency"
+                  fullWidth
+                  size="small"
+                >
+                  {["INR"].map((currency) => (
+                    <MenuItem key={currency} value={currency}>
+                      {currency}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
+
+            <Controller
+              name="attributes.distance_unit"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  select
+                  label="Unit"
+                  fullWidth
+                  size="small"
+                >
+                  {["m"].map((unit) => (
+                    <MenuItem key={unit} value={unit}>
+                      {unit}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
+
+            <Controller
+              name="attributes.df_version"
+              control={control}
+              defaultValue={1}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Version"
+                  type="number"
+                  fullWidth
+                  size="small"
+                  value={1}
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                />
+              )}
+            />
           </Stack>
 
-          <Divider sx={{ my: 2 }} />
-
+          <Divider sx={{ my: 1 }} />
           <Box
             sx={{
               display: "flex",
@@ -473,7 +487,6 @@ return (
               sx={{ mb: 2 }}
               alignItems="center"
             >
-              {/* Ticket Name */}
               <Controller
                 name={`attributes.ticket_types.${index}.name`}
                 control={control}
@@ -491,8 +504,6 @@ return (
                   />
                 )}
               />
-
-              {/* Ticket ID */}
               <Controller
                 name={`attributes.ticket_types.${index}.id`}
                 control={control}
@@ -510,8 +521,6 @@ return (
                   />
                 )}
               />
-
-              {/* Delete Button */}
               <Tooltip title="Remove ticket type">
                 <IconButton onClick={() => remove(index)}>
                   <DeleteIcon color="error" />
@@ -525,64 +534,87 @@ return (
               At least one valid ticket type is required
             </FormHelperText>
           )}
-          {/* calculate fare */}
         </Box>
 
-        {/* Buttons  */}
         <Box
           sx={{
-            mt: "auto",
+            mt: { xs: 0, sm: "auto" },
             display: "flex",
             justifyContent: "left",
-            gap: 2,
+            gap: 1,
             pt: 2,
+            flexWrap: "wrap",
+            position: { xs: "sticky", sm: "static" }, // Sticky on mobile
+            bottom: { xs: 0, sm: "auto" }, // Stick to bottom on mobile
+            bgcolor: { xs: "background.paper", sm: "inherit" }, // Background for sticky
+            zIndex: { xs: 10, sm: "auto" }, // Ensure above other content
+            pb: { xs: 2, sm: 0 }, // Padding bottom for mobile
           }}
         >
-          <Button
-            variant="outlined"
-            onClick={onCancel}
-            size="small"
-            disabled={loading}
-          >
-            Back
-          </Button>
-
+          {/* View Mode */}
           {mode === "view" ? (
             <>
               {canDeleteFare && (
-                <Button
-                  variant="contained"
-                  color="error"
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteFare(fareToEdit!.id);
-                  }}
-                  sx={{
-                    "&.Mui-disabled": {
-                      backgroundColor: "#e57373 !important",
-                      color: "#ffffff99",
-                    },
-                  }}
+                <Tooltip
+                  title={
+                    fareToEdit?.scope === 1
+                      ? "Global fare cannot be Deleted"
+                      : ""
+                  }
                 >
-                  Delete
-                </Button>
+                  <span>
+                    <Button
+                      variant="contained"
+                      color="error"
+                      disabled={fareToEdit?.scope === 1 || loading}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteFare(fareToEdit!.id);
+                      }}
+                      sx={{
+                        "&.Mui-disabled": {
+                          backgroundColor: "#e57373 !important",
+                          color: "#ffffff99",
+                        },
+                        fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                        py: { xs: 0.5, sm: 1 },
+                        px: { xs: 1, sm: 2 },
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </span>
+                </Tooltip>
               )}
+
               {canUpdateFare && (
-                <Button
-                  variant="contained"
-                  color="success"
-                  size="small"
-                  onClick={handleSubmit(handleFareUpdate)}
-                  sx={{
-                    "&.Mui-disabled": {
-                      backgroundColor: "#81c784 !important",
-                      color: "#ffffff99",
-                    },
-                  }}
+                <Tooltip
+                  title={
+                    fareToEdit?.scope === 1
+                      ? "Global fare cannot be updated"
+                      : ""
+                  }
                 >
-                  Update
-                </Button>
+                  <span>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      disabled={fareToEdit?.scope === 1 || loading}
+                      onClick={handleSubmit(handleFareUpdate)}
+                      sx={{
+                        "&.Mui-disabled": {
+                          backgroundColor: "#81c784 !important",
+                          color: "#ffffff99",
+                        },
+                        fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                        py: { xs: 0.5, sm: 1 },
+                        px: { xs: 1, sm: 2 },
+                      }}
+                    >
+                      Update
+                    </Button>
+                  </span>
+                </Tooltip>
               )}
             </>
           ) : (
@@ -591,22 +623,56 @@ return (
               variant="contained"
               onClick={handleSubmit(handleFareCreation)}
               disabled={loading}
+              sx={{
+                fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                py: { xs: 0.5, sm: 1 },
+                px: { xs: 1, sm: 2 },
+                backgroundColor: "darkblue",
+              }}
             >
               {loading ? "Saving..." : "Save Fare"}
             </Button>
           )}
+
+          {/* View Editor (Mobile Only) */}
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={() => setShowEditor(true)}
+            sx={{
+              display: { xs: "block", sm: "none" },
+              ml: "auto",
+              fontSize: { xs: "0.7rem", sm: "0.875rem" },
+              py: { xs: 0.5, sm: 1 },
+              px: { xs: 1, sm: 2 },
+            }}
+          >
+            Function
+          </Button>
         </Box>
       </Paper>
 
-      {/*  Editor */}
+      {/* Editor - Overlay on mobile, side panel on larger screens */}
       <Paper
         sx={{
-          flex: "0 0 60%",
-          maxWidth: "60%",
-          height: "100%",
-          display: "flex",
+          flex: { xs: "none", sm: "0 0 60%" },
+          maxWidth: { xs: "100%", sm: "60%" },
+          height: { xs: "100vh", sm: "100%" },
+          display: {
+            xs: showEditor ? "flex" : "none", // Show only when toggled on mobile
+            sm: "flex",
+          },
           flexDirection: "column",
           overflow: "hidden",
+          position: { xs: "fixed", sm: "static" }, // Overlay on mobile
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 2,
+          bgcolor: "background.paper",
+          boxShadow: "none",
+          borderRadius: 0,
+          border: "none",
         }}
       >
         <Box
@@ -618,7 +684,14 @@ return (
             borderBottom: "1px solid #e0e0e0",
           }}
         >
-          <Typography variant="h6">Fare Function</Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <IconButton
+              onClick={() => setShowEditor(false)}
+              sx={{ display: { xs: "block", sm: "none" }, ml: 2 }} // Back button only on mobile
+            >
+              <ArrowBackIcon />
+            </IconButton>
+          </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <TextField
               label="Distance (km)"
@@ -647,7 +720,7 @@ return (
         <Collapse in={showOutput}>
           <Box
             sx={{
-              height: "300px", // Increased height for better visibility
+              height: "300px",
               p: 2,
               overflow: "auto",
               borderTop: "1px solid #e0e0e0",
@@ -697,8 +770,6 @@ return (
                   <Typography variant="subtitle1" gutterBottom>
                     Fare Calculation Results:
                   </Typography>
-
-                  {/* Single distance result */}
                   <Box sx={{ mb: 3 }}>
                     <Typography variant="body2" sx={{ mb: 1 }}>
                       For {fareResults.distance} km:
@@ -726,9 +797,6 @@ return (
                       </TableBody>
                     </Table>
                   </Box>
-
-                  {/* Distance range results */}
-                  {/* Distance range results */}
                   <Box>
                     <Typography variant="body2" sx={{ mb: 1 }}>
                       Fare breakdown by distance:
@@ -774,6 +842,7 @@ return (
           </Box>
         </Collapse>
       </Paper>
+
       <Dialog
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
