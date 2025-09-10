@@ -4,7 +4,6 @@ import {
   Box,
   TextField,
   Button,
-  Typography,
   Container,
   CssBaseline,
   CircularProgress,
@@ -40,7 +39,7 @@ interface ICompanyCreationFormProps {
 
 const TypeOptions = [
   { label: "Other", value: 1 },
-  { label: "Privet", value: 2 },
+  { label: "Private", value: 2 },
   { label: "Government", value: 3 },
 ];
 const statusOptions = [
@@ -93,6 +92,7 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
         formData.append("email_id", data.email);
       }
       formData.append("type", data.company_type);
+      formData.append("status", data.status);
       const response = await dispatch(companyCreationApi(formData)).unwrap();
 
       if (response?.id) {
@@ -103,7 +103,7 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
         showErrorToast("Company creation failed. Please try again.");
       }
     } catch (error: any) {
-      showErrorToast(error || "Error during company creation:");
+      showErrorToast(error.message || "Error during company creation:");
     } finally {
       setLoading(false);
     }
@@ -114,15 +114,11 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
       <CssBaseline />
       <Box
         sx={{
-          marginTop: 8,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
         }}
       >
-        <Typography component="h1" variant="h5">
-          Company Creation
-        </Typography>
         <Box
           component="form"
           noValidate
@@ -149,6 +145,8 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
             error={!!errors.address}
             helperText={errors.address?.message}
             size="small"
+            multiline
+            rows={4}
           />
           <TextField
             margin="normal"
@@ -188,7 +186,7 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
                 size="small"
                 error={!!errors.phone_number}
                 helperText={errors.phone_number?.message}
-                value={field.value ? `+91${field.value}` : ""}
+                value={field.value ? `+91 ${field.value}` : ""}
                 onChange={(e) => {
                   let value = e.target.value.replace(/^\+91/, "");
                   value = value.replace(/\D/g, "");

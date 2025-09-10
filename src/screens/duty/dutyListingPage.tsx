@@ -38,7 +38,8 @@ const getStatusBackendValue = (displayValue: string): string => {
     Assigned: "1",
     Started: "2",
     Terminated: "3",
-    Finished: "4",
+    Ended: "4",
+    Discarded: "5",
   };
   return statusMap[displayValue] || "";
 };
@@ -78,95 +79,96 @@ const DutyListingTable = () => {
       }
     }
   }, [companyId, location.search]);
-  const fetchDutyList = useCallback(
-    async (pageNumber: number, searchParams = {}) => {
-      setIsLoading(true);
-      const offset = pageNumber * rowsPerPage;
 
-      try {
-        const dutyResponse = await dispatch(
-          dutyListingApi({
-            limit: rowsPerPage,
-            offset,
-            ...searchParams,
-            company_id: filterCompanyId,
+const fetchDutyList = useCallback(
+  async (pageNumber: number, searchParams = {}) => {
+    setIsLoading(true);
+    const offset = pageNumber * rowsPerPage;
+
+    try {
+      // Fetch duties
+      const dutyResponse = await dispatch(
+        dutyListingApi({
+          limit: rowsPerPage,
+          offset,
+          ...searchParams,
+          company_id: filterCompanyId,
+        })
+      ).unwrap();
+
+      const duties: any[] = dutyResponse.data || [];
+
+      // Convert IDs to string[] and ensure uniqueness
+      const operatorIds: number[] = Array.from(
+        new Set(duties.map((duty) => Number(duty.operator_id)))
+      );
+      const serviceIds: string[] = Array.from(
+        new Set(duties.map((duty) => String(duty.service_id)))
+      );
+
+      // Fetch operators and services in parallel (with dummy pagination)
+      const [operatorResponse, serviceResponse] = await Promise.all([
+        dispatch(
+          operatorListApi({
+            id_list: operatorIds,
           })
-        ).unwrap();
-
-        const items = dutyResponse.data || [];
-
-        // Fetch details for each duty in parallel
-        const dutiesWithDetails = await Promise.all(
-          items.map(async (duty: any) => {
-            try {
-              const [operatorResponse, serviceResponse] = await Promise.all([
-                dispatch(
-                  operatorListApi({ limit: 1, offset: 0, id: duty.operator_id })
-                ).unwrap(),
-                dispatch(
-                  serviceListingApi({
-                    limit: 1,
-                    offset: 0,
-                    id: duty.service_id,
-                  })
-                ).unwrap(),
-              ]);
-
-              const operator = operatorResponse.data.find(
-                (operator: any) => operator.id === duty.operator_id
-              );
-              const service = serviceResponse.data.find(
-                (service: any) => service.id === duty.service_id
-              );
-
-              return {
-                id: duty.id,
-                name: duty.name,
-                service_id: duty.service_id,
-                serviceName: service?.name || `Service ${duty.service_id}`,
-                operator_id: duty.operator_id,
-                operatorName:
-                  operator?.full_name || `Operator ${duty.operator_id}`,
-                status:
-                  duty.status === 1
-                    ? "Assigned"
-                    : duty.status === 2
-                    ? "Started"
-                    : duty.status === 3
-                    ? "Terminated"
-                    : duty.status === 4
-                    ? "Ended"
-                    : "",
-                created_on: duty.created_on,
-                updated_on: duty.updated_on,
-              };
-            } catch (error) {
-              console.error(
-                `Error fetching details for duty ${duty.id}:`,
-                error
-              );
-              return {
-                ...duty,
-                serviceName: `Service ${duty.service_id}`,
-                operatorName: `Operator ${duty.operator_id}`,
-                status: "Unknown",
-                type: "Unknown",
-              };
-            }
+        ).unwrap(),
+        dispatch(
+          serviceListingApi({
+            id_list: serviceIds,
           })
-        );
+        ).unwrap(),
+      ]);
 
-        setDutyList(dutiesWithDetails);
-        setHasNextPage(items.length === rowsPerPage);
-      } catch (error: any) {
-        console.error("Fetch Error:", error);
-        showErrorToast(error || "Failed to fetch Duty list");
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [dispatch]
-  );
+      // Create lookup maps
+      const operatorMap: Record<string, any> = {};
+      operatorResponse.data.forEach((o: any) => {
+        operatorMap[o.id] = o;
+      });
+
+      const serviceMap: Record<string, any> = {};
+      serviceResponse.data.forEach((s: any) => {
+        serviceMap[s.id] = s;
+      });
+
+      // Merge details into duties
+      const dutiesWithDetails : any = duties.map((duty) => ({
+        id: duty.id,
+        name: duty.name,
+        service_id: duty.service_id,
+        serviceName:
+          serviceMap[duty.service_id]?.name || `Service ${duty.service_id}`,
+        operator_id: duty.operator_id,
+        operatorName:
+          operatorMap[duty.operator_id]?.full_name ||
+          `Operator ${duty.operator_id}`,
+        status:
+          duty.status === 1
+            ? "Assigned"
+            : duty.status === 2
+            ? "Started"
+            : duty.status === 3
+            ? "Terminated"
+            : duty.status === 4
+            ? "Ended"
+            : duty.status === 5
+            ? "Discarded"
+            : "",
+        created_on: duty.created_on,
+        updated_on: duty.updated_on,
+      }));
+
+      setDutyList(dutiesWithDetails);
+      setHasNextPage(duties.length === rowsPerPage);
+    } catch (error: any) {
+      console.error("Fetch Error:", error);
+      showErrorToast(error.message || "Failed to fetch Duty list");
+    } finally {
+      setIsLoading(false);
+    }
+  },
+  [dispatch]
+);
 
   const handleRowClick = (duty: Duty) => {
     setSelectedDuty(duty);
@@ -245,15 +247,8 @@ const DutyListingTable = () => {
           overflow: "hidden",
         }}
       >
-        <Tooltip
-          title={
-            !canCreateDuty
-              ? "You don't have permission, contact the admin"
-              : "Click to open the Bus creation form"
-          }
-          placement="top-end"
-        >
-          <Button
+        {canCreateDuty&&(
+         <Button
             sx={{
               ml: "auto",
               mr: 2,
@@ -271,8 +266,7 @@ const DutyListingTable = () => {
             style={{ cursor: !canCreateDuty ? "not-allowed" : "pointer" }}
           >
             Add New Duty
-          </Button>
-        </Tooltip>
+          </Button>)}
 
         <TableContainer
           sx={{
@@ -357,6 +351,8 @@ const DutyListingTable = () => {
                     <MenuItem value="Started">Started</MenuItem>
                     <MenuItem value="Terminated">Terminated</MenuItem>
                     <MenuItem value="Finished">Finished</MenuItem>
+                    <MenuItem value="Ended">Ended</MenuItem>
+                    <MenuItem value="Discarded">Discarded</MenuItem>
                   </Select>
                 </TableCell>
                 <TableCell />
@@ -398,7 +394,8 @@ const DutyListingTable = () => {
                               ? "rgba(76, 175, 80, 0.12)"
                               : row.status === "Terminated"
                               ? "rgba(244, 67, 54, 0.12)"
-                              : "rgba(158, 158, 158, 0.12)",
+                              :row.status === "Ended" ? "rgba(158, 158, 158, 0.12)"
+                               : "#afaaaaff",
                           color:
                             row.status === "Assigned"
                               ? "#1976D2"
@@ -406,7 +403,8 @@ const DutyListingTable = () => {
                               ? "#388E3C"
                               : row.status === "Terminated"
                               ? "#D32F2F"
-                              : "#616161",
+                              :  row.status === "Ended" ? "#616161":
+                               "#423e3eff",
                           fontWeight: 600,
                           fontSize: "0.75rem",
                           borderRadius: "8px",
@@ -437,7 +435,7 @@ const DutyListingTable = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} align="center">
-                    No Duty found.
+                    No Duty Found.
                   </TableCell>
                 </TableRow>
               )}
@@ -484,7 +482,6 @@ const DutyListingTable = () => {
         open={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
         title="Create Duty"
-        showCancel
       >
         <DutyCreationForm
           refreshList={refreshList}

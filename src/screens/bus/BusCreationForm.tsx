@@ -1,12 +1,11 @@
 import React, { useState } from "react";
-import { useForm, SubmitHandler  } from "react-hook-form";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { busCreationSchema } from "../auth/validations/authValidation";
 import {
   Box,
   TextField,
   Button,
-  Typography,
   Container,
   CssBaseline,
   CircularProgress,
@@ -43,7 +42,7 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-  
+
   const {
     register,
     handleSubmit,
@@ -107,8 +106,8 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
       } else {
         showErrorToast("Bus creation failed. Please try again.");
       }
-    } catch (error:any) {
-      showErrorToast(error||"Something went wrong. Please try again.");
+    } catch (error: any) {
+      showErrorToast(error.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -119,22 +118,17 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
       <CssBaseline />
       <Box
         sx={{
-          marginTop: 8,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
         }}
       >
-        <Typography component="h1" variant="h5">
-          Bus Creation
-        </Typography>
         <Box
           component="form"
           noValidate
           sx={{ mt: 1 }}
           onSubmit={handleSubmit(handleAccountCreation)}
         >
-          
           <TextField
             margin="normal"
             required
@@ -178,6 +172,9 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
             error={!!errors.manufactured_on}
             helperText={errors.manufactured_on?.message}
             size="small"
+            inputProps={{
+              max: new Date().toISOString().split("T")[0],
+            }}
           />
           <TextField
             margin="normal"
@@ -189,17 +186,24 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
             error={!!errors.insurance_upto}
             helperText={errors.insurance_upto?.message}
             size="small"
+            inputProps={{
+              min: new Date().toISOString().split("T")[0], // Set min date to today
+            }}
           />
           <TextField
             margin="normal"
+            required
             fullWidth
             label="Pollution Upto"
             type="date"
             InputLabelProps={{ shrink: true }}
             {...register("pollution_upto")}
             error={!!errors.pollution_upto}
-            helperText={errors.pollution_upto?.message}
+            helperText={errors.pollution_upto?.message || " "} // Empty string fallback for spacing
             size="small"
+            inputProps={{
+              min: new Date().toISOString().split("T")[0], // Set min date to today
+            }}
           />
           <TextField
             margin="normal"
@@ -211,6 +215,9 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
             error={!!errors.fitness_upto}
             helperText={errors.fitness_upto?.message}
             size="small"
+            inputProps={{
+              min: new Date().toISOString().split("T")[0], // Set min date to today
+            }}
           />
           <TextField
             margin="normal"
@@ -222,6 +229,9 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
             error={!!errors.road_tax_upto}
             helperText={errors.road_tax_upto?.message}
             size="small"
+            inputProps={{
+              min: new Date().toISOString().split("T")[0], // Set min date to today
+            }}
           />
 
           <Button

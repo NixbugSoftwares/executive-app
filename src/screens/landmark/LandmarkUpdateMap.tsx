@@ -5,11 +5,13 @@ import TileLayer from "ol/layer/Tile";
 import VectorLayer from "ol/layer/Vector";
 import { OSM, XYZ } from "ol/source";
 import { Draw } from "ol/interaction";
-import { Polygon } from "ol/geom";
+import { Circle, Polygon } from "ol/geom";
 import { fromLonLat, toLonLat } from "ol/proj";
 import { Vector as VectorSource } from "ol/source";
 import { Feature } from "ol";
-import { Style, Stroke, Fill } from "ol/style";
+import { Style, Fill, Stroke } from "ol/style";
+import Text from "ol/style/Text";
+import { Circle as CircleGeom } from "ol/geom";
 import {
   Button,
   Box,
@@ -19,15 +21,12 @@ import {
   Select,
   TextField,
   Typography,
-  IconButton,
-  Tooltip,
 } from "@mui/material";
-import { landmarkListApi } from "../../slices/appSlice";
-import LocationOnIcon from "@mui/icons-material/LocationOn";
-import { Coordinate } from "ol/coordinate";
+import { landmarkListApi, landmarkUpdationApi } from "../../slices/appSlice";
 import { getArea } from "ol/sphere";
-import { showErrorToast } from "../../common/toastMessageHelper";
+import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
 import { useAppDispatch } from "../../store/Hooks";
+
 interface Landmark {
   id: number;
   name: string;
@@ -36,16 +35,18 @@ interface Landmark {
 
 interface MapComponentProps {
   initialBoundary?: string;
-  onSave: (coordinates: string) => void;
   onClose: () => void;
   editingLandmarkId: number;
+  refreshList?: (value: string) => void;
+   onBoundaryUpdated?: () => void;
 }
 
 const UpdateMapComponent: React.FC<MapComponentProps> = ({
   initialBoundary,
-  onSave,
   onClose,
   editingLandmarkId,
+  refreshList,
+  onBoundaryUpdated 
 }) => {
   const dispatch = useAppDispatch();
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -54,15 +55,29 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
   const boundariesSource = useRef(new VectorSource());
   const mapInstance = useRef<Map | null>(null);
   const drawInteraction = useRef<Draw | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
   const [updatedCoordinates, setUpdatedCoordinates] = useState<string | null>(
     null
   );
   const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">("osm");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [showAllBoundaries, setShowAllBoundaries] = useState(false);
   const [drawingArea, setDrawingArea] = useState<string>("");
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
+
+
+  function rectangleToCircle(polygon: Polygon): Feature {
+  const extent = polygon.getExtent();
+  const center = [
+    (extent[0] + extent[2]) / 2,
+    (extent[1] + extent[3]) / 2,
+  ];
+  const radius = Math.min(
+    (extent[2] - extent[0]) / 2,
+    (extent[3] - extent[1]) / 2
+  );
+  const circle = new CircleGeom(center, radius);
+  return new Feature(circle);
+}
+
   // Initialize map and layers
   useEffect(() => {
     if (!mapRef.current) return;
@@ -74,15 +89,23 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
         new VectorLayer({
           source: boundariesSource.current,
           zIndex: 1,
-          style: new Style({
-            stroke: new Stroke({
-              color: "rgba(0, 0, 255, 0.7)",
-              width: 2,
+          style: (feature) =>
+            new Style({
+              stroke: new Stroke({
+                color: "rgba(0, 0, 255, 0.7)",
+                width: 2,
+              }),
+              fill: new Fill({
+                color: "rgba(0, 0, 255, 0.1)",
+              }),
+              text: new Text({
+                text: feature.get("name") || "",
+                font: "14px Calibri,sans-serif",
+                fill: new Fill({ color: "darkblue" }),
+                stroke: new Stroke({ color: "#ffffffff", width: 3 }),
+                overflow: true,
+              }),
             }),
-            fill: new Fill({
-              color: "rgba(0, 0, 255, 0.1)",
-            }),
-          }),
         }),
         new VectorLayer({
           source: initialVectorSource.current,
@@ -124,60 +147,41 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
 
         const coordinates = coordinatesString.map((coord) => fromLonLat(coord));
         if (coordinates.length >= 3) {
-          const polygon = new Polygon([coordinates]);
-          initialVectorSource.current.clear();
-          initialVectorSource.current.addFeature(new Feature(polygon));
+  const polygon = new Polygon([coordinates]);
+  const circleFeature = rectangleToCircle(polygon);
+  initialVectorSource.current.clear();
+  initialVectorSource.current.addFeature(circleFeature);
 
-          map.getView().fit(polygon.getExtent(), {
-            padding: [50, 50, 50, 50],
-            duration: 1000,
-          });
-        }
+  map.getView().fit(polygon.getExtent(), {
+    padding: [50, 50, 50, 50],
+    duration: 1000,
+  });
+}
       } catch (error) {
         showErrorToast("Error parsing initialBoundary:" + error);
       }
     }
+
+    // Enable drawing by default
+    startDrawing();
+
+    // Fetch landmarks initially
+    fetchLandmarksInView();
 
     return () => {
       map.setTarget(undefined);
     };
   }, [initialBoundary]);
 
-  const fetchLandmarksInView = async () => {
-    if (!mapInstance.current) return;
-    const centerRaw = mapInstance.current.getView().getCenter();
-    if (!centerRaw) return;
-    const center = toLonLat(centerRaw);
-    const [lon, lat] = center;
-    const locationaskey = `POINT(${lon} ${lat})`;
 
-    // Get zoom and set limit like in LandmarkMap.tsx
-    const zoom = mapInstance.current.getView().getZoom()!;
-    const limit = Math.min(100, Math.max(20, Math.floor(zoom * 5))); 
 
-    try {
-      const response = await dispatch(
-        landmarkListApi({
-          location: locationaskey,
-          limit,
-          order_by: 2, // Order by distance
-          order_in: 1, // ASC (nearest first)
-        })
-      ).unwrap();
-      setLandmarks(response.data);
-    } catch (error: any) {
-      showErrorToast(error);
-    }
-  };
   useEffect(() => {
     if (!mapInstance.current) return;
 
     const map = mapInstance.current;
 
     const handleMoveEnd = () => {
-      if (showAllBoundaries) {
-        fetchLandmarksInView();
-      }
+      fetchLandmarksInView();
     };
 
     map.on("moveend", handleMoveEnd);
@@ -185,12 +189,12 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
     return () => {
       map.un("moveend", handleMoveEnd);
     };
-  }, [showAllBoundaries]);
+  }, []);
 
   useEffect(() => {
     boundariesSource.current.clear();
 
-    if (showAllBoundaries && landmarks.length > 0) {
+    if (landmarks.length > 0) {
       landmarks.forEach((landmark) => {
         if (landmark.boundary) {
           try {
@@ -205,19 +209,47 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
             );
 
             if (coordinates.length >= 3) {
-              const polygon = new Polygon([coordinates]);
-              const feature = new Feature(polygon);
-              if (landmark.boundary !== initialBoundary) {
-                boundariesSource.current.addFeature(feature);
-              }
-            }
+  const polygon = new Polygon([coordinates]);
+  const circleFeature = rectangleToCircle(polygon);
+  circleFeature.set("name", landmark.name);
+
+  if (landmark.boundary !== initialBoundary) {
+    boundariesSource.current.addFeature(circleFeature);
+  }
+}
           } catch (error) {
             showErrorToast("Error parsing landmark boundary:" + error);
           }
         }
       });
     }
-  }, [showAllBoundaries, landmarks, initialBoundary]);
+  }, [landmarks, initialBoundary]);
+
+  const fetchLandmarksInView = async () => {
+    if (!mapInstance.current) return;
+    const centerRaw = mapInstance.current.getView().getCenter();
+    if (!centerRaw) return;
+    const center = toLonLat(centerRaw);
+    const [lon, lat] = center;
+    const locationaskey = `POINT(${lon} ${lat})`;
+
+    const zoom = mapInstance.current.getView().getZoom()!;
+    const limit = Math.min(100, Math.max(20, Math.floor(zoom * 5)));
+
+    try {
+      const response = await dispatch(
+        landmarkListApi({
+          location: locationaskey,
+          limit,
+          order_by: 2,
+          order_in: 1,
+        })
+      ).unwrap();
+      setLandmarks(response.data);
+    } catch (error: any) {
+      showErrorToast(error.message|| " Error fetching landmarks ");
+    }
+  };
 
   const checkForOverlaps = (newPolygon: Polygon): boolean => {
     if (!landmarks || landmarks.length === 0) return false;
@@ -225,7 +257,6 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
     const newCoords = newPolygon.getCoordinates()[0];
 
     for (const landmark of landmarks) {
-      // Skip the landmark we're currently updating by comparing ID
       if (!landmark.boundary) continue;
       if (landmark.id === editingLandmarkId) continue;
 
@@ -261,116 +292,142 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
     return false;
   };
 
-  const startDrawing = () => {
-    if (!mapInstance.current) return;
+const startDrawing = () => {
+  if (!mapInstance.current) return;
 
-    vectorSource.current.clear();
-    setIsDrawing(true);
-    setUpdatedCoordinates(null);
+  vectorSource.current.clear();
+  setUpdatedCoordinates(null);
 
-    const draw = new Draw({
-      source: vectorSource.current,
-      type: "Circle",
-      geometryFunction: (coordinates, geometry) => {
-        if (!geometry) {
-          geometry = new Polygon([[]]);
-        }
-
-        const coords = coordinates as Coordinate[];
-        const start = coords[0];
-        const end = coords[1];
-
-        const minX = Math.min(start[0], end[0]);
-        const maxX = Math.max(start[0], end[0]);
-        const minY = Math.min(start[1], end[1]);
-        const maxY = Math.max(start[1], end[1]);
-
-        geometry.setCoordinates([
-          [
-            [minX, minY],
-            [maxX, minY],
-            [maxX, maxY],
-            [minX, maxY],
-            [minX, minY],
-          ],
-        ]);
-
-        // Calculate area
-        const area = getArea(geometry);
-        setDrawingArea(`${(area / 1000000).toFixed(2)} km²`);
-
-        return geometry;
-      },
-      style: new Style({
-        stroke: new Stroke({
-          color: "rgb(22, 8, 171)",
-          width: 2,
-        }),
-        fill: new Fill({
-          color: "rgba(94, 105, 223, 0.35)",
-        }),
+  const draw = new Draw({
+    source: vectorSource.current,
+    type: "Circle", // keep circle in UI
+    style: new Style({
+      stroke: new Stroke({
+        color: "rgb(22, 8, 171)",
+        width: 2,
       }),
+      fill: new Fill({
+        color: "rgba(94, 105, 223, 0.35)",
+      }),
+    }),
+  });
+
+  if (drawInteraction.current) {
+    mapInstance.current.removeInteraction(drawInteraction.current);
+  }
+
+  draw.on("drawstart", (event) => {
+    vectorSource.current.clear();
+
+    // 🔹 live area updates
+    event.feature.getGeometry()?.on("change", () => {
+      const circle = event.feature.getGeometry() as Circle;
+      if (!circle) return;
+
+      const extent = circle.getExtent();
+      const [minX, minY, maxX, maxY] = extent;
+
+      const rectangle = new Polygon([
+        [
+          [minX, minY],
+          [maxX, minY],
+          [maxX, maxY],
+          [minX, maxY],
+          [minX, minY],
+        ],
+      ]);
+
+      const area = getArea(rectangle);
+      setDrawingArea(
+        area > 1000000
+          ? `${(area / 1000000).toFixed(2)} km²`
+          : `${area.toFixed(0)} m²`
+      );
     });
+  });
 
-    if (drawInteraction.current) {
-      mapInstance.current.removeInteraction(drawInteraction.current);
-    }
+  draw.on("drawend", (event) => {
+    const circleGeom = event.feature.getGeometry() as Circle;
+    const extent = circleGeom.getExtent();
+    const [minX, minY, maxX, maxY] = extent;
 
-    draw.on("drawstart", () => {
-      // Clear any existing features when starting to draw
+    const rectangle = new Polygon([
+      [
+        [minX, minY],
+        [maxX, minY],
+        [maxX, maxY],
+        [minX, maxY],
+        [minX, minY],
+      ],
+    ]);
+
+    const area = getArea(rectangle);
+    if (area < 2 || area > 5000000) {
+      showErrorToast("Area must be between 2 m² and 5 km².");
       vectorSource.current.clear();
-    });
-
-    draw.on("drawend", (event) => {
-      const polygon = event.feature.getGeometry() as Polygon;
-
-      // Validate area
-      const area = getArea(polygon);
-      if (area < 2 || area > 5000000) {
-        showErrorToast("Area must be between 2 m² and 5 km².");
-        vectorSource.current.clear();
-        setDrawingArea("");
-        return;
-      }
-
-      // Check for overlaps with other landmarks (excluding the one being updated)
-      if (checkForOverlaps(polygon)) {
-        showErrorToast(
-          "Boundary overlaps with an existing landmark. Please choose a different area."
-        );
-        vectorSource.current.clear();
-        setDrawingArea("");
-        return;
-      }
-
-      const coordinates = polygon
-        .getCoordinates()[0]
-        .map((coord) => toLonLat(coord));
-      const formattedCoordinates = coordinates
-        .map((coord) => coord.join(" "))
-        .join(",");
-      const wktCoordinates = `POLYGON ((${formattedCoordinates}))`;
-      setUpdatedCoordinates(wktCoordinates);
       setDrawingArea("");
-      setIsDrawing(false);
-    });
-
-    if (drawInteraction.current) {
-      mapInstance.current.removeInteraction(drawInteraction.current);
+      return;
     }
 
-    drawInteraction.current = draw;
-    mapInstance.current.addInteraction(draw);
-  };
-
-  const handleConfirm = () => {
-    if (updatedCoordinates) {
-      onSave(updatedCoordinates);
+    if (checkForOverlaps(rectangle)) {
+      showErrorToast("Boundary overlaps with an existing landmark.");
       vectorSource.current.clear();
-      setShowAllBoundaries(false);
+      setDrawingArea("");
+      return;
+    }
+
+    // ✅ Keep circle in UI
+    vectorSource.current.clear();
+    vectorSource.current.addFeature(event.feature);
+
+    // ✅ Save rectangle to DB
+    const coordinates = rectangle.getCoordinates()[0].map((coord) =>
+      toLonLat(coord)
+    );
+    const formattedCoordinates = coordinates
+      .map((coord) => coord.join(" "))
+      .join(",");
+    const wktCoordinates = `POLYGON ((${formattedCoordinates}))`;
+    setUpdatedCoordinates(wktCoordinates);
+
+    // ✅ lock in final area string
+    setDrawingArea(
+      area > 1000000
+        ? `${(area / 1000000).toFixed(2)} km²`
+        : `${area.toFixed(0)} m²`
+    );
+  });
+
+  drawInteraction.current = draw;
+  mapInstance.current.addInteraction(draw);
+};
+
+
+const handleConfirm = async () => {
+    if (!updatedCoordinates) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("id", editingLandmarkId.toString());
+      formData.append("boundary", updatedCoordinates);
+
+      await dispatch(
+        landmarkUpdationApi({ landmarkId: editingLandmarkId, formData })
+      ).unwrap();
+
+      showSuccessToast("Boundary updated successfully!");
+      
+      // Call both refreshList and the callback
+      refreshList?.("refresh");
+      onBoundaryUpdated?.(); // Notify parent that boundary was updated
+      
+      vectorSource.current.clear();
       onClose();
+    } catch (error: any) {
+      showErrorToast(error.message || "Error updating boundary");
     }
   };
+
 
   const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
     if (!mapInstance.current) return;
@@ -429,8 +486,6 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
           center: coordinates,
           zoom: 14,
         });
-      } else {
-        alert("Location not found. Please try a different query.");
       }
     } catch (error: any) {
       showErrorToast(error);
@@ -490,68 +545,27 @@ const UpdateMapComponent: React.FC<MapComponentProps> = ({
       <Box
         sx={{
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "right",
           alignItems: "center",
           mt: 2,
           flexWrap: "wrap",
+          gap: 2,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={startDrawing}
-            disabled={isDrawing}
-          >
-            {isDrawing ? "Drawing..." : "Draw New Boundary"}
-          </Button>
+        {drawingArea && (
+          <Typography variant="body2">
+            <strong>Area: {drawingArea}</strong>
+          </Typography>
+        )}
 
-          {isDrawing && (
-            <Typography variant="body2">
-              <strong>Area: {drawingArea}</strong>
-            </Typography>
-          )}
-        </Box>
-
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Tooltip
-            title={
-              showAllBoundaries
-                ? "Hide all landmarks"
-                : "Click to view all landmarks"
-            }
-            arrow
-          >
-            <IconButton
-              onClick={() => {
-                const newValue = !showAllBoundaries;
-                setShowAllBoundaries(newValue);
-                if (newValue) {
-                  fetchLandmarksInView();
-                } else {
-                  setLandmarks([]);
-                  boundariesSource.current.clear();
-                }
-              }}
-              // sx={{ ml: 1 }}
-            >
-              {showAllBoundaries ? (
-                <LocationOnIcon sx={{ color: "blue" }} />
-              ) : (
-                <LocationOnIcon />
-              )}
-            </IconButton>
-          </Tooltip>
-
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={handleConfirm}
-            disabled={!updatedCoordinates}
-          >
-            Confirm
-          </Button>
-        </Box>
+        <Button
+          variant="contained"
+          sx={{ backgroundColor:"darkblue"}}
+          onClick={handleConfirm}
+          disabled={!updatedCoordinates}
+        >
+          Confirm
+        </Button>
       </Box>
     </Box>
   );

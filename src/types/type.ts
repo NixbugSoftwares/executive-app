@@ -74,6 +74,8 @@ export interface Landmark {
   status: string;
   importance: string;
   type: string;
+  arrivalTime: string;
+  departureTime: string;
 }
 
 export interface BusStop {
@@ -142,26 +144,26 @@ export interface SelectedLandmark {
   id: number;
   name: string;
   sequenceId?: number;
-  start_time: string;
+  starting_time: string;
 
-  // Final UTC-converted times
-  arrivalTime: { fullTime: string };
-  departureTime: { fullTime: string };
-
-  // Day offsets and deltas
-  arrivalDayOffset: number;
+  arrivalTime: { fullTime: string, timestamp: number };
+  departureTime: { fullTime: string, timestamp: number };
+  arrival_delta:number;
+  departure_delta:number;
+  arrivalDayOffset: number; 
   departureDayOffset: number;
   arrivalDelta: number;
   departureDelta: number;
   distance_from_start: number;
 
-  // These are needed during the conversion
   arrivalHour?: number;
   arrivalMinute?: number;
   arrivalAmPm?: "AM" | "PM";
   departureHour?: number;
   departureMinute?: number;
   departureAmPm?: "AM" | "PM";
+
+  location: { lat: number; lon: number };
 }
 export interface RouteLandmark {
   id: number;
@@ -225,6 +227,7 @@ export interface Schedule {
   fare_id: number;
   created_on: string;
   updated_on: string;
+  routeName: string;
 }
 
 export interface Duty {
@@ -238,6 +241,7 @@ export interface Duty {
   type: string;
   created_on: string;
   updated_on: string;
+  collection: number;
 }
 
 export interface PaperTicket {

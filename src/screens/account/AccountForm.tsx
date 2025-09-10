@@ -25,6 +25,8 @@ import {
   showErrorToast,
   showSuccessToast,
 } from "../../common/toastMessageHelper";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
 // Account creation form interface
 interface IAccountFormInputs {
   username: string;
@@ -34,7 +36,7 @@ interface IAccountFormInputs {
   email?: string;
   gender?: number;
   designation?: string;
-  role: number;
+  role?: number;
   roleAssignmentId?: number;
 }
 
@@ -59,7 +61,9 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
   const [showPassword, setShowPassword] = useState(false);
-
+    const canAssignRole = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_ex_role")
+  );
   const {
     register,
     handleSubmit,
@@ -73,25 +77,24 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
   });
 
   // Fetch roles
-  useEffect(() => {
-    dispatch(roleListApi({}))
-      .unwrap()
-      .then((res: { data: any[] }) => {
-        setRoles(res.data.map((role) => ({ id: role.id, name: role.name })));
-      })
-
-      .catch((err: any) => {
-        showErrorToast(err);
-      });
-  }, [dispatch]);
+   useEffect(() => {
+    if (canAssignRole) {
+      dispatch(roleListApi({}))
+        .unwrap()
+        .then((res: { data: any[] }) => {
+          setRoles(res.data.map((role) => ({ id: role.id, name: role.name })));
+        })
+        .catch((error: any) => {
+          showErrorToast(error.message || " Failed to fetch roles ");
+        });
+    }
+  }, [dispatch, canAssignRole]);
 
   const handleTogglePassword = () => {
     setShowPassword((prev) => !prev);
   };
 
-  const handleAccountCreation: SubmitHandler<IAccountFormInputs> = async (
-    data
-  ) => {
+  const handleAccountCreation: SubmitHandler<IAccountFormInputs> = async (data) => {
     try {
       setLoading(true);
 
@@ -100,43 +103,38 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
       formData.append("password", data.password);
       formData.append("gender", data.gender?.toString() || "");
 
-      if (data.fullName) {
-        formData.append("full_name", data.fullName);
-      }
-      if (data.phoneNumber) {
-        formData.append("phone_number", `+91${data.phoneNumber}`);
-      }
-      if (data.email) {
-        formData.append("email_id", data.email);
-      }
-      if (data.designation) {
-        formData.append("designation", data.designation);
-      }
+      if (data.fullName) formData.append("full_name", data.fullName);
+      if (data.phoneNumber) formData.append("phone_number", `+91${data.phoneNumber}`);
+      if (data.email) formData.append("email_id", data.email);
+      if (data.designation) formData.append("designation", data.designation);
 
-      //  Create account
-      const accountResponse = await dispatch(
-        accountCreationApi(formData)
-      ).unwrap();
+      // Create account
+      const accountResponse = await dispatch(accountCreationApi(formData)).unwrap();
+      
       if (accountResponse?.id) {
-        const roleResponse = await dispatch(
-          roleAssignApi({
-            executive_id: accountResponse.id,
-            role_id: data.role,
-          })
-        ).unwrap();
-
-        if (roleResponse?.id && roleResponse?.role_id) {
-          showSuccessToast("Account and role assigned successfully!");
-          refreshList("refresh");
-          onClose();
+        // Only attempt role assignment if role was provided and user has permission
+        if (data.role && canAssignRole) {
+          try {
+            await dispatch(roleAssignApi({
+              executive_id: accountResponse.id,
+              role_id: data.role,
+            })).unwrap();
+            showSuccessToast("Account created and role assigned successfully!");
+          } catch (roleError) {
+            showSuccessToast("Account created but role assignment failed!");
+            console.error("Role assignment failed:", roleError);
+          }
         } else {
-          throw new Error("Account created, but role assignment failed!");
+          showSuccessToast("Account created without role assignment!");
         }
+        
+        refreshList("refresh");
+        onClose();
       } else {
         throw new Error("Account creation failed!");
       }
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error.message|| "Account creation failed");
     } finally {
       setLoading(false);
     }
@@ -147,7 +145,6 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
       <CssBaseline />
       <Box
         sx={{
-          marginTop: 8,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -191,30 +188,6 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
               ),
             }}
           />
-          <Controller
-            name="role"
-            control={control}
-            rules={{ required: "Role is required" }}
-            render={({ field }) => (
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                select
-                label="Role"
-                {...field}
-                error={!!errors.role}
-                helperText={errors.role?.message}
-                size="small"
-              >
-                {roles.map((role) => (
-                  <MenuItem key={role.id} value={role.id}>
-                    {role.name}
-                  </MenuItem>
-                ))}
-              </TextField>
-            )}
-          />
           <TextField
             margin="normal"
             fullWidth
@@ -225,6 +198,32 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
             helperText={errors.fullName?.message}
             size="small"
           />
+          {canAssignRole && (
+            <Controller
+              name="role"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  margin="normal"
+                  fullWidth
+                  select
+                  label="User Role"
+                  {...field}
+                  error={!!errors.role}
+                  helperText={errors.role?.message}
+                  size="small"
+                >
+                  <MenuItem value={undefined}>No Role</MenuItem>
+                  {roles.map((role) => (
+                    <MenuItem key={role.id} value={role.id}>
+                      {role.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
+          )}
+          
           <Controller
             name="phoneNumber"
             control={control}
@@ -237,7 +236,7 @@ const AccountCreationForm: React.FC<IAccountCreationFormProps> = ({
                 size="small"
                 error={!!errors.phoneNumber}
                 helperText={errors.phoneNumber?.message}
-                value={field.value ? `+91${field.value}` : ""}
+                value={field.value ? `+91 ${field.value}` : ""}
                 onChange={(e) => {
                   let value = e.target.value.replace(/^\+91/, "");
                   value = value.replace(/\D/g, "");

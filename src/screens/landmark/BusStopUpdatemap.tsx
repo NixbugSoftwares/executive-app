@@ -112,7 +112,7 @@ const parseWKTPolygon = (wkt: string): [number, number][] | null => {
           if (res && res.length > 0) setBusStop(res[0]);
         })
         
-        .catch(() => showErrorToast("Failed to fetch bus stop"));
+        .catch((error) => showErrorToast(error.message||"Failed to fetch bus stop"));
     }
     if (landmarkId) {
       dispatch(landmarkListApi({ id: landmarkId }))
@@ -123,7 +123,7 @@ const parseWKTPolygon = (wkt: string): [number, number][] | null => {
           if (Array.isArray(res.data) && res.data.length > 0) setLandmark(res.data[0]);
           else if (res.data) setLandmark(res.data);
         })
-        .catch(() => showErrorToast("Failed to fetch landmark"));
+        .catch((error) => showErrorToast(error.message||"Failed to fetch landmark"));
     }
   }, [busStopId, landmarkId, dispatch]);
 
@@ -197,7 +197,7 @@ const parseWKTPolygon = (wkt: string): [number, number][] | null => {
         new Style({
           image: new Icon({
             src: busstopimage,
-            scale: 0.1,
+            scale: 0.07,
             anchor: [0.5, 1],
           }),
           
@@ -250,7 +250,7 @@ const parseWKTPolygon = (wkt: string): [number, number][] | null => {
         new Style({
           image: new Icon({
             src: busstopimage,
-            scale: 0.15,
+            scale: 0.07,
             anchor: [0.5, 1],
           }),
         })

@@ -110,7 +110,7 @@ const ServiceUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
       onClose();
     } catch (error: any) {
       console.error("Error updating service:", error);
-      showErrorToast(error || "Failed to update service. Please try again.");
+      showErrorToast(error.message || "Failed to update service. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -121,7 +121,7 @@ const ServiceUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
       <CssBaseline />
       <Box
         sx={{
-          marginTop: 8,
+          marginTop: 2,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",

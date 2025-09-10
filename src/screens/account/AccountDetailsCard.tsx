@@ -11,7 +11,6 @@ import {
   DialogContent,
   DialogTitle,
   DialogContentText,
-  Tooltip,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -57,8 +56,6 @@ const statusOptions = [
   { label: "Active", value: 1 },
   { label: "Suspended", value: 2 },
 ];
-const loggedInUser = localStorageHelper.getItem("@user");
-const userId = loggedInUser?.executive_id;
 
 const AccountDetailsCard: React.FC<AccountCardProps> = ({
   account,
@@ -70,7 +67,8 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const dispatch = useAppDispatch();
-  const isLoggedInUser = account.id === userId;
+  const loggedInUserId = localStorageHelper.getItem("@user")?.executive_id;
+  const isLoggedInUser = account.id === loggedInUserId;
 
   const canUpdateExecutive = useSelector((state: RootState) =>
     state.app.permissions.includes("update_executive")
@@ -94,7 +92,7 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
       refreshList("refresh");
       showSuccessToast("Account deleted successfully!");
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error.message);
     }
   };
   const getGenderValue = (genderText: string): number | undefined => {
@@ -248,88 +246,64 @@ const AccountDetailsCard: React.FC<AccountCardProps> = ({
             mt: 2,
           }}
         >
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Button
-              variant="outlined"
-              color="primary"
-              size="small"
-              onClick={onBack}
-              startIcon={<BackIcon />}
-            >
-              Back
-            </Button>
+          <Box sx={{ 
+  display: "flex", 
+  justifyContent: "left",
+  gap: 1,
+  width: "100%"
+}}>
+  <Button
+    variant="outlined"
+    color="primary"
+    size="small"
+    onClick={onBack}
+    startIcon={<BackIcon />}
+  >
+    Back
+  </Button>
 
-            {/* Update Button with Tooltip */}
-            <Tooltip
-              title={
-                !canUpdateExecutive && !isLoggedInUser
-                  ? "You don't have permission, contact the admin"
-                  : ""
-              }
-              arrow
-              placement="top-start"
-            >
-              <span
-                style={{
-                  cursor: !canUpdateExecutive ? "not-allowed" : "default",
-                }}
-              >
-                <Button
-                  variant="contained"
-                  color="success"
-                  size="small"
-                  onClick={() => {
-                    setUpdateFormOpen(true);
-                  }}
-                  startIcon={<EditIcon />}
-                  disabled={!canUpdateExecutive && !isLoggedInUser}
-                  sx={{
-                    "&.Mui-disabled": {
-                      backgroundColor: "#81c784 !important",
-                      color: "#ffffff99",
-                    },
-                  }}
-                >
-                  Update
-                </Button>
-              </span>
-            </Tooltip>
-            <Tooltip
-              title={
-                !canDeleteExecutive || isLoggedInUser
-                  ? "You don't have permission, contact the admin"
-                  : ""
-              }
-              arrow
-              placement="top-start"
-            >
-              <span
-                style={{
-                  cursor:
-                    !canDeleteExecutive || isLoggedInUser
-                      ? "not-allowed"
-                      : "default",
-                }}
-              >
-                <Button
-                  variant="contained"
-                  color="error"
-                  size="small"
-                  onClick={() => setDeleteConfirmOpen(true)}
-                  startIcon={<DeleteIcon />}
-                  disabled={!canDeleteExecutive || isLoggedInUser}
-                  sx={{
-                    "&.Mui-disabled": {
-                      backgroundColor: "#e57373 !important",
-                      color: "#ffffff99",
-                    },
-                  }}
-                >
-                  Delete
-                </Button>
-              </span>
-            </Tooltip>
-          </Box>
+  <Box sx={{ display: "flex", gap: 1 }}>
+    {/* Only show Update button if user has permission */}
+    {(canUpdateExecutive || isLoggedInUser) && (
+      <Button
+        variant="contained"
+        color="success"
+        size="small"
+        onClick={() => setUpdateFormOpen(true)}
+        startIcon={<EditIcon />}
+        sx={{
+          minWidth: 100,
+          '&:disabled': {
+            backgroundColor: '#81c784 !important',
+            color: '#ffffff99',
+          }
+        }}
+      >
+        Update
+      </Button>
+    )}
+
+    {/* Only show Delete button if user has permission AND it's not their own account */}
+    {canDeleteExecutive && !isLoggedInUser && (
+      <Button
+        variant="contained"
+        color="error"
+        size="small"
+        onClick={() => setDeleteConfirmOpen(true)}
+        startIcon={<DeleteIcon />}
+        sx={{
+          minWidth: 100,
+          '&:disabled': {
+            backgroundColor: '#e57373 !important',
+            color: '#ffffff99',
+          }
+        }}
+      >
+        Delete
+      </Button>
+    )}
+  </Box>
+</Box>
         </CardActions>
       </Card>
 

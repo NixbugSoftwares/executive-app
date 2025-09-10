@@ -89,12 +89,13 @@ const LandmarkListing = () => {
   const [busStopsByLandmark, setBusStopsByLandmark] = useState<{
     [key: number]: BusStop[];
   }>({});
-  const canCreateLandmark = useSelector((state: RootState) =>
-    state.app.permissions.includes("create_landmark")
+  const hasLandmarkPermission = useSelector(
+    (state: RootState) =>
+      state.app.permissions.includes("create_landmark") ||
+      state.app.permissions.includes("update_landmark")
   );
-  const canUpdateLandmark = useSelector((state: RootState) =>
-    state.app.permissions.includes("update_landmark")
-  );
+  const [selectedRow, setSelectedRow] = useState<number | null>(null);
+  const [hasDrawn, setHasDrawn] = useState(false);
 
   //****************exctracting points of landmark and busstop**********************
   const extractRawPoints = (polygonString: string): string => {
@@ -133,12 +134,7 @@ const LandmarkListing = () => {
       })
       .catch((error) => {
         console.error("Fetch Error:", error);
-        showErrorToast(
-          error.detail ||
-            error.message ||
-            error ||
-            "Failed to fetch account list"
-        );
+        showErrorToast(error.message || "Failed to fetch account list");
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -159,17 +155,24 @@ const LandmarkListing = () => {
         }));
       })
       .catch((error) => {
-        showErrorToast(
-          error.detail || error.message || error || "Failed to fetch bus stops"
-        );
+        showErrorToast(error.message || "Failed to fetch bus stops");
       });
   };
   const handleRowClick = (landmark: Landmark) => {
-    if (isDrawing) return;
-    setSelectedLandmark(landmark);
-    setExpandedRow(expandedRow === landmark.id ? null : landmark.id);
-    if (!busStopsByLandmark[landmark.id]) {
-      fetchBusStopsForLandmark(landmark.id);
+    // Toggle selection
+    if (selectedRow === landmark.id) {
+      setSelectedRow(null);
+      setSelectedLandmark(null);
+      setExpandedRow(null);
+    } else {
+      setSelectedRow(landmark.id);
+      setSelectedLandmark(landmark);
+      setExpandedRow(landmark.id);
+
+      // Fetch bus stops if not already loaded
+      if (!busStopsByLandmark[landmark.id]) {
+        fetchBusStopsForLandmark(landmark.id);
+      }
     }
   };
 
@@ -199,7 +202,7 @@ const LandmarkListing = () => {
       setExpandedRow(null);
       setSelectedLandmark(null);
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error.message || " Error deleting landmark");
     }
   };
 
@@ -220,7 +223,7 @@ const LandmarkListing = () => {
       setBusStopDeleteConfirmOpen(false);
       fetchBusStopsForLandmark(busStopToDelete.landmark_id!);
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error.message || "Error deleting bus");
     }
   };
 
@@ -236,16 +239,12 @@ const LandmarkListing = () => {
 
   const handlePolygonSelect = (coordinates: string) => {
     setBoundary(coordinates);
-    setTimeout(() => setOpenCreateModal(true), 0);
+    setOpenCreateModal(true);
   };
 
   const handlePointSelect = (coordinates: string) => {
     setLocation(coordinates);
     setTimeout(() => setOpenBusStopModal(true), 0);
-  };
-
-  const handleDrawingChange = (drawingState: boolean) => {
-    setIsDrawing(drawingState);
   };
 
   const handleSearchChange = useCallback(
@@ -284,11 +283,11 @@ const LandmarkListing = () => {
       fetchLandmark(page, debouncedSearch);
     }
   };
-const handleLandmarkAdded = () => {
-  setLandmarkRefreshKey((k) => k + 1);
-  refreshList("refresh");
-  setOpenCreateModal(false);
-};
+  const handleLandmarkAdded = () => {
+    setLandmarkRefreshKey((k) => k + 1);
+    refreshList("refresh");
+    setOpenCreateModal(false);
+  };
   return (
     <Box
       sx={{
@@ -305,12 +304,19 @@ const handleLandmarkAdded = () => {
           maxWidth: { xs: "100%", md: "50%" },
           transition: "all 0.3s ease",
           overflow: "hidden",
-          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
         }}
       >
         <TableContainer
-          component={Paper}
-          sx={{ overflowX: "auto", position: "relative" }}
+          sx={{
+            flex: 1,
+            overflowY: "auto",
+            borderRadius: 2,
+            border: "1px solid #e0e0e0",
+            position: "relative",
+          }}
         >
           {isLoading && (
             <Box
@@ -330,9 +336,12 @@ const handleLandmarkAdded = () => {
               <CircularProgress />
             </Box>
           )}
-          <Table sx={{ borderCollapse: "collapse", width: "100%" }}>
+          <Table
+            stickyHeader
+            sx={{ borderCollapse: "collapse", width: "100%" }}
+          >
             <TableHead>
-              <TableRow>
+              <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
                 <TableCell colSpan={2} sx={{ width: "25%" }}>
                   <Box
                     display="flex"
@@ -340,18 +349,6 @@ const handleLandmarkAdded = () => {
                     alignItems="center"
                   >
                     <b>ID</b>
-                    <TextField
-                      type="number"
-                      variant="outlined"
-                      size="small"
-                      placeholder="Search"
-                      value={search.id}
-                      onChange={(e) => handleSearchChange(e, "id")}
-                      fullWidth
-                      sx={{
-                        "& .MuiInputBase-root": { height: 40, padding: "4px" },
-                      }}
-                    />
                   </Box>
                 </TableCell>
                 <TableCell sx={{ width: "50%" }}>
@@ -361,42 +358,62 @@ const handleLandmarkAdded = () => {
                     alignItems="center"
                   >
                     <b>Landmark Name</b>
-                    <TextField
-                      variant="outlined"
-                      size="small"
-                      placeholder="Search"
-                      value={search.name}
-                      onChange={(e) => handleSearchChange(e, "name")}
-                      fullWidth
-                      sx={{
-                        "& .MuiInputBase-root": { height: 40, padding: "4px" },
-                      }}
-                    />
                   </Box>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ width: "25%" }}>
                   <Box
                     display="flex"
                     flexDirection="column"
                     alignItems="center"
                   >
                     <b>Type</b>
-                    <Select
-                      value={search.type}
-                      onChange={handleSelectChange}
-                      displayEmpty
-                      size="small"
-                      fullWidth
-                      sx={{ height: 40 }}
-                    >
-                      <MenuItem value="">All</MenuItem>
-                      <MenuItem value="Local">Local</MenuItem>
-                      <MenuItem value="Village">Village</MenuItem>
-                      <MenuItem value="District">District</MenuItem>
-                      <MenuItem value="State">State</MenuItem>
-                      <MenuItem value="National">National</MenuItem>
-                    </Select>
                   </Box>
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell colSpan={2}>
+                  <TextField
+                    type="number"
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    value={search.id}
+                    onChange={(e) => handleSearchChange(e, "id")}
+                    fullWidth
+                    sx={{
+                      "& .MuiInputBase-root": { height: 40, padding: "4px" },
+                    }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search"
+                    value={search.name}
+                    onChange={(e) => handleSearchChange(e, "name")}
+                    fullWidth
+                    sx={{
+                      "& .MuiInputBase-root": { height: 40, padding: "4px" },
+                    }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={search.type}
+                    onChange={handleSelectChange}
+                    displayEmpty
+                    size="small"
+                    fullWidth
+                    sx={{ height: 40 }}
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    <MenuItem value="Local">Local</MenuItem>
+                    <MenuItem value="Village">Village</MenuItem>
+                    <MenuItem value="District">District</MenuItem>
+                    <MenuItem value="State">State</MenuItem>
+                    <MenuItem value="National">National</MenuItem>
+                  </Select>
                 </TableCell>
               </TableRow>
             </TableHead>
@@ -407,30 +424,32 @@ const handleLandmarkAdded = () => {
                 </TableRow>
               ) : landmarkList.length > 0 ? (
                 landmarkList.map((row) => {
-                  const isSelected = selectedLandmark?.id === row.id;
-
                   return (
                     <React.Fragment key={row.id}>
                       <Tooltip
                         title={
-                          isDrawing
-                            ? "Finish drawing on the map first"
-                            : "Click to view details"
+                          hasDrawn
+                            ? "Landmark selection is disabled while boundaries are drawn. Clear boundaries to continue."
+                            : ""
                         }
+                        placement="top"
                       >
                         <TableRow
-                          hover
-                          onClick={() => handleRowClick(row)}
+                          hover={!hasDrawn}
+                          onClick={() => !hasDrawn && handleRowClick(row)}
                           sx={{
-                            cursor: isDrawing ? "not-allowed" : "pointer",
-                            backgroundColor: isSelected ? "#E3F2FD" : "inherit",
-                            opacity: isDrawing ? 0.7 : 1,
+                            cursor: hasDrawn ? "not-allowed" : "pointer",
+                            opacity: hasDrawn ? 0.5 : 1,
+                            pointerEvents: hasDrawn ? "auto" : "auto",
+                            backgroundColor:
+                              selectedRow === row.id ? "#E3F2FD" : "inherit",
                             "&:hover": {
-                              backgroundColor: isDrawing
-                                ? "inherit"
-                                : isSelected
-                                ? "#E3F2FD !important"
-                                : "#E3F2FD",
+                              backgroundColor:
+                                selectedRow === row.id
+                                  ? "#E3F2FD !important"
+                                  : hasDrawn
+                                  ? "inherit" // no hover effect if drawn
+                                  : "#E3F2FD",
                             },
                           }}
                         >
@@ -444,6 +463,7 @@ const handleLandmarkAdded = () => {
                                   expandedRow === row.id ? null : row.id
                                 );
                               }}
+                              disabled={hasDrawn} // 🔹 disable expand if drawn
                             >
                               {expandedRow === row.id ? (
                                 <KeyboardArrowUpIcon />
@@ -499,10 +519,11 @@ const handleLandmarkAdded = () => {
                                           <TableCell>
                                             <strong>Name</strong>
                                           </TableCell>
-
-                                          <TableCell align="center">
-                                            <strong>Actions</strong>
-                                          </TableCell>
+                                          {hasLandmarkPermission && (
+                                            <TableCell align="center">
+                                              <strong>Actions</strong>
+                                            </TableCell>
+                                          )}
                                         </TableRow>
                                       </TableHead>
                                       <TableBody>
@@ -525,33 +546,15 @@ const handleLandmarkAdded = () => {
                                                   </Typography>
                                                 </Tooltip>
                                               </TableCell>
-
-                                              <TableCell align="center">
-                                                <Tooltip
-                                                  title={
-                                                    !canUpdateLandmark ||
-                                                    !canCreateLandmark
-                                                      ? "You don't have permission, contact the admin"
-                                                      : "Click to update the Bus stop"
-                                                  }
-                                                  placement="top-end"
-                                                >
-                                                  <span
-                                                    style={{
-                                                      cursor:
-                                                        !canUpdateLandmark ||
-                                                        !canCreateLandmark
-                                                          ? "not-allowed"
-                                                          : "default",
-                                                    }}
-                                                  >
+                                              {hasLandmarkPermission && (
+                                                <TableCell align="center">
+                                                  {hasLandmarkPermission && (
                                                     <Button
                                                       size="small"
                                                       color="success"
                                                       sx={{ mr: 1 }}
                                                       disabled={
-                                                        !canUpdateLandmark ||
-                                                        !canCreateLandmark
+                                                        !hasLandmarkPermission
                                                       }
                                                       onClick={(e) => {
                                                         e.stopPropagation();
@@ -565,33 +568,14 @@ const handleLandmarkAdded = () => {
                                                     >
                                                       Update
                                                     </Button>
-                                                  </span>
-                                                </Tooltip>
+                                                  )}
 
-                                                <Tooltip
-                                                  title={
-                                                    !canUpdateLandmark ||
-                                                    !canCreateLandmark
-                                                      ? "You don't have permission, contact the admin"
-                                                      : "Click to delete the Bus stop"
-                                                  }
-                                                  placement="top-end"
-                                                >
-                                                  <span
-                                                    style={{
-                                                      cursor:
-                                                        !canUpdateLandmark ||
-                                                        !canCreateLandmark
-                                                          ? "not-allowed"
-                                                          : "default",
-                                                    }}
-                                                  >
+                                                  {hasLandmarkPermission && (
                                                     <Button
                                                       size="small"
                                                       color="error"
                                                       disabled={
-                                                        !canUpdateLandmark ||
-                                                        !canCreateLandmark
+                                                        !hasLandmarkPermission
                                                       }
                                                       onClick={(e) => {
                                                         e.stopPropagation();
@@ -602,9 +586,9 @@ const handleLandmarkAdded = () => {
                                                     >
                                                       Delete
                                                     </Button>
-                                                  </span>
-                                                </Tooltip>
-                                              </TableCell>
+                                                  )}
+                                                </TableCell>
+                                              )}
                                             </TableRow>
                                           )
                                         )}
@@ -642,22 +626,31 @@ const handleLandmarkAdded = () => {
         </TableContainer>
 
         {/*************************************** Pagination    ****************************************/}
-        
-        <Box sx={{}} >
+
+        <Box
+          sx={{
+            width: "100%",
+            bgcolor: "#fff",
+            borderTop: "1px solid #e0e0e0",
+            p: 1,
+            position: "sticky",
+            bottom: 0,
+          }}
+        >
           <PaginationControls
-          page={page}
-          onPageChange={(newPage) => handleChangePage(null, newPage)}
-          isLoading={isLoading}
-          hasNextPage={hasNextPage}
-        />
-          </Box>
+            page={page}
+            onPageChange={(newPage) => handleChangePage(null, newPage)}
+            isLoading={isLoading}
+            hasNextPage={hasNextPage}
+          />
+        </Box>
       </Box>
 
       <Box
         sx={{
-          flex: { xs: "0 0 100%", md: "50%" },
+          flex: { xs: "0 0 100%", md: "70%" },
           height: "100vh",
-          maxWidth: { xs: "100%", md: "50%" },
+          maxWidth: { xs: "100%", md: "70%" },
           display: "flex",
           flexDirection: "column",
           gap: 2,
@@ -685,12 +678,13 @@ const handleLandmarkAdded = () => {
             clearBoundaries={clearBoundaries}
             vectorSource={vectorSource}
             isDrawing={isDrawing}
-            onDrawingChange={handleDrawingChange}
+            onDrawingChange={setIsDrawing} // Pass setIsDrawing directly
             busStops={
               selectedLandmark ? busStopsByLandmark[selectedLandmark.id] : []
             }
             onBusStopPointSelect={handlePointSelect}
             landmarkRefreshKey={landmarkRefreshKey}
+            onDrawingStatusChange={(status) => setHasDrawn(status)}
           />
         </Box>
       </Box>
@@ -728,6 +722,10 @@ const handleLandmarkAdded = () => {
             <LandmarkUpdateForm
               onClose={() => setOpenUpdateModal(false)}
               refreshList={refreshList}
+              onBack={() => {
+                setSelectedLandmark(null);
+                setExpandedRow(null);
+              }}
               landmarkId={selectedLandmark.id}
               landmarkData={{
                 name: selectedLandmark.name,
@@ -737,11 +735,6 @@ const handleLandmarkAdded = () => {
             />
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenUpdateModal(false)} color="error">
-            Cancel
-          </Button>
-        </DialogActions>
       </Dialog>
 
       <Dialog

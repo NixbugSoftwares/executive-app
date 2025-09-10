@@ -14,7 +14,6 @@ import {
   IconButton,
   useTheme,
   Divider,
-  Button,
 } from "@mui/material";
 import {
   Person,
@@ -32,15 +31,12 @@ import {
 import Diversity3Icon from "@mui/icons-material/Diversity3";
 import { useDispatch } from "react-redux";
 import {
-  clearRoleDetails,
   fetchRoleMappingApi,
-  logoutApi,
   accountListApi,
   roleAssignApi,
   roleListApi,
   accountupdationApi,
   roleAssignUpdateApi,
-  userLoggedOut,
 } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import { showErrorToast, showSuccessToast } from "../toastMessageHelper";
@@ -48,7 +44,6 @@ import { Account } from "../../types/type";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
-import commonHelper from "../../utils/commonHelper";
 
 interface IAccountFormInputs {
   username?: string;
@@ -192,7 +187,7 @@ const ProfilePage: React.FC = () => {
         });
       }
     } catch (error: any) {
-      showErrorToast(error|| "Failed to load profile");
+      showErrorToast(error.message || "Failed to load profile");
     } finally {
       setIsLoading(false);
     }
@@ -259,9 +254,9 @@ const ProfilePage: React.FC = () => {
               setRoleAssignmentId(roleAssignResponse.id);
             }
           }
-        } catch (error) {
+        } catch (error:any) {
           showErrorToast("Account updated, but role assignment failed!");
-          console.error(error||"Role assignment error:", error);
+          console.error(error.message || "Role assignment error:", error);
           return;
         }
       }
@@ -269,32 +264,14 @@ const ProfilePage: React.FC = () => {
       showSuccessToast(`${editingField} updated successfully!`);
       setEditingField(null);
       await fetchUserData();
-    } catch (error:any) {
+    } catch (error: any) {
       console.error("Update error:", error);
-      showErrorToast(error||"Something went wrong. Please try again.");
+      showErrorToast(error || "Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleLogout = async () => {
-    console.log("Attempting to logout...");
-    try {
-      console.log("Dispatching logoutApi...");
-      const response = await dispatch(logoutApi({})).unwrap();
-      console.log("Logout response:", response);
-
-      localStorageHelper.clearStorage();
-      localStorageHelper.removeStoredItem("@user");
-      dispatch(clearRoleDetails());
-      commonHelper.logout();
-      dispatch(userLoggedOut());
-      showSuccessToast("Logout successful!");
-    } catch (error:any) {
-      console.error("Logout Error:", error);
-      showErrorToast(error||"Logout failed. Please try again.");
-    }
-  };
 
   if (isLoading) {
     return (
@@ -350,15 +327,34 @@ const ProfilePage: React.FC = () => {
             <Grid item xs>
               {field === "fullName" && (
                 <TextField
+                  margin="normal"
                   fullWidth
-                  variant="outlined"
-                  size="small"
-                  defaultValue={value}
-                  {...register(field as "fullName", {
-                    required: `${label} is required`,
+                  label="Full Name"
+                  defaultValue={value || ""}
+                  {...register("fullName", {
+                    required: "Full name is required",
+                    maxLength: {
+                      value: 32,
+                      message: "Full name cannot exceed 32 characters",
+                    },
+                    validate: {
+                      noNumbers: (value: any) =>
+                        !/[0-9]/.test(value) ||
+                        "Numbers are not allowed in the full name",
+                      noSpecialChars: (value: any) =>
+                        !/[^A-Za-z ]/.test(value) ||
+                        "Special characters are not allowed",
+                      endsWithLetter: (value: any) =>
+                        /[A-Za-z]$/.test(value) ||
+                        "Full name must end with a letter",
+                      validPattern: (value: any) =>
+                        /^[A-Za-z]+(?: [A-Za-z]+)*$/.test(value) ||
+                        "Full name should consist of letters separated by single spaces",
+                    },
                   })}
-                  error={!!errors[field as keyof typeof errors]}
-                  helperText={errors[field as keyof typeof errors]?.message}
+                  error={!!errors.fullName}
+                  helperText={errors.fullName?.message}
+                  size="small"
                 />
               )}
               {field === "email_id" && (
@@ -399,18 +395,35 @@ const ProfilePage: React.FC = () => {
 
               {field === "designation" && (
                 <TextField
+                  margin="normal"
                   fullWidth
-                  variant="outlined"
-                  size="small"
-                  defaultValue={value}
-                  {...register(field as "designation", {
-                    required: `${label} is required`,
+                  label="Designation"
+                  defaultValue={value || ""}
+                  {...register("designation", {
+                    maxLength: {
+                      value: 32,
+                      message: "Designation cannot exceed 32 characters",
+                    },
+                    validate: {
+                      allowedCharacters: (value) =>
+                        !value ||
+                        /^[A-Za-z\s\-_()]*$/.test(value) ||
+                        "Designation can only contain letters, spaces, hyphens (-), underscores (_), and brackets ( )",
+                      noLeadingTrailingSpaces: (value) =>
+                        !value ||
+                        !/^\s|\s$/.test(value) ||
+                        "Designation should not start or end with a space",
+                      noConsecutiveSpecials: (value) =>
+                        !value ||
+                        !/([\s\-_()]{2,})/.test(value) ||
+                        "Designation cannot have consecutive spaces or special characters",
+                    },
                   })}
-                  error={!!errors[field as keyof typeof errors]}
-                  helperText={errors[field as keyof typeof errors]?.message}
+                  error={!!errors.designation}
+                  helperText={errors.designation?.message}
+                  size="small"
                 />
               )}
-
 
               {field === "gender" && (
                 <FormControl fullWidth size="small">
@@ -615,15 +628,7 @@ const ProfilePage: React.FC = () => {
                 Account Created: {formatUTCDateToLocal(profile.created_on)}
               </Typography>
             </Box>
-            <Button
-              variant="outlined"
-              color="error"
-              // startIcon={<LogoutIcon />}
-              onClick={handleLogout}
-              sx={{ fontWeight: 600 }}
-            >
-              Logout
-            </Button>
+           
           </Box>
         </Box>
 

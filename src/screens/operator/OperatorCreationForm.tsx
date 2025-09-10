@@ -8,7 +8,6 @@ import {
   InputAdornment,
   IconButton,
   Button,
-  Typography,
   Container,
   CssBaseline,
   CircularProgress,
@@ -26,6 +25,8 @@ import {
   showErrorToast,
   showSuccessToast,
 } from "../../common/toastMessageHelper";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/Store";
 
 interface IAccountFormInputs {
   username: string;
@@ -35,7 +36,7 @@ interface IAccountFormInputs {
   email?: string;
   gender?: number;
   companyId: number;
-  role: number;
+  role?: number;
   roleAssignmentId?: number;
 }
 
@@ -66,8 +67,9 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
     { id: number; name: string; company_id: number }[]
   >([]);
   const [showPassword, setShowPassword] = useState(false);
-  // Filter companies based on defaultCompanyId
-
+  const canAssignRole = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_op_role")
+  );
   const {
     register,
     handleSubmit,
@@ -98,7 +100,7 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
       })
 
       .catch((err: any) => {
-        showErrorToast(err);
+        showErrorToast(err.message||"Error fetching roles");
       });
   }, [dispatch]);
 
@@ -141,25 +143,31 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
       const response = await dispatch(operatorCreationApi(formData)).unwrap();
 
       if (response?.id) {
-        const roleResponse = await dispatch(
-          operatorRoleAssignApi({
-            operator_id: response.id,
-            role_id: data.role,
-          })
-        ).unwrap();
-
-        if (roleResponse?.id && roleResponse?.role_id) {
-          showSuccessToast("Account and role assigned successfully!");
-          refreshList("refresh");
-          onClose();
+        // Only attempt role assignment if role was provided and user has permission
+        if (data.role && canAssignRole) {
+          try {
+            await dispatch(
+              operatorRoleAssignApi({
+                operator_id: response.id,
+                role_id: data.role,
+              })
+            ).unwrap();
+            showSuccessToast("Account created and role assigned successfully!");
+          } catch (roleError:any) {
+            showSuccessToast(roleError.message||"Account created but role assignment failed!");
+            console.error("Role assignment failed:", roleError);
+          }
         } else {
-          showErrorToast("Account created, but role assignment failed!");
+          showSuccessToast("Account created without role assignment!");
         }
+
+        refreshList("refresh");
+        onClose();
       } else {
-        alert("Account creation failed!");
+        throw new Error("Account creation failed!");
       }
     } catch (error: any) {
-      showErrorToast(error);
+      showErrorToast(error.message || "Operator creation failed");
     } finally {
       setLoading(false);
     }
@@ -170,15 +178,11 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
       <CssBaseline />
       <Box
         sx={{
-          marginTop: 8,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
         }}
       >
-        <Typography component="h1" variant="h5">
-          Account Creation
-        </Typography>
         <Box
           component="form"
           noValidate
@@ -290,39 +294,38 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
               </TextField>
             )}
           />
-
-          <Controller
-            name="role"
-            control={control}
-            rules={{ required: "Role is required" }}
-            render={({ field }) => (
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                select
-                label="Role"
-                {...field}
-                error={!!errors.role}
-                helperText={errors.role?.message}
-                size="small"
-              >
-                {filteredRoles.length > 0 ? (
-                  filteredRoles.map((role) => (
-                    <MenuItem key={role.id} value={role.id}>
-                      {role.name}
+          {canAssignRole && (
+            <Controller
+              name="role"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  margin="normal"
+                  fullWidth
+                  select
+                  label="Role"
+                  {...field}
+                  error={!!errors.role}
+                  helperText={errors.role?.message}
+                  size="small"
+                >
+                  {filteredRoles.length > 0 ? (
+                    filteredRoles.map((role) => (
+                      <MenuItem key={role.id} value={role.id}>
+                        {role.name}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled value="">
+                      {selectedCompanyId
+                        ? "No roles available for this company"
+                        : "Select a company first"}
                     </MenuItem>
-                  ))
-                ) : (
-                  <MenuItem disabled value="">
-                    {selectedCompanyId
-                      ? "No roles available for this company"
-                      : "Select a company first"}
-                  </MenuItem>
-                )}
-              </TextField>
-            )}
-          />
+                  )}
+                </TextField>
+              )}
+            />
+          )}
 
           <Button
             type="submit"

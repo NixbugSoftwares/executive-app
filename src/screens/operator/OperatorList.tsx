@@ -10,29 +10,28 @@ import {
   TextField,
   Box,
   Button,
-  Dialog,
-  DialogContent,
-  FormControl,
   Select,
   MenuItem,
   Typography,
-  DialogTitle,
-  DialogActions,
   CircularProgress,
+  Checkbox,
+  ListItemText,
 } from "@mui/material";
 import ErrorIcon from "@mui/icons-material/Error";
 import { SelectChangeEvent } from "@mui/material";
 import { useDispatch } from "react-redux";
-import { operatorListApi, operatorRoleListApi } from "../../slices/appSlice";
+import { operatorListApi } from "../../slices/appSlice";
 import type { AppDispatch } from "../../store/Store";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
 import OperatorDetailsCard from "./OperatorDetails";
 import OperatorCreationForm from "./OperatorCreationForm";
-import { useLocation, useParams, useNavigate } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import PaginationControls from "../../common/paginationControl";
 import { showErrorToast } from "../../common/toastMessageHelper";
 import { Operator } from "../../types/type";
+import moment from "moment";
+import FormModal from "../../common/formModal";
 
 const getGenderBackendValue = (displayValue: string): string => {
   const genderMap: Record<string, string> = {
@@ -43,6 +42,14 @@ const getGenderBackendValue = (displayValue: string): string => {
   };
   return genderMap[displayValue] || "";
 };
+
+interface ColumnConfig {
+  id: string;
+  label: string;
+  width: string;
+  minWidth: string;
+  fixed?: boolean;
+}
 
 const OperatorListingTable = () => {
   const { companyId } = useParams();
@@ -55,12 +62,6 @@ const OperatorListingTable = () => {
   const [filterCompanyId, setFilterCompanyId] = useState<number | null>(
     companyId ? parseInt(companyId) : null
   );
-  const [openNoRolesModal, setOpenNoRolesModal] = useState(false);
-  const [_rolesExist, setRolesExist] = useState(true);
-  const navigate = useNavigate();
-
-  console.log("filterCompanyId", filterCompanyId);
-
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const urlCompanyId = companyId || queryParams.get("companyId");
@@ -91,6 +92,54 @@ const OperatorListingTable = () => {
   const canCreateOperator = useSelector((state: RootState) =>
     state.app.permissions.includes("create_operator")
   );
+
+  const columnConfig: ColumnConfig[] = [
+    { id: "id", label: "ID", width: "80px", minWidth: "80px", fixed: true },
+    {
+      id: "fullName",
+      label: "Full Name",
+      width: "200px",
+      minWidth: "200px",
+      fixed: true,
+    },
+    {
+      id: "phoneNumber",
+      label: "Phone Number",
+      width: "160px",
+      minWidth: "160px",
+      fixed: true,
+    },
+    {
+      id: "gender",
+      label: "Gender",
+      width: "120px",
+      minWidth: "120px",
+      fixed: true,
+    },
+    { id: "email", label: "Email", width: "220px", minWidth: "220px" },
+
+    {
+      id: "CreatedAt",
+      label: "Created Date",
+      width: "150px",
+      minWidth: "150px",
+    },
+  ];
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
+    columnConfig.reduce((acc, column) => {
+      acc[column.id] = column.fixed ? true : false;
+      return acc;
+    }, {} as Record<string, boolean>)
+  );
+  const handleColumnChange = (event: SelectChangeEvent<string[]>) => {
+    const value = event.target.value;
+    // Convert array of selected values to new visibility state
+    const newVisibleColumns = Object.keys(visibleColumns).reduce((acc, key) => {
+      acc[key] = value.includes(key);
+      return acc;
+    }, {} as Record<string, boolean>);
+    setVisibleColumns(newVisibleColumns);
+  };
   const fetchAccounts = useCallback((pageNumber: number, searchParams = {}) => {
     const offset = pageNumber * rowsPerPage;
     dispatch(
@@ -129,30 +178,10 @@ const OperatorListingTable = () => {
       })
       .catch((error: any) => {
         console.error("Error fetching accounts", error);
-        showErrorToast(error || "Failed to fetch accounts");
+        showErrorToast(error.message || "Failed to fetch accounts");
       })
       .finally(() => setIsLoading(false));
   }, []);
-
-  const checkRolesExist = () => {
-    if (!filterCompanyId) return false;
-
-    dispatch(operatorRoleListApi({ company_id: filterCompanyId }))
-      .unwrap()
-      .then((res) => {
-        const items = res.data || [];
-        setRolesExist(items.length > 0);
-        if (items.length === 0) {
-          setOpenNoRolesModal(true);
-        } else {
-          setOpenCreateModal(true);
-        }
-      })
-      .catch(() => {
-        setRolesExist(false);
-        setOpenNoRolesModal(true);
-      });
-  };
 
   const handleSearchChange = useCallback(
     (
@@ -211,52 +240,9 @@ const OperatorListingTable = () => {
     }
   };
 
-  const handleCloseDetailCard = () => {
-    setSelectedOperator(null);
-  };
-
   const handleRowClick = (account: Operator) => {
     setSelectedOperator(account);
   };
-  const handleAddOperatorClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!canCreateOperator) return;
-
-    if (filterCompanyId) {
-      checkRolesExist();
-    } else {
-      // If no company is selected, just open the create modal
-      setOpenCreateModal(true);
-    }
-  };
-  const NoRolesDialog = (
-    <Dialog open={openNoRolesModal} onClose={() => setOpenNoRolesModal(false)}>
-      <DialogTitle>No Roles Found</DialogTitle>
-      <DialogContent>
-        <Typography variant="body1" gutterBottom>
-          You need to create at least one role before adding operators.
-        </Typography>
-        <Typography variant="body2">
-          Please create roles for this company first.
-        </Typography>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => setOpenNoRolesModal(false)} color="primary">
-          Cancel
-        </Button>
-        <Button
-          onClick={() => {
-            setOpenNoRolesModal(false);
-            navigate(`/executive/company/role/${filterCompanyId}`);
-          }}
-          color="primary"
-          variant="contained"
-        >
-          Go to Roles
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
 
   return (
     <Box
@@ -284,47 +270,57 @@ const OperatorListingTable = () => {
         <Box
           sx={{
             display: "flex",
-            alignItems: "center",
-            gap: 2,
-            mb: 2,
-            mt: 1,
             justifyContent: "right",
+            alignItems: "center",
+            mb: 2,
+            gap: 2,
           }}
         >
-          <Tooltip
-            title={
-              !canCreateOperator
-                ? "You don't have permission, contact the admin"
-                : "Click to open the operator creation form"
-            }
-            placement="top-end"
-          >
-            <span
-              style={{ cursor: !canCreateOperator ? "not-allowed" : "default" }}
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Select
+              multiple
+              value={Object.keys(visibleColumns).filter(
+                (key) => visibleColumns[key]
+              )}
+              onChange={handleColumnChange}
+              renderValue={(selected) =>
+                `Selected Columns (${selected.length})`
+              }
+              sx={{ minWidth: 200, height: 40 }}
             >
-              <Button
-                sx={{
-                  ml: "auto",
-                  mr: 2,
-                  mb: 2,
-                  display: "block",
-                  backgroundColor: !canCreateOperator
-                    ? "#6c87b7 !important"
-                    : "#00008B",
-                  color: "white",
-                  "&.Mui-disabled": {
-                    backgroundColor: "#6c87b7 !important",
-                    color: "#ffffff99",
-                  },
-                }}
-                variant="contained"
-                onClick={handleAddOperatorClick}
-                disabled={!canCreateOperator}
-              >
-                Add Operator
-              </Button>
-            </span>
-          </Tooltip>
+              {columnConfig.map((column) => (
+                <MenuItem
+                  key={column.id}
+                  value={column.id}
+                  disabled={column.fixed}
+                >
+                  <Checkbox
+                    checked={visibleColumns[column.id]}
+                    disabled={column.fixed}
+                  />
+                  <ListItemText
+                    primary={column.label}
+                  />
+                </MenuItem>
+              ))}
+            </Select>
+          </Box>
+
+          {canCreateOperator && (
+            <Button
+              sx={{
+                backgroundColor: "#00008B",
+                color: "white !important",
+                "&.Mui-disabled": {
+                  color: "#fff !important",
+                },
+              }}
+              variant="contained"
+              onClick={() => setOpenCreateModal(true)}
+            >
+              Add New Operator
+            </Button>
+          )}
         </Box>
 
         <TableContainer
@@ -357,77 +353,189 @@ const OperatorListingTable = () => {
           )}
           <Table stickyHeader>
             <TableHead>
+              {/* Header Row */}
               <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                {["ID", "Full Name", "Phone", "Email", "Gender"].map(
-                  (header) => (
-                    <TableCell key={header}>
-                      <b style={{ display: "block", textAlign: "center" }}>
-                        {header}
-                      </b>
-                      {header === "Gender" ? (
-                        <FormControl fullWidth size="small">
-                          <Select
-                            value={search.gender}
-                            onChange={handleSelectChange}
-                            displayEmpty
-                            size="small"
-                            sx={{
-                              width: "150px",
-                              textAlign: "center",
-                              "& .MuiInputBase-root": {
-                                height: 30,
-                                padding: "4px",
-                              },
-                            }}
-                          >
-                            <MenuItem value="">All</MenuItem>
-                            <MenuItem value="Male">Male</MenuItem>
-                            <MenuItem value="Female">Female</MenuItem>
-                            <MenuItem value="Transgender">Transgender</MenuItem>
-                            <MenuItem value="Other">Other</MenuItem>
-                          </Select>
-                        </FormControl>
-                      ) : (
-                        <TextField
-                          variant="outlined"
-                          size="small"
-                          placeholder="Search"
-                          type={
-                            header === "ID" || header === "Phone"
-                              ? "number"
-                              : "text"
-                          }
-                          value={
-                            search[
-                              header
-                                .toLowerCase()
-                                .replace(" ", "_") as keyof typeof search
-                            ] || ""
-                          }
-                          onChange={(e) =>
-                            handleSearchChange(
-                              e,
-                              header
-                                .toLowerCase()
-                                .replace(" ", "_") as keyof typeof search
-                            )
-                          }
-                          sx={{
-                            "& .MuiInputBase-root": {
-                              height: 40,
-                              padding: "4px",
-                              textAlign: "center",
-                              fontSize: selectedOperator ? "0.8rem" : "1rem",
-                            },
-                            "& .MuiInputBase-input": {
-                              textAlign: "center",
-                              fontSize: selectedOperator ? "0.8rem" : "1rem",
-                            },
-                          }}
-                        />
-                      )}
-                    </TableCell>
-                  )
+                {visibleColumns.id && (
+                  <TableCell
+                    sx={{
+                      width: "80px",
+                      minWidth: "80px",
+                      textAlign: "center",
+                      backgroundColor: "#fafafa",
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    ID
+                  </TableCell>
+                )}
+                {visibleColumns.fullName && (
+                  <TableCell
+                    sx={{
+                      width: "200px",
+                      minWidth: "200px",
+                      textAlign: "center",
+                      backgroundColor: "#fafafa",
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    Full Name
+                  </TableCell>
+                )}
+                {visibleColumns.phoneNumber && (
+                  <TableCell
+                    sx={{
+                      width: "160px",
+                      minWidth: "160px",
+                      textAlign: "center",
+                      backgroundColor: "#fafafa",
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    Phone
+                  </TableCell>
+                )}
+                {visibleColumns.email && (
+                  <TableCell
+                    sx={{
+                      width: "220px",
+                      minWidth: "220px",
+                      textAlign: "center",
+                      backgroundColor: "#fafafa",
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    Email
+                  </TableCell>
+                )}
+                {visibleColumns.gender && (
+                  <TableCell
+                    sx={{
+                      width: "120px",
+                      minWidth: "120px",
+                      textAlign: "center",
+                      backgroundColor: "#fafafa",
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    Gender
+                  </TableCell>
+                )}
+                {visibleColumns.CreatedAt && (
+                  <TableCell
+                    sx={{
+                      width: "100px",
+                      minWidth: "100px",
+                      textAlign: "center",
+                      backgroundColor: "#fafafa",
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      borderBottom: "1px solid #ddd",
+                    }}
+                  >
+                    Created At
+                  </TableCell>
+                )}
+              </TableRow>
+              {/* Search Row */}
+              <TableRow>
+                {visibleColumns.id && (
+                  <TableCell width="10%">
+                    <TextField
+                      type="number"
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.id}
+                      onChange={(e) => handleSearchChange(e, "id")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": { height: 40 },
+                        "& .MuiInputBase-input": { textAlign: "center" },
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {visibleColumns.fullName && (
+                  <TableCell width="20%">
+                    <TextField
+                      type="text"
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.full_name}
+                      onChange={(e) => handleSearchChange(e, "full_name")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": { height: 40 },
+                        "& .MuiInputBase-input": { textAlign: "center" },
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {visibleColumns.phoneNumber && (
+                  <TableCell width="10%">
+                    <TextField
+                      type="number"
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.phone_number}
+                      onChange={(e) => handleSearchChange(e, "phone_number")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": { height: 40 },
+                        "& .MuiInputBase-input": { textAlign: "center" },
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {visibleColumns.email && (
+                  <TableCell width={"10%"}>
+                    <TextField
+                      type="text"
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.email_id}
+                      onChange={(e) => handleSearchChange(e, "email_id")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": { height: 40 },
+                        "& .MuiInputBase-input": { textAlign: "center" },
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {visibleColumns.gender && (
+                  <TableCell width="10%">
+                    <Select
+                      value={search.gender}
+                      onChange={handleSelectChange}
+                      displayEmpty
+                      size="small"
+                      fullWidth
+                      sx={{ height: 40 }}
+                    >
+                      <MenuItem value="">All</MenuItem>
+                      <MenuItem value="Male">Male</MenuItem>
+                      <MenuItem value="Female">Female</MenuItem>
+                      <MenuItem value="Transgender">Transgender</MenuItem>
+                      <MenuItem value="Other">Other</MenuItem>
+                    </Select>
+                  </TableCell>
+                )}
+                {visibleColumns.CreatedAt && (
+                  <TableCell width="10%"></TableCell>
                 )}
               </TableRow>
             </TableHead>
@@ -454,58 +562,75 @@ const OperatorListingTable = () => {
                         "&:hover": { backgroundColor: "#E3F2FD" },
                       }}
                     >
-                      <TableCell align="center">{row.id}</TableCell>
-                      <TableCell>
-                        {row.fullName ? (
-                          <Tooltip title={row.fullName} placement="bottom">
+                      {visibleColumns.id && (
+                        <TableCell align="center">{row.id}</TableCell>
+                      )}
+                      {visibleColumns.fullName && (
+                        <TableCell>
+                          {row.fullName ? (
+                            <Tooltip title={row.fullName} placement="bottom">
+                              <Typography noWrap>
+                                {row.fullName.length > 15
+                                  ? `${row.fullName.substring(0, 15)}...`
+                                  : row.fullName}
+                              </Typography>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip
+                              title="Full Name not added yet"
+                              placement="bottom"
+                            >
+                              <ErrorIcon sx={{ color: "#737d72" }} />
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      )}
+                      {visibleColumns.phoneNumber && (
+                        <TableCell>
+                          {row.phoneNumber ? (
                             <Typography noWrap>
-                              {row.fullName.length > 15
-                                ? `${row.fullName.substring(0, 15)}...`
-                                : row.fullName}
+                              {row.phoneNumber.replace(/\D/g, "").slice(-10)}
                             </Typography>
-                          </Tooltip>
-                        ) : (
-                          <Tooltip
-                            title="Full Name not added yet"
-                            placement="bottom"
-                          >
-                            <ErrorIcon sx={{ color: "#737d72" }} />
-                          </Tooltip>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {row.phoneNumber ? (
-                          <Typography noWrap>
-                            {row.phoneNumber.replace(/\D/g, "").slice(-10)}
-                          </Typography>
-                        ) : (
-                          <Tooltip
-                            title="Phone Number not added yet"
-                            placement="bottom"
-                          >
-                            <ErrorIcon sx={{ color: "#737d72" }} />
-                          </Tooltip>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {row.email_id ? (
-                          <Tooltip title={row.email_id} placement="bottom">
-                            <Typography noWrap>
-                              {row.email_id.length > 20
-                                ? `${row.email_id.substring(0, 20)}...`
-                                : row.email_id}
-                            </Typography>
-                          </Tooltip>
-                        ) : (
-                          <Tooltip
-                            title="Email not added yet"
-                            placement="bottom"
-                          >
-                            <ErrorIcon sx={{ color: "#737d72" }} />
-                          </Tooltip>
-                        )}
-                      </TableCell>
-                      <TableCell>{row.gender}</TableCell>
+                          ) : (
+                            <Tooltip
+                              title="Phone Number not added yet"
+                              placement="bottom"
+                            >
+                              <ErrorIcon sx={{ color: "#737d72" }} />
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      )}
+                      {visibleColumns.email && (
+                        <TableCell>
+                          {row.email_id ? (
+                            <Tooltip title={row.email_id} placement="bottom">
+                              <Typography noWrap>
+                                {row.email_id.length > 20
+                                  ? `${row.email_id.substring(0, 20)}...`
+                                  : row.email_id}
+                              </Typography>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip
+                              title="Email not added yet"
+                              placement="bottom"
+                            >
+                              <ErrorIcon sx={{ color: "#737d72" }} />
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      )}
+                      {visibleColumns.gender && (
+                        <TableCell>{row.gender}</TableCell>
+                      )}
+                      {visibleColumns.CreatedAt && (
+                        <TableCell sx={{ textAlign: "center" }}>
+                          {moment(row.created_on)
+                            .local()
+                            .format("DD-MM-YYYY, hh:mm A")}
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })
@@ -545,27 +670,23 @@ const OperatorListingTable = () => {
             onDelete={() => {}}
             onBack={() => setSelectedOperator(null)}
             refreshList={refreshList}
-            onCloseDetailCard={handleCloseDetailCard}
+            onCloseDetailCard={() => setSelectedOperator(null)}
           />
         </Box>
       )}
 
       {/* Create Operator Dialog */}
-      <Dialog
+       <FormModal
         open={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
-        maxWidth="sm"
-        fullWidth
+        title="Create Operator"
       >
-        <DialogContent>
           <OperatorCreationForm
             refreshList={refreshList}
             onClose={() => setOpenCreateModal(false)}
             defaultCompanyId={filterCompanyId ?? undefined}
           />
-        </DialogContent>
-      </Dialog>
-      {NoRolesDialog}
+        </FormModal>
     </Box>
   );
 };

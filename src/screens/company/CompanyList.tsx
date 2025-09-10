@@ -11,12 +11,14 @@ import {
   TextField,
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
   Chip,
   Typography,
   CircularProgress,
+  SelectChangeEvent,
+  Select,
+  MenuItem,
+  Checkbox,
+  ListItemText,
 } from "@mui/material";
 import { useDispatch } from "react-redux";
 import { companyListApi } from "../../slices/appSlice";
@@ -32,7 +34,23 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
 import PaginationControls from "../../common/paginationControl";
 import { Company } from "../../types/type";
+import FormModal from "../../common/formModal";
 
+interface ColumnConfig {
+  id: string;
+  label: string;
+  width: string;
+  minWidth: string;
+  fixed?: boolean;
+}
+const getStatusBackendValue = (displayValue: string): string => {
+  const statusMap: Record<string, string> = {
+    Validating: "1",
+    Verified: "2",
+    Suspended: "3",
+  };
+  return statusMap[displayValue] || "";
+};
 const CompanyListingTable = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [companyList, setCompanyList] = useState<Company[]>([]);
@@ -45,6 +63,7 @@ const CompanyListingTable = () => {
     address: "",
     email_id: "",
     phone_number: "",
+    status: "",
   });
 
   const [debouncedSearch, setDebouncedSearch] = useState(search);
@@ -59,6 +78,58 @@ const CompanyListingTable = () => {
     state.app.permissions.includes("create_company")
   );
   const navigate = useNavigate();
+
+  const columnConfig: ColumnConfig[] = [
+    { id: "id", label: "ID", width: "80px", minWidth: "80px", fixed: true },
+    {
+      id: "name",
+      label: "Company Name",
+      width: "200px",
+      minWidth: "200px",
+      fixed: true,
+    },
+    {
+      id: "phone_number",
+      label: "Phone Number",
+      width: "160px",
+      minWidth: "160px",
+      fixed: true,
+    },
+
+    {
+      id: "email",
+      label: "Email",
+      width: "220px",
+      minWidth: "220px",
+      fixed: true,
+    },
+    {
+      id: "status",
+      label: "Status",
+      width: "120px",
+      minWidth: "120px",
+      fixed: true,
+    },
+    {
+      id: "address",
+      label: "Address",
+      width: "120px",
+      minWidth: "120px",
+    },
+    {
+      id: "owner",
+      label: "Owner",
+      width: "120px",
+      minWidth: "120px",
+    },
+  ];
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
+    columnConfig.reduce((com, column) => {
+      com[column.id] = column.fixed ? true : false;
+      return com;
+    }, {} as Record<string, boolean>)
+  );
+
   // Function to fetch accounts
   const fetchCompany = useCallback((pageNumber: number, searchParams = {}) => {
     const offset = pageNumber * rowsPerPage;
@@ -90,20 +161,28 @@ const CompanyListingTable = () => {
               : company.status === 3
               ? "Suspended"
               : "",
-              created_on: company.created_on,
-              updated_on: company.updated_on
+          created_on: company.created_on,
+          updated_on: company.updated_on,
         }));
         setCompanyList(formattedAccounts);
         setHasNextPage(items.length === rowsPerPage);
       })
-      .catch((err: any) => {
+      .catch((error: any) => {
         showErrorToast(
-          err || "Failed to fetch company list. Please try again."
+          error.message || "Failed to fetch company list. Please try again."
         );
       })
       .finally(() => setIsLoading(false));
   }, []);
-
+  const handleColumnChange = (event: SelectChangeEvent<string[]>) => {
+    const value = event.target.value;
+    // Convert array of selected values to new visibility state
+    const newVisibleColumns = Object.keys(visibleColumns).reduce((acc, key) => {
+      acc[key] = value.includes(key);
+      return acc;
+    }, {} as Record<string, boolean>);
+    setVisibleColumns(newVisibleColumns);
+  };
   const handleRowClick = (company: Company) => {
     setSelectedCompany(company);
     navigate(`/executive/company/${company.id}`);
@@ -129,6 +208,15 @@ const CompanyListingTable = () => {
     },
     []
   );
+  const handleSelectChange = useCallback((e: SelectChangeEvent<string>) => {
+    const value = e.target.value;
+    setSearch((prev) => ({ ...prev, status: value }));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      setDebouncedSearch((prev) => ({ ...prev, status: value }));
+      setPage(0);
+    }, 700);
+  }, []);
 
   const handleChangePage = useCallback(
     (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
@@ -137,15 +225,19 @@ const CompanyListingTable = () => {
     []
   );
   useEffect(() => {
+    const statusBackendValue = getStatusBackendValue(debouncedSearch.status);
     const searchParams = {
       ...(debouncedSearch.id && { id: debouncedSearch.id }),
-      ...(debouncedSearch.contact_person && {
-        contact_person: debouncedSearch.contact_person,
-      }),
+      ...(debouncedSearch.name && { name: debouncedSearch.name }),
+      ...(debouncedSearch.address && { address: debouncedSearch.address }),
       ...(debouncedSearch.email_id && { email_id: debouncedSearch.email_id }),
       ...(debouncedSearch.phone_number && {
         phone_number: debouncedSearch.phone_number,
       }),
+      ...(debouncedSearch.contact_person && {
+        contact_person: debouncedSearch.contact_person,
+      }),
+      ...(statusBackendValue && { status: statusBackendValue }),
     };
 
     fetchCompany(page, searchParams);
@@ -179,40 +271,61 @@ const CompanyListingTable = () => {
           overflow: "hidden",
         }}
       >
-        <Tooltip
-          title={
-            !canCreateCompany
-              ? "You don't have permission, contact the admin"
-              : "click to open the company creation form"
-          }
-          placement="top-end"
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "right",
+            alignItems: "center",
+            mb: 2,
+            gap: 2,
+          }}
         >
-          <span
-            style={{ cursor: !canCreateCompany ? "not-allowed" : "default" }}
-          >
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Select
+              multiple
+              value={Object.keys(visibleColumns).filter(
+                (key) => visibleColumns[key]
+              )}
+              onChange={handleColumnChange}
+              renderValue={(selected) =>
+                `Selected Columns (${selected.length})`
+              }
+              sx={{ minWidth: 200, height: 40 }}
+            >
+              {columnConfig.map((column) => (
+                <MenuItem
+                  key={column.id}
+                  value={column.id}
+                  disabled={column.fixed}
+                >
+                  <Checkbox
+                    checked={visibleColumns[column.id]}
+                    disabled={column.fixed}
+                  />
+                  <ListItemText
+                    primary={column.label}
+                  />
+                </MenuItem>
+              ))}
+            </Select>
+          </Box>
+
+          {canCreateCompany && (
             <Button
               sx={{
-                ml: "auto",
-                mr: 2,
-                mb: 2,
-                display: "block",
-                backgroundColor: !canCreateCompany
-                  ? "#6c87b7 !important"
-                  : "#00008B",
-                color: "white",
+                backgroundColor: "#00008B",
+                color: "white !important",
                 "&.Mui-disabled": {
-                  backgroundColor: "#6c87b7 !important",
-                  color: "#ffffff99",
+                  color: "#fff !important",
                 },
               }}
               variant="contained"
               onClick={() => setOpenCreateModal(true)}
-              disabled={!canCreateCompany}
             >
-              Create Company
+              Add New Company
             </Button>
-          </span>
-        </Tooltip>
+          )}
+        </Box>
 
         <TableContainer
           sx={{
@@ -246,172 +359,255 @@ const CompanyListingTable = () => {
           <Table stickyHeader>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedCompany ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    ID
-                  </b>
-                  <TextField
-                    type="number"
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.id}
-                    onChange={(e) => handleSearchChange(e, "id")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 40,
-                        padding: "4px",
+                {visibleColumns.id && (
+                  <TableCell width="140px">
+                    <b
+                      style={{
+                        display: "block",
                         textAlign: "center",
                         fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
+                      }}
+                    >
+                      ID
+                    </b>
+                  </TableCell>
+                )}
+                {visibleColumns.name && (
+                  <TableCell>
+                    <b
+                      style={{
+                        display: "block",
                         textAlign: "center",
                         fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
+                        textWrap: "nowrap",
+                      }}
+                    >
+                      Company Name
+                    </b>
+                  </TableCell>
+                )}
 
-                <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      textWrap: "nowrap",
-                    }}
-                  >
-                    Company Name
-                  </b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.name}
-                    onChange={(e) => handleSearchChange(e, "name")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 40,
-                        padding: "4px",
+                {visibleColumns.address && (
+                  <TableCell>
+                    <b
+                      style={{
+                        display: "block",
                         textAlign: "center",
                         fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
+                      }}
+                    >
+                      Address
+                    </b>
+                  </TableCell>
+                )}
 
-                <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedCompany ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    Address
-                  </b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.address}
-                    onChange={(e) => handleSearchChange(e, "address")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 40,
-                        padding: "4px",
+                {visibleColumns.phone_number && (
+                  <TableCell>
+                    <b
+                      style={{
+                        display: "block",
                         textAlign: "center",
                         fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
+                      }}
+                    >
+                      Phone
+                    </b>
+                  </TableCell>
+                )}
 
-                <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedCompany ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    Phone
-                  </b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.phone_number}
-                    onChange={(e) => handleSearchChange(e, "phone_number")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 40,
-                        padding: "4px",
+                {visibleColumns.email && (
+                  <TableCell>
+                    <b
+                      style={{
+                        display: "block",
                         textAlign: "center",
                         fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
+                      }}
+                    >
+                      Email
+                    </b>
+                  </TableCell>
+                )}
+                {visibleColumns.owner && (
+                  <TableCell>
+                    <Box display="flex" justifyContent="center">
+                      <b>Company Owner</b>
+                    </Box>
+                  </TableCell>
+                )}
 
-                <TableCell>
-                  <b
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      fontSize: selectedCompany ? "0.8rem" : "1rem",
-                    }}
-                  >
-                    Email
-                  </b>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search"
-                    value={search.email_id}
-                    onChange={(e) => handleSearchChange(e, "email_id")}
-                    fullWidth
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 40,
-                        padding: "4px",
-                        textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      },
-                      "& .MuiInputBase-input": {
-                        textAlign: "center",
-                        fontSize: selectedCompany ? "0.8rem" : "1rem",
-                      },
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Box display="flex" justifyContent="center">
-                    <b>Status</b>
-                  </Box>
-                </TableCell>
+                {visibleColumns.status && (
+                  <TableCell>
+                    <Box display="flex" justifyContent="center">
+                      <b>Status</b>
+                    </Box>
+                  </TableCell>
+                )}
+              </TableRow>
+              <TableRow>
+                {visibleColumns.id && (
+                  <TableCell>
+                    <TextField
+                      type="number"
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.id}
+                      onChange={(e) => handleSearchChange(e, "id")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": {
+                          height: 40,
+                          padding: "4px",
+                          textAlign: "center",
+                          fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        },
+                        "& .MuiInputBase-input": {
+                          textAlign: "center",
+                          fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        },
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {visibleColumns.name && (
+                  <TableCell>
+                    <TextField
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.name}
+                      onChange={(e) => handleSearchChange(e, "name")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": {
+                          height: 40,
+                          padding: "4px",
+                          textAlign: "center",
+                          fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        },
+                        "& .MuiInputBase-input": {
+                          textAlign: "center",
+                          fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        },
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {visibleColumns.address && (
+                  <TableCell>
+                    <TextField
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.address}
+                      onChange={(e) => handleSearchChange(e, "address")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": {
+                          height: 40,
+                          padding: "4px",
+                          textAlign: "center",
+                          fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        },
+                        "& .MuiInputBase-input": {
+                          textAlign: "center",
+                          fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        },
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {visibleColumns.phone_number && (
+                  <TableCell>
+                    <TextField
+                      variant="outlined"
+                      size="small"
+                      type="number"
+                      placeholder="Search"
+                      value={search.phone_number}
+                      onChange={(e) => handleSearchChange(e, "phone_number")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": {
+                          height: 40,
+                          padding: "4px",
+                          textAlign: "center",
+                          fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        },
+                        "& .MuiInputBase-input": {
+                          textAlign: "center",
+                          fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        },
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {visibleColumns.email && (
+                  <TableCell>
+                    <TextField
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.email_id}
+                      onChange={(e) => handleSearchChange(e, "email_id")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": {
+                          height: 40,
+                          padding: "4px",
+                          textAlign: "center",
+                          fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        },
+                        "& .MuiInputBase-input": {
+                          textAlign: "center",
+                          fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        },
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {visibleColumns.owner && (
+                  <TableCell>
+                    <TextField
+                      variant="outlined"
+                      size="small"
+                      placeholder="Search"
+                      value={search.contact_person}
+                      onChange={(e) => handleSearchChange(e, "contact_person")}
+                      fullWidth
+                      sx={{
+                        "& .MuiInputBase-root": {
+                          height: 40,
+                          padding: "4px",
+                          textAlign: "center",
+                          fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        },
+                        "& .MuiInputBase-input": {
+                          textAlign: "center",
+                          fontSize: selectedCompany ? "0.8rem" : "1rem",
+                        },
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {visibleColumns.status && (
+                  <TableCell width="10%">
+                    <Select
+                      value={search.status}
+                      onChange={handleSelectChange}
+                      displayEmpty
+                      size="small"
+                      fullWidth
+                      sx={{ height: 40 }}
+                    >
+                      <MenuItem value="">All</MenuItem>
+                      <MenuItem value="Validating">Validating</MenuItem>
+                      <MenuItem value="Verified">Verified</MenuItem>
+                      <MenuItem value="Suspended">Suspended</MenuItem>
+                    </Select>
+                  </TableCell>
+                )}
               </TableRow>
             </TableHead>
 
@@ -451,108 +647,149 @@ const CompanyListingTable = () => {
                         },
                       }}
                     >
-                      <TableCell align="center">{company.id}</TableCell>
-                      <TableCell>
-                        {" "}
-                        <Tooltip title={company.name} placement="bottom">
-                          <Typography noWrap>
-                            {company.name.length > 15
-                              ? `${company.name.substring(0, 15)}...`
-                              : company.name}
-                          </Typography>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell>
-                        <Tooltip title={company.address} placement="bottom">
-                          <Typography noWrap>
-                            {company.address.length > 15
-                              ? `${company.address.substring(0, 15)}...`
-                              : company.address}
-                          </Typography>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell>
-                        {company.phone_number
-                          ? company.phone_number
-                              .replace(/\D/g, "")
-                              .slice(-10) || "-"
-                          : "-"}
-                      </TableCell>
-                      <TableCell>
-                        {company.email_id ? (
-                          <Tooltip title={company.email_id} placement="bottom">
+                      {visibleColumns.id && (
+                        <TableCell align="center">{company.id}</TableCell>
+                      )}
+                      {visibleColumns.name && (
+                        <TableCell>
+                          {" "}
+                          <Tooltip title={company.name} placement="bottom">
                             <Typography noWrap>
-                              {company.email_id.length > 15
-                                ? `${company.email_id.substring(0, 15)}...`
-                                : company.email_id}
+                              {company.name.length > 15
+                                ? `${company.name.substring(0, 15)}...`
+                                : company.name}
                             </Typography>
                           </Tooltip>
-                        ) : (
-                          <Tooltip
-                            title=" Email not added yet"
-                            placement="bottom"
-                          >
-                            <ErrorIcon sx={{ color: "#737d72 " }} />
+                        </TableCell>
+                      )}
+                      {visibleColumns.address && (
+                        <TableCell>
+                          <Tooltip title={company.address} placement="bottom">
+                            <Typography noWrap>
+                              {company.address.length > 15
+                                ? `${company.address.substring(0, 15)}...`
+                                : company.address}
+                            </Typography>
                           </Tooltip>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {company.status === "Validating" && (
-                          <Chip
-                            icon={<WarningIcon />}
-                            label="Validating"
-                            color="warning"
-                            size="small"
-                            sx={{
-                              backgroundColor:
-                                selectedCompany?.id === company.id
-                                  ? "#edd18f"
-                                  : "#FFE082",
-                              color:
-                                selectedCompany?.id === company.id
-                                  ? "#9f3b03"
-                                  : "#9f3b03",
-                              fontWeight: "bold",
-                            }}
-                          />
-                        )}
-                        {company.status === "Suspended" && (
-                          <Chip
-                            icon={<BlockIcon />}
-                            label="Suspended"
-                            color="error"
-                            size="small"
-                            sx={{
-                              backgroundColor:
-                                selectedCompany?.id === company.id
-                                  ? "#FFCDD2"
-                                  : "#FFEBEE",
-                              color: "#D32F2F",
-                              fontWeight: "bold",
-                            }}
-                          />
-                        )}
+                        </TableCell>
+                      )}
+                      {visibleColumns.phone_number && (
+                        <TableCell>
+                          {company.phone_number
+                            ? company.phone_number
+                                .replace(/\D/g, "")
+                                .slice(-10) || "-"
+                            : "-"}
+                        </TableCell>
+                      )}
+                      {visibleColumns.email && (
+                        <TableCell>
+                          {company.email_id ? (
+                            <Tooltip
+                              title={company.email_id}
+                              placement="bottom"
+                            >
+                              <Typography noWrap>
+                                {company.email_id.length > 15
+                                  ? `${company.email_id.substring(0, 15)}...`
+                                  : company.email_id}
+                              </Typography>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip
+                              title=" Email not added yet"
+                              placement="bottom"
+                            >
+                              <ErrorIcon sx={{ color: "#737d72 " }} />
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      )}
+                      {visibleColumns.owner && (
+                        <TableCell>
+                          {company.contact_person ? (
+                            <Tooltip
+                              title={company.contact_person}
+                              placement="bottom"
+                            >
+                              <Typography noWrap>
+                                {company.contact_person.length > 15
+                                  ? `${company.contact_person.substring(
+                                      0,
+                                      15
+                                    )}...`
+                                  : company.contact_person}
+                              </Typography>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip
+                              title=" Owner not added yet"
+                              placement="bottom"
+                            >
+                              <ErrorIcon sx={{ color: "#737d72 " }} />
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      )}
+                      {visibleColumns.status && (
+                        <TableCell>
+                          {company.status === "Validating" && (
+                            <Chip
+                              icon={<WarningIcon />}
+                              label="Validating"
+                              color="warning"
+                              size="small"
+                              sx={{
+                                backgroundColor:
+                                  selectedCompany?.id === company.id
+                                    ? "#edd18f"
+                                    : "#FFE082",
+                                color:
+                                  selectedCompany?.id === company.id
+                                    ? "#9f3b03"
+                                    : "#9f3b03",
+                                fontWeight: "bold",
+                              }}
+                            />
+                          )}
+                          {company.status === "Suspended" && (
+                            <Chip
+                              icon={<BlockIcon />}
+                              label="Suspended"
+                              color="error"
+                              size="small"
+                              sx={{
+                                backgroundColor:
+                                  selectedCompany?.id === company.id
+                                    ? "#FFCDD2"
+                                    : "#FFEBEE",
+                                color: "#D32F2F",
+                                fontWeight: "bold",
+                              }}
+                            />
+                          )}
 
-                        {company.status === "Verified" && (
-                          <Chip
-                            icon={<CheckCircleIcon />}
-                            label="Verified"
-                            color="success"
-                            size="small"
-                            sx={{
-                              backgroundColor:
-                                selectedCompany?.id === company.id
-                                  ? "#A5D6A7"
-                                  : "#E8F5E9",
-                              color:
-                                selectedCompany?.id === company.id
-                                  ? "#2E7D32"
-                                  : "#2E7D32",
-                              fontWeight: "bold",
-                            }}
-                          />
-                        )}
-                      </TableCell>
+                          {company.status === "Verified" && (
+                            <Chip
+                              icon={<CheckCircleIcon />}
+                              label="Verified"
+                              color="success"
+                              size="small"
+                              sx={{
+                                backgroundColor:
+                                  selectedCompany?.id === company.id
+                                    ? "#A5D6A7"
+                                    : "#E8F5E9",
+                                color:
+                                  selectedCompany?.id === company.id
+                                    ? "#2E7D32"
+                                    : "#2E7D32",
+                                fontWeight: "bold",
+                              }}
+                            />
+                          )}
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })
@@ -603,24 +840,16 @@ const CompanyListingTable = () => {
       )}
 
       {/* Create Account Modal */}
-      <Dialog
+      <FormModal
         open={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
-        maxWidth="sm"
-        fullWidth
+        title="Create Company"
       >
-        <DialogContent>
           <CompanyCreationForm
             refreshList={(value: any) => refreshList(value)}
             onClose={() => setOpenCreateModal(false)}
           />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenCreateModal(false)} color="error">
-            Cancel
-          </Button>
-        </DialogActions>
-      </Dialog>
+       </FormModal>
     </Box>
   );
 };

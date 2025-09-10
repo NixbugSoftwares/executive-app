@@ -20,6 +20,7 @@ const CompanyFare = lazy(() => import("../screens/companyFare/CompanyFare"));
 const Service = lazy(() => import("../screens/service/service"));
 const Schedule = lazy(() => import("../screens/schedule/schedule"));
 const Duty = lazy(() => import("../screens/duty/duty"));
+const Statement = lazy(() => import("../screens/statement/statement"));
 const PapperTicket = lazy(() => import("../screens/ticket/ticket"));
 const Profile=lazy(() => import("../common/profile/profile"));
 
@@ -93,6 +94,9 @@ const HomeRouter: React.FC = () => {
           path="/executive/company/papper-ticket/:companyId"
           element={<PapperTicket />}
         />
+
+        <Route path="/executive/statment" element={<Statement/>} />
+        <Route path="/executive/company/statment/:companyId" element={<Statement/>} />
 
         <Route path="/profile" element={<Profile />} />
         <Route

@@ -7,7 +7,6 @@ import { OSM, XYZ, Vector as VectorSource } from "ol/source";
 import { fromLonLat, toLonLat } from "ol/proj";
 import {
   Box,
-  Button,
   Typography,
   Select,
   MenuItem,
@@ -37,14 +36,25 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const mapInstance = useRef<Map | null>(null);
   const [mapType, setMapType] = useState<"osm" | "satellite" | "hybrid">("osm");
   const [mousePosition, setMousePosition] = useState<string>("");
-  const [isMarkingEnabled, setIsMarkingEnabled] = useState<boolean>(false);
-  const [markerLayer, setMarkerLayer] = useState<VectorLayer<
-    VectorSource<Feature<Point>>
-  > | null>(null);
+  const markerSourceRef = useRef<VectorSource<Feature<Point>> | null>(null);
+  const markerLayerRef = useRef<VectorLayer<VectorSource<Feature<Point>>> | null>(null);
+
   useEffect(() => {
     if (!mapRef.current) return;
 
     if (!mapInstance.current) {
+      // Initialize marker source and layer
+      markerSourceRef.current = new VectorSource();
+      markerLayerRef.current = new VectorLayer({
+        source: markerSourceRef.current,
+        style: new Style({
+          image: new Icon({
+            src: companyLocation,
+            scale: 1,
+          }),
+        }),
+      });
+
       const map = new Map({
         controls: [],
         layers: [new TileLayer({ source: new OSM() })],
@@ -53,45 +63,50 @@ const MapComponent: React.FC<MapComponentProps> = ({
           center: initialCoordinates
             ? fromLonLat([initialCoordinates.lng, initialCoordinates.lat])
             : fromLonLat([76.9366, 8.5241]),
-          zoom: 10,
+          zoom: 13,
           minZoom: 3,
           maxZoom: 18,
         }),
       });
+
+      // Add marker layer to map
+      map.addLayer(markerLayerRef.current);
 
       map.on("pointermove", (event) => {
         const coords = toLonLat(event.coordinate);
         setMousePosition(`${coords[0].toFixed(7)}, ${coords[1].toFixed(7)}`);
       });
 
+      map.on("click", (event) => {
+        if (!onSelectLocation) return;
+        
+        const coords = toLonLat(event.coordinate);
+        onSelectLocation({ lat: coords[1], lng: coords[0] });
+        
+        // Clear previous features
+        markerSourceRef.current?.clear();
+        
+        // Add new marker
+        const marker = new Feature({
+          geometry: new Point(event.coordinate),
+        });
+        markerSourceRef.current?.addFeature(marker);
+      });
+
       mapInstance.current = map;
     }
-    if (initialCoordinates && mapInstance.current) {
+
+    if (initialCoordinates && mapInstance.current && markerSourceRef.current) {
+      // Clear any existing markers
+      markerSourceRef.current.clear();
+      
+      // Add initial marker
       const marker = new Feature({
         geometry: new Point(
           fromLonLat([initialCoordinates.lng, initialCoordinates.lat])
         ),
       });
-
-      const markerSource = new VectorSource({
-        features: [marker],
-      });
-
-      const newMarkerLayer = new VectorLayer({
-        source: markerSource,
-        style: new Style({
-          image: new Icon({
-            src: companyLocation,
-            scale: 1,
-          }),
-        }),
-      });
-      if (markerLayer) {
-        mapInstance.current.removeLayer(markerLayer);
-      }
-      mapInstance.current.addLayer(newMarkerLayer);
-      setMarkerLayer(newMarkerLayer);
-
+      markerSourceRef.current.addFeature(marker);
     }
 
     if (isOpen) {
@@ -101,51 +116,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   }, [isOpen, initialCoordinates]);
 
-  useEffect(() => {
-    if (!mapInstance.current || !onSelectLocation) return;
-
-    const map = mapInstance.current;
-
-    const handleMapClick = async (event: any) => {
-      if (!isMarkingEnabled) return;
-      const coords = toLonLat(event.coordinate);
-      onSelectLocation({ lat: coords[1], lng: coords[0] });
-      const marker = new Feature({
-        geometry: new Point(event.coordinate),
-      });
-
-      const markerSource = new VectorSource({
-        features: [marker],
-      });
-
-      const newMarkerLayer = new VectorLayer({
-        source: markerSource,
-        style: new Style({
-          image: new Icon({
-            src: companyLocation,
-            scale: 1,
-          }),
-        }),
-      });
-
-      if (markerLayer) {
-        map.removeLayer(markerLayer);
-      }
-
-      map.addLayer(newMarkerLayer);
-      setMarkerLayer(newMarkerLayer);
-    };
-
-    map.on("click", handleMapClick);
-
-    return () => {
-      map.un("click", handleMapClick);
-    };
-  }, [isMarkingEnabled, markerLayer, onSelectLocation]);
-
-
-
-  // Change map type
   const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
     if (!mapInstance.current) return;
 
@@ -196,31 +166,20 @@ const MapComponent: React.FC<MapComponentProps> = ({
           borderRadius: 1,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <FormControl variant="outlined" size="small">
-            <InputLabel>Map Type</InputLabel>
-            <Select
-              value={mapType}
-              onChange={(e) =>
-                changeMapType(e.target.value as "osm" | "satellite" | "hybrid")
-              }
-              label="Map Type"
-            >
-              <MenuItem value="osm">OSM</MenuItem>
-              <MenuItem value="satellite">Satellite</MenuItem>
-              <MenuItem value="hybrid">Hybrid</MenuItem>
-            </Select>
-          </FormControl>
-
-          <Button
-            onClick={() => setIsMarkingEnabled(!isMarkingEnabled)}
-            variant="contained"
-            size="small"
-            color={isMarkingEnabled ? "secondary" : "primary"}
+        <FormControl variant="outlined" size="small">
+          <InputLabel>Map Type</InputLabel>
+          <Select
+            value={mapType}
+            onChange={(e) =>
+              changeMapType(e.target.value as "osm" | "satellite" | "hybrid")
+            }
+            label="Map Type"
           >
-            {isMarkingEnabled ? "Disable Marking" : "Enable Marking"}
-          </Button>
-        </Box>
+            <MenuItem value="osm">OSM</MenuItem>
+            <MenuItem value="satellite">Satellite</MenuItem>
+            <MenuItem value="hybrid">Hybrid</MenuItem>
+          </Select>
+        </FormControl>
 
         <Typography variant="body2">
           <strong>{mousePosition}</strong>

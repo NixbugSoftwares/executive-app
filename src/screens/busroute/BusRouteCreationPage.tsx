@@ -13,12 +13,14 @@ import {
   FormControl,
   InputLabel,
   Select,
+  Tooltip,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import IconButton from "@mui/material/IconButton";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import DirectionsIcon from "@mui/icons-material/Directions";
+import HelpIcon from "@mui/icons-material/Help";
 import {
   routeCreationApi,
   routeLandmarkCreationApi,
@@ -30,10 +32,9 @@ import {
   showSuccessToast,
 } from "../../common/toastMessageHelper";
 import { SelectedLandmark } from "../../types/type";
-
+import RouteRulesModal from "./RouteRules";
 interface BusRouteCreationProps {
   landmarks: SelectedLandmark[];
-  companyId: number;
   onLandmarkRemove: (id: number) => void;
   onSuccess: () => void;
   onCancel: () => void;
@@ -42,16 +43,15 @@ interface BusRouteCreationProps {
   onStartingTimeChange: (time: string) => void;
   refreshList: (value: any) => void;
   onClose?: () => void;
+  companyId: number;
 }
 
 interface BusRouteFormInputs {
   name: string;
   starting_time: string;
 }
-
 const BusRouteCreation = ({
   landmarks,
-  companyId,
   onLandmarkRemove,
   onSuccess,
   onCancel,
@@ -60,13 +60,15 @@ const BusRouteCreation = ({
   onStartingTimeChange,
   refreshList,
   onClose,
+  companyId,
 }: BusRouteCreationProps) => {
+  console.log("landmarks.......", landmarks);
+
   const dispatch = useAppDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [localHour, setLocalHour] = useState<number>(6);
   const [localMinute, setLocalMinute] = useState<number>(0);
   const [amPm, setAmPm] = useState<string>("AM");
-  const [isAddingLandmark, setIsAddingLandmark] = useState(false);
   const [startingDayOffset] = useState(0);
   const {
     register,
@@ -74,7 +76,7 @@ const BusRouteCreation = ({
     setValue,
     formState: { errors },
   } = useForm<BusRouteFormInputs>();
-
+  const [showRules, setShowRules] = useState(false);
   // Convert local time to UTC time string
   const convertLocalToUTC = (
     hour: number,
@@ -83,61 +85,68 @@ const BusRouteCreation = ({
     dayOffset: number = 0
   ) => {
     let istHour = hour;
-    if (period === "PM" && hour !== 12) {
-      istHour += 12;
-    } else if (period === "AM" && hour === 12) {
-      istHour = 0;
-    }
+    if (period === "PM" && hour !== 12) istHour += 12;
+    if (period === "AM" && hour === 12) istHour = 0;
 
-    // Create IST date
+    // Create IST date (Day 0)
     const istDate = new Date(
       Date.UTC(1970, 0, 1 + dayOffset, istHour, minute, 0)
     );
-    // Subtract 5 hours 30 minutes to get UTC
+
+    // Convert IST → UTC
     istDate.setUTCHours(
       istDate.getUTCHours() - 5,
       istDate.getUTCMinutes() - 30
     );
 
     return {
-      displayTime: istDate.toISOString().slice(11, 19),
-      fullTime: istDate.toISOString(),
-      dayOffset,
-      timestamp: istDate.getTime(),
+      utcTime: istDate.toISOString().slice(11, 19) + "Z", // HH:MM:SSZ
     };
   };
 
-  const calculateTimeDeltas = (
-    startingTime: string,
-    landmarks: SelectedLandmark[],
-    timeType: "arrival" | "departure"
-  ) => {
-    // Parse starting time as UTC (with day offset 0)
-    const startDate = new Date(`1970-01-01T${startingTime.replace("Z", "")}Z`);
+  const convertLocalToISTBaseDate = (
+    hour: number,
+    minute: number,
+    period: string,
+    dayOffset: number = 0
+  ): string => {
+    let istHour = hour;
+    if (period === "PM" && hour !== 12) istHour += 12;
+    if (period === "AM" && hour === 12) istHour = 0;
 
-    return landmarks.map((landmark) => {
-      const timeObj =
-        timeType === "arrival" ? landmark.arrivalTime : landmark.departureTime;
-      // Parse landmark time as UTC (with its day offset)
-      const landmarkDate = new Date(timeObj.fullTime);
-      // Delta in seconds
-      const deltaSeconds = Math.floor(
-        (landmarkDate.getTime() - startDate.getTime()) / 1000
-      );
-      return Math.max(0, deltaSeconds);
-    });
+    // Build IST Date
+    const istDate = new Date(1970, 0, 1 + dayOffset, istHour, minute, 0);
+
+    // Format as "1970-01-01 hh:mm AM/PM"
+    const options: Intl.DateTimeFormatOptions = {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Kolkata",
+    };
+    const formattedTime = istDate.toLocaleTimeString("en-IN", options);
+    return `1970-01-01 ${formattedTime}`;
   };
 
   useEffect(() => {
-    const { displayTime } = convertLocalToUTC(
+    // 1. Keep UTC time for saving to DB
+    const { utcTime } = convertLocalToUTC(
       localHour,
       localMinute,
       amPm,
       startingDayOffset
     );
-    const fullTime = displayTime + "Z";
-    setValue("starting_time", fullTime);
-    onStartingTimeChange(fullTime);
+    setValue("starting_time", utcTime);
+    console.log("utcTime startime........", utcTime);
+
+    // 2. Send IST (base date 1970-01-01) to Map Component
+    const istBaseDate = convertLocalToISTBaseDate(
+      localHour,
+      localMinute,
+      amPm,
+      startingDayOffset
+    );
+    onStartingTimeChange(istBaseDate);
   }, [
     localHour,
     localMinute,
@@ -146,76 +155,98 @@ const BusRouteCreation = ({
     setValue,
     onStartingTimeChange,
   ]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (mapRef.current?.isAddingLandmark !== undefined) {
-        setIsAddingLandmark(mapRef.current.isAddingLandmark);
-      }
-    }, 200);
-    return () => clearInterval(interval);
-  }, [mapRef]);
-
   const handleRouteCreation: SubmitHandler<BusRouteFormInputs> = async (
     data
   ) => {
     setIsSubmitting(true);
 
     try {
+      // 1. Create the route
       const routeFormData = new FormData();
+      routeFormData.append("company_id", companyId.toString());
       routeFormData.append("name", data.name);
       routeFormData.append("start_time", data.starting_time);
-      routeFormData.append("company_id", companyId.toString());
-      console.log("starting_time", data.starting_time);
-      console.log("name", data.name);
-
+      console.log("📦 FormData being sent:");
+      for (const [key, value] of routeFormData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
       const routeResponse = await dispatch(
         routeCreationApi(routeFormData)
       ).unwrap();
       const routeId = routeResponse.id;
 
+      // 2. Assume landmarks already have correct arrival/departure deltas
       const sortedLandmarks = [...landmarks].sort(
         (a, b) => (a.distance_from_start || 0) - (b.distance_from_start || 0)
       );
-      const arrivalDeltas = calculateTimeDeltas(
-        data.starting_time,
-        sortedLandmarks,
-        "arrival"
-      );
-      const departureDeltas = calculateTimeDeltas(
-        data.starting_time,
-        sortedLandmarks,
-        "departure"
-      );
 
-      console.log("Starting time:", data.starting_time);
-      console.log("Arrival deltas:", arrivalDeltas);
-      console.log("Departure deltas:", departureDeltas);
+      // 3. Validate landmarks
+      const invalidLandmarks: { index: number; name: string; error: string }[] =
+        [];
+      sortedLandmarks.forEach((landmark, index) => {
+        if (index > 0) {
+          if ((landmark.arrival_delta ?? 0) < 0) {
+            invalidLandmarks.push({
+              index,
+              name: landmark.name,
+              error: "Arrival time cannot be before route start time",
+            });
+            return;
+          }
 
-      const landmarkPromises = sortedLandmarks.map((landmark, index) => {
-        const landmarkFormData = new FormData();
-        landmarkFormData.append("route_id", routeId.toString());
-        landmarkFormData.append("landmark_id", landmark.id.toString());
-        landmarkFormData.append(
-          "distance_from_start",
-          landmark.distance_from_start?.toString() || "0"
-        );
-
-        landmarkFormData.append(
-          "arrival_delta",
-          arrivalDeltas[index].toString()
-        );
-        landmarkFormData.append(
-          "departure_delta",
-          departureDeltas[index].toString()
-        );
-
-        return dispatch(routeLandmarkCreationApi(landmarkFormData)).unwrap();
+          if (
+            index < sortedLandmarks.length - 1 &&
+            (landmark.departure_delta ?? 0) < (landmark.arrival_delta ?? 0)
+          ) {
+            invalidLandmarks.push({
+              index,
+              name: landmark.name,
+              error: "Departure time must be after arrival time",
+            });
+          }
+        }
       });
-      console.log("Landmark promises:", landmarkPromises);
 
-      await Promise.all(landmarkPromises);
-      showSuccessToast("Route and landmarks created successfully");
+      // 4. Prepare valid landmarks for creation
+      const validLandmarkPromises = sortedLandmarks
+        .map((landmark, index) => {
+          if (invalidLandmarks.some((lm) => lm.index === index)) return null;
+
+          const landmarkFormData = new FormData();
+          landmarkFormData.append("route_id", routeId.toString());
+          landmarkFormData.append("landmark_id", landmark.id.toString());
+          landmarkFormData.append(
+            "distance_from_start",
+            landmark.distance_from_start?.toString() || "0"
+          );
+          landmarkFormData.append(
+            "arrival_delta",
+            landmark.arrival_delta?.toString() || "0"
+          );
+          landmarkFormData.append(
+            "departure_delta",
+            landmark.departure_delta?.toString() || "0"
+          );
+          for (const [key, value] of landmarkFormData.entries()) {
+            console.log(`${key}: ${value}`);
+          }
+          return dispatch(routeLandmarkCreationApi(landmarkFormData)).unwrap();
+        })
+        .filter(Boolean);
+
+      await Promise.all(validLandmarkPromises);
+
+      // 5. Notify user
+      if (invalidLandmarks.length > 0) {
+        const invalidNames = invalidLandmarks.map((lm) => lm.name).join(", ");
+        showSuccessToast(
+          `Route created, but some landmarks were skipped: ${invalidNames}`
+        );
+      } else {
+        showSuccessToast("Route and all landmarks created successfully");
+      }
+
+      // 6. Cleanup
       refreshList("refresh");
       onSuccess();
       if (onClearRoute) onClearRoute();
@@ -228,11 +259,22 @@ const BusRouteCreation = ({
       if (onClose) onClose();
     } catch (error: any) {
       console.error("Error in route creation process:", error);
-      showErrorToast(error || "Failed to create route and landmarks");
+
+      if (error.message.includes("conflict")) {
+        showErrorToast(
+          "Route was created but there was an issue adding landmarks. Please check the route details."
+        );
+        refreshList("refresh");
+        onSuccess();
+        if (onClose) onClose();
+      } else {
+        showErrorToast(error.message || "Failed to create route and landmarks");
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+
   function formatTimeForDisplayIST(isoString: string, showDayLabel = true) {
     const date = new Date(isoString);
     date.setTime(date.getTime() + (5 * 60 + 30) * 60 * 1000);
@@ -260,7 +302,10 @@ const BusRouteCreation = ({
     return timeStr;
   }
 
-  return (
+  const handleShowRules = () => {
+    setShowRules(true);
+  };
+    return (
     <Box
       sx={{
         display: "flex",
@@ -280,301 +325,420 @@ const BusRouteCreation = ({
           maxWidth: { xs: "100%", md: "100%" },
           height: "100%",
           transition: "all 0.3s ease",
-          overflow: "hidden",
-          overflowY: "auto",
           backgroundColor: "background.paper",
           borderRadius: 2,
           boxShadow: 2,
-          p: 2,
           display: "flex",
           flexDirection: "column",
         }}
       >
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Route Creation
-        </Typography>
-
-        <TextField
-          margin="normal"
-          fullWidth
-          label="Route Name"
-          {...register("name", { required: "Route name is required" })}
-          error={!!errors.name}
-          helperText={errors.name?.message}
-          autoFocus
-          size="small"
-        />
-
-        <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
-          Starting Time (IST)
-        </Typography>
-        <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-          {/* Starting Day Offset - fixed to Day 0 */}
-          <FormControl fullWidth size="small">
-            <InputLabel>Starting Day Offset</InputLabel>
-            <Select
-              value={0} // hardcoded to Day 0
-              label="Starting Day Offset"
-              disabled // disables dropdown interaction
-            >
-              <MenuItem value={0}>Day 1</MenuItem>
-            </Select>
-          </FormControl>
-
-          {/* Hour */}
-          <FormControl fullWidth size="small">
-            <InputLabel>Hour</InputLabel>
-            <Select
-              value={localHour}
-              onChange={(e) => setLocalHour(Number(e.target.value))}
-              label="Hour"
-            >
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
-                <MenuItem key={h} value={h}>
-                  {h.toString().padStart(2, "0")}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {/* Minute */}
-          <FormControl fullWidth size="small">
-            <InputLabel>Minute</InputLabel>
-            <Select
-              value={localMinute}
-              onChange={(e) => setLocalMinute(Number(e.target.value))}
-              label="Minute"
-            >
-              {Array.from({ length: 60 }, (_, i) => i).map((m) => (
-                <MenuItem key={m} value={m}>
-                  {String(m).padStart(2, "0")}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {/* AM/PM */}
-          <FormControl fullWidth size="small">
-            <InputLabel>AM/PM</InputLabel>
-            <Select
-              value={amPm}
-              onChange={(e) => setAmPm(e.target.value as string)}
-              label="AM/PM"
-            >
-              <MenuItem value="AM">AM</MenuItem>
-              <MenuItem value="PM">PM</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-
-        <Button
-          variant={isAddingLandmark ? "outlined" : "contained"}
-          color={isAddingLandmark ? "error" : "primary"}
-          sx={{ mt: 2, mb: 2 }}
-          disabled={!localHour && !localMinute}
-          onClick={() => {
-            mapRef.current?.toggleAddLandmarkMode();
-            setIsAddingLandmark((prev) => !prev);
+        {/* Sticky Header */}
+        <Box
+          sx={{
+            flexShrink: 0,
+            position: "sticky",
+            top: 0,
+            zIndex: 10,
+            backgroundColor: "background.paper",
+            borderBottom: "1px solid",
+            borderColor: "divider",
+            p: 2,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          {isAddingLandmark ? "Cancel" : "Add Landmark"}
-        </Button>
+          <Typography variant="h6">Route Creation</Typography>
+          <Tooltip title="Route Creation Guidelines">
+            <IconButton onClick={handleShowRules} color="primary" size="large">
+              <HelpIcon />
+            </IconButton>
+          </Tooltip>
+          {showRules && (
+            <RouteRulesModal
+              open={showRules}
+              onClose={() => setShowRules(false)}
+            />
+          )}
+        </Box>
 
-        <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
-          Route Landmarks
-        </Typography>
+        {/* Content Area (scrollable) */}
+        <Box
+          sx={{
+            flex: 1,
+            overflowY: "auto",
+            p: 2,
+          }}
+        >
+          <TextField
+            margin="normal"
+            fullWidth
+            label="Route Name"
+            {...register("name", {
+              required: "Route name is required",
+              validate: (value) => {
+                if (value.trim() === "") return "Route name is required";
+                if (/^\s|\s$/.test(value))
+                  return "No leading or trailing spaces allowed";
+                if (/\s{2,}/.test(value))
+                  return "Consecutive spaces are not allowed";
+                return true;
+              },
+            })}
+            error={!!errors.name}
+            helperText={errors.name?.message}
+            autoFocus
+            size="small"
+          />
 
-        {landmarks.length === 0 ? (
-          <Box
-            sx={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              textAlign: "center",
-              p: 4,
-              backgroundColor: "action.hover",
-              borderRadius: 1,
-              my: 2,
-              border: "1px dashed",
-              borderColor: "divider",
-            }}
+          <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
+            Starting Time (IST)
+          </Typography>
+          <Tooltip
+            title={
+              landmarks.length > 0
+                ? "Remove all landmarks to change starting time"
+                : ""
+            }
           >
-            <Typography
-              variant="body1"
-              color="text.secondary"
-              sx={{ mb: 1, fontWeight: 500 }}
-            >
-              No landmarks selected
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Please select landmarks from the map to create your route
-            </Typography>
-            <Typography
-              variant="caption"
-              color="info"
-              fontSize="0.75rem"
-              fontWeight="bold"
-            >
-              Only verified landmarks will be displayed
-            </Typography>
-          </Box>
-        ) : (
-          <List
-            sx={{ width: "100%", maxHeight: 400, overflow: "auto", flex: 1 }}
-          >
-            {landmarks
-              .slice()
-              .sort(
-                (a, b) =>
-                  (a.distance_from_start || 0) - (b.distance_from_start || 0)
-              )
-              .map((landmark, index) => (
-                <Box key={`${landmark.id}-${index}`}>
-                  <ListItem
-                    sx={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      py: 2,
-                      px: 2,
-                      backgroundColor:
-                        index % 2 === 0 ? "action.hover" : "background.paper",
-                      borderRadius: 1,
-                      gap: 2,
-                    }}
-                  >
-                    <Chip
-                      label={index + 1}
-                      color="primary"
-                      sx={{
-                        mr: 1,
-                        minWidth: 32,
-                        height: 32,
-                        fontSize: "0.875rem",
-                        fontWeight: 600,
-                      }}
-                    />
+            <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+              {/* Hour */}
+              <FormControl
+                fullWidth
+                size="small"
+                disabled={landmarks.length > 0}
+              >
+                <InputLabel>Hour</InputLabel>
+                <Select
+                  value={localHour}
+                  onChange={(e) => setLocalHour(Number(e.target.value))}
+                  label="Hour"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+                    <MenuItem key={h} value={h}>
+                      {h.toString().padStart(2, "0")}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        {landmark.name}
-                      </Typography>
+              {/* Minute */}
+              <FormControl
+                fullWidth
+                size="small"
+                disabled={landmarks.length > 0}
+              >
+                <InputLabel>Minute</InputLabel>
+                <Select
+                  value={localMinute}
+                  onChange={(e) => setLocalMinute(Number(e.target.value))}
+                  label="Minute"
+                >
+                  {Array.from({ length: 60 }, (_, i) => i).map((m) => (
+                    <MenuItem key={m} value={m}>
+                      {String(m).padStart(2, "0")}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
-                      <Box
+              {/* AM/PM */}
+              <FormControl
+                fullWidth
+                size="small"
+                disabled={landmarks.length > 0}
+              >
+                <InputLabel>AM/PM</InputLabel>
+                <Select
+                  value={amPm}
+                  onChange={(e) => setAmPm(e.target.value as string)}
+                  label="AM/PM"
+                >
+                  <MenuItem value="AM">AM</MenuItem>
+                  <MenuItem value="PM">PM</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          </Tooltip>
+
+          <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
+            Route Landmark List
+          </Typography>
+
+          {landmarks.length === 0 ? (
+            <Box
+              sx={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                textAlign: "center",
+                p: { xs: 2, sm: 4 },
+                backgroundColor: "action.hover",
+                borderRadius: 1,
+                border: "1px dashed",
+                borderColor: "divider",
+              }}
+            >
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ mb: 1, fontWeight: 500 }}
+              >
+                No landmarks selected
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Please select landmarks from the map to create your route
+              </Typography>
+            </Box>
+          ) : (
+            <List sx={{ width: "100%" }}>
+              {/* landmark items (your existing map rendering code) */}
+              {landmarks
+                .slice()
+                .sort(
+                  (a, b) =>
+                    (a.distance_from_start || 0) - (b.distance_from_start || 0)
+                )
+                .map((landmark, index) => {
+                  const isFirstLandmark = index === 0;
+                  const isLastLandmark = index === landmarks.length - 1;
+
+                  return (
+                    <Box key={`${landmark.id}-${index}`}>
+                      <ListItem
                         sx={{
                           display: "flex",
-                          alignItems: "center",
-                          gap: 2,
-                          mt: 0.5,
-                          flexWrap: "wrap",
+                          alignItems: "flex-start",
+                          py: { xs: 0.75, sm: 1 },
+                          px: { xs: 0.5, sm: 1 },
+                          backgroundColor: isFirstLandmark
+                            ? "#dbf1d9ff"
+                            : isLastLandmark
+                            ? "#ebcacaff"
+                            : index % 2 === 0
+                            ? "action.hover"
+                            : "background.paper",
+                          borderRadius: 1,
+                          gap: { xs: 0.75, sm: 1 },
                         }}
                       >
-                        {landmark.distance_from_start !== undefined && (
+                        <Chip
+                          label={index + 1}
+                          color="primary"
+                          size="small"
+                          sx={{
+                            minWidth: { xs: 24, sm: 28 },
+                            height: { xs: 24, sm: 28 },
+                            fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                            fontWeight: 600,
+                            mt: 0.5,
+                          }}
+                        />
+
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Box
                             sx={{
                               display: "flex",
-                              alignItems: "center",
-                              backgroundColor: "primary.light",
-                              color: "primary.contrastText",
-                              px: 1.5,
-                              py: 0.5,
-                              borderRadius: 1,
-                              fontSize: "0.75rem",
+                              flexDirection: { xs: "column", sm: "row" },
+                              justifyContent: "space-between",
+                              alignItems: { xs: "flex-start", sm: "center" },
+                              gap: { xs: 0.5, sm: 0 },
                             }}
                           >
-                            <DirectionsIcon
-                              sx={{ fontSize: "1rem", mr: 0.5 }}
-                            />
-                            {landmark.distance_from_start}m
-                          </Box>
-                        )}
+                            <Box sx={{ minWidth: 0, flex: 1 }}>
+                              <Typography
+                                variant="subtitle2"
+                                fontWeight={600}
+                                sx={{
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  fontSize: { xs: "0.8rem", sm: "0.875rem" },
+                                }}
+                              >
+                                {landmark.name}
+                              </Typography>
 
-                        <Box
-                          sx={{
-                            display: "flex",
-                            gap: 1.5,
-                            fontSize: "0.8rem",
-                            color: "text.secondary",
-                          }}
-                        >
-                          <Box sx={{ display: "flex", alignItems: "center" }}>
-                            <ArrowDownwardIcon
-                              sx={{
-                                fontSize: "1rem",
-                                mr: 0.5,
-                                color: "error.main",
-                              }}
-                            />
-                            <span>
-                              Arrive:{" "}
-                              {formatTimeForDisplayIST(
-                                landmark.arrivalTime.fullTime,
-                                index !== 0 // false for first, true for others
+                              {landmark.distance_from_start !== undefined && (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    mt: 0.5,
+                                    fontSize: { xs: "0.65rem", sm: "0.7rem" },
+                                    fontWeight: 600,
+                                    color: "primary.main",
+                                  }}
+                                >
+                                  <DirectionsIcon
+                                    sx={{
+                                      fontSize: { xs: "0.7rem", sm: "0.8rem" },
+                                      mr: 0.5,
+                                    }}
+                                  />
+                                  {landmark.distance_from_start >= 1000
+                                    ? `${Math.round(
+                                        landmark.distance_from_start / 1000
+                                      )}km`
+                                    : `${landmark.distance_from_start}m`}
+                                </Box>
                               )}
-                            </span>
-                          </Box>
-                          <Box sx={{ display: "flex", alignItems: "center" }}>
-                            <ArrowUpwardIcon
+                            </Box>
+
+                            <Box
                               sx={{
-                                fontSize: "1rem",
-                                mr: 0.5,
-                                color: "success.main",
+                                display: "flex",
+                                flexDirection: { xs: "column", sm: "row" },
+                                alignItems: { xs: "flex-start", sm: "center" },
+                                gap: { xs: 0.5, sm: 1 },
+                                ml: { xs: 0, sm: 2 },
+                                minWidth: { xs: "100%", sm: "auto" },
                               }}
-                            />
-                            <span>
-                              Depart:{" "}
-                              {formatTimeForDisplayIST(
-                                landmark.departureTime.fullTime,
-                                index !== 0 // false for first, true for others
-                              )}
-                            </span>
+                            >
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexDirection: { xs: "column", sm: "row" },
+                                  gap: { xs: 0.25, sm: 1 },
+                                  minWidth: { xs: "100%", sm: 200 },
+                                  justifyContent: "flex-end",
+                                }}
+                              >
+                                {/* Arrival Time - show for all except first */}
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    minWidth: { xs: "auto", sm: 100 },
+                                    visibility: isFirstLandmark
+                                      ? "hidden"
+                                      : "visible",
+                                    fontSize: { xs: "0.75rem", sm: "0.8rem" },
+                                    order: { xs: 1, sm: 0 },
+                                  }}
+                                >
+                                  <ArrowDownwardIcon
+                                    sx={{
+                                      fontSize: { xs: "0.7rem", sm: "0.8rem" },
+                                      mr: 0.5,
+                                      color: "error.main",
+                                    }}
+                                  />
+                                  <span>
+                                    Arr:{" "}
+                                    {formatTimeForDisplayIST(
+                                      landmark.arrivalTime.fullTime
+                                    )}
+                                  </span>
+                                </Box>
+
+                                {/* Departure Time - show for all except last */}
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    minWidth: { xs: "auto", sm: 100 },
+                                    visibility: isLastLandmark
+                                      ? "hidden"
+                                      : "visible",
+                                    fontSize: { xs: "0.75rem", sm: "0.8rem" },
+                                    order: { xs: 2, sm: 0 },
+                                  }}
+                                >
+                                  <ArrowUpwardIcon
+                                    sx={{
+                                      fontSize: { xs: "0.7rem", sm: "0.8rem" },
+                                      mr: 0.5,
+                                      color: "success.main",
+                                    }}
+                                  />
+                                  <span>
+                                    Dep:{" "}
+                                    {formatTimeForDisplayIST(
+                                      landmark.departureTime.fullTime
+                                    )}
+                                  </span>
+                                </Box>
+                              </Box>
+
+                              <IconButton
+                                onClick={() => onLandmarkRemove(landmark.id)}
+                                aria-label="delete"
+                                color="error"
+                                size="large"
+                                sx={{
+                                  width: { xs: 32, sm: 40 },
+                                  height: { xs: 32, sm: 40 },
+                                  fontSize: { xs: "1.2rem", sm: "1.5rem" },
+                                  alignSelf: { xs: "flex-end", sm: "center" },
+                                  order: { xs: 0, sm: 1 },
+                                }}
+                              >
+                                <DeleteIcon fontSize="inherit" />
+                              </IconButton>
+                            </Box>
                           </Box>
                         </Box>
-                      </Box>
+                      </ListItem>
+
+                      {index < landmarks.length - 1 && (
+                        <Divider
+                          component="li"
+                          sx={{
+                            borderLeftWidth: 2,
+                            borderLeftStyle: "dashed",
+                            borderColor: "divider",
+                            height: 16,
+                            ml: { xs: 2.5, sm: 3.5 },
+                            listStyle: "none",
+                          }}
+                        />
+                      )}
                     </Box>
+                  );
+                })}
+            </List>
+          )}
+        </Box>
 
-                    <IconButton
-                      onClick={() => onLandmarkRemove(landmark.id)}
-                      aria-label="delete"
-                      color="error"
-                      size="small"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </ListItem>
-
-                  {index < landmarks.length - 1 && (
-                    <Divider
-                      component="li"
-                      sx={{
-                        borderLeftWidth: 2,
-                        borderLeftStyle: "dashed",
-                        borderColor: "divider",
-                        height: 20,
-                        ml: 4.5,
-                        listStyle: "none",
-                      }}
-                    />
-                  )}
-                </Box>
-              ))}
-          </List>
-        )}
-
-        <Box sx={{ mt: "auto", pt: 2 }}>
+        {/* Sticky Footer */}
+        <Box
+          sx={{
+            flexShrink: 0,
+            borderTop: "1px solid",
+            borderColor: "divider",
+            p: 2,
+            backgroundColor: "background.paper",
+            position: "sticky",
+            bottom: 0,
+          }}
+        >
           <Stack direction="row" spacing={2} justifyContent="flex-end">
             <Button variant="outlined" onClick={onCancel}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              disabled={landmarks.length === 0 || isSubmitting}
+
+            <Tooltip
+              title={
+                landmarks.length < 2
+                  ? "At least 2 landmarks are required to create a route"
+                  : ""
+              }
+              arrow
             >
-              {isSubmitting ? "Saving..." : "Save Route"}
-            </Button>
+              <span>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  disabled={landmarks.length < 2 || isSubmitting}
+                >
+                  {isSubmitting ? "Saving..." : "Save Route"}
+                </Button>
+              </span>
+            </Tooltip>
           </Stack>
         </Box>
       </Box>

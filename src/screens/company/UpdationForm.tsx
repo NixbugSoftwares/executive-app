@@ -45,7 +45,7 @@ const statusOptions = [
 
 const typeOptions = [
   { label: "Other", value: 1 },
-  { label: "Privet", value: 2 },
+  { label: "Private", value: 2 },
   { label: "Government", value: 3 },
 ];
 
@@ -71,11 +71,9 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
     formState: { errors },
   } = useForm<ICompanyFormInputs>();
 
-
-
   // Fetch company data
   useEffect(() => {
-    dispatch(companyListApi({limit:1, offset: 0, id: companyId}))
+    dispatch(companyListApi({ limit: 1, offset: 0, id: companyId }))
       .unwrap()
       .then(async (res: { data: any[] }) => {
         const items = res.data;
@@ -118,8 +116,10 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
           });
         }
       })
-      .catch((err: any) => {
-        showErrorToast(  err || "Failed to fetch company data. Please try again.");
+      .catch((error: any) => {
+        showErrorToast(
+          error.message || "Failed to fetch company data. Please try again."
+        );
       });
   }, [companyId, dispatch, reset]);
 
@@ -168,7 +168,7 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
       handleCloseDetailCard();
       onClose();
     } catch (error: any) {
-      showErrorToast( error || "Error updating company:" );
+      showErrorToast(error.message || "Error updating company:");
     } finally {
       setLoading(false);
     }
@@ -183,7 +183,7 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
       <CssBaseline />
       <Box
         sx={{
-          marginTop: 8,
+          marginTop: 2,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -204,20 +204,71 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
             required
             fullWidth
             label="Name"
-            {...register("name")}
+            {...register("name", {
+              required: "Name is required",
+
+              maxLength: {
+                value: 32,
+                message: "Name cannot exceed 32 characters",
+              },
+              validate: {
+                noLeadingSpace: (value) =>
+                  value.trimStart() === value || "No spaces at beginning",
+                noTrailingSpace: (value) =>
+                  value.trimEnd() === value || "No spaces at end",
+                noConsecutiveSpaces: (value) =>
+                  !value.includes("  ") || "No consecutive spaces allowed",
+                notEmpty: (value) =>
+                  value.trim().length > 0 || "Cannot be just spaces",
+              },
+            })}
             error={!!errors.name}
             helperText={errors.name?.message}
             size="small"
+            onChange={(e) => {
+              // Prevent consecutive spaces while typing
+              let value = e.target.value.replace(/\s{2,}/g, " ");
+              // Prevent leading space
+              if (value.startsWith(" ")) value = value.trimStart();
+              e.target.value = value;
+            }}
           />
           <TextField
             margin="normal"
             required
             fullWidth
             label="Address"
-            {...register("address")}
+            {...register("address", {
+              required: "Address is required",
+              minLength: {
+                value: 3,
+                message: "Address must be at least 3 characters",
+              },
+              maxLength: {
+                value: 512,
+                message: "Address cannot exceed 512 characters",
+              },
+              validate: {
+                noLeadingSpace: (value) =>
+                  value.trimStart() === value || "No spaces at beginning",
+                noTrailingSpace: (value) =>
+                  value.trimEnd() === value || "No spaces at end",
+                noConsecutiveSpaces: (value) =>
+                  !value.includes("  ") || "No consecutive spaces allowed",
+                notEmpty: (value) =>
+                  value.trim().length > 0 || "Cannot be just spaces",
+              },
+            })}
             error={!!errors.address}
             helperText={errors.address?.message}
             size="small"
+            onChange={(e) => {
+              let value = e.target.value.replace(/\s{2,}/g, " ");
+              if (value.startsWith(" ")) value = value.trimStart();
+              e.target.value = value;
+            }}
+            multiline
+            rows={4}
           />
           <TextField
             margin="normal"
@@ -234,11 +285,36 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
             margin="normal"
             required
             fullWidth
-            label="contact person"
-            {...register("contact_person")}
+            label="Contact person"
+            {...register("contact_person", {
+              required: "Contact person is required",
+              minLength: {
+                value: 4,
+                message: "Contact person must be at least 4 characters",
+              },
+              maxLength: {
+                value: 64,
+                message: "Contact person cannot exceed 32 characters",
+              },
+              validate: {
+                noLeadingSpace: (value) =>
+                  value.trimStart() === value || "No spaces at beginning",
+                noTrailingSpace: (value) =>
+                  value.trimEnd() === value || "No spaces at end",
+                noConsecutiveSpaces: (value) =>
+                  !value.includes("  ") || "No consecutive spaces allowed",
+                notEmpty: (value) =>
+                  value.trim().length > 0 || "Cannot be just spaces",
+              },
+            })}
             error={!!errors.contact_person}
             helperText={errors.contact_person?.message}
             size="small"
+            onChange={(e) => {
+              let value = e.target.value.replace(/\s{2,}/g, " ");
+              if (value.startsWith(" ")) value = value.trimStart();
+              e.target.value = value;
+            }}
           />
           <Controller
             name="phone_number"
@@ -246,25 +322,18 @@ const CompanyUpdateForm: React.FC<ICompanyUpdateFormProps> = ({
             render={({ field }) => (
               <TextField
                 margin="normal"
-                required
                 fullWidth
                 label="Phone Number"
-                placeholder="+911234567890"
+                placeholder="eg:+911234567890"
                 size="small"
                 error={!!errors.phone_number}
                 helperText={errors.phone_number?.message}
                 value={field.value ? `+91${field.value}` : ""}
                 onChange={(e) => {
-                  let value = e.target.value.replace(/^\+91/, "");
-                  value = value.replace(/\D/g, "");
+                  let value = e.target.value.replace(/\D/g, "");
+                  if (value.startsWith("91")) value = value.slice(2);
                   if (value.length > 10) value = value.slice(0, 10);
-                  field.onChange(value || undefined);
-                }}
-                onFocus={() => {
-                  if (!field.value) field.onChange("");
-                }}
-                onBlur={() => {
-                  if (field.value === "") field.onChange(undefined);
+                  field.onChange(value || "");
                 }}
               />
             )}

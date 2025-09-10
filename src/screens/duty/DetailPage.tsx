@@ -21,13 +21,16 @@ import { useAppDispatch } from "../../store/Hooks";
 import { dutyDeleteApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import DutyUpdateForm from "./UpdationForm";
-import { showErrorToast, showSuccessToast } from "../../common/toastMessageHelper";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../common/toastMessageHelper";
 import { RootState } from "../../store/Store";
 import { useSelector } from "react-redux";
 import moment from "moment";
 import { Duty } from "../../types/type";
 interface DutyCardProps {
-  duty: Duty
+  duty: Duty;
   refreshList: (value: any) => void;
   onUpdate: () => void;
   onDelete: (id: number) => void;
@@ -57,6 +60,11 @@ const statusMap: Record<string, { label: string; color: string; bg: string }> =
       color: "#616161",
       bg: "rgba(158, 158, 158, 0.12)",
     }, // Grey
+    Discarded: {
+      label: "Discarded",
+      color: "#616161",
+      bg: "rgba(158, 158, 158, 0.12)",
+    },
   };
 const DutyDetailsCard: React.FC<DutyCardProps> = ({
   duty,
@@ -64,21 +72,17 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
   onDelete,
   onBack,
   onCloseDetailCard,
-  companyId,
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const dispatch = useAppDispatch();
   console.log("duty()()()()()()(()()", duty);
-const canUpdateDuty = useSelector((state: RootState) =>
-    state.app.permissions.includes("create_duty")
+  const canUpdateDuty = useSelector((state: RootState) =>
+    state.app.permissions.includes("update_duty")
   );
   const canDeleteDuty = useSelector((state: RootState) =>
-    state.app.permissions.includes("create_duty")
+    state.app.permissions.includes("delete_duty")
   );
-  const deleteDutyPermission =
-    canDeleteDuty && (duty.status === "Assigned" || duty.status === "Finished");
-
 
   const handleBusDelete = async () => {
     if (!duty.id) {
@@ -99,7 +103,7 @@ const canUpdateDuty = useSelector((state: RootState) =>
       refreshList("refresh");
     } catch (error: any) {
       console.error("Delete error:", error);
-      showErrorToast(error || "Failed to delete duty. Please try again.");
+      showErrorToast(error.message || "Failed to delete duty. Please try again.");
     }
   };
 
@@ -167,25 +171,25 @@ const canUpdateDuty = useSelector((state: RootState) =>
               />
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-            <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
+              <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
 
-            <Typography variant="body2">
-              <b> Created at:</b>
-              {moment(duty.created_on).local().format("DD-MM-YYYY, hh:mm A")}
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-            <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
+              <Typography variant="body2">
+                <b> Created at:</b>
+                {moment(duty.created_on).local().format("DD-MM-YYYY, hh:mm A")}
+              </Typography>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+              <DateRangeOutlinedIcon color="action" sx={{ mr: 1 }} />
 
-            <Typography variant="body2">
-              <b> Last updated at:</b>
-              {moment(duty?.updated_on).isValid()
-                ? moment(duty.updated_on)
-                    .local()
-                    .format("DD-MM-YYYY, hh:mm A")
-                : "Not updated yet"}
-            </Typography>
-          </Box>
+              <Typography variant="body2">
+                <b> Last updated at:</b>
+                {moment(duty?.updated_on).isValid()
+                  ? moment(duty.updated_on)
+                      .local()
+                      .format("DD-MM-YYYY, hh:mm A")
+                  : "Not updated yet"}
+              </Typography>
+            </Box>
           </Box>
         </Card>
 
@@ -208,21 +212,7 @@ const canUpdateDuty = useSelector((state: RootState) =>
               Back
             </Button>
 
-            {/* Update Button with Tooltip */}
-            <Tooltip
-              title={
-                !canUpdateDuty
-                  ? "You don't have permission, contact the admin"
-                  : ""
-              }
-              arrow
-              placement="top-start"
-            >
-              <span
-                style={{
-                  cursor: !canUpdateDuty ? "not-allowed" : "default",
-                }}
-              >
+           {canUpdateDuty&&(
                 <Button
                   variant="contained"
                   color="success"
@@ -237,24 +227,30 @@ const canUpdateDuty = useSelector((state: RootState) =>
                   }}
                 >
                   Update
-                </Button>
-              </span>
-            </Tooltip>
+                </Button>)}
 
             {/* Delete Button with Tooltip */}
+            {canDeleteDuty&&(
             <Tooltip
-              title={
-                !deleteDutyPermission
-                  ? duty.status === "Started" || duty.status === "Terminated"
-                    ? "Duty cannot be deleted after it has started or terminated"
-                    : "You don't have permission, contact the admin"
-                  : ""
+              title={ duty.status === "Started"
+                  ? "You can't delete a started duty"
+                  : duty.status === "Ended"
+                  ? "You can't delete an ended duty"
+                  : duty.status === "Terminated"
+                  ? "You can't delete a terminated duty"
+                  : "Click to delete this duty"
               }
               arrow
               placement="top-start"
             >
               <span
-                style={{ cursor: !deleteDutyPermission ? "not-allowed" : "pointer" }}
+                style={{
+                  cursor:
+                    !canDeleteDuty ||
+                    ["Started", "Ended", "Terminated"].includes(duty.status)
+                      ? "not-allowed"
+                      : "pointer",
+                }}
               >
                 <Button
                   variant="contained"
@@ -262,7 +258,10 @@ const canUpdateDuty = useSelector((state: RootState) =>
                   size="small"
                   onClick={() => setDeleteConfirmOpen(true)}
                   startIcon={<DeleteIcon />}
-                  disabled={!deleteDutyPermission}
+                  disabled={
+                    !canDeleteDuty ||
+                    ["Started", "Ended", "Terminated"].includes(duty.status)
+                  }
                   sx={{
                     "&.Mui-disabled": {
                       backgroundColor: "#e57373 !important",
@@ -273,7 +272,7 @@ const canUpdateDuty = useSelector((state: RootState) =>
                   Delete
                 </Button>
               </span>
-            </Tooltip>
+            </Tooltip>)}
           </Box>
         </CardActions>
       </Card>
@@ -313,12 +312,10 @@ const canUpdateDuty = useSelector((state: RootState) =>
               id: duty.id,
               status: duty.status,
               type: duty.type,
-              service_id: duty.service_id,
             }}
             refreshList={(value: any) => refreshList(value)}
             onClose={() => setUpdateFormOpen(false)}
             onCloseDetailCard={onCloseDetailCard}
-            companyId={companyId}
           />
         </DialogContent>
 

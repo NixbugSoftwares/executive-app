@@ -6,23 +6,26 @@ import {
   Typography,
   TextField,
   MenuItem,
-  Grid,
   Divider,
   IconButton,
   Tooltip,
   FormHelperText,
-  Card,
-  CardContent,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Alert,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Collapse,
+  Stack,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CodeEditor from "./textEditor";
 import {
@@ -87,11 +90,6 @@ const FareSkeletonPage = ({
 
   // Initialize with empty string, will be set in useEffect
   const [fareFunction, setFareFunction] = useState("");
-  const [distance, setDistance] = useState<number | "">("");
-  const [calculationResults, setCalculationResults] = useState<
-    Record<string, number>
-  >({});
-  const [showCalculation, setShowCalculation] = useState(false);
   const [output, setOutput] = useState("");
   const [_fareToDelete, setFareToDelete] = useState<number | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -101,6 +99,15 @@ const FareSkeletonPage = ({
   const canDeleteFare = useSelector((state: RootState) =>
     state.app.permissions.includes("delete_fare")
   );
+
+  const [distanceKm, setDistanceKm] = useState(5);
+  const [fareResults, setFareResults] = useState<{
+    distance: number;
+    results: { type: string; fare: number }[];
+    rangeResults?: { distance: string; fares: Record<string, number> }[];
+  } | null>(null);
+  const [showOutput, setShowOutput] = useState(false);
+
   useEffect(() => {
     if (fareToEdit) {
       setFareFunction(fareToEdit.function);
@@ -137,7 +144,6 @@ const FareSkeletonPage = ({
     control,
     handleSubmit,
     formState: { errors },
-    watch,
   } = useForm<FareInputs>({
     defaultValues: fareToEdit
       ? {
@@ -165,63 +171,74 @@ const FareSkeletonPage = ({
     control,
     name: "attributes.ticket_types",
   });
-
-  const attributes = watch("attributes");
-
   const handleRunCode = () => {
+    setShowOutput(true); // Show output when running code
     let logs: any[] = [];
     const customConsole = {
       log: (...args: any[]) => logs.push(args.join(" ")),
     };
 
     try {
+      // Check function name
+      if (!/function\s+getFare\s*\(/.test(fareFunction)) {
+        setOutput("Error: Function name must be 'getFare'");
+        setFareResults(null);
+        return;
+      }
+
       // eslint-disable-next-line no-new-func
-      const func = new Function("console", fareFunction);
-      const result = func(customConsole);
+      const func = new Function("console", `${fareFunction}; return getFare;`);
+      const getFare = func(customConsole);
 
-      let outputText = "";
-      if (logs.length > 0) {
-        outputText += logs.join("\n") + "\n";
+      if (typeof getFare !== "function") {
+        setOutput("Error: 'getFare' is not a valid function");
+        setFareResults(null);
+        return;
       }
-      if (result !== undefined) {
-        outputText += `Result: ${JSON.stringify(result)}`;
-      }
-      setOutput(outputText.trim() || "No output");
-    } catch (error) {
-      setOutput(
-        `Error: ${error instanceof Error ? error.message : "Invalid code"}`
-      );
-    }
-  };
 
-  const handleCalculateFare = (currentDistance = distance) => {
-    if (currentDistance === "") {
-      setCalculationResults({});
-      return;
-    }
+      // Get current ticket types from form
+      const currentTicketTypes = control._formValues.attributes.ticket_types;
 
-    try {
-      const func = new Function(
-        "ticket_type",
-        "distance",
-        "extra",
-        `${fareFunction}\nreturn getFare(ticket_type, distance, extra);`
-      );
-
-      const results: Record<string, number> = {};
-      attributes.ticket_types.forEach((ticket) => {
-        if (ticket.name) {
-          results[ticket.name] = func(ticket.name, currentDistance, {});
+      // Test the fare function for the specified distance
+      const singleResults = currentTicketTypes.map((ticket: TicketType) => {
+        try {
+          const fare = getFare(ticket.name, distanceKm * 1000, {}); // distance in meters
+          return { type: ticket.name, fare };
+        } catch (err: any) {
+          return { type: ticket.name, fare: -1 };
         }
       });
 
-      setCalculationResults(results);
+      // Test the fare function for all distances up to the specified km
+      const rangeResults = [];
+      for (let km = 1; km <= distanceKm; km++) {
+        const rangeFares: Record<string, number> = {};
+        currentTicketTypes.forEach((ticket: TicketType) => {
+          try {
+            rangeFares[ticket.name] = getFare(ticket.name, km * 1000, {});
+          } catch (err) {
+            rangeFares[ticket.name] = -1;
+          }
+        });
+        rangeResults.push({
+          distance: km === 1 ? "1 km" : `${km - 1}-${km} km`,
+          fares: rangeFares,
+        });
+      }
+
+      setFareResults({
+        distance: distanceKm,
+        results: singleResults,
+        rangeResults,
+      });
+
+      let outputText = logs.length > 0 ? logs.join("\n") + "\n" : "";
+      outputText += "Fare calculation completed.";
+      setOutput(outputText);
     } catch (error) {
-      setCalculationResults({});
+      setFareResults(null);
       setOutput(
-        `Calculation error: ${
-          error instanceof Error ? error.message : "Invalid function"
-        }`
+        `Error: ${error instanceof Error ? error.message : "Invalid code"}`
       );
     }
   };
@@ -240,7 +257,7 @@ const FareSkeletonPage = ({
       showSuccessToast("Fare created successfully");
     } catch (error: any) {
       console.error("Error creating fare:", error);
-      showErrorToast(error || "Error creating fare");
+      showErrorToast(error.message || "Error creating fare");
     } finally {
       setLoading(false);
     }
@@ -263,7 +280,7 @@ const FareSkeletonPage = ({
       showSuccessToast("Fare updated successfully");
     } catch (error: any) {
       console.error("Error updating fare:", error);
-      showErrorToast(error || "Error updating fare");
+      showErrorToast(error.message || "Error updating fare");
     } finally {
       setLoading(false);
     }
@@ -286,19 +303,22 @@ const FareSkeletonPage = ({
       showSuccessToast("Fare deleted successfully");
     } catch (error: any) {
       console.error("Error deleting fare:", error);
-      showErrorToast(error || "Error deleting fare");
+      showErrorToast(error.message || "Error deleting fare");
     } finally {
       setLoading(false);
     }
   };
-
+  const [showEditor, setShowEditor] = useState(false);
   return (
     <Box
       sx={{
         display: "flex",
+        flexDirection: { xs: "column", sm: "row" }, // Stack on mobile, side-by-side on larger screens
         width: "100%",
         height: "100vh",
         overflow: "hidden",
+        maxWidth: { sm: "1200px" }, // Limit max width on larger screens
+        margin: "0 auto",
       }}
     >
       {/* Left Side - Form */}
@@ -306,14 +326,17 @@ const FareSkeletonPage = ({
         component="form"
         onSubmit={handleSubmit(handleFareCreation)}
         sx={{
-          flex: "0 0 50%",
-          maxWidth: "50%",
-          height: "100%",
+          flex: { xs: "1", sm: "0 0 40%" },
+          maxWidth: { xs: "100%", sm: "40%" },
+          height: { xs: "100%", sm: "100vh" },
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          borderRight: "1px solid #e0e0e0",
-          p: 3,
+          p: { xs: 2, sm: 3 },
+          zIndex: 1,
+          boxShadow: "none",
+          borderRadius: 0,
+          border: "none",
         }}
       >
         <Box sx={{ flex: 1, overflowY: "auto", mb: 2 }}>
@@ -337,6 +360,14 @@ const FareSkeletonPage = ({
                 value: 32,
                 message: "Fare name must be at most 32 characters",
               },
+              validate: {
+                notEmpty: (value) =>
+                  value.trim().length > 0 || "Fare name cannot be empty",
+                noLeadingTrailingSpace: (value) =>
+                  value === value.trim() || "No spaces at beginning or end",
+                noConsecutiveSpaces: (value) =>
+                  !value.includes("  ") || "No consecutive spaces allowed",
+              },
             }}
             render={({ field }) => (
               <TextField
@@ -344,69 +375,83 @@ const FareSkeletonPage = ({
                 {...field}
                 label="Fare Name"
                 fullWidth
-                sx={{ mb: 3 }}
                 error={!!errors.name}
                 helperText={errors.name?.message}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\s{2,}/g, " ");
+                  field.onChange(value);
+                }}
+                sx={{ mb: 3 }}
               />
             )}
           />
 
-          <Typography variant="h6" gutterBottom>
+          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
             Attributes
           </Typography>
 
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={6}>
-              <Controller
-                name="attributes.currency_type"
-                control={control}
-                render={({ field }) => (
-                  <TextField {...field} select label="Currency Type" fullWidth>
-                    {["INR"].map((currency) => (
-                      <MenuItem key={currency} value={currency}>
-                        {currency}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                )}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <Controller
-                name="attributes.distance_unit"
-                control={control}
-                render={({ field }) => (
-                  <TextField {...field} select label="Distance Unit" fullWidth>
-                    {["m"].map((unit) => (
-                      <MenuItem key={unit} value={unit}>
-                        {unit}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                )}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Controller
-                name="attributes.df_version"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="DF Version"
-                    type="number"
-                    fullWidth
-                    onChange={(e) =>
-                      field.onChange(parseInt(e.target.value) || 0)
-                    }
-                  />
-                )}
-              />
-            </Grid>
-          </Grid>
+          <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+            <Controller
+              name="attributes.currency_type"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  select
+                  label="Currency"
+                  fullWidth
+                  size="small"
+                >
+                  {["INR"].map((currency) => (
+                    <MenuItem key={currency} value={currency}>
+                      {currency}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
 
-          <Divider sx={{ my: 2 }} />
+            <Controller
+              name="attributes.distance_unit"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  select
+                  label="Unit"
+                  fullWidth
+                  size="small"
+                >
+                  {["m"].map((unit) => (
+                    <MenuItem key={unit} value={unit}>
+                      {unit}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
 
+            <Controller
+              name="attributes.df_version"
+              control={control}
+              defaultValue={1}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Version"
+                  type="number"
+                  fullWidth
+                  size="small"
+                  value={1}
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                />
+              )}
+            />
+          </Stack>
+
+          <Divider sx={{ my: 1 }} />
           <Box
             sx={{
               display: "flex",
@@ -434,50 +479,53 @@ const FareSkeletonPage = ({
           </Box>
 
           {fields.map((field, index) => (
-            <Grid container spacing={2} key={field.id} sx={{ mb: 2 }}>
-              <Grid item xs={5}>
-                <Controller
-                  name={`attributes.ticket_types.${index}.name`}
-                  control={control}
-                  rules={{ required: "Name is required" }}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Ticket Type Name"
-                      fullWidth
-                      error={!!errors.attributes?.ticket_types?.[index]?.name}
-                      helperText={
-                        errors.attributes?.ticket_types?.[index]?.name?.message
-                      }
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={5}>
-                <Controller
-                  name={`attributes.ticket_types.${index}.id`}
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="ID"
-                      type="number"
-                      fullWidth
-                      onChange={(e) =>
-                        field.onChange(parseInt(e.target.value) || 0)
-                      }
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={2} sx={{ display: "flex", alignItems: "center" }}>
-                <Tooltip title="Remove ticket type">
-                  <IconButton onClick={() => remove(index)}>
-                    <DeleteIcon color="error" />
-                  </IconButton>
-                </Tooltip>
-              </Grid>
-            </Grid>
+            <Stack
+              key={field.id}
+              direction="row"
+              spacing={2}
+              sx={{ mb: 2 }}
+              alignItems="center"
+            >
+              <Controller
+                name={`attributes.ticket_types.${index}.name`}
+                control={control}
+                rules={{ required: "Name is required" }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Ticket Type Name"
+                    fullWidth
+                    error={!!errors.attributes?.ticket_types?.[index]?.name}
+                    helperText={
+                      errors.attributes?.ticket_types?.[index]?.name?.message
+                    }
+                    sx={{ flex: 5 }}
+                  />
+                )}
+              />
+              <Controller
+                name={`attributes.ticket_types.${index}.id`}
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="ID"
+                    type="number"
+                    fullWidth
+                    onChange={(e) =>
+                      field.onChange(parseInt(e.target.value) || 0)
+                    }
+                    sx={{ flex: 2 }}
+                    InputProps={{ inputProps: { min: 1 } }}
+                  />
+                )}
+              />
+              <Tooltip title="Remove ticket type">
+                <IconButton onClick={() => remove(index)}>
+                  <DeleteIcon color="error" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
           ))}
 
           {errors.attributes?.ticket_types && (
@@ -485,151 +533,66 @@ const FareSkeletonPage = ({
               At least one valid ticket type is required
             </FormHelperText>
           )}
-          {/* calculate fare */}
-          {showCalculation && (
-            <Card variant="outlined" sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Fare Calculation
-                </Typography>
-                <TextField
-                  label={`Distance (${attributes.distance_unit})`}
-                  type="number"
-                  fullWidth
-                  value={distance}
-                  onChange={(e) => {
-                    const newValue =
-                      e.target.value === "" ? "" : Number(e.target.value);
-                    setDistance(newValue);
-                    if (newValue !== "") {
-                      handleCalculateFare(newValue);
-                    } else {
-                      setCalculationResults({});
-                    }
-                  }}
-                  sx={{ mb: 2 }}
-                />
-                {Object.keys(calculationResults).length > 0 && (
-                  <Box>
-                    {Object.entries(calculationResults).map(
-                      ([ticketType, result]) => (
-                        <Box
-                          key={ticketType}
-                          sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            mb: 1,
-                          }}
-                        >
-                          <Typography>{ticketType}:</Typography>
-                          <Typography fontWeight="bold">
-                            {attributes.currency_type} {result}
-                          </Typography>
-                        </Box>
-                      )
-                    )}
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
-          )}
         </Box>
 
-        {/* Buttons  */}
         <Box
           sx={{
-            mt: "auto",
+            mt: { xs: 0, sm: "auto" },
             display: "flex",
-            justifyContent: "flex-end",
-            gap: 2,
+            justifyContent: "left",
+            gap: 1,
             pt: 2,
+            flexWrap: "wrap",
+            position: { xs: "sticky", sm: "static" }, // Sticky on mobile
+            bottom: { xs: 0, sm: "auto" }, // Stick to bottom on mobile
+            bgcolor: { xs: "background.paper", sm: "inherit" }, // Background for sticky
+            zIndex: { xs: 10, sm: "auto" }, // Ensure above other content
+            pb: { xs: 2, sm: 0 }, // Padding bottom for mobile
           }}
         >
-          <Button variant="outlined" onClick={onCancel} disabled={loading}>
-            Cancel
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => {
-              setShowCalculation(!showCalculation);
-              if (!showCalculation && distance === "") {
-                setDistance(1000); // Default test distance
-                handleCalculateFare(1000);
-              }
-            }}
-          >
-            {showCalculation ? "Hide Calculation" : "Calculate Fare"}
-          </Button>
-
+          {/* View Mode */}
           {mode === "view" ? (
             <>
-              <Tooltip
-                title={
-                  !canDeleteFare
-                    ? "You don't have permission, contact the admin"
-                    : ""
-                }
-                arrow
-                placement="top-start"
-              >
-                <span
-                  style={{
-                    cursor: !canDeleteFare ? "not-allowed" : "default",
+              {canDeleteFare && (
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteFare(fareToEdit!.id);
+                  }}
+                  sx={{
+                    "&.Mui-disabled": {
+                      backgroundColor: "#e57373 !important",
+                      color: "#ffffff99",
+                    },
+                    fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                    py: { xs: 0.5, sm: 1 },
+                    px: { xs: 1, sm: 2 },
                   }}
                 >
-                  <Button
-                    variant="contained"
-                    color="error"
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteFare(fareToEdit!.id);
-                    }}
-                    startIcon={<DeleteIcon />}
-                    disabled={!canDeleteFare}
-                    sx={{
-                      "&.Mui-disabled": {
-                        backgroundColor: "#e57373 !important",
-                        color: "#ffffff99",
-                      },
-                    }}
-                  >
-                    Delete
-                  </Button>
-                </span>
-              </Tooltip>
-              <Tooltip
-                title={
-                  !canUpdateFare
-                    ? "You don't have permission, contact the admin"
-                    : ""
-                }
-                arrow
-                placement="top-start"
-              >
-                <span
-                  style={{
-                    cursor: !canUpdateFare ? "not-allowed" : "default",
+                  Delete
+                </Button>
+              )}
+
+              {canUpdateFare && (
+                <Button
+                  variant="contained"
+                  color="success"
+                  onClick={handleSubmit(handleFareUpdate)}
+                  sx={{
+                    "&.Mui-disabled": {
+                      backgroundColor: "#81c784 !important",
+                      color: "#ffffff99",
+                    },
+                    fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                    py: { xs: 0.5, sm: 1 },
+                    px: { xs: 1, sm: 2 },
                   }}
                 >
-                  <Button
-                    variant="contained"
-                    color="success"
-                    size="small"
-                    onClick={handleSubmit(handleFareUpdate)}
-                    startIcon={<EditIcon />}
-                    disabled={!canUpdateFare}
-                    sx={{
-                      "&.Mui-disabled": {
-                        backgroundColor: "#81c784 !important",
-                        color: "#ffffff99",
-                      },
-                    }}
-                  >
-                    Update
-                  </Button>
-                </span>
-              </Tooltip>
+                  Update
+                </Button>
+              )}
             </>
           ) : (
             <Button
@@ -637,22 +600,56 @@ const FareSkeletonPage = ({
               variant="contained"
               onClick={handleSubmit(handleFareCreation)}
               disabled={loading}
+              sx={{
+                fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                py: { xs: 0.5, sm: 1 },
+                px: { xs: 1, sm: 2 },
+                backgroundColor: "darkblue",
+              }}
             >
               {loading ? "Saving..." : "Save Fare"}
             </Button>
           )}
+
+          {/* View Editor (Mobile Only) */}
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={() => setShowEditor(true)}
+            sx={{
+              display: { xs: "block", sm: "none" },
+              ml: "auto",
+              fontSize: { xs: "0.7rem", sm: "0.875rem" },
+              py: { xs: 0.5, sm: 1 },
+              px: { xs: 1, sm: 2 },
+            }}
+          >
+            Function
+          </Button>
         </Box>
       </Paper>
 
-      {/*  Editor */}
+      {/* Editor - Overlay on mobile, side panel on larger screens */}
       <Paper
         sx={{
-          flex: "0 0 50%",
-          maxWidth: "50%",
-          height: "100%",
-          display: "flex",
+          flex: { xs: "none", sm: "0 0 60%" },
+          maxWidth: { xs: "100%", sm: "60%" },
+          height: { xs: "100vh", sm: "100%" },
+          display: {
+            xs: showEditor ? "flex" : "none", // Show only when toggled on mobile
+            sm: "flex",
+          },
           flexDirection: "column",
           overflow: "hidden",
+          position: { xs: "fixed", sm: "static" }, // Overlay on mobile
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 2,
+          bgcolor: "background.paper",
+          boxShadow: "none",
+          borderRadius: 0,
+          border: "none",
         }}
       >
         <Box
@@ -664,10 +661,30 @@ const FareSkeletonPage = ({
             borderBottom: "1px solid #e0e0e0",
           }}
         >
-          <Typography variant="h6">Fare Function</Typography>
-          <Button variant="contained" onClick={handleRunCode}>
-            Run Code
-          </Button>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <IconButton
+              onClick={() => setShowEditor(false)}
+              sx={{ display: { xs: "block", sm: "none" }, ml: 2 }} // Back button only on mobile
+            >
+              <ArrowBackIcon />
+            </IconButton>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <TextField
+              label="Distance (km)"
+              type="number"
+              size="small"
+              value={distanceKm}
+              onChange={(e) =>
+                setDistanceKm(Math.max(1, Number(e.target.value)))
+              }
+              sx={{ width: 120 }}
+              inputProps={{ min: 1 }}
+            />
+            <Button variant="contained" onClick={handleRunCode}>
+              Calculate
+            </Button>
+          </Box>
         </Box>
 
         <Box sx={{ flex: 1, overflow: "hidden" }}>
@@ -677,35 +694,132 @@ const FareSkeletonPage = ({
             onChange={(value) => setFareFunction(value || "")}
           />
         </Box>
-
-        <Box
-          sx={{
-            height: "200px",
-            p: 2,
-            overflow: "auto",
-            borderTop: "1px solid #e0e0e0",
-          }}
-        >
-          <Alert severity="info">
-            <Typography variant="body2">
-              Use console.log to print output from your function.
-            </Typography>
-          </Alert>
-          <Typography variant="subtitle1" gutterBottom>
-            Output:
-          </Typography>
-          <Paper
+        <Collapse in={showOutput}>
+          <Box
             sx={{
+              height: "300px",
               p: 2,
-              bgcolor: "#f5f5f5",
-              height: "calc(100% - 40px)",
               overflow: "auto",
+              borderTop: "1px solid #e0e0e0",
             }}
           >
-            <pre>{output}</pre>
-          </Paper>
-        </Box>
+            <Paper
+              sx={{
+                p: 2,
+                bgcolor: "#f5f5f5",
+                height: "100%",
+                overflow: "auto",
+              }}
+            >
+              <Box
+                sx={{
+                  mb: 2,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Typography variant="subtitle1" gutterBottom sx={{ mb: 0 }}>
+                  Console Output:
+                </Typography>
+                <IconButton
+                  onClick={() => setShowOutput(false)}
+                  sx={{ color: "red" }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+              <Box
+                component="pre"
+                sx={{
+                  p: 1,
+                  bgcolor: "#fff",
+                  borderRadius: 1,
+                  maxHeight: 100,
+                  overflow: "auto",
+                }}
+              >
+                {output || "No output yet"}
+              </Box>
+
+              {fareResults && (
+                <Box>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Fare Calculation Results:
+                  </Typography>
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      For {fareResults.distance} km:
+                    </Typography>
+                    <Table size="small" sx={{ mb: 2 }}>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Ticket Type</TableCell>
+                          <TableCell align="right">Fare</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {fareResults.results.map((r) => (
+                          <TableRow key={r.type}>
+                            <TableCell>{r.type}</TableCell>
+                            <TableCell align="right">
+                              {r.fare === -1 ? (
+                                <Typography color="error">Error</Typography>
+                              ) : (
+                                `${r.fare} ${control._formValues.attributes.currency_type}`
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      Fare breakdown by distance:
+                    </Typography>
+                    <Box sx={{ maxHeight: 200, overflow: "auto" }}>
+                      <Table size="small" stickyHeader>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Distance</TableCell>
+                            {control._formValues.attributes.ticket_types.map(
+                              (ticket: TicketType) => (
+                                <TableCell key={ticket.id} align="right">
+                                  {ticket.name}
+                                </TableCell>
+                              )
+                            )}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {fareResults.rangeResults?.map((row) => (
+                            <TableRow key={row.distance}>
+                              <TableCell>{row.distance}</TableCell>
+                              {control._formValues.attributes.ticket_types.map(
+                                (ticket: TicketType) => (
+                                  <TableCell key={ticket.id} align="right">
+                                    {row.fares[ticket.name] === -1 ? (
+                                      <Typography color="error">-</Typography>
+                                    ) : (
+                                      row.fares[ticket.name]
+                                    )}
+                                  </TableCell>
+                                )
+                              )}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+            </Paper>
+          </Box>
+        </Collapse>
       </Paper>
+
       <Dialog
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}

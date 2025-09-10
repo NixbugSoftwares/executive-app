@@ -1,6 +1,5 @@
 import axios from "axios";
 import localStorageHelper from "./localStorageHelper";
-import { showErrorToast } from "../common/toastMessageHelper";
 import commonHelper from "./commonHelper";
 
 export const base_URL = (window as any).__ENV__?.API_BASE_URL
@@ -87,32 +86,51 @@ const handleResponse = async (response: any) => {
 };
 
 //******************************************************  errorResponse handler  **************************************** */
+// Updated handleErrorResponse function
 const handleErrorResponse = (errorResponse: any) => {
   if (!errorResponse) {
-    return { error: "Network error" };
+    return {
+      error: "Network error. Please try again later.",
+      status: 0,
+      type: "network",
+      details: [],
+    };
   }
-  const { status, data } = errorResponse.response as {
-    status: number;
-    data: any;
-  };
-  const errorMessage = data?.detail || data?.message || "Api Failed";
-  console.log("dataaaaaa===>", status, data?.detail);
-  if (status === 401) {
-    commonHelper.logout();
-  }
- if (status == 422 && Array.isArray(data?.detail)) {
-    const validationErrors = data.detail
-      .map((err: any) => {
-        const field = err.loc?.slice(1).join('.') || 'Field'; 
-        return `${field}: ${err.msg}`;
-      }).join(' | ');
 
-    console.log('Validation Errors ===>', validationErrors);
-    showErrorToast(validationErrors);
-  } else {
-    console.log("errormessagge====>", errorMessage);
+  const status = errorResponse.response?.status || 0;
+  const data = errorResponse.response?.data || errorResponse.data || {};
+
+  // Handle validation errors (422)
+  if (status === 422 && Array.isArray(data?.detail)) {
+    const validationErrors = data.detail.map((err: any) => {
+      const field = err.loc?.slice(1).join(".") || "Field";
+      return {
+        field,
+        message: err.msg,
+        type: err.type || "validation",
+      };
+    });
+
+    return {
+      status,
+      error: "Validation failed",
+      type: "validation",
+      details: validationErrors,
+      ...data,
+    };
   }
-  return { ...data, error: errorMessage, status };
+
+  // Handle other errors
+  const errorMessage =
+    data?.detail || data?.message || errorResponse.message || "Request failed";
+
+  return {
+    status,
+    error: errorMessage,
+    type: status === 401 ? "authentication" : "api",
+    details: [],
+    ...data,
+  };
 };
 
 //******************************************************  apiCall  ****************************************
@@ -124,8 +142,6 @@ const apiCall = async (
   tokenNeeded: boolean = true,
   contentType: string = "application/json"
 ) => {
-  console.log("routeeeeee====>", route);
-  console.log("method===========>", method);
   try {
     const headers = await prepareHeaders(tokenNeeded);
     headers["Content-Type"] = contentType;
@@ -136,7 +152,6 @@ const apiCall = async (
       headers,
       data: method !== "get" ? params : undefined,
       params: method === "get" ? params : undefined,
-
       paramsSerializer: (params: any) => {
         return Object.entries(params)
           .flatMap(([key, value]) => {
@@ -149,15 +164,17 @@ const apiCall = async (
       },
     };
 
-    console.log("CONFIG ===> ", config);
-
     const response = await axios(config);
-    console.log("response=====>", response);
-
     return await handleResponse(response);
   } catch (err: any) {
-    console.log("apiCallCatchError======>", err);
-    throw handleErrorResponse(err);
+    const error = handleErrorResponse(err);
+
+    // Special case - force logout on 401
+    if (error.status === 401) {
+      commonHelper.logout();
+    }
+
+    throw error;
   }
 };
 
