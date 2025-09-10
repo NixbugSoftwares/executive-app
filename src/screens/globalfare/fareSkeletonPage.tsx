@@ -100,7 +100,7 @@ const FareSkeletonPage = ({
     state.app.permissions.includes("delete_fare")
   );
 
-const [distanceKm, setDistanceKm] = useState(5);
+  const [distanceKm, setDistanceKm] = useState(5);
   const [fareResults, setFareResults] = useState<{
     distance: number;
     results: { type: string; fare: number }[];
@@ -171,7 +171,7 @@ const [distanceKm, setDistanceKm] = useState(5);
     control,
     name: "attributes.ticket_types",
   });
-    const handleRunCode = () => {
+  const handleRunCode = () => {
     setShowOutput(true); // Show output when running code
     let logs: any[] = [];
     const customConsole = {
@@ -243,7 +243,6 @@ const [distanceKm, setDistanceKm] = useState(5);
     }
   };
 
-
   const handleFareCreation: SubmitHandler<FareInputs> = async (data) => {
     try {
       setLoading(true);
@@ -309,8 +308,8 @@ const [distanceKm, setDistanceKm] = useState(5);
       setLoading(false);
     }
   };
-const [showEditor, setShowEditor] = useState(false);
-return (
+  const [showEditor, setShowEditor] = useState(false);
+  return (
     <Box
       sx={{
         display: "flex",
@@ -555,66 +554,44 @@ return (
           {mode === "view" ? (
             <>
               {canDeleteFare && (
-                <Tooltip
-                  title={
-                    fareToEdit?.scope === 1
-                      ? "Global fare cannot be Deleted"
-                      : ""
-                  }
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteFare(fareToEdit!.id);
+                  }}
+                  sx={{
+                    "&.Mui-disabled": {
+                      backgroundColor: "#e57373 !important",
+                      color: "#ffffff99",
+                    },
+                    fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                    py: { xs: 0.5, sm: 1 },
+                    px: { xs: 1, sm: 2 },
+                  }}
                 >
-                  <span>
-                    <Button
-                      variant="contained"
-                      color="error"
-                      disabled={fareToEdit?.scope === 1 || loading}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteFare(fareToEdit!.id);
-                      }}
-                      sx={{
-                        "&.Mui-disabled": {
-                          backgroundColor: "#e57373 !important",
-                          color: "#ffffff99",
-                        },
-                        fontSize: { xs: "0.7rem", sm: "0.875rem" },
-                        py: { xs: 0.5, sm: 1 },
-                        px: { xs: 1, sm: 2 },
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  </span>
-                </Tooltip>
+                  Delete
+                </Button>
               )}
 
               {canUpdateFare && (
-                <Tooltip
-                  title={
-                    fareToEdit?.scope === 1
-                      ? "Global fare cannot be updated"
-                      : ""
-                  }
+                <Button
+                  variant="contained"
+                  color="success"
+                  onClick={handleSubmit(handleFareUpdate)}
+                  sx={{
+                    "&.Mui-disabled": {
+                      backgroundColor: "#81c784 !important",
+                      color: "#ffffff99",
+                    },
+                    fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                    py: { xs: 0.5, sm: 1 },
+                    px: { xs: 1, sm: 2 },
+                  }}
                 >
-                  <span>
-                    <Button
-                      variant="contained"
-                      color="success"
-                      disabled={fareToEdit?.scope === 1 || loading}
-                      onClick={handleSubmit(handleFareUpdate)}
-                      sx={{
-                        "&.Mui-disabled": {
-                          backgroundColor: "#81c784 !important",
-                          color: "#ffffff99",
-                        },
-                        fontSize: { xs: "0.7rem", sm: "0.875rem" },
-                        py: { xs: 0.5, sm: 1 },
-                        px: { xs: 1, sm: 2 },
-                      }}
-                    >
-                      Update
-                    </Button>
-                  </span>
-                </Tooltip>
+                  Update
+                </Button>
               )}
             </>
           ) : (
