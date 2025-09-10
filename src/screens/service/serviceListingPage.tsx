@@ -509,6 +509,7 @@ const ServiceListingTable = () => {
       <FormModal
         open={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
+        title="Create Service"
       >
         <ServiceCreationForm
           refreshList={refreshList}

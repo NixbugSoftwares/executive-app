@@ -4,7 +4,6 @@ import {
   Box,
   TextField,
   Button,
-  Typography,
   Container,
   CssBaseline,
   CircularProgress,
@@ -223,10 +222,17 @@ const DutyCreationForm: React.FC<IOperatorCreationFormProps> = ({
   return (
     <Container component="main" maxWidth="md">
       <CssBaseline />
-      <Box sx={{ mt: 4, mb: 4, px: 2, py: 3, borderRadius: 2, backgroundColor: "#f9f9f9", boxShadow: 3 }}>
-        <Typography component="h1" variant="h5" align="center" gutterBottom>
-          Duty Creation
-        </Typography>
+      <Box
+        sx={{
+          mt: 4
+        //   mb: 4,
+        //   px: 2,
+        //   py: 3,
+        //   borderRadius: 2,
+        //   backgroundColor: "#f9f9f9",
+        //   boxShadow: 3,
+        }}
+      >
 
         <Box component="form" noValidate onSubmit={handleSubmit(handleDutyCreation)}>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ width: "100%" }}>

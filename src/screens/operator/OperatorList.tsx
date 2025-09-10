@@ -10,12 +10,9 @@ import {
   TextField,
   Box,
   Button,
-  Dialog,
-  DialogContent,
   Select,
   MenuItem,
   Typography,
-  DialogActions,
   CircularProgress,
   Checkbox,
   ListItemText,
@@ -34,6 +31,7 @@ import PaginationControls from "../../common/paginationControl";
 import { showErrorToast } from "../../common/toastMessageHelper";
 import { Operator } from "../../types/type";
 import moment from "moment";
+import FormModal from "../../common/formModal";
 
 const getGenderBackendValue = (displayValue: string): string => {
   const genderMap: Record<string, string> = {
@@ -678,25 +676,17 @@ const OperatorListingTable = () => {
       )}
 
       {/* Create Operator Dialog */}
-      <Dialog
+       <FormModal
         open={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
-        maxWidth="sm"
-        fullWidth
+        title="Create Operator"
       >
-        <DialogContent>
           <OperatorCreationForm
             refreshList={refreshList}
             onClose={() => setOpenCreateModal(false)}
             defaultCompanyId={filterCompanyId ?? undefined}
           />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenCreateModal(false)} color="error">
-            Cancel
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </FormModal>
     </Box>
   );
 };

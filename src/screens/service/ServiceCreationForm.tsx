@@ -4,7 +4,6 @@ import {
   Box,
   TextField,
   Button,
-  Typography,
   Container,
   CssBaseline,
   CircularProgress,
@@ -331,15 +330,11 @@ const ServiceCreationForm: React.FC<IOperatorCreationFormProps> = ({
       <CssBaseline />
       <Box
         sx={{
-          marginTop: 8,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
         }}
       >
-        <Typography component="h1" variant="h5">
-          Service Creation
-        </Typography>
         <Box mb={2}>
           <Alert severity="info">
             For a new service, the starting date must be today or the next day.

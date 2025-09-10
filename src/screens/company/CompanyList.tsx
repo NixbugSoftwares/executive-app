@@ -11,9 +11,6 @@ import {
   TextField,
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
   Chip,
   Typography,
   CircularProgress,
@@ -37,6 +34,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../store/Store";
 import PaginationControls from "../../common/paginationControl";
 import { Company } from "../../types/type";
+import FormModal from "../../common/formModal";
 
 interface ColumnConfig {
   id: string;
@@ -842,24 +840,16 @@ const CompanyListingTable = () => {
       )}
 
       {/* Create Account Modal */}
-      <Dialog
+      <FormModal
         open={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
-        maxWidth="sm"
-        fullWidth
+        title="Create Company"
       >
-        <DialogContent>
           <CompanyCreationForm
             refreshList={(value: any) => refreshList(value)}
             onClose={() => setOpenCreateModal(false)}
           />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenCreateModal(false)} color="error">
-            Cancel
-          </Button>
-        </DialogActions>
-      </Dialog>
+       </FormModal>
     </Box>
   );
 };

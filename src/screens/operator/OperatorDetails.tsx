@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardActions,
@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Tooltip,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -25,7 +26,7 @@ import DateRangeOutlinedIcon from "@mui/icons-material/DateRangeOutlined";
 import ToggleOnIcon from "@mui/icons-material/ToggleOn";
 import ToggleOffIcon from "@mui/icons-material/ToggleOff";
 import { useAppDispatch } from "../../store/Hooks";
-import { operatorDeleteApi } from "../../slices/appSlice";
+import { operatorDeleteApi, dutyListingApi } from "../../slices/appSlice";
 import localStorageHelper from "../../utils/localStorageHelper";
 import {
   showErrorToast,
@@ -75,6 +76,7 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
   const canDeleteOperator = useSelector((state: RootState) =>
     state.app.permissions.includes("delete_operator")
   );
+  const [isOperatorInDuty, setIsOperatorInDuty] = useState(false);
   const getGenderValue = (genderText: string): number | undefined => {
     const option = genderOptions.find((opt) => opt.label === genderText);
     return option?.value;
@@ -99,6 +101,23 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
       showErrorToast(error.message);
     }
   };
+
+  const fetchServiceList = async () => {
+    try {
+      const response = await dispatch(
+        dutyListingApi({ limit: 100, offset: 0, operator_id: operator.id })
+      ).unwrap();
+
+      if (response.data) {
+        setIsOperatorInDuty(response.data.length > 0);
+      }
+    } catch (error: any) {
+      console.error(error.message);
+    }
+  };
+  useEffect(() => {
+    fetchServiceList();
+  }, [operator.id]);
 
   return (
     <>
@@ -248,41 +267,53 @@ const OperatorDetailsCard: React.FC<AccountCardProps> = ({
 
             {canUpdateOperator && (
               <Button
-                  variant="contained"
-                  color="success"
-                  size="small"
-                  onClick={() => {
-                    setUpdateFormOpen(true);
-                  }}
-                  startIcon={<EditIcon />}
-                  disabled={!canUpdateOperator}
-                  sx={{
-                    "&.Mui-disabled": {
-                      backgroundColor: "#81c784 !important",
-                      color: "#ffffff99",
-                    },
-                  }}
-                >
-                  Update
-                </Button>)}
+                variant="contained"
+                color="success"
+                size="small"
+                onClick={() => {
+                  setUpdateFormOpen(true);
+                }}
+                startIcon={<EditIcon />}
+                disabled={!canUpdateOperator}
+                sx={{
+                  "&.Mui-disabled": {
+                    backgroundColor: "#81c784 !important",
+                    color: "#ffffff99",
+                  },
+                }}
+              >
+                Update
+              </Button>
+            )}
 
             {canDeleteOperator && (
-                <Button
-                  variant="contained"
-                  color="error"
-                  size="small"
-                  onClick={() => setDeleteConfirmOpen(true)}
-                  startIcon={<DeleteIcon />}
-                  disabled={!canDeleteOperator}
-                  sx={{
-                    "&.Mui-disabled": {
-                      backgroundColor: "#e57373 !important",
-                      color: "#ffffff99",
-                    },
-                  }}
-                >
-                  Delete
-                </Button>)}
+              <Tooltip
+                title={
+                  isOperatorInDuty
+                    ? "Operator is Assigned to duty, cannot be deleted"
+                    : "Click to delete the operator"
+                }
+              >
+                <span>
+                  <Button
+                    variant="contained"
+                    color="error"
+                    size="small"
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    startIcon={<DeleteIcon />}
+                    disabled={isOperatorInDuty}
+                    sx={{
+                      "&.Mui-disabled": {
+                        backgroundColor: "#e57373 !important",
+                        color: "#ffffff99",
+                      },
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </span>
+              </Tooltip>
+            )}
           </Box>
         </CardActions>
       </Card>

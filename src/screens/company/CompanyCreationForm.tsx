@@ -4,7 +4,6 @@ import {
   Box,
   TextField,
   Button,
-  Typography,
   Container,
   CssBaseline,
   CircularProgress,
@@ -115,15 +114,11 @@ const CompanyCreationForm: React.FC<ICompanyCreationFormProps> = ({
       <CssBaseline />
       <Box
         sx={{
-          marginTop: 8,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
         }}
       >
-        <Typography component="h1" variant="h5">
-          Company Creation
-        </Typography>
         <Box
           component="form"
           noValidate

@@ -481,6 +481,7 @@ const fetchDutyList = useCallback(
       <FormModal
         open={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
+        title="Create Duty"
       >
         <DutyCreationForm
           refreshList={refreshList}

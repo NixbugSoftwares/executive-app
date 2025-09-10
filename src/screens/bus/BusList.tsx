@@ -779,6 +779,7 @@ useEffect(() => {
       <FormModal
         open={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
+        title="Add New Bus"
       >
         <BusCreationForm
           refreshList={refreshList}

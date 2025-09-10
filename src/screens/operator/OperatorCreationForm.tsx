@@ -8,7 +8,6 @@ import {
   InputAdornment,
   IconButton,
   Button,
-  Typography,
   Container,
   CssBaseline,
   CircularProgress,
@@ -179,15 +178,11 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
       <CssBaseline />
       <Box
         sx={{
-          marginTop: 8,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
         }}
       >
-        <Typography component="h1" variant="h5">
-          Account Creation
-        </Typography>
         <Box
           component="form"
           noValidate
