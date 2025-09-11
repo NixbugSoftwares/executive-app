@@ -179,42 +179,44 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, [isOpen, onDrawEnd, navigate, landmarkRefreshKey]);
 
   const fetchLandmarksInView = async () => {
-    if (!mapInstance.current || isProgrammaticMove.current) return;
+  if (!mapInstance.current || isProgrammaticMove.current) return;
 
-    const center = toLonLat(mapInstance.current.getView().getCenter()!);
-    const location = `POINT(${center[0]} ${center[1]})`;
-    const zoom = mapInstance.current.getView().getZoom()!;
-    const limit = Math.min(100, Math.max(20, Math.floor(zoom * 5)));
+  const center = toLonLat(mapInstance.current.getView().getCenter()!);
+  const location = `POINT(${center[0]} ${center[1]})`;
+  const zoom = mapInstance.current.getView().getZoom()!;
+  const limit = Math.min(100, Math.max(20, Math.floor(zoom * 5)));
 
-    try {
-      const response = await dispatch(
-        landmarkListApi({
-          location,
-          limit,
-          order_by: 2,
-          order_in: 1,
-        })
-      ).unwrap();
+  try {
+    const response = await dispatch(
+      landmarkListApi({
+        location,
+        limit,
+        order_by: 2,
+        order_in: 1,
+      })
+    ).unwrap();
 
-      setLandmarks(response.data);
+    // Ensure response.data is always an array
+    const landmarksArray = Array.isArray(response.data) ? response.data : [];
+    setLandmarks(landmarksArray);
 
-      // Clear & re-add features
-      landmarksSource.current.clear();
-      response.data.forEach((landmark: Landmark) => {
-        if (!landmark.boundary) return;
-        try {
-          const coordinates = parseWKTBoundary(landmark.boundary);
-          const polygon = new Polygon([coordinates]);
-          const feature = new ol.Feature({ geometry: polygon, landmark });
-          landmarksSource.current.addFeature(feature);
-        } catch (e) {
-          console.error("Bad landmark boundary:", e);
-        }
-      });
-    } catch (error: any) {
-      showErrorToast(error.message || "Error fetching landmarks");
-    }
-  };
+    // Clear & re-add features
+    landmarksSource.current.clear();
+    landmarksArray.forEach((landmark: Landmark) => {
+      if (!landmark.boundary) return;
+      try {
+        const coordinates = parseWKTBoundary(landmark.boundary);
+        const polygon = new Polygon([coordinates]);
+        const feature = new ol.Feature({ geometry: polygon, landmark });
+        landmarksSource.current.addFeature(feature);
+      } catch (e) {
+        console.error("Bad landmark boundary:", e);
+      }
+    });
+  } catch (error: any) {
+    showErrorToast(error.message || "Error fetching landmarks");
+  }
+};
 
   const parseWKTBoundary = (wkt: string): [number, number][] => {
     try {
