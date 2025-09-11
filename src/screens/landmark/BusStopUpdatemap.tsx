@@ -23,7 +23,7 @@ import { busStopListApi, landmarkListApi } from "../../slices/appSlice";
 import { useAppDispatch } from "../../store/Hooks";
 import busstopimage from "../../assets/png/busstopimage.png";
 import { showErrorToast } from "../../common/toastMessageHelper";
-
+import { Circle as CircleGeom } from "ol/geom";
 interface BusStop {
   id: number;
   name: string;
@@ -61,10 +61,9 @@ const BusStopUpdateMap: React.FC<BusStopUpdateMapProps> = ({
   const [mousePosition, setMousePosition] = useState<string>("");
   const [selectedPoint, setSelectedPoint] = useState<[number, number] | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [selectionMode, setSelectionMode] = useState(false);
   const [busStop, setBusStop] = useState<BusStop | null>(null);
   const [landmark, setLandmark] = useState<Landmark | null>(null);
-
+  const [newLocation, setNewLocation] = useState<string>("");
   // WKT point parser
 const parseWKTPoint = (wkt: string): [number, number] | null => {
   if (!wkt) return null;
@@ -158,6 +157,23 @@ const parseWKTPolygon = (wkt: string): [number, number][] | null => {
     }
   }, []);
 
+
+
+  function rectangleToCircle(polygon: Polygon): Feature {
+  const extent = polygon.getExtent();
+  const center = [
+    (extent[0] + extent[2]) / 2,
+    (extent[1] + extent[3]) / 2,
+  ];
+  const radius = Math.min(
+    (extent[2] - extent[0]) / 2,
+    (extent[3] - extent[1]) / 2
+  );
+  const circle = new CircleGeom(center, radius);
+  return new Feature(circle);
+}
+
+
   // Draw marker and boundary when data is loaded or changed
   useEffect(() => {
   if (!mapInstance.current) return;
@@ -171,16 +187,16 @@ const parseWKTPolygon = (wkt: string): [number, number][] | null => {
     if (polygonCoords) {
       const transformedCoords = polygonCoords.map(coord => fromLonLat(coord));
       const polygon = new Polygon([transformedCoords]);
-      const boundaryFeature = new Feature(polygon);
+      const circleFeature = rectangleToCircle(polygon);
       
-      boundaryFeature.setStyle(
+      circleFeature.setStyle(
         new Style({
           fill: new Fill({ color: "rgba(221, 201, 75, 0.3)" }),
           stroke: new Stroke({ color: "rgb(255, 149, 0)", width: 2 }),
         })
       );
       
-      vectorSource.current.addFeature(boundaryFeature);
+      vectorSource.current.addFeature(circleFeature);
     }
   }
 
@@ -218,7 +234,7 @@ const parseWKTPolygon = (wkt: string): [number, number][] | null => {
 
   // Handle click events when in selection mode
   useEffect(() => {
-    if (!mapInstance.current || !selectionMode) return;
+    if (!mapInstance.current ) return;
 
     const clickHandler = (event: any) => {
       const coordinate = event.coordinate;
@@ -228,20 +244,20 @@ const parseWKTPolygon = (wkt: string): [number, number][] | null => {
 
       // Draw landmark boundary
       if (landmark?.boundary) {
-        const boundaryCoords = landmark.boundary
-          .split(",")
-          .map((coord) => coord.trim().split(" ").map(Number))
-          .map((coord) => fromLonLat(coord));
-        const polygon = new Polygon([boundaryCoords]);
-        const boundaryFeature = new Feature(polygon);
-        boundaryFeature.setStyle(
-          new Style({
-            fill: new Fill({ color: "rgba(221, 201, 75, 0.5)" }),
-            stroke: new Stroke({ color: "rgb(255, 149, 0)", width: 2 }),
-          })
-        );
-        vectorSource.current.addFeature(boundaryFeature);
-      }
+  const polygonCoords = parseWKTPolygon(landmark.boundary);
+  if (polygonCoords) {
+    const transformedCoords = polygonCoords.map(coord => fromLonLat(coord));
+    const polygon = new Polygon([transformedCoords]);
+    const circleFeature = rectangleToCircle(polygon);
+    circleFeature.setStyle(
+      new Style({
+        fill: new Fill({ color: "rgba(221, 201, 75, 0.5)" }),
+        stroke: new Stroke({ color: "rgb(255, 149, 0)", width: 2 }),
+      })
+    );
+    vectorSource.current.addFeature(circleFeature);
+  }
+}
 
       // Add new point marker
       const point = new Point(coordinate);
@@ -258,14 +274,14 @@ const parseWKTPolygon = (wkt: string): [number, number][] | null => {
       vectorSource.current.addFeature(pointFeature);
 
       // Immediately update the location
-      onSave(`POINT(${lonLat[0].toFixed(7)} ${lonLat[1].toFixed(7)})`);
+      setNewLocation(`POINT(${lonLat[0].toFixed(7)} ${lonLat[1].toFixed(7)})`);
     };
 
     mapInstance.current.on("click", clickHandler);
     return () => {
       mapInstance.current?.un("click", clickHandler);
     };
-  }, [selectionMode, landmark, onSave]);
+  }, [ landmark]);
 
   // Map type and search handlers (unchanged)
   const changeMapType = (type: "osm" | "satellite" | "hybrid") => {
@@ -411,15 +427,23 @@ const parseWKTPolygon = (wkt: string): [number, number][] | null => {
         </Typography>
 
         <Box sx={{ display: "flex", gap: 1 }}>
+          {newLocation && (
           <Button
             variant="contained"
-            color={selectionMode ? "secondary" : "primary"}
-            onClick={() => setSelectionMode(!selectionMode)}
-            sx={{ ml: 1 }}
+            sx={{ backgroundColor: "darkblue" }}
+            onClick={() => {
+              if (newLocation) {
+                onSave(newLocation);
+              }
+            }}
           >
-            {selectionMode ? "Cancel Selection" : "Select Bus Stop"}
-          </Button>
-          <Button variant="outlined" color="error" onClick={onClose}>
+            Confirm
+          </Button>)}
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={onClose}
+          >
             Cancel
           </Button>
         </Box>

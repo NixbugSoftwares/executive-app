@@ -105,7 +105,7 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
         gap: 1.5,
         width: 500,
         margin: "auto",
-        mt: 10,
+        mt: 2,
         p: 2,
         border: "1px solid #ccc",
         borderRadius: "8px",
@@ -173,7 +173,7 @@ const BusStopUpdateForm: React.FC<IBusStopUpdateFormProps> = ({
       <Button
         type="submit"
         variant="contained"
-        color="primary"
+        sx={{ backgroundColor: "darkblue" }}
         fullWidth
         disabled={loading}
       >
