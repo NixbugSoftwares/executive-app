@@ -559,22 +559,41 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, [landmarks, selectedLandmark?.id, drawnFeature, busStops]);
 
   //***************************************Check for overlaps with existing landmarks********************
-  const checkForOverlaps = (newPolygon: Polygon): boolean => {
-    const features = landmarksSource.current.getFeatures(); // ✅ only DB landmarks
+const checkForOverlaps = (newPolygon: Polygon): boolean => {
+  const features = landmarksSource.current.getFeatures(); // ✅ only DB landmarks
 
-    for (const feature of features) {
-      const geometry = feature.getGeometry();
-      if (!(geometry instanceof Polygon)) continue;
+  for (const feature of features) {
+    const geometry = feature.getGeometry();
+    if (!(geometry instanceof Polygon)) continue;
 
-      if (
-        geometry.intersectsExtent(newPolygon.getExtent()) &&
-        polygonsIntersect(newPolygon, geometry)
-      ) {
-        return true;
-      }
+    // 1. Edge intersection
+    if (
+      geometry.intersectsExtent(newPolygon.getExtent()) &&
+      polygonsIntersect(newPolygon, geometry)
+    ) {
+      return true;
     }
-    return false;
-  };
+
+    // 2. New polygon fully inside existing
+    const newCoords = newPolygon.getCoordinates()[0];
+    const allNewInsideExisting = newCoords.every((coord) =>
+      geometry.intersectsCoordinate(coord)
+    );
+    if (allNewInsideExisting) {
+      return true;
+    }
+
+    // 3. Existing polygon fully inside new
+    const existingCoords = geometry.getCoordinates()[0];
+    const allExistingInsideNew = existingCoords.every((coord) =>
+      newPolygon.intersectsCoordinate(coord)
+    );
+    if (allExistingInsideNew) {
+      return true;
+    }
+  }
+  return false;
+};
 
   // Helper function to check if two polygons intersect
   const polygonsIntersect = (poly1: Polygon, poly2: Polygon): boolean => {
