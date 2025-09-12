@@ -198,7 +198,9 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
       refreshList("refresh");
       onClose();
     } catch (error: any) {
-      showErrorToast(error.message || "Something went wrong. Please try again.");
+      showErrorToast(
+        error.message || "Something went wrong. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -280,6 +282,12 @@ const AccountUpdateForm: React.FC<IAccountUpdateFormProps> = ({
           <Controller
             name="phoneNumber"
             control={control}
+            rules={{
+              validate: (value) =>
+                !value || value.length === 10
+                  ? true
+                  : "Phone number must be exactly 10 digits",
+            }}
             render={({ field }) => (
               <TextField
                 margin="normal"

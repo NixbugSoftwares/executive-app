@@ -348,7 +348,11 @@ const ScheduleUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
       onClose();
     } catch (error: any) {
       console.error("Error updating schedule:", error);
-      showErrorToast(error.message || "Failed to update schedule. Please try again.");
+      if (error.status === 409) {
+        showErrorToast("Schedule already exists");
+      } else {
+        showErrorToast(error.message || "Schedule Update failed");
+      }
     } finally {
       setLoading(false);
     }
@@ -619,7 +623,7 @@ const ScheduleUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             {loading ? (
               <CircularProgress size={24} sx={{ color: "white" }} />
             ) : (
-              "Update Duty"
+              "Update Schedule"
             )}
           </Button>
         </Box>

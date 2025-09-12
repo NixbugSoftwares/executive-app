@@ -107,7 +107,11 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
         showErrorToast("Bus creation failed. Please try again.");
       }
     } catch (error: any) {
-      showErrorToast(error.message || "Something went wrong. Please try again.");
+      if (error.status === 409) {
+        showErrorToast("Bus with this registration number already exists");
+      } else {
+        showErrorToast(error.message || "Bus creation failed");
+      }
     } finally {
       setLoading(false);
     }
@@ -159,6 +163,7 @@ const BusCreationForm: React.FC<IOperatorCreationFormProps> = ({
             error={!!errors.capacity}
             helperText={errors.capacity?.message}
             size="small"
+            inputProps={{ min: 1, max: 120}}
           />
 
           <TextField
