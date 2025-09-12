@@ -167,7 +167,11 @@ const OperatorCreationForm: React.FC<IOperatorCreationFormProps> = ({
         throw new Error("Account creation failed!");
       }
     } catch (error: any) {
+      if ( error.status===409){
+        showErrorToast("Username already exists");
+      }else{
       showErrorToast(error.message || "Operator creation failed");
+      };
     } finally {
       setLoading(false);
     }

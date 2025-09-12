@@ -268,7 +268,11 @@ const BusRouteCreation = ({
         onSuccess();
         if (onClose) onClose();
       } else {
-        showErrorToast(error.message || "Failed to create route and landmarks");
+        if (error.status === 409) {
+                showErrorToast("Route already exists");
+              } else {
+                showErrorToast(error.message || "Route creation failed");
+              }
       }
     } finally {
       setIsSubmitting(false);
@@ -579,10 +583,10 @@ const BusRouteCreation = ({
                                     }}
                                   />
                                   {landmark.distance_from_start >= 1000
-                                    ? `${Math.round(
-                                        landmark.distance_from_start / 1000
-                                      )}km`
-                                    : `${landmark.distance_from_start}m`}
+                                ? `${(
+                                    landmark.distance_from_start / 1000
+                                  ).toFixed(1)}km`
+                                : `${landmark.distance_from_start}m`}
                                 </Box>
                               )}
                             </Box>

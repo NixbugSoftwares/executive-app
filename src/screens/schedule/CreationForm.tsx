@@ -121,7 +121,7 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
           offset,
           name: searchText,
           company_id: companyId,
-          status:1
+          status: 1,
         })
       )
         .unwrap()
@@ -193,7 +193,7 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
           offset,
           name: searchText,
           company_id: companyId,
-          status:1
+          status: 1,
         })
       )
         .unwrap()
@@ -255,9 +255,11 @@ const ScheduleCreationForm: React.FC<IOperatorCreationFormProps> = ({
         showErrorToast("Schedule creation failed. Please try again.");
       }
     } catch (error: any) {
-      showErrorToast(
-        error.message || "Something went wrong. Please try again."
-      );
+      if (error.status === 409) {
+        showErrorToast("Schedule already exists");
+      } else {
+        showErrorToast(error.message || "Schedule creation failed");
+      }
     } finally {
       setLoading(false);
     }

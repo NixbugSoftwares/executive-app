@@ -116,7 +116,9 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
       onClose();
     } catch (error: any) {
       console.error("Error updating bus:", error);
-      showErrorToast(error.message || "Failed to update bus. Please try again.");
+      showErrorToast(
+        error.message || "Failed to update bus. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -185,14 +187,18 @@ const BusUpdateForm: React.FC<IOperatorUpdateFormProps> = ({
             label="Capacity"
             {...register("capacity", {
               required: "Capacity is required",
+              valueAsNumber: true,
               validate: (value) => {
                 if (isNaN(value)) return "Capacity must be a number";
+                if (value < 1) return "Capacity must be at least 1";
+                if (value > 120) return "Capacity cannot exceed 120";
                 return true;
               },
             })}
             error={!!errors.capacity}
             helperText={errors.capacity?.message}
             size="small"
+            inputProps={{ min: 1, max: 120 }}
           />
 
           <Controller
