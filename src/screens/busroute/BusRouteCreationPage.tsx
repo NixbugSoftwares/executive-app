@@ -579,10 +579,10 @@ const BusRouteCreation = ({
                                     }}
                                   />
                                   {landmark.distance_from_start >= 1000
-                                    ? `${Math.round(
-                                        landmark.distance_from_start / 1000
-                                      )}km`
-                                    : `${landmark.distance_from_start}m`}
+                                ? `${(
+                                    landmark.distance_from_start / 1000
+                                  ).toFixed(1)}km`
+                                : `${landmark.distance_from_start}m`}
                                 </Box>
                               )}
                             </Box>
