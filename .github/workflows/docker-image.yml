@@ -13,14 +13,7 @@ jobs:
       contents: read
       packages: write
 
-    steps:
-      - name: Install kubectl
-        run: |
-          VERSION=v1.30.0
-          echo "Installing kubectl $VERSION"
-          curl -LO "https://dl.k8s.io/${VERSION}/bin/linux/amd64/kubectl"
-          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-          
+    steps:         
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -54,7 +47,14 @@ jobs:
           tags: |
             ${{ env.IMAGE }}:${{ env.BRANCH }}-${{ env.SHORT_SHA }}
             ${{ env.IMAGE }}:${{ env.BRANCH }}-latest
-      
+
+      - name: Install kubectl
+        run: |
+          VERSION=v1.30.0
+          echo "Installing kubectl $VERSION"
+          curl -LO "https://dl.k8s.io/${VERSION}/bin/linux/amd64/kubectl"
+          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+          
       - name: Configure kubeconfig
         run: |
           mkdir -p ~/.kube
