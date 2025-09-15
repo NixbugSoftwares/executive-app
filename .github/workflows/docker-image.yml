@@ -47,10 +47,11 @@ jobs:
           tags: |
             ${{ env.IMAGE }}:${{ env.BRANCH }}-${{ env.SHORT_SHA }}
             ${{ env.IMAGE }}:${{ env.BRANCH }}-latest
-
+      
       - name: Install kubectl
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          KUBECTL_VERSION=$(curl -s https://dl.k8s.io/release/stable.txt)
+          curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
           sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
       - name: Configure kubeconfig
