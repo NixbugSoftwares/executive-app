@@ -16,9 +16,9 @@ jobs:
     steps:
       - name: Install kubectl
         run: |
-          VERSION=$(curl -s https://dl.k8s.io/release/stable.txt)
-          echo "Latest kubectl version: $VERSION"
-          curl -L -o kubectl "https://dl.k8s.io/${VERSION}/bin/linux/amd64/kubectl"
+          VERSION=v1.30.0
+          echo "Installing kubectl $VERSION"
+          curl -LO "https://dl.k8s.io/${VERSION}/bin/linux/amd64/kubectl"
           sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
           
       - name: Checkout repository
