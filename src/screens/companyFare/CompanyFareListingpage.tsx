@@ -134,6 +134,7 @@ const columnConfig: ColumnConfig[] = [
           fareListApi({
             limit: rowsPerPage,
             offset,
+            scope:2,
             ...searchParams,
             company_id: filterCompanyId,
           })
@@ -146,7 +147,7 @@ const columnConfig: ColumnConfig[] = [
         const localFares = localRes.data || [];
         const globalFares = globalRes.data || [];
 
-        const allFares = [...localFares, ...globalFares].filter(
+        const allFares = [...globalFares, ...localFares].filter(
           (fare, index, self) =>
             index === self.findIndex((f) => f.id === fare.id)
         );
@@ -248,7 +249,6 @@ const columnConfig: ColumnConfig[] = [
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
-            borderRight: "1px solid #e0e0e0",
           }}
         >
           <Box

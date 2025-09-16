@@ -12,6 +12,7 @@ import {
   Box,
   Button,
   FormControl,
+  IconButton,
   InputLabel,
   MenuItem,
   Select,
@@ -19,6 +20,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import FullscreenIcon from "@mui/icons-material/Fullscreen";
+import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import { useNavigate } from "react-router-dom";
 import * as ol from "ol";
 import { useSelector } from "react-redux";
@@ -104,7 +107,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   // Initialize the map
   const initialCenter = useRef(fromLonLat([76.9366, 8.5241]));
   const initialZoom = useRef(10);
-
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const initializeMap = () => {
     if (!mapRef.current) return null;
 
@@ -931,9 +934,45 @@ const checkForOverlaps = (newPolygon: Polygon): boolean => {
     handleCloseRowClick();
     clearBoundaries();
   };
+
+    useEffect(() => {
+    if (!isFullScreen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullScreen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFullScreen]);
+
+  // Prevent body scroll in full screen
+  useEffect(() => {
+    if (isFullScreen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [isFullScreen]);
+
+
   return (
-    <Box height="100%">
-      <Box
+    <Box
+      height="100%"
+      sx={
+        isFullScreen
+          ? {
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              zIndex: 1300, // above dialogs
+              background: "#fff",
+              boxShadow: 8,
+            }
+          : {}
+      }
+    >
+     <Box
         sx={{
           display: "flex",
           alignItems: "center",
@@ -944,6 +983,7 @@ const checkForOverlaps = (newPolygon: Polygon): boolean => {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          
           <FormControl variant="outlined" size="small">
             <InputLabel>Map Type</InputLabel>
             <Select
@@ -984,6 +1024,7 @@ const checkForOverlaps = (newPolygon: Polygon): boolean => {
               Search
             </Button>
           </Box>
+          
 
           {canCreateLandmark && showAddLandmarkButton && (
             <Box sx={{ display: "flex", gap: 1 }}>
@@ -1034,6 +1075,14 @@ const checkForOverlaps = (newPolygon: Polygon): boolean => {
             </Box>
           )}
         </Box>
+        <IconButton
+            onClick={() => setIsFullScreen((fs) => !fs)}
+            
+            sx={{ mr: 1, color: "red" }}
+            aria-label={isFullScreen ? "Exit Full Screen" : "Full Screen"}
+          >
+            {isFullScreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+          </IconButton>
       </Box>
 
       <Box ref={mapRef} width="100%" height="calc(100% - 128px)" flex={1} />

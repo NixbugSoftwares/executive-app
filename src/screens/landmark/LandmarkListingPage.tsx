@@ -96,7 +96,6 @@ const LandmarkListing = () => {
   );
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const [hasDrawn, setHasDrawn] = useState(false);
-
   //****************exctracting points of landmark and busstop**********************
   const extractRawPoints = (polygonString: string): string => {
     if (!polygonString) return "";

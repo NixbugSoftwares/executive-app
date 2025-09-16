@@ -465,7 +465,7 @@ const Sidebar: React.FC = () => {
           sx={{ textAlign: "center", mb: 1, color: "text.secondary" }}
         >
           &copy; {new Date().getFullYear()} EnteBus. All rights reserved.
-          Version 0.1.0
+          Version 0.1.3
         </Typography>
       </Drawer>
 
