@@ -376,11 +376,15 @@ const StatementListingPage = () => {
                 onChange={handleBusChange}
                 disabled={isLoading}
               >
-                {busList.map((bus) => (
-                  <MenuItem key={bus.id} value={bus.id}>
-                    {bus.name} ({bus.registrationNumber})
-                  </MenuItem>
-                ))}
+                {busList.length > 0 ? (
+                  busList.map((bus) => (
+                    <MenuItem key={bus.id} value={bus.id}>
+                      {bus.name} ({bus.registrationNumber})
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>No buses available</MenuItem>
+                )}
               </Select>
             </FormControl>
 

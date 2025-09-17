@@ -199,7 +199,7 @@ const DutyDetailsCard: React.FC<DutyCardProps> = ({
             sx={{
               display: "flex",
               gap: 1,
-              justifyContent: "space-between",
+              justifyContent: "left",
               width: "100%",
             }}
           >
