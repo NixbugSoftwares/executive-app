@@ -8,7 +8,6 @@ import {
   FormControl,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
   Table,
   TableBody,
@@ -788,7 +787,10 @@ const StatementListingPage = () => {
             </Box>
           </Box>
         ) : (
-          <Card sx={{ p: 2 }}>
+          <Card
+            sx={{ p: 2, flex: 1, display: "flex", flexDirection: "column" }}
+          >
+            {/* Header Actions */}
             <Stack
               direction={{ xs: "column", sm: "row" }}
               spacing={2}
@@ -799,156 +801,201 @@ const StatementListingPage = () => {
               <Alert severity="info" sx={{ flex: 1 }}>
                 Total Collection: <strong>₹{totalCollection.toFixed(2)}</strong>
               </Alert>
+
               <Button
                 variant="contained"
                 onClick={() => setIsOperatorWise((prev) => !prev)}
                 sx={{ backgroundColor: "darkblue" }}
                 size="small"
+                className="no-print"
               >
                 {isOperatorWise ? "Service wise" : "Operator wise"}
               </Button>
             </Stack>
 
-            {isOperatorWise ? (
-              <Box sx={{ display: "flex", justifyContent: "center" }}>
-                <TableContainer component={Paper} sx={{ maxWidth: 400 }}>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell
-                          sx={{ fontWeight: "bold", textAlign: "center" }}
-                        >
-                          Operator
-                        </TableCell>
-                        <TableCell
-                          sx={{ fontWeight: "bold", textAlign: "center" }}
-                        >
-                          Total Collection (₹)
-                        </TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {operatorTotalsArray.map((op) => (
-                        <TableRow key={op.name}>
-                          <TableCell sx={{ textAlign: "center" }}>
-                            {op.name}
-                          </TableCell>
-                          <TableCell sx={{ textAlign: "center" }}>
-                            <b>
-                              {op.total !== null &&
-                              op.total !== undefined &&
-                              !isNaN(op.total)
-                                ? op.total.toFixed(2)
-                                : "Duty Not Finished"}
-                            </b>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Box>
-            ) : (
+            {/* Table Section */}
+            <Box
+              sx={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                minHeight: 0,
+              }}
+            >
               <TableContainer
                 sx={{
                   flex: 1,
-                  maxHeight: "400px", // Set a fixed height for scroll
+                  maxHeight: { xs: "60vh", md: "calc(100vh - 300px)" },
                   overflowY: "auto",
                   borderRadius: 2,
                   border: "1px solid #e0e0e0",
                   position: "relative",
                 }}
               >
-                <Table stickyHeader>
+                {isLoading && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      backgroundColor: "rgba(255, 255, 255, 0.7)",
+                      zIndex: 1,
+                    }}
+                  >
+                    <CircularProgress />
+                  </Box>
+                )}
+
+                <Table stickyHeader size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell
-                        sx={{
-                          textAlign: "left",
-                          backgroundColor: "#fafafa",
-                          fontWeight: 600,
-                          fontSize: "0.875rem",
-                          borderBottom: "1px solid #ddd",
-                          position: "sticky",
-                          top: 0,
-                          zIndex: 2,
-                        }}
-                      >
-                        <b>Service Name</b>
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          textAlign: "left",
-                          backgroundColor: "#fafafa",
-                          fontWeight: 600,
-                          fontSize: "0.875rem",
-                          borderBottom: "1px solid #ddd",
-                          position: "sticky",
-                          top: 0,
-                          zIndex: 2,
-                        }}
-                      >
-                        <b>Route Name</b>
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          textAlign: "center",
-                          backgroundColor: "#fafafa",
-                          fontWeight: 600,
-                          fontSize: "0.875rem",
-                          borderBottom: "1px solid #ddd",
-                          position: "sticky",
-                          top: 0,
-                          zIndex: 2,
-                        }}
-                      >
-                        <b>Date</b>
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          textAlign: "center",
-                          backgroundColor: "#fafafa",
-                          fontWeight: 600,
-                          fontSize: "0.875rem",
-                          borderBottom: "1px solid #ddd",
-                          position: "sticky",
-                          top: 0,
-                          zIndex: 2,
-                        }}
-                        align="right"
-                      >
-                        <b>Collection (₹)</b>
-                      </TableCell>
+                      {isOperatorWise ? (
+                        <>
+                          <TableCell
+                            sx={{
+                              textAlign: "center",
+                              backgroundColor: "#fafafa",
+                              fontWeight: 600,
+                              fontSize: "0.875rem",
+                              borderBottom: "1px solid #ddd",
+                            }}
+                          >
+                            Operator
+                          </TableCell>
+                          <TableCell
+                            sx={{
+                              textAlign: "center",
+                              backgroundColor: "#fafafa",
+                              fontWeight: 600,
+                              fontSize: "0.875rem",
+                              borderBottom: "1px solid #ddd",
+                            }}
+                          >
+                            Total Collection (₹)
+                          </TableCell>
+                        </>
+                      ) : (
+                        <>
+                          <TableCell
+                            sx={{
+                              textAlign: "left",
+                              backgroundColor: "#fafafa",
+                              fontWeight: 600,
+                              fontSize: "0.875rem",
+                              borderBottom: "1px solid #ddd",
+                            }}
+                          >
+                            Service Name
+                          </TableCell>
+                          <TableCell
+                            sx={{
+                              textAlign: "left",
+                              backgroundColor: "#fafafa",
+                              fontWeight: 600,
+                              fontSize: "0.875rem",
+                              borderBottom: "1px solid #ddd",
+                            }}
+                          >
+                            Route Name
+                          </TableCell>
+                          <TableCell
+                            sx={{
+                              textAlign: "center",
+                              backgroundColor: "#fafafa",
+                              fontWeight: 600,
+                              fontSize: "0.875rem",
+                              borderBottom: "1px solid #ddd",
+                            }}
+                          >
+                            Date
+                          </TableCell>
+                          <TableCell
+                            sx={{
+                              textAlign: "center",
+                              backgroundColor: "#fafafa",
+                              fontWeight: 600,
+                              fontSize: "0.875rem",
+                              borderBottom: "1px solid #ddd",
+                            }}
+                          >
+                            Collection (₹)
+                          </TableCell>
+                        </>
+                      )}
                     </TableRow>
                   </TableHead>
+
                   <TableBody>
-                    {serviceWiseArray.map((service, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell sx={{ textAlign: "left" }}>
-                          {service.serviceName}
-                        </TableCell>
-                        <TableCell sx={{ textAlign: "left" }}>
-                          {service.routeName}
-                        </TableCell>
-                        <TableCell sx={{ textAlign: "center" }}>
-                          {service.date}
-                        </TableCell>
-                        <TableCell sx={{ textAlign: "center" }}>
-                          <b>{service.total.toFixed(2)}</b>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {isOperatorWise
+                      ? operatorTotalsArray
+                          .slice(
+                            page * rowsPerPage,
+                            page * rowsPerPage + rowsPerPage
+                          )
+                          .map((op) => (
+                            <TableRow key={op.name}>
+                              <TableCell sx={{ textAlign: "center" }}>
+                                {op.name}
+                              </TableCell>
+                              <TableCell sx={{ textAlign: "center" }}>
+                                <b>
+                                  {op.total !== null &&
+                                  op.total !== undefined &&
+                                  !isNaN(op.total)
+                                    ? op.total.toFixed(2)
+                                    : "Duty Not Finished"}
+                                </b>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                      : serviceWiseArray
+                          .slice(
+                            page * rowsPerPage,
+                            page * rowsPerPage + rowsPerPage
+                          )
+                          .map((service, idx) => (
+                            <TableRow key={idx}>
+                              <TableCell>{service.serviceName}</TableCell>
+                              <TableCell>{service.routeName}</TableCell>
+                              <TableCell sx={{ textAlign: "center" }}>
+                                {service.date}
+                              </TableCell>
+                              <TableCell sx={{ textAlign: "center" }}>
+                                <b>{service.total.toFixed(2)}</b>
+                              </TableCell>
+                            </TableRow>
+                          ))}
                   </TableBody>
                 </Table>
               </TableContainer>
-            )}
-            {statementData.length === 0 && (
-              <Box sx={{ p: 3, textAlign: "center" }}>
-                <Typography variant="body1" color="textSecondary">
-                  No statement data available. Make sure the Duties are finished 
-                </Typography>
+
+              {/* Empty State */}
+              {statementData.length === 0 && !isLoading && (
+                <Box sx={{ p: 3, textAlign: "center" }}>
+                  <Typography variant="body1" color="text.secondary">
+                    No statement data available. Make sure the duties are
+                    finished.
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Pagination */}
+              <Box sx={{ p: 1.5, borderTop: 1, borderColor: "divider" }}>
+                <PaginationControls
+                  page={page}
+                  onPageChange={(newPage) => handleChangePage(null, newPage)}
+                  isLoading={isLoading}
+                  hasNextPage={
+                    (page + 1) * rowsPerPage <
+                    (isOperatorWise
+                      ? operatorTotalsArray.length
+                      : serviceWiseArray.length)
+                  }
+                />
               </Box>
-            )}
+            </Box>
           </Card>
         )}
       </>
