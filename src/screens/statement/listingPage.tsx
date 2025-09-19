@@ -24,6 +24,10 @@ import {
   Tooltip,
   IconButton,
   OutlinedInput,
+  Dialog,
+  DialogActions,
+  DialogTitle,
+  DialogContent,
 } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material";
 import { useDispatch } from "react-redux";
@@ -91,6 +95,10 @@ const StatementListingPage = () => {
       }
     }
   }, [companyId, location.search]);
+    const [unfinishedDutiesModalOpen, setUnfinishedDutiesModalOpen] =
+    useState(false);
+  const [unfinishedDutiesList, setUnfinishedDutiesList] = useState<any[]>([]);
+
   // *************************Format date to UTC************************
   const formatDateToUTC = (dateString: string, isEndDate: boolean = false) => {
     if (!dateString) return "";
@@ -279,23 +287,30 @@ const StatementListingPage = () => {
     try {
       setIsGeneratingStatement(true);
 
-      // Single API call with all service IDs
       const dutyRes = await dispatch(
         dutyListingApi({
-          service_id_list: selectedServiceIds, // Pass array of service IDs
-          status_list: [3, 4],
+          service_id_list: selectedServiceIds,
+          status_list: [2, 3, 4], // Started, Terminated, Ended
         })
       ).unwrap();
 
       const allDuties = dutyRes?.data || [];
-      setDutyList(allDuties);
 
-      // Extract unique operator IDs from duties
+      // Unfinished duties (Started)
+      const unfinishedDuties = allDuties.filter(
+        (duty: any) => duty.status === 2
+      );
+
+      // Finished duties (Terminated, Ended)
+      const finishedDuties = allDuties.filter((duty: any) =>
+        [3, 4].includes(duty.status)
+      );
+      setDutyList(finishedDuties);
+
+      // Fetch operator details
       const operatorIds = [
         ...new Set(allDuties.map((duty: any) => duty.operator_id)),
       ];
-
-      // Fetch operator details for all unique operator IDs
       const operatorDetails = await Promise.all(
         operatorIds.map(async (id: unknown) => {
           const operatorId = id as number;
@@ -303,25 +318,40 @@ const StatementListingPage = () => {
             const operatorRes = await dispatch(
               operatorListApi({
                 id: operatorId,
+                limit: 100,
+                offset: 0,
               })
             ).unwrap();
             return Array.isArray(operatorRes?.data) &&
               operatorRes.data.length > 0
               ? operatorRes.data[0]
               : null;
-          } catch (error) {
-            console.error(`Error fetching operator ${operatorId}`, error);
+          } catch {
             return null;
           }
         })
       );
-
-      // Filter out any null values
       const validOperators = operatorDetails.filter((op) => op !== null);
       setOperatorList(validOperators);
 
-      // Combine duty and operator data
-      const statement = allDuties.map((duty: any) => {
+      // Map unfinished duties with operator names
+      const unfinishedWithOperators = unfinishedDuties.map((duty: any) => {
+        const operator = validOperators.find(
+          (op) => op.id === duty.operator_id
+        );
+        return {
+          dutyId: duty.id,
+          operatorName: operator?.full_name || "Unknown",
+        };
+      });
+
+      if (unfinishedWithOperators.length > 0) {
+        setUnfinishedDutiesList(unfinishedWithOperators);
+        setUnfinishedDutiesModalOpen(true); // Open modal
+      }
+
+      // Build statement for finished duties
+      const statement = finishedDuties.map((duty: any) => {
         const operator = validOperators.find(
           (op) => op.id === duty.operator_id
         );
@@ -330,10 +360,9 @@ const StatementListingPage = () => {
           collection: duty.collection,
           operatorId: duty.operator_id,
           operatorName: operator?.full_name || "Unknown",
-          serviceName:
-            serviceList.find((s) => s.id === duty.service_id)?.name ||
-            "Unknown",
           serviceId: duty.service_id,
+          serviceName:
+            serviceList.find((s) => s.id === duty.service_id)?.name || "",
           routeName:
             serviceList.find((s) => s.id === duty.service_id)?.routeName || "",
           date: duty.date || new Date().toISOString().split("T")[0],
@@ -542,250 +571,253 @@ const StatementListingPage = () => {
         {activeTab === "services" ? (
           /* Services Table with fixed pagination */
           <Box
-            sx={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 0,
-            }}
-          >
-            <TableContainer
               sx={{
                 flex: 1,
-                maxHeight: { xs: "60vh", md: "calc(100vh - 200px)" },
-                overflowY: "auto",
-                borderRadius: 2,
-                border: "1px solid #e0e0e0",
-                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                minHeight: 0,
               }}
             >
-              {isLoading && (
-                <Box
-                  sx={{
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    backgroundColor: "rgba(255, 255, 255, 0.7)",
-                    zIndex: 1,
-                  }}
-                >
-                  <CircularProgress />
-                </Box>
-              )}
-              <Table stickyHeader size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell
-                      padding="checkbox"
-                      sx={{
-                        backgroundColor: "#fafafa",
-                        fontWeight: 600,
-                        fontSize: "0.875rem",
-                        borderBottom: "1px solid #ddd",
-                        width: 60,
-                        textAlign: "center", // <-- Add this
-                        p: 0, // <-- Remove default padding
-                      }}
-                    >
-                      <Checkbox
-                        indeterminate={
-                          selectedServices.some(
-                            (service) => service.isSelected
-                          ) &&
-                          !selectedServices.every(
-                            (service) => service.isSelected
-                          )
-                        }
-                        checked={selectedServices.every(
-                          (service) => service.isSelected
-                        )}
-                        onChange={handleSelectAll}
-                        disabled={
-                          !serviceList.some(
-                            (service) =>
-                              service.status === "Terminated" ||
-                              service.status === "Ended"
-                          )
-                        }
-                        sx={{ m: 0 }} // <-- Remove margin
-                      />
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        backgroundColor: "#fafafa",
-                        fontWeight: 600,
-                        fontSize: "0.875rem",
-                        borderBottom: "1px solid #ddd",
-                        minWidth: 160,
-                        width: 180,
-                      }}
-                    >
-                      Service Name
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        backgroundColor: "#fafafa",
-                        fontWeight: 600,
-                        fontSize: "0.875rem",
-                        borderBottom: "1px solid #ddd",
-                        minWidth: 100,
-                        width: 140,
-                        // pl: 2, // <-- Remove this for better alignment
-                      }}
-                    >
-                      Route
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        backgroundColor: "#fafafa",
-                        fontWeight: 600,
-                        fontSize: "0.875rem",
-                        borderBottom: "1px solid #ddd",
-                        width: 110,
-                        textAlign: "center",
-                      }}
-                    >
-                      Status
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {isLoading ? (
+              <TableContainer
+                sx={{
+                  flex: 1,
+                  maxHeight: { xs: "60vh", md: "calc(100vh - 200px)" },
+                  overflowY: "auto",
+                  borderRadius: 2,
+                  border: "1px solid #e0e0e0",
+                  position: "relative",
+                }}
+              >
+                {isLoading && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      backgroundColor: "rgba(255, 255, 255, 0.7)",
+                      zIndex: 1,
+                    }}
+                  >
+                    <CircularProgress />
+                  </Box>
+                )}
+                <Table stickyHeader size="small">
+                  <TableHead>
                     <TableRow>
-                      <TableCell colSpan={6} align="center"></TableCell>
+                      <TableCell
+                        padding="checkbox"
+                        sx={{
+                          backgroundColor: "#fafafa",
+                          fontWeight: 600,
+                          fontSize: "0.875rem",
+                          borderBottom: "1px solid #ddd",
+                          width: 60,
+                          textAlign: "center",
+                          p: 0,
+                        }}
+                      >
+                        <Checkbox
+                          indeterminate={
+                            selectedServices.some(
+                              (service) => service.isSelected
+                            ) &&
+                            !selectedServices.every(
+                              (service) => service.isSelected
+                            )
+                          }
+                          checked={selectedServices.every(
+                            (service) => service.isSelected
+                          )}
+                          onChange={handleSelectAll}
+                          disabled={
+                            !serviceList.some(
+                              (service) =>
+                                service.status === "Terminated" ||
+                                service.status === "Ended" ||
+                                service.status === "Started"
+                            )
+                          }
+                          sx={{ m: 0 }}
+                        />
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          backgroundColor: "#fafafa",
+                          fontWeight: 600,
+                          fontSize: "0.875rem",
+                          borderBottom: "1px solid #ddd",
+                          minWidth: 160,
+                          width: 180,
+                        }}
+                      >
+                        Service Name
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          backgroundColor: "#fafafa",
+                          fontWeight: 600,
+                          fontSize: "0.875rem",
+                          borderBottom: "1px solid #ddd",
+                          minWidth: 100,
+                          width: 140,
+                        }}
+                      >
+                        Route
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          backgroundColor: "#fafafa",
+                          fontWeight: 600,
+                          fontSize: "0.875rem",
+                          borderBottom: "1px solid #ddd",
+                          width: 110,
+                          textAlign: "center",
+                        }}
+                      >
+                        Status
+                      </TableCell>
                     </TableRow>
-                  ) : (
-                    serviceList
-                      .slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage
-                      )
-                      .map((service) => {
-                        const isSelected =
-                          selectedServices.find((s) => s.id === service.id)
-                            ?.isSelected || false;
+                  </TableHead>
+                  <TableBody>
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center"></TableCell>
+                      </TableRow>
+                    ) : (
+                      serviceList
+                        .slice(
+                          page * rowsPerPage,
+                          page * rowsPerPage + rowsPerPage
+                        )
+                        .map((service) => {
+                          const isSelected =
+                            selectedServices.find((s) => s.id === service.id)
+                              ?.isSelected || false;
 
-                        const canSelect =
-                          service.status === "Terminated" ||
-                          service.status === "Ended";
-                        const cannotSelectTooltip =
-                          "Cannot generate statement for services in Started or Created state";
+                          const canSelect =
+                            service.status === "Terminated" ||
+                            service.status === "Ended" ||
+                            service.status === "Started";
+                          const cannotSelectTooltip =
+                            "Cannot generate statement for services in Started or Created state";
 
-                        const rowContent = (
-                          <>
-                            <TableCell
-                              padding="checkbox"
-                              sx={{ textAlign: "center", width: 60, p: 0 }} // <-- Match header
-                            >
-                              <Checkbox
-                                checked={canSelect ? isSelected : false}
-                                onChange={() =>
-                                  canSelect &&
-                                  handleServiceSelection(service.id)
-                                }
-                                disabled={!canSelect}
-                                sx={{ opacity: canSelect ? 1 : 0.5, m: 0 }} // <-- Remove margin
-                              />
-                            </TableCell>
-                            <TableCell
-                              align="left"
-                              sx={{
-                                minWidth: 160,
-                                width: 180,
-                                fontWeight: 500,
-                              }}
-                            >
-                              {service.name}
-                            </TableCell>
-                            <TableCell
-                              align="left"
-                              sx={{ minWidth: 100, width: 140 }}
-                            >
-                              {service.routeName}
-                            </TableCell>
-                            <TableCell align="center" sx={{ width: 110 }}>
-                              <Chip
-                                label={service.status}
-                                size="small"
+                          const rowContent = (
+                            <>
+                              <TableCell
+                                padding="checkbox"
+                                sx={{ textAlign: "center", width: 60, p: 0 }}
+                                onClick={(e) => e.stopPropagation()} // Prevent row click when clicking checkbox
+                              >
+                                <Checkbox
+                                  checked={canSelect ? isSelected : false}
+                                  onChange={(e) => {
+                                    e.stopPropagation(); // Stop event propagation
+                                    canSelect &&
+                                      handleServiceSelection(service.id);
+                                  }}
+                                  disabled={!canSelect}
+                                  sx={{ opacity: canSelect ? 1 : 0.5, m: 0 }}
+                                />
+                              </TableCell>
+                              <TableCell
+                                align="left"
                                 sx={{
-                                  width: 90,
-                                  backgroundColor:
-                                    service.status === "Created"
-                                      ? "rgba(33, 150, 243, 0.12)"
-                                      : service.status === "Started"
-                                      ? "rgba(76, 175, 80, 0.12)"
-                                      : service.status === "Terminated"
-                                      ? "rgba(244, 67, 54, 0.12)"
-                                      : "rgba(158, 158, 158, 0.12)",
-                                  color:
-                                    service.status === "Created"
-                                      ? "#1976D2"
-                                      : service.status === "Started"
-                                      ? "#388E3C"
-                                      : service.status === "Terminated"
-                                      ? "#D32F2F"
-                                      : "#616161",
-                                  fontWeight: 600,
-                                  fontSize: "0.75rem",
-                                  borderRadius: "8px",
+                                  minWidth: 160,
+                                  width: 180,
+                                  fontWeight: 500,
                                 }}
-                              />
-                            </TableCell>
-                          </>
-                        );
+                              >
+                                {service.name}
+                              </TableCell>
+                              <TableCell
+                                align="left"
+                                sx={{ minWidth: 100, width: 140 }}
+                              >
+                                {service.routeName}
+                              </TableCell>
+                              <TableCell align="center" sx={{ width: 110 }}>
+                                <Chip
+                                  label={service.status}
+                                  size="small"
+                                  sx={{
+                                    width: 90,
+                                    backgroundColor:
+                                      service.status === "Created"
+                                        ? "rgba(33, 150, 243, 0.12)"
+                                        : service.status === "Started"
+                                        ? "rgba(76, 175, 80, 0.12)"
+                                        : service.status === "Terminated"
+                                        ? "rgba(244, 67, 54, 0.12)"
+                                        : "rgba(158, 158, 158, 0.12)",
+                                    color:
+                                      service.status === "Created"
+                                        ? "#1976D2"
+                                        : service.status === "Started"
+                                        ? "#388E3C"
+                                        : service.status === "Terminated"
+                                        ? "#D32F2F"
+                                        : "#616161",
+                                    fontWeight: 600,
+                                    fontSize: "0.75rem",
+                                    borderRadius: "8px",
+                                  }}
+                                />
+                              </TableCell>
+                            </>
+                          );
 
-                        return canSelect ? (
-                          <TableRow
-                            key={service.id}
-                            hover
-                            sx={{ cursor: "pointer" }}
-                            onClick={() => handleServiceSelection(service.id)}
-                          >
-                            {rowContent}
-                          </TableRow>
-                        ) : (
-                          <Tooltip
-                            title={cannotSelectTooltip}
-                            arrow
-                            placement="top"
-                          >
+                          return canSelect ? (
                             <TableRow
                               key={service.id}
-                              sx={{
-                                cursor: "not-allowed",
-                                backgroundColor: "#f9f9f9",
-                                "&:hover": { backgroundColor: "#f0f0f0" },
-                              }}
+                              hover
+                              sx={{ cursor: "pointer" }}
+                              onClick={() => handleServiceSelection(service.id)}
                             >
                               {rowContent}
                             </TableRow>
-                          </Tooltip>
-                        );
-                      })
-                  )}
-                </TableBody>
-              </Table>
-              {serviceList.length === 0 && !isLoading && (
-                <Box sx={{ p: 3, textAlign: "center" }}>
-                  <Typography variant="body1" color="textSecondary">
-                    No services found for the selected date range.
-                  </Typography>
-                </Box>
-              )}
-            </TableContainer>
+                          ) : (
+                            <Tooltip
+                              title={cannotSelectTooltip}
+                              arrow
+                              placement="top"
+                            >
+                              <TableRow
+                                key={service.id}
+                                sx={{
+                                  cursor: "not-allowed",
+                                  backgroundColor: "#f9f9f9",
+                                  "&:hover": { backgroundColor: "#f0f0f0" },
+                                }}
+                              >
+                                {rowContent}
+                              </TableRow>
+                            </Tooltip>
+                          );
+                        })
+                    )}
+                  </TableBody>
+                </Table>
+                {serviceList.length === 0 && !isLoading && (
+                  <Box sx={{ p: 3, textAlign: "center" }}>
+                    <Typography variant="body1" color="textSecondary">
+                      No services found for the selected date range.
+                    </Typography>
+                  </Box>
+                )}
+              </TableContainer>
 
-            {/* Fixed Pagination at bottom */}
-            <Box sx={{ p: 1.5, borderTop: 1, borderColor: "divider" }}>
-              <PaginationControls
-                page={page}
-                onPageChange={(newPage) => handleChangePage(null, newPage)}
-                isLoading={isLoading}
-                hasNextPage={(page + 1) * rowsPerPage < serviceList.length}
-              />
+              {/* Fixed Pagination at bottom */}
+              <Box sx={{ p: 1.5, borderTop: 1, borderColor: "divider" }}>
+                <PaginationControls
+                  page={page}
+                  onPageChange={(newPage) => handleChangePage(null, newPage)}
+                  isLoading={isLoading}
+                  hasNextPage={(page + 1) * rowsPerPage < serviceList.length}
+                />
+              </Box>
             </Box>
-          </Box>
         ) : (
           <Card
             sx={{ p: 2, flex: 1, display: "flex", flexDirection: "column" }}
@@ -999,6 +1031,55 @@ const StatementListingPage = () => {
           </Card>
         )}
       </>
+     {/* Unfinished Duties Modal */}
+      <Dialog
+        open={unfinishedDutiesModalOpen}
+        onClose={() => setUnfinishedDutiesModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>⚠️ Partial Statement Generated</DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body1" gutterBottom>
+            Some statements were generated successfully, but the following
+            duties are not finished yet:
+          </Typography>
+
+          {unfinishedDutiesList.length > 0 ? (
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>
+                    <strong>Duty ID</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Operator Name</strong>
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {unfinishedDutiesList.map((duty) => (
+                  <TableRow key={duty.dutyId}>
+                    <TableCell>{duty.dutyId}</TableCell>
+                    <TableCell>{duty.operatorName}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <Typography>No unfinished duties.</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setUnfinishedDutiesModalOpen(false)}
+            color="error"
+            variant="contained"
+          >
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

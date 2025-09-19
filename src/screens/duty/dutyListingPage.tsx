@@ -350,7 +350,6 @@ const fetchDutyList = useCallback(
                     <MenuItem value="Assigned">Assigned</MenuItem>
                     <MenuItem value="Started">Started</MenuItem>
                     <MenuItem value="Terminated">Terminated</MenuItem>
-                    <MenuItem value="Finished">Finished</MenuItem>
                     <MenuItem value="Ended">Ended</MenuItem>
                     <MenuItem value="Discarded">Discarded</MenuItem>
                   </Select>
